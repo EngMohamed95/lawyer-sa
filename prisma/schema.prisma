@@ -1,0 +1,177 @@
+// Custom Prisma schema
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.0.x", "rhel-openssl-1.1.x", "rhel-openssl-3.0.x", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  password    String
+  name        String
+  role        String   @default("LAWYER") // ADMIN, LAWYER, TRAINEE, SECRETARY
+  phone       String?
+  joinDate    DateTime @default(now())
+
+  // Relationships
+  assignedCases     Case[]   @relation("LawyerCases")
+  traineeCases      Case[]   @relation("TraineeCases")
+  tasks             Task[]   @relation("AssignedTasks")
+  supervisedTrainees User[]  @relation("SupervisorTrainee")
+  supervisor        User?    @relation("SupervisorTrainee", fields: [supervisorId], references: [id])
+  supervisorId      String?
+  evaluationsAsTrainee TraineeEvaluation[] @relation("TraineeEvaluations")
+  evaluationsAsReviewer TraineeEvaluation[] @relation("ReviewerEvaluations")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Client {
+  id          String   @id @default(uuid())
+  fullName    String
+  phone       String
+  email       String?
+  address     String?
+  clientType  String   // INDIVIDUAL, COMPANY
+  nationalId  String?
+  totalFees   Float    @default(0)
+  notes       String?
+  cases       Case[]
+  payments    Payment[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Case {
+  id              String   @id @default(uuid())
+  title           String
+  caseNumber      String
+  type            String   // CIVIL, CRIMINAL, FAMILY, LABOR, COMMERCIAL, ADMINISTRATIVE, OTHER
+  courtName       String?
+  circuit         String?
+  status          String   @default("OPEN") // OPEN, PENDING, JUDGEMENT_RESERVED, CLOSED
+  clientId        String
+  client          Client   @relation(fields: [clientId], references: [id])
+  opponentName    String?
+  opponentLawyer  String?
+  lawyerId        String?
+  lawyer          User?    @relation("LawyerCases", fields: [lawyerId], references: [id])
+  trainees        User[]   @relation("TraineeCases")
+  startDate       DateTime @default(now())
+  nextHearingDate DateTime?
+  summary         String?
+  internalNotes   String?
+
+  hearings        Hearing[]
+  documents       Document[]
+  memos           Memo[]
+  tasks           Task[]
+  payments        Payment[]
+  expenses        Expense[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Hearing {
+  id              String   @id @default(uuid())
+  caseId          String
+  caseRef         Case     @relation(fields: [caseId], references: [id])
+  hearingDate     DateTime
+  court           String?
+  circuit         String?
+  requiredActions String?
+  previousDecision String?
+  result          String?
+  nextHearingDate DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Document {
+  id          String   @id @default(uuid())
+  name        String
+  fileUrl     String?  // Can be null if it's just a generated document
+  content     String?  // Rich text content for lawsuits/memos
+  type        String   // POWER_OF_ATTORNEY, CONTRACT, LAWSUIT, MEMO, JUDGMENT, RECEIPT, EVIDENCE, OTHER
+  caseId      String
+  caseRef     Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  uploadedBy  String?
+  uploadDate  DateTime @default(now())
+  notes       String?
+}
+
+model Memo {
+  id          String   @id @default(uuid())
+  title       String
+  content     String
+  type        String   @default("MEMO") // MEMO (مذكرة), LAWSUIT (صحيفة دعوى), PLEADING (مرافعة)
+  caseId      String
+  caseRef     Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  authorId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Task {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  assignedTo  String?
+  assignee    User?    @relation("AssignedTasks", fields: [assignedTo], references: [id])
+  caseId      String?
+  caseRef     Case?    @relation(fields: [caseId], references: [id])
+  priority    String   @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  status      String   @default("NEW") // NEW, IN_PROGRESS, COMPLETED, OVERDUE
+  dueDate     DateTime?
+  comments    TaskComment[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TaskComment {
+  id        String   @id @default(uuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id])
+  text      String
+  authorId  String
+  createdAt DateTime @default(now())
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  caseId    String?
+  caseRef   Case?    @relation(fields: [caseId], references: [id])
+  clientId  String?
+  client    Client?  @relation(fields: [clientId], references: [id])
+  amount    Float
+  date      DateTime @default(now())
+  notes     String?
+}
+
+model Expense {
+  id        String   @id @default(uuid())
+  caseId    String
+  caseRef   Case     @relation(fields: [caseId], references: [id])
+  amount    Float
+  type      String   // COURT, TRANSPORTATION, DOCUMENT, OTHER
+  date      DateTime @default(now())
+  notes     String?
+}
+
+model TraineeEvaluation {
+  id          String   @id @default(uuid())
+  traineeId   String
+  trainee     User     @relation("TraineeEvaluations", fields: [traineeId], references: [id])
+  reviewerId  String
+  reviewer    User     @relation("ReviewerEvaluations", fields: [reviewerId], references: [id])
+  score       Int      // 1 to 5
+  notes       String?
+  date        DateTime @default(now())
+}

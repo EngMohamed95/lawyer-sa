@@ -1,0 +1,103 @@
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Project
+        run: |
+          mkdir -p public
+          cp logo.png public/logo.png || true
+          npm run build
+          echo "import http from 'http';" > index.js
+          echo "import fs from 'fs';" >> index.js
+          echo "import('./dist/server.js').catch((err) => {" >> index.js
+          echo "  fs.writeFileSync('startup-error.log', String(err.stack || err));" >> index.js
+          echo "  const port = process.env.PORT || 3000;" >> index.js
+          echo "  http.createServer((req, res) => {" >> index.js
+          echo "    res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });" >> index.js
+          echo "    res.end(JSON.stringify({ error: 'Server Startup Failed', details: String(err.message || err) }));" >> index.js
+          echo "  }).listen(port);" >> index.js
+          echo "});" >> index.js
+          echo 'NODE_ENV="production"' > .env
+          echo 'GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}"' >> .env
+          
+      - name: Zip Files
+        run: |
+          mkdir -p tmp
+          touch tmp/restart.txt
+          zip -r -9 deploy.zip dist package.json index.js .env serviceAccountKey.json tmp/restart.txt
+ 
+      - name: Create Unzip Script
+        run: |
+          cat << 'EOF' > unzip.php
+          <?php
+          $zip = new ZipArchive;
+          if ($zip->open('deploy.zip') === TRUE) {
+              $zip->extractTo('.');
+              $zip->close();
+              
+              if (is_dir('dist')) {
+                  $files = new RecursiveIteratorIterator(
+                      new RecursiveDirectoryIterator('dist', RecursiveDirectoryIterator::SKIP_DOTS),
+                      RecursiveIteratorIterator::SELF_FIRST
+                  );
+                  foreach ($files as $file) {
+                      $target = '.' . DIRECTORY_SEPARATOR . $files->getSubPathName();
+                      if ($file->isDir()) {
+                          if (!is_dir($target)) {
+                              mkdir($target, 0755, true);
+                          }
+                      } else {
+                          copy($file->getPathname(), $target);
+                      }
+                  }
+              }
+              
+              echo "SUCCESS";
+              unlink('deploy.zip');
+              unlink('unzip.php');
+          } else {
+              echo "FAILED";
+          }
+          ?>
+          EOF
+
+      - name: Upload to Hostinger via FTP
+        env:
+          FTP_USER: ${{ secrets.HOSTINGER_USERNAME }}
+          FTP_PASS: ${{ secrets.HOSTINGER_PASSWORD }}
+        run: |
+          curl -k --ssl-reqd -T deploy.zip -u "$FTP_USER:$FTP_PASS" ftp://ftp.lawyers.smartcodix.com/deploy.zip
+          curl -k --ssl-reqd -T unzip.php -u "$FTP_USER:$FTP_PASS" ftp://ftp.lawyers.smartcodix.com/unzip.php
+
+
+
+
+      - name: Trigger Extraction and Restart
+        run: |
+          response=$(curl -k -s https://lawyers.smartcodix.com/unzip.php)
+          echo "Server Response: $response"
+          if [ "$response" != "SUCCESS" ]; then
+            echo "Extraction failed!"
+            exit 1
+          fi
+          echo "--- Deployment Finished Successfully! ---"
+

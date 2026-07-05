@@ -1,0 +1,23 @@
+// أضف هذه القواعد في Firebase Console > Firestore > Rules
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // المستخدمين: قراءة وكتابة للمسجلين فقط
+    match /users/{userId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // طلبات الاشتراك: أي شخص يقدر يكتب (بدون حساب)، القراءة للمسجلين فقط
+    match /subscriptionRequests/{docId} {
+      allow create: if true;
+      allow read, update: if request.auth != null;
+    }
+
+    // باقي الكولكشنات: للمسجلين فقط
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
