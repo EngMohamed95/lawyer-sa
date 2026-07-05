@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 // Standard Import for Critical Pages (Faster initial load)
 import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
+import CreateAdmin from "./pages/CreateAdmin";
 
 // Lazy Loading for Dashboard & App Pages
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -522,6 +523,7 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/subscribe" element={<SubscribePage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/create-admin" element={<CreateAdmin />} />
           <Route path="/app" element={<Layout />}>
             <Route index element={<Navigate to="/app/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
