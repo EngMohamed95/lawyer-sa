@@ -85,15 +85,15 @@ jobs:
           FTP_USER: ${{ secrets.HOSTINGER_USERNAME }}
           FTP_PASS: ${{ secrets.HOSTINGER_PASSWORD }}
         run: |
-          curl -k --ssl-reqd -T deploy.zip -u "$FTP_USER:$FTP_PASS" ftp://ftp.lawyers.smartcodix.com/deploy.zip
-          curl -k --ssl-reqd -T unzip.php -u "$FTP_USER:$FTP_PASS" ftp://ftp.lawyers.smartcodix.com/unzip.php
+          curl -k --ssl-reqd -T deploy.zip -u "$FTP_USER:$FTP_PASS" ftp://ftp.lawyr-sa.smartcodix.com/deploy.zip
+          curl -k --ssl-reqd -T unzip.php -u "$FTP_USER:$FTP_PASS" ftp://ftp.lawyr-sa.smartcodix.com/unzip.php
 
 
 
 
       - name: Trigger Extraction and Restart
         run: |
-          response=$(curl -k -s https://lawyers.smartcodix.com/unzip.php)
+          response=$(curl -k -s https://lawyr-sa.smartcodix.com/unzip.php)
           echo "Server Response: $response"
           if [ "$response" != "SUCCESS" ]; then
             echo "Extraction failed!"
