@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { collection, addDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
@@ -18,6 +18,9 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: { isOpen: boolean
   });
 
   const lawyerId = localStorage.getItem("lawyerId");
+
+  const currencyCode = localStorage.getItem("sys_currency") || "SAR";
+  const currencySymbol = currencyCode === "SAR" ? "ر.س" : currencyCode === "EGP" ? "ج.م" : "$";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,7 +110,7 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: { isOpen: boolean
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">أتعاب متوقعة (ج.م)</label>
+              <label className="text-sm font-bold text-[#0A192F]">أتعاب متوقعة ({currencySymbol})</label>
               <Input
                 type="number"
                 step="0.01"

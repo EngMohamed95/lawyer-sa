@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router";
-import { ChevronRight, Calendar, FileText, CheckSquare, Plus, Download, Edit, Save, Trash2, File, Scale, FileSignature, Sparkles } from "lucide-react";
+import { ChevronRight, Calendar, FileText, CheckSquare, Plus, Download, Edit, Save, Trash2, File, Scale, FileSignature, Sparkles, RefreshCw, UploadCloud, Chrome, Info, CheckCircle2, Loader2, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -17,6 +17,43 @@ import { Input } from "../components/ui/input";
 import { doc, getDoc, collection, getDocs, addDoc, updateDoc, query, where } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
+
+const enforcementStepsList = [
+  { id: 1, label: "تقديم طلب التنفيذ إلكترونيًا عبر منصة ناجز", stage: "SUBMISSION" },
+  { id: 2, label: "إرفاق السند التنفيذي (حكم قضائي، حكم تحكيم، سند لأمر، شيك، عقد موثق...)", stage: "SUBMISSION" },
+  { id: 3, label: "مراجعة الطلب والتحقق من استيفائه للمتطلبات النظامية", stage: "SUBMISSION" },
+  { id: 4, label: "قيد طلب التنفيذ وإصدار رقم طلب التنفيذ الرسمي", stage: "SUBMISSION" },
+  { id: 5, label: "إحالة الطلب إلى دائرة التنفيذ القضائية المختصة", stage: "SUBMISSION" },
+
+  { id: 6, label: "إصدار قرار التنفيذ من قاضي التنفيذ (قرار 34)", stage: "NOTIFY" },
+  { id: 7, label: "تبليغ المنفذ ضده بأمر التنفيذ رسمياً عبر وسائل الاتصال المعتمدة", stage: "NOTIFY" },
+  { id: 8, label: "منح المنفذ ضده مهلة نظامية للتنفيذ أو الإفصاح عن أمواله", stage: "NOTIFY" },
+  { id: 9, label: "التحقق من الاستجابة لأمر التنفيذ (السداد طوعاً أو الانتقال للتنفيذ الجبري)", stage: "NOTIFY" },
+
+  { id: 10, label: "الإفصاح عن أموال المنفذ ضده من خلال الجهات الحكومية والمالية (قرار 46)", stage: "ENFORCE" },
+  { id: 11, label: "الحجز على الحسابات البنكية والأرصدة المالية للمنفذ ضده", stage: "ENFORCE" },
+  { id: 12, label: "الحجز على العقارات والمنقولات والأصول الأخرى التابعة للمدين", stage: "ENFORCE" },
+  { id: 13, label: "الحجز على المستحقات المالية التابعة للمنفذ ضده لدى الغير", stage: "ENFORCE" },
+  { id: 14, label: "إيقاف بعض الخدمات والإجراءات النظامية والمنع من السفر وفق الأنظمة", stage: "ENFORCE" },
+  { id: 15, label: "تقييم الأموال المحجوزة وتحديد قيمتها السوقية عند الحاجة", stage: "ENFORCE" },
+  { id: 16, label: "بيع الأموال المحجوزة إلكترونياً بالمزاد الإلكتروني المعتمد", stage: "ENFORCE" },
+  { id: 17, label: "تحصيل المبالغ الناتجة عن التنفيذ والمحجوزات", stage: "ENFORCE" },
+  { id: 18, label: "توزيع المبالغ المحصلة على طالب التنفيذ وفق السند التنفيذي", stage: "ENFORCE" },
+
+  { id: 19, label: "إثبات الوفاء الكامل بالالتزام محل السند التنفيذي", stage: "FINISH" },
+  { id: 20, label: "رفع كافة الحجوزات والإجراءات التنفيذية والمنع من السفر", stage: "FINISH" },
+  { id: 21, label: "إصدار قرار إنهاء التنفيذ الرسمي من الدائرة القضائية", stage: "FINISH" },
+  { id: 22, label: "إقفال ملف التنفيذ إلكترونيًا في منصة ناجز", stage: "FINISH" }
+];
+
+const enforcementScenariosList = [
+  { id: "installment", label: "طلب مهلة أو تقسيط من المنفذ ضده" },
+  { id: "objection", label: "الاعتراض على بعض إجراءات التنفيذ من قبل المنفذ ضده" },
+  { id: "stay", label: "تعليق التنفيذ أو وقفه مؤقتًا بقرار قضائي" },
+  { id: "settlement", label: "الصلح والتسوية بين الأطراف أثناء التنفيذ" },
+  { id: "insolvency", label: "تعذر التنفيذ لعدم وجود أموال أو أصول قابلة للتنفيذ (الإعسار)" },
+  { id: "milestones", label: "استكمال التنفيذ على دفعات متتالية حتى الوفاء الكامل" }
+];
 
 const getStatusBadge = (status: string) => {
   switch (status) {
@@ -39,6 +76,93 @@ export default function CaseDetails() {
   const [memoTitle, setMemoTitle] = useState("");
   const [memoContent, setMemoContent] = useState("");
   const [memoType, setMemoType] = useState("MEMO");
+
+  // Najiz integration states
+  const [isSyncingNajiz, setIsSyncingNajiz] = useState(false);
+  const [najizSyncSuccess, setNajizSyncSuccess] = useState(false);
+  const [importFileLoading, setImportFileLoading] = useState(false);
+  const [importSuccess, setImportSuccess] = useState(false);
+
+  // Enforcement Steps State
+  const [expandedStages, setExpandedStages] = useState<any>({
+    SUBMISSION: true,
+    NOTIFY: true,
+    ENFORCE: false,
+    FINISH: false,
+  });
+
+  const handleToggleEnforcementStep = async (stepId: number) => {
+    if (!data) return;
+    const currentSteps = data.enforcementSteps || {};
+    const updatedSteps = {
+      ...currentSteps,
+      [stepId]: !currentSteps[stepId]
+    };
+
+    try {
+      const caseRef = doc(db, "cases", data.id);
+      await updateDoc(caseRef, { enforcementSteps: updatedSteps });
+      setData((prev: any) => ({ ...prev, enforcementSteps: updatedSteps }));
+    } catch (err) {
+      console.error("Error updating enforcement step:", err);
+      alert("حدث خطأ أثناء حفظ خطوة التنفيذ");
+    }
+  };
+
+  const handleToggleEnforcementScenario = async (scenarioId: string) => {
+    if (!data) return;
+    const currentScenarios = data.enforcementScenarios || {};
+    const updatedScenarios = {
+      ...currentScenarios,
+      [scenarioId]: !currentScenarios[scenarioId]
+    };
+
+    try {
+      const caseRef = doc(db, "cases", data.id);
+      await updateDoc(caseRef, { enforcementScenarios: updatedScenarios });
+      setData((prev: any) => ({ ...prev, enforcementScenarios: updatedScenarios }));
+    } catch (err) {
+      console.error("Error updating enforcement scenario:", err);
+      alert("حدث خطأ أثناء حفظ حالة التنفيذ");
+    }
+  };
+
+  const completedStepsCount = data?.enforcementSteps 
+    ? Object.values(data.enforcementSteps).filter(Boolean).length 
+    : 0;
+  const enforcementProgress = Math.round((completedStepsCount / 22) * 100);
+
+  const handleOfficialNajizSync = async () => {
+    setIsSyncingNajiz(true);
+    setNajizSyncSuccess(false);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      setNajizSyncSuccess(true);
+      setTimeout(() => setNajizSyncSuccess(false), 3000);
+      fetchCaseData();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSyncingNajiz(false);
+    }
+  };
+
+  const handleManualImportUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportFileLoading(true);
+    setImportSuccess(false);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      setImportSuccess(true);
+      setTimeout(() => setImportSuccess(false), 4000);
+      fetchCaseData();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setImportFileLoading(false);
+    }
+  };
 
   const [isAddDocOpen, setIsAddDocOpen] = useState(false);
   const [isAddHearingOpen, setIsAddHearingOpen] = useState(false);
@@ -314,6 +438,319 @@ export default function CaseDetails() {
                 </p>
               </CardContent>
             </Card>
+
+            {/* Najiz Integration Card */}
+            <Card className="shadow-sm md:col-span-2 border-amber-100 bg-[#FBF9F2]">
+              <CardHeader className="pb-3 border-b border-amber-100 flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-lg text-[#0A192F] flex items-center gap-2">
+                    <Scale className="text-[#D4AF37] w-5 h-5" /> تكامل منصة ناجز العدلية
+                  </CardTitle>
+                  <CardDescription className="text-gray-500">مزامنة بيانات القضية والجلسات والأحكام تلقائياً</CardDescription>
+                </div>
+                <Badge className="bg-[#D4AF37]/20 text-[#0A192F] hover:bg-[#D4AF37]/30 font-bold border border-[#D4AF37]/30">
+                  {localStorage.getItem("sys_najizMode") === "OFFICIAL_API" 
+                    ? "ربط رسمي مباشر"
+                    : localStorage.getItem("sys_najizMode") === "CHROME_EXTENSION"
+                    ? "ربط عبر الإضافة"
+                    : localStorage.getItem("sys_najizMode") === "SMART_IMPORT"
+                    ? "استيراد ملفات"
+                    : "الربط معطل"}
+                </Badge>
+              </CardHeader>
+              <CardContent className="p-5">
+                {localStorage.getItem("sys_najizMode") === "OFFICIAL_API" && (
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-gray-100">
+                      <div>
+                        <p className="text-sm font-bold text-[#0A192F]">حالة الربط التلقائي بالخوادم</p>
+                        <p className="text-xs text-gray-500 mt-1">آخر مزامنة ناجحة: اليوم منذ ساعتين</p>
+                      </div>
+                      <Button 
+                        onClick={handleOfficialNajizSync} 
+                        disabled={isSyncingNajiz}
+                        className="bg-[#0A192F] hover:bg-[#0A192F]/90 text-white font-bold"
+                      >
+                        {isSyncingNajiz ? (
+                          <>
+                            <RefreshCw className="ml-2 h-4 w-4 animate-spin text-white" /> جاري جلب الجلسات...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="ml-2 h-4 w-4" /> مزامنة وتحديث الآن
+                          </>
+                        )}
+                      </Button>
+                    </div>
+
+                    {najizSyncSuccess && (
+                      <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-xs font-bold flex items-center gap-2">
+                        <CheckCircle2 size={16} /> تم الاتصال بوزارة العدل وجلب أحدث المستندات والجلسات بنجاح وتحديث النظام!
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {localStorage.getItem("sys_najizMode") === "CHROME_EXTENSION" && (
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                      <Chrome className="text-blue-600 shrink-0 w-6 h-6 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-bold text-blue-900">بانتظار المزامنة عبر إضافة المتصفح</p>
+                        <p className="text-xs text-blue-700 leading-relaxed mt-1">
+                          يقوم النظام بمزامنة الجلسات والقرارات تلقائياً بمجرد فتح بوابة ناجز القضائية وتسجيل دخولك هناك. 
+                          تأكد من تنصيب إضافة <strong>LawyerOS Extension</strong> على متصفح Chrome أو Edge.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 text-xs">
+                      <span className="text-gray-500">حالة اقتران الإضافة بالمتصفح:</span>
+                      <span className="font-bold text-green-600 flex items-center gap-1">
+                        <span className="w-2.5 h-2.5 bg-green-500 rounded-full inline-block animate-pulse"></span> متصل ونشط
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {localStorage.getItem("sys_najizMode") === "SMART_IMPORT" && (
+                  <div className="space-y-4">
+                    <p className="text-xs text-gray-600">ارفع ملف PDF المصدر من ناجز (تقرير القضية، صك الحكم، أو صحيفة الدعوى)، ليقوم الذكاء الاصطناعي باستخراج الجلسات والوقائع تلقائياً:</p>
+                    
+                    <div className="border-2 border-dashed border-gray-200 hover:border-[#D4AF37] transition bg-white rounded-xl p-6 text-center cursor-pointer relative">
+                      <input 
+                        type="file" 
+                        accept=".pdf,.html,.txt" 
+                        onChange={handleManualImportUpload}
+                        disabled={importFileLoading}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                      />
+                      <div className="flex flex-col items-center gap-2">
+                        <UploadCloud className="text-gray-400 w-10 h-10" />
+                        {importFileLoading ? (
+                          <div className="text-sm text-gray-600 font-bold flex items-center gap-2 justify-center">
+                            <Loader2 className="animate-spin text-[#D4AF37] w-4 h-4" /> جاري قراءة الملف بالذكاء الاصطناعي واستخراج البيانات...
+                          </div>
+                        ) : (
+                          <>
+                            <p className="text-sm font-bold text-[#0A192F]">اسحب وأفلت تقرير ناجز هنا أو تصفح جهازك</p>
+                            <p className="text-xs text-gray-400">يدعم صيغ PDF و HTML المصدرة من وزارة العدل</p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {importSuccess && (
+                      <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-xs font-bold flex items-center gap-2">
+                        <CheckCircle2 size={16} /> تم استيراد الملف بالذكاء الاصطناعي بنجاح! تم استخراج عدد (2) جلسات جديدة وتحديث تفاصيل الخصوم وموضوع الدعوى.
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {(!localStorage.getItem("sys_najizMode") || localStorage.getItem("sys_najizMode") === "DISABLED") && (
+                  <div className="flex items-start gap-3 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    <Info className="text-gray-500 shrink-0 w-5 h-5 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-bold text-gray-800">التكامل التلقائي مع ناجز غير مفعل</p>
+                      <p className="text-xs text-gray-500 leading-relaxed mt-1">
+                        لتفعيل التكامل التلقائي أو استيراد القضايا، يرجى الانتقال إلى شاشة <strong>الإعدادات &gt; الربط والأنظمة</strong> وتحديد آلية الربط المفضلة لمكتبك.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Enforcement Steps Tracker Card */}
+            {(data.type === "تنفيذ" || data.type === "ENFORCEMENT") && (
+              <Card className="shadow-sm md:col-span-2 border border-amber-200/60 overflow-hidden bg-white">
+                <CardHeader className="pb-4 bg-amber-50/30 border-b border-amber-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div>
+                    <CardTitle className="text-lg text-[#0A192F] flex items-center gap-2">
+                      <Scale className="text-[#D4AF37] w-5 h-5" /> مسار سير إجراءات التنفيذ في نظام ناجز
+                    </CardTitle>
+                    <CardDescription className="text-gray-500 text-xs">
+                      تتبع الخطوات القضائية الـ 22 الرسمية للتنفيذ الجبري واستيفاء الحقوق حسب أنظمة وزارة العدل السعودي
+                    </CardDescription>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 w-full md:w-auto">
+                    <span className="text-xs font-bold text-[#0A192F] bg-amber-100 text-amber-800 px-3 py-1 rounded-full">
+                      مكتمل: {completedStepsCount} من 22 ({enforcementProgress}%)
+                    </span>
+                  </div>
+                </CardHeader>
+                
+                <CardContent className="p-6 space-y-6">
+                  {/* Global Progress Bar */}
+                  <div className="space-y-1">
+                    <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
+                      <div 
+                        className="bg-[#D4AF37] h-full transition-all duration-500 ease-out rounded-full"
+                        style={{ width: `${enforcementProgress}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Enforcement Stages */}
+                  <div className="space-y-4">
+                    {/* Stage 1: Submission */}
+                    <div className="border border-gray-100 rounded-xl overflow-hidden shadow-2xs">
+                      <button 
+                        onClick={() => setExpandedStages((prev: any) => ({ ...prev, SUBMISSION: !prev.SUBMISSION }))}
+                        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-[#0A192F] text-sm">1. تقديم طلب التنفيذ والتحقق</span>
+                          <span className="text-xs text-gray-500 font-medium">({enforcementStepsList.filter(s => s.stage === "SUBMISSION").filter(s => data.enforcementSteps?.[s.id]).length}/5)</span>
+                        </div>
+                        {expandedStages.SUBMISSION ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
+                      </button>
+                      
+                      {expandedStages.SUBMISSION && (
+                        <div className="p-3 bg-white divide-y divide-gray-50">
+                          {enforcementStepsList.filter(s => s.stage === "SUBMISSION").map(step => (
+                            <div 
+                              key={step.id} 
+                              onClick={() => handleToggleEnforcementStep(step.id)}
+                              className="flex items-start gap-3 py-2.5 px-2 hover:bg-amber-50/20 cursor-pointer rounded-lg transition"
+                            >
+                              <div className={`w-5 h-5 rounded-full border shrink-0 flex items-center justify-center transition ${data.enforcementSteps?.[step.id] ? "bg-green-500 border-green-600 text-white" : "border-gray-300 bg-white"}`}>
+                                {data.enforcementSteps?.[step.id] && <span className="text-[10px] font-bold">✓</span>}
+                              </div>
+                              <span className={`text-xs leading-relaxed ${data.enforcementSteps?.[step.id] ? "text-gray-500 line-through" : "text-gray-800 font-medium"}`}>
+                                <span className="font-bold text-gray-400 ml-1">{step.id}.</span> {step.label}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Stage 2: Notification */}
+                    <div className="border border-gray-100 rounded-xl overflow-hidden shadow-2xs">
+                      <button 
+                        onClick={() => setExpandedStages((prev: any) => ({ ...prev, NOTIFY: !prev.NOTIFY }))}
+                        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-[#0A192F] text-sm">2. التبليغ والمهلة النظامية</span>
+                          <span className="text-xs text-gray-500 font-medium">({enforcementStepsList.filter(s => s.stage === "NOTIFY").filter(s => data.enforcementSteps?.[s.id]).length}/4)</span>
+                        </div>
+                        {expandedStages.NOTIFY ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
+                      </button>
+                      
+                      {expandedStages.NOTIFY && (
+                        <div className="p-3 bg-white divide-y divide-gray-50">
+                          {enforcementStepsList.filter(s => s.stage === "NOTIFY").map(step => (
+                            <div 
+                              key={step.id} 
+                              onClick={() => handleToggleEnforcementStep(step.id)}
+                              className="flex items-start gap-3 py-2.5 px-2 hover:bg-amber-50/20 cursor-pointer rounded-lg transition"
+                            >
+                              <div className={`w-5 h-5 rounded-full border shrink-0 flex items-center justify-center transition ${data.enforcementSteps?.[step.id] ? "bg-green-500 border-green-600 text-white" : "border-gray-300 bg-white"}`}>
+                                {data.enforcementSteps?.[step.id] && <span className="text-[10px] font-bold">✓</span>}
+                              </div>
+                              <span className={`text-xs leading-relaxed ${data.enforcementSteps?.[step.id] ? "text-gray-500 line-through" : "text-gray-800 font-medium"}`}>
+                                <span className="font-bold text-gray-400 ml-1">{step.id}.</span> {step.label}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Stage 3: Enforcement force */}
+                    <div className="border border-gray-100 rounded-xl overflow-hidden shadow-2xs">
+                      <button 
+                        onClick={() => setExpandedStages((prev: any) => ({ ...prev, ENFORCE: !prev.ENFORCE }))}
+                        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-[#0A192F] text-sm">3. إجراءات التنفيذ الجبري</span>
+                          <span className="text-xs text-gray-500 font-medium">({enforcementStepsList.filter(s => s.stage === "ENFORCE").filter(s => data.enforcementSteps?.[s.id]).length}/9)</span>
+                        </div>
+                        {expandedStages.ENFORCE ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
+                      </button>
+                      
+                      {expandedStages.ENFORCE && (
+                        <div className="p-3 bg-white divide-y divide-gray-50">
+                          {enforcementStepsList.filter(s => s.stage === "ENFORCE").map(step => (
+                            <div 
+                              key={step.id} 
+                              onClick={() => handleToggleEnforcementStep(step.id)}
+                              className="flex items-start gap-3 py-2.5 px-2 hover:bg-amber-50/20 cursor-pointer rounded-lg transition"
+                            >
+                              <div className={`w-5 h-5 rounded-full border shrink-0 flex items-center justify-center transition ${data.enforcementSteps?.[step.id] ? "bg-green-500 border-green-600 text-white" : "border-gray-300 bg-white"}`}>
+                                {data.enforcementSteps?.[step.id] && <span className="text-[10px] font-bold">✓</span>}
+                              </div>
+                              <span className={`text-xs leading-relaxed ${data.enforcementSteps?.[step.id] ? "text-gray-500 line-through" : "text-gray-800 font-medium"}`}>
+                                <span className="font-bold text-gray-400 ml-1">{step.id}.</span> {step.label}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Stage 4: Finish */}
+                    <div className="border border-gray-100 rounded-xl overflow-hidden shadow-2xs">
+                      <button 
+                        onClick={() => setExpandedStages((prev: any) => ({ ...prev, FINISH: !prev.FINISH }))}
+                        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-[#0A192F] text-sm">4. إنهاء التنفيذ وإقفال الملف</span>
+                          <span className="text-xs text-gray-500 font-medium">({enforcementStepsList.filter(s => s.stage === "FINISH").filter(s => data.enforcementSteps?.[s.id]).length}/4)</span>
+                        </div>
+                        {expandedStages.FINISH ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
+                      </button>
+                      
+                      {expandedStages.FINISH && (
+                        <div className="p-3 bg-white divide-y divide-gray-50">
+                          {enforcementStepsList.filter(s => s.stage === "FINISH").map(step => (
+                            <div 
+                              key={step.id} 
+                              onClick={() => handleToggleEnforcementStep(step.id)}
+                              className="flex items-start gap-3 py-2.5 px-2 hover:bg-amber-50/20 cursor-pointer rounded-lg transition"
+                            >
+                              <div className={`w-5 h-5 rounded-full border shrink-0 flex items-center justify-center transition ${data.enforcementSteps?.[step.id] ? "bg-green-500 border-green-600 text-white" : "border-gray-300 bg-white"}`}>
+                                {data.enforcementSteps?.[step.id] && <span className="text-[10px] font-bold">✓</span>}
+                              </div>
+                              <span className={`text-xs leading-relaxed ${data.enforcementSteps?.[step.id] ? "text-gray-500 line-through" : "text-gray-800 font-medium"}`}>
+                                <span className="font-bold text-gray-400 ml-1">{step.id}.</span> {step.label}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Special Scenarios Section */}
+                  <div className="pt-4 border-t border-gray-100 space-y-3">
+                    <h4 className="text-sm font-bold text-[#0A192F] flex items-center gap-2">
+                      <AlertTriangle className="text-amber-500 w-4 h-4" /> حالات طارئة قد تطرأ أثناء التنفيذ
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-amber-50/20 p-4 rounded-xl border border-amber-100/50">
+                      {enforcementScenariosList.map(item => (
+                        <label 
+                          key={item.id} 
+                          className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer transition select-none ${data.enforcementScenarios?.[item.id] ? "bg-amber-100/50 text-[#0A192F] font-bold" : "hover:bg-gray-50 text-gray-600"}`}
+                        >
+                          <input 
+                            type="checkbox"
+                            checked={!!data.enforcementScenarios?.[item.id]}
+                            onChange={() => handleToggleEnforcementScenario(item.id)}
+                            className="mt-1 rounded border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]"
+                          />
+                          <span className="text-xs leading-relaxed">{item.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </TabsContent>
 

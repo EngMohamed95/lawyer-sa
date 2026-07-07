@@ -11,6 +11,7 @@ const caseTypeOptions = [
   { value: "LABOR", label: "عمالي" },
   { value: "FAMILY", label: "أسرة" },
   { value: "ADMINISTRATIVE", label: "إداري" },
+  { value: "ENFORCEMENT", label: "تنفيذ" },
   { value: "OTHER", label: "أخرى" },
 ];
 

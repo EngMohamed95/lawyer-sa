@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
@@ -8,6 +8,8 @@ import { Loader2 } from "lucide-react";
 
 export function EditClientModal({ isOpen, onClose, onSuccess, clientData }: { isOpen: boolean, onClose: () => void, onSuccess: () => void, clientData: any }) {
   const [loading, setLoading] = useState(false);
+  const currencyCode = localStorage.getItem("sys_currency") || "SAR";
+  const currencySymbol = currencyCode === "SAR" ? "ر.س" : currencyCode === "EGP" ? "ج.م" : "$";
   const [formData, setFormData] = useState({
     fullName: "",
     clientType: "INDIVIDUAL",
@@ -104,7 +106,7 @@ export function EditClientModal({ isOpen, onClose, onSuccess, clientData }: { is
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">أتعاب متوقعة (ج.م)</label>
+              <label className="text-sm font-bold text-[#0A192F]">أتعاب متوقعة ({currencySymbol})</label>
               <Input
                 type="number"
                 step="0.01"

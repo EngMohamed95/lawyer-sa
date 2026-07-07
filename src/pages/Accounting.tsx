@@ -18,6 +18,9 @@ export default function Accounting() {
   const lawyerId = localStorage.getItem("lawyerId");
   const userRole = localStorage.getItem("userRole");
 
+  const currencyCode = localStorage.getItem("sys_currency") || "SAR";
+  const currencySymbol = currencyCode === "SAR" ? "ر.س" : currencyCode === "EGP" ? "ج.م" : "$";
+
   const fetchAccountingData = async () => {
     setLoading(true);
     try {
@@ -49,7 +52,7 @@ export default function Accounting() {
       }, {});
 
       const payments = paymentsSnap.docs.map(doc => {
-        const p = doc.data();
+        const p = doc.data() as any;
         return {
           id: doc.id,
           ...p,
@@ -59,10 +62,10 @@ export default function Accounting() {
       });
 
       // Calculate Summary
-      const totalPaid = payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+      const totalPaid = payments.reduce((sum, p) => sum + (Number((p as any).amount) || 0), 0);
       
       // Calculate Total Owed (TotalFees - Paid)
-      const totalFees = clientsSnap.docs.reduce((sum, doc) => sum + (Number(doc.data().totalFees) || 0), 0);
+      const totalFees = clientsSnap.docs.reduce((sum, doc) => sum + (Number((doc.data() as any).totalFees) || 0), 0);
       const totalOwed = Math.max(0, totalFees - totalPaid);
 
       setData({
@@ -105,7 +108,7 @@ export default function Accounting() {
         "التاريخ": p.date ? new Date(p.date).toLocaleDateString("ar-EG") : "",
         "الموكل": p.client?.fullName || "",
         "القضية": p.caseRef?.title || "دفعة عامة أتعاب",
-        "المبلغ المستلم (ج.م)": p.amount || 0,
+        [`المبلغ المستلم (${currencySymbol})`]: p.amount || 0,
         "ملاحظات / البيان": p.notes || ""
       }));
 
@@ -117,7 +120,7 @@ export default function Accounting() {
       if (!worksheet['!views']) worksheet['!views'] = [];
       worksheet['!views'].push({ RTL: true });
 
-      XLSX.writeFile(workbook, "كشف_حساب_المدفوعات.xlsx");
+      XLSX.writeFile(workbook, `كشف_حساب_المدفوعات_${currencyCode}.xlsx`);
     } catch (err) {
       console.error("Excel export error:", err);
       alert("حدث خطأ أثناء تصدير كشف الحساب");
@@ -129,7 +132,7 @@ export default function Accounting() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-[#0A192F] tracking-tight">الحسابات</h1>
-          <p className="text-gray-500 mt-1">إدارة المدفوعات، الأتعاب، والمصروفات</p>
+          <p className="text-gray-500 mt-1 text-sm">إدارة المدفوعات، الأتعاب، والمصروفات بالعملة النشطة ({currencyCode})</p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button
@@ -161,7 +164,7 @@ export default function Accounting() {
             <div className="p-2 bg-green-50 rounded-xl"><DollarSign size={20} className="text-green-600" /></div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#0A192F]">{(data.summary?.totalPaid || 0).toLocaleString('ar-EG')} ج.م</div>
+            <div className="text-2xl font-bold text-[#0A192F]">{(data.summary?.totalPaid || 0).toLocaleString('ar-EG')} {currencySymbol}</div>
           </CardContent>
         </Card>
         <Card className="shadow-sm">
@@ -170,7 +173,7 @@ export default function Accounting() {
             <div className="p-2 bg-red-50 rounded-xl"><CreditCard size={20} className="text-red-600" /></div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#0A192F]">٠ ج.م</div>
+            <div className="text-2xl font-bold text-[#0A192F]">٠ {currencySymbol}</div>
           </CardContent>
         </Card>
         <Card className="shadow-sm">
@@ -179,7 +182,7 @@ export default function Accounting() {
             <div className="p-2 bg-orange-50 rounded-xl"><Banknote size={20} className="text-orange-600" /></div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#0A192F]">{(data.summary?.totalOwed || 0).toLocaleString('ar-EG')} ج.م</div>
+            <div className="text-2xl font-bold text-[#0A192F]">{(data.summary?.totalOwed || 0).toLocaleString('ar-EG')} {currencySymbol}</div>
           </CardContent>
         </Card>
       </div>
@@ -221,7 +224,7 @@ export default function Accounting() {
                            <div className="font-semibold text-[#0A192F]">{p.caseRef?.title || "دفعة عامة"}</div>
                            <div className="text-xs text-gray-500">{p.client?.fullName || "-"}</div>
                         </TableCell>
-                        <TableCell className="font-bold text-green-600">{(p.amount || 0).toLocaleString('ar-EG')} ج.م</TableCell>
+                        <TableCell className="font-bold text-green-600">{(p.amount || 0).toLocaleString('ar-EG')} {currencySymbol}</TableCell>
                         <TableCell className="hidden sm:table-cell">{p.notes || "-"}</TableCell>
                         {userRole === "SUPER_ADMIN" && <TableCell className="text-xs text-purple-600 hidden md:table-cell">{p.lawyerId || "غير محدد"}</TableCell>}
                       </TableRow>

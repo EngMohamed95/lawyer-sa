@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -135,6 +135,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
                 <option value="عمالي">عمالي</option>
                 <option value="أسرة">أسرة</option>
                 <option value="إداري">إداري</option>
+                <option value="تنفيذ">تنفيذ</option>
               </select>
             </div>
 

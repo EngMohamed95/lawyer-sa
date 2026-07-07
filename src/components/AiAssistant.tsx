@@ -203,9 +203,6 @@ export function AiAssistant() {
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setIsLoading(true);
 
-    const API_KEY = import.meta.env.VITE_GROQ_API_KEY || "";
-    const API_URL = "https://api.groq.com/openai/v1/chat/completions";
-
     try {
       const history = messages.map(m => ({
         role: m.role === 'assistant' ? 'assistant' : 'user',
@@ -297,9 +294,12 @@ export function AiAssistant() {
         }
       }
 
-      const systemPrompt = `أنت مساعد قانوني ذكي محترف تعمل داخل منصة "LawyerOS" لإدارة مكاتب المحاماة في مصر.
+      const currencyCode = localStorage.getItem("sys_currency") || "SAR";
+      const countryContext = currencyCode === "SAR" ? "المملكة العربية السعودية" : currencyCode === "EGP" ? "جمهورية مصر العربية" : "مكتبك القانوني";
+      
+      const systemPrompt = `أنت مساعد قانوني ذكي محترف تعمل داخل منصة "LawyerOS" لإدارة مكاتب المحاماة في ${countryContext}.
 مهمتك هي مساعدة المحامي في تنظيم عمله، الإجابة على أسئلته القانونية بناءً على الملفات والقضايا والموكلين المتاحة في أرشيفه، وتقديم نصائح إدارية.
-تحدث دائماً بلهجة مهنية محترمة باللغة العربية.
+تحدث دائماً بلهجة مهنية محترمة باللغة العربية واعتمد في مراجعاتك وقوانينك على الأنظمة السارية في ${countryContext}.
 
 إليك فهرس كامل بكافة محتويات قاعدة بيانات مكتب المحامي حالياً:
 
@@ -321,36 +321,93 @@ ${detailedDocsContext ? `\nخامساً: تفاصيل المستندات ذات 
 4. عندما تقتبس معلومات من مستند معين، اذكر اسم المستند بوضوح.
 ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionInstruction}` : ""}`;
 
-      const response = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${API_KEY}`
-        },
-        body: JSON.stringify({
-          model: "llama-3.3-70b-versatile",
-          messages: [
-            {
-              role: "system",
-              content: systemPrompt
-            },
-            ...history,
-            { role: "user", content: userMsg }
-          ],
-          temperature: 0.7,
-          max_tokens: 1536
-        })
-      });
+      // AI Provider settings
+      const aiProvider = localStorage.getItem("sys_aiProvider") || "GEMINI";
+      const aiApiKey = localStorage.getItem("sys_aiApiKey") || "";
+      const aiModel = localStorage.getItem("sys_aiModel") || (aiProvider === "GEMINI" ? "gemini-2.5-pro" : "llama-3.3-70b-versatile");
 
-      const data = await response.json();
+      let responseText = "";
 
-      if (data.error) {
-        throw new Error(data.error.message || "خطأ من خادم Groq");
+      if (aiProvider === "GEMINI") {
+        const apiKeyToUse = aiApiKey || import.meta.env.VITE_GEMINI_API_KEY || "";
+        if (!apiKeyToUse) {
+          throw new Error("يرجى إدخال مفتاح Gemini API Key في شاشة الإعدادات للتمكن من الاتصال بالخدمة.");
+        }
+
+        // Map history to Gemini content structure (roles must be: user / model)
+        const geminiContents = [
+          {
+            role: "user",
+            parts: [{ text: systemPrompt }]
+          }
+        ];
+
+        history.forEach(m => {
+          geminiContents.push({
+            role: m.role === "assistant" ? "model" : "user",
+            parts: [{ text: m.content }]
+          });
+        });
+
+        geminiContents.push({
+          role: "user",
+          parts: [{ text: userMsg }]
+        });
+
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${aiModel}:generateContent?key=${apiKeyToUse}`;
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            contents: geminiContents,
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 2048
+            }
+          })
+        });
+
+        const data = await response.json();
+        if (data.error) {
+          throw new Error(data.error.message || "خطأ في معالجة طلب Gemini");
+        }
+        responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "عذراً، لم أتمكن من الحصول على رد من Gemini.";
+      } else {
+        // Groq API
+        const apiKeyToUse = aiApiKey || import.meta.env.VITE_GROQ_API_KEY || "";
+        const API_URL = "https://api.groq.com/openai/v1/chat/completions";
+
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKeyToUse}`
+          },
+          body: JSON.stringify({
+            model: aiModel,
+            messages: [
+              {
+                role: "system",
+                content: systemPrompt
+              },
+              ...history,
+              { role: "user", content: userMsg }
+            ],
+            temperature: 0.7,
+            max_tokens: 1536
+          })
+        });
+
+        const data = await response.json();
+        if (data.error) {
+          throw new Error(data.error.message || "خطأ في معالجة طلب Groq");
+        }
+        responseText = data.choices?.[0]?.message?.content || "لم يتم استلام رد من خادم الذكاء الاصطناعي.";
       }
 
-      const aiResponse = data.choices?.[0]?.message?.content || "عذراً، لم أستطع فهم ذلك. يرجى المحاولة مرة أخرى.";
-
-      setMessages(prev => [...prev, { role: 'assistant', content: aiResponse }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: responseText }]);
     } catch (error: any) {
       console.error("AI Error:", error);
       const errorMsg = error.message || "حدث خطأ غير معروف";
@@ -382,7 +439,7 @@ ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionIns
                   {!isMinimized && (
                     <span className="text-[10px] text-green-400">
                       {isDataLoaded 
-                        ? `متصل بالملفات (${documents.length} مستندات، ${clients.length} موكلين)` 
+                        ? `متصل (${localStorage.getItem("sys_aiProvider") || "GEMINI"}) | الملفات: ${documents.length}` 
                         : "جاري الاتصال بالأرشيف..."}
                     </span>
                   )}

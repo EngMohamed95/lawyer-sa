@@ -25,6 +25,9 @@ export default function Clients() {
   const userRole = localStorage.getItem("userRole");
   const lawyerId = localStorage.getItem("lawyerId");
 
+  const currencyCode = localStorage.getItem("sys_currency") || "SAR";
+  const currencySymbol = currencyCode === "SAR" ? "ر.س" : currencyCode === "EGP" ? "ج.م" : "$";
+
   const fetchClients = async () => {
     setLoading(true);
     try {
@@ -70,7 +73,7 @@ export default function Clients() {
         "النوع": c.clientType === "COMPANY" ? "شركة" : "فرد",
         "الهاتف": c.phone || "",
         "رقم الهوية / الضريبي": c.nationalId || "",
-        "الأتعاب المتوقعة (ج.م)": c.totalFees || 0,
+        [`الأتعاب المتوقعة (${currencySymbol})`]: c.totalFees || 0,
         "العنوان": c.address || "",
         "تاريخ الإضافة": c.createdAt ? new Date(c.createdAt).toLocaleDateString("ar-EG") : ""
       }));
@@ -83,7 +86,7 @@ export default function Clients() {
       if (!worksheet['!views']) worksheet['!views'] = [];
       worksheet['!views'].push({ RTL: true });
 
-      XLSX.writeFile(workbook, "قائمة_الموكلين.xlsx");
+      XLSX.writeFile(workbook, `قائمة_الموكلين_${currencyCode}.xlsx`);
     } catch (err) {
       console.error("Excel export error:", err);
       alert("حدث خطأ أثناء تصدير ملف الإكسل");
