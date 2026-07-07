@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Outlet, Link, useLocation, Navigate, useNavigate } from "react-router";
-import { LayoutDashboard, Users, Briefcase, Calendar, CheckSquare, FileText, Settings, Bell, Search, Menu, Calculator, GraduationCap, BarChart, LogOut, Shield, CreditCard, Loader2 } from "lucide-react";
+import { LayoutDashboard, Users, Briefcase, Calendar, CheckSquare, FileText, Settings, Bell, Search, Menu, Calculator, GraduationCap, BarChart, LogOut, Shield, CreditCard, Loader2, BookOpen } from "lucide-react";
 import { useState, lazy, Suspense, useEffect, useRef } from "react";
 import { collection, getDocs, query, where, collectionGroup, limit } from "firebase/firestore";
 import { db } from "./lib/firebase";
@@ -25,6 +25,7 @@ const SettingsPage = lazy(() => import("./pages/Settings"));
 const Lawyers = lazy(() => import("./pages/Lawyers"));
 const SubscriptionRequests = lazy(() => import("./pages/SubscriptionRequests"));
 const SubscribePage = lazy(() => import("./pages/SubscribePage"));
+const LegalLibrary = lazy(() => import("./pages/LegalLibrary"));
 
 function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const location = useLocation();
@@ -49,6 +50,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
     
     // Baka 3: Premium (Reports + AI services)
     { name: "التقارير", path: "/app/reports", icon: <BarChart size={20} />, hidden: userRole === "TRAINEE" || userRole === "SUPER_ADMIN" || (userRole === "LAWYER" && localStorage.getItem("userPlan") !== "PREMIUM") },
+    { name: "المكتبة القانونية", path: "/app/library", icon: <BookOpen size={20} />, hidden: userRole === "SUPER_ADMIN" },
   ];
 
   const handleLogout = () => {
@@ -537,6 +539,7 @@ export default function App() {
             <Route path="accounting" element={<Accounting />} />
             <Route path="trainees" element={<Trainees />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="library" element={<LegalLibrary />} />
             <Route path="subscriptions" element={<SubscriptionRequests />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
