@@ -7,13 +7,15 @@ import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { AddPaymentModal } from "../components/AddPaymentModal";
+import { AddExpenseModal } from "../components/AddExpenseModal";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
 export default function Accounting() {
-  const [data, setData] = useState<any>({ payments: [], expenses: [], summary: { totalPaid: 0, totalOwed: 0 } });
+  const [data, setData] = useState<any>({ payments: [], expenses: [], summary: { totalPaid: 0, totalOwed: 0, totalExpenses: 0 } });
   const [loading, setLoading] = useState(true);
   const [isAddPaymentOpen, setIsAddPaymentOpen] = useState(false);
+  const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
 
   const lawyerId = localStorage.getItem("lawyerId");
   const userRole = localStorage.getItem("userRole");
@@ -27,18 +29,21 @@ export default function Accounting() {
       let paymentsQ: any = collection(db, "payments");
       let clientsQ: any = collection(db, "clients");
       let casesQ: any = collection(db, "cases");
+      let expensesQ: any = collection(db, "expenses");
 
       // SaaS Filtering: Only show financial data belonging to this lawyer
       if (userRole !== "SUPER_ADMIN") {
         paymentsQ = query(collection(db, "payments"), where("lawyerId", "==", lawyerId));
         clientsQ = query(collection(db, "clients"), where("lawyerId", "==", lawyerId));
         casesQ = query(collection(db, "cases"), where("lawyerId", "==", lawyerId));
+        expensesQ = query(collection(db, "expenses"), where("lawyerId", "==", lawyerId));
       }
 
-      const [paymentsSnap, clientsSnap, casesSnap] = await Promise.all([
+      const [paymentsSnap, clientsSnap, casesSnap, expensesSnap] = await Promise.all([
         getDocs(paymentsQ),
         getDocs(clientsQ),
-        getDocs(casesQ)
+        getDocs(casesQ),
+        getDocs(expensesQ)
       ]);
 
       const clients = clientsSnap.docs.reduce((acc: any, doc) => {
@@ -61,8 +66,18 @@ export default function Accounting() {
         };
       });
 
+      const expenses = expensesSnap.docs.map(doc => {
+        const e = doc.data() as any;
+        return {
+          id: doc.id,
+          ...e,
+          caseRef: cases[e.caseId] || null
+        };
+      });
+
       // Calculate Summary
       const totalPaid = payments.reduce((sum, p) => sum + (Number((p as any).amount) || 0), 0);
+      const totalExpenses = expenses.reduce((sum, e) => sum + (Number((e as any).amount) || 0), 0);
       
       // Calculate Total Owed (TotalFees - Paid)
       const totalFees = clientsSnap.docs.reduce((sum, doc) => sum + (Number((doc.data() as any).totalFees) || 0), 0);
@@ -70,8 +85,8 @@ export default function Accounting() {
 
       setData({
         payments,
-        expenses: [], 
-        summary: { totalPaid, totalOwed }
+        expenses, 
+        summary: { totalPaid, totalOwed, totalExpenses }
       });
     } catch (error) {
       console.error("Error fetching accounting data:", error);
@@ -142,7 +157,11 @@ export default function Accounting() {
           >
             <FileSpreadsheet className="ml-2 h-5 w-5 text-green-600" /> تصدير كشف الحساب
           </Button>
-          <Button variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 font-bold">
+          <Button 
+            onClick={() => setIsAddExpenseOpen(true)}
+            variant="outline" 
+            className="text-red-600 border-red-200 hover:bg-red-50 font-bold"
+          >
             <Plus className="ml-2 h-4 w-4" /> إضافة مصروف
           </Button>
           <Button className="bg-[#D4AF37] hover:bg-[#B8962E] text-white font-bold" onClick={() => setIsAddPaymentOpen(true)}>
@@ -154,6 +173,12 @@ export default function Accounting() {
       <AddPaymentModal
         isOpen={isAddPaymentOpen}
         onClose={() => setIsAddPaymentOpen(false)}
+        onSuccess={fetchAccountingData}
+      />
+
+      <AddExpenseModal
+        isOpen={isAddExpenseOpen}
+        onClose={() => setIsAddExpenseOpen(false)}
         onSuccess={fetchAccountingData}
       />
 
@@ -169,11 +194,11 @@ export default function Accounting() {
         </Card>
         <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">إجمالي المصروفات (الشهر)</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-600">إجمالي المصروفات</CardTitle>
             <div className="p-2 bg-red-50 rounded-xl"><CreditCard size={20} className="text-red-600" /></div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#0A192F]">٠ {currencySymbol}</div>
+            <div className="text-2xl font-bold text-[#0A192F]">{(data.summary?.totalExpenses || 0).toLocaleString('ar-EG')} {currencySymbol}</div>
           </CardContent>
         </Card>
         <Card className="shadow-sm">
@@ -239,13 +264,31 @@ export default function Accounting() {
                 <TableHeader className="bg-white">
                   <TableRow>
                     <TableHead className="text-right font-bold text-[#0A192F]">التاريخ</TableHead>
-                    <TableHead className="text-right font-bold text-[#0A192F]">النوع</TableHead>
+                    <TableHead className="text-right font-bold text-[#0A192F]">النوع / القضية</TableHead>
                     <TableHead className="text-right font-bold text-[#0A192F]">المبلغ</TableHead>
-                    <TableHead className="text-right font-bold text-[#0A192F]">البيان</TableHead>
+                    <TableHead className="text-right font-bold text-[#0A192F]">البيان / ملاحظات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow><TableCell colSpan={4} className="text-center py-10 text-gray-500">لا يوجد مصروفات مسجلة</TableCell></TableRow>
+                  {loading ? (
+                    <TableRow><TableCell colSpan={4} className="text-center py-10">جاري التحميل...</TableCell></TableRow>
+                  ) : !Array.isArray(data?.expenses) || data.expenses.length === 0 ? (
+                    <TableRow><TableCell colSpan={4} className="text-center py-10 text-gray-500">لا يوجد مصروفات مسجلة</TableCell></TableRow>
+                  ) : (
+                    data.expenses.map((e: any) => (
+                      <TableRow key={e.id} className="hover:bg-gray-50/50">
+                        <TableCell dir="ltr" className="text-right">{e.date ? new Date(e.date).toLocaleDateString('ar-EG') : "-"}</TableCell>
+                        <TableCell>
+                           <div className="font-semibold text-[#0A192F]">
+                             {e.type === "COURT" ? "رسوم قضائية" : e.type === "TRANSPORTATION" ? "انتقالات ومواصلات" : e.type === "DOCUMENT" ? "أوراق ومستندات" : "أخرى"}
+                           </div>
+                           <div className="text-xs text-gray-500">{e.caseRef?.title || "مصروف عام"}</div>
+                        </TableCell>
+                        <TableCell className="font-bold text-red-600">{(e.amount || 0).toLocaleString('ar-EG')} {currencySymbol}</TableCell>
+                        <TableCell>{e.notes || "-"}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </TabsContent>
