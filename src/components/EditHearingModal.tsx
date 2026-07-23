@@ -2,100 +2,94 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 
-export function AddHearingModal({ isOpen, onClose, onSuccess, caseId }: { isOpen: boolean, onClose: () => void, onSuccess: () => void, caseId?: string }) {
+interface EditHearingModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  caseId: string;
+  hearingData: any | null;
+}
+
+export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingData }: EditHearingModalProps) {
   const [loading, setLoading] = useState(false);
-  const [cases, setCases] = useState<any[]>([]);
   const [formData, setFormData] = useState({
-    hearingDate: new Date().toISOString().split('T')[0],
+    hearingDate: "",
     court: "",
     circuit: "",
     requiredActions: "",
     result: "",
     nextHearingDate: "",
-    selectedCaseId: caseId || "",
     minutesText: "",
     judgmentText: "",
   });
+  
   const [minutesFile, setMinutesFile] = useState<File | null>(null);
   const [judgmentFile, setJudgmentFile] = useState<File | null>(null);
+  const [minutesFileUrl, setMinutesFileUrl] = useState("");
+  const [minutesFileName, setMinutesFileName] = useState("");
+  const [judgmentFileUrl, setJudgmentFileUrl] = useState("");
+  const [judgmentFileName, setJudgmentFileName] = useState("");
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isOpen && !caseId) {
-      const fetchCases = async () => {
-        try {
-          const { collection, getDocs, query, where, limit } = await import("firebase/firestore");
-          const { db } = await import("../lib/firebase");
-          const lawyerId = localStorage.getItem("lawyerId");
-          const userRole = localStorage.getItem("userRole");
-          const snap = await getDocs(
-            userRole !== "SUPER_ADMIN"
-              ? query(collection(db, "cases"), where("lawyerId", "==", lawyerId), limit(100))
-              : query(collection(db, "cases"), limit(100))
-          );
-          setCases(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-        } catch (error) {
-          console.error(error);
-        }
-      };
-      fetchCases();
-    }
-    if (isOpen) {
-      setFormData(prev => ({ 
-        ...prev, 
-        selectedCaseId: caseId || "",
-        hearingDate: new Date().toISOString().split('T')[0],
-        minutesText: "",
-        judgmentText: "",
-      }));
+    if (isOpen && hearingData) {
+      setFormData({
+        hearingDate: hearingData.hearingDate || "",
+        court: hearingData.court || "",
+        circuit: hearingData.circuit || "",
+        requiredActions: hearingData.requiredActions || "",
+        result: hearingData.result || "",
+        nextHearingDate: hearingData.nextHearingDate || "",
+        minutesText: hearingData.minutesText || "",
+        judgmentText: hearingData.judgmentText || "",
+      });
+      setMinutesFileUrl(hearingData.minutesFileUrl || "");
+      setMinutesFileName(hearingData.minutesFileName || "");
+      setJudgmentFileUrl(hearingData.judgmentFileUrl || "");
+      setJudgmentFileName(hearingData.judgmentFileName || "");
       setMinutesFile(null);
       setJudgmentFile(null);
       setUploadStatus(null);
     }
-  }, [isOpen, caseId]);
+  }, [isOpen, hearingData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.selectedCaseId) return;
+    if (!caseId || !hearingData) return;
     setLoading(true);
-    setUploadStatus("جاري تهيئة البيانات...");
+    setUploadStatus("جاري تحديث البيانات...");
     try {
-      const { collection, addDoc, doc, getDoc } = await import("firebase/firestore");
+      const { doc, updateDoc } = await import("firebase/firestore");
       const { db } = await import("../lib/firebase");
-      const lawyerId = localStorage.getItem("lawyerId");
 
-      // Fetch case details to denormalize title and number
-      const caseDoc = await getDoc(doc(db, "cases", formData.selectedCaseId));
-      const caseData = caseDoc.exists() ? caseDoc.data() : {};
-      
-      let minutesFileUrl = "";
-      let minutesFileName = "";
+      let finalMinutesFileUrl = minutesFileUrl;
+      let finalMinutesFileName = minutesFileName;
       if (minutesFile) {
-        setUploadStatus("جاري رفع ملف محضر الضبط...");
+        setUploadStatus("جاري رفع ملف محضر الضبط الجديد...");
         const fd = new FormData();
         fd.append("file", minutesFile);
         const res = await fetch("/upload.php", { method: "POST", body: fd });
         if (!res.ok) throw new Error("فشل رفع ملف محضر الضبط");
         const json = await res.json();
         if (json.error) throw new Error(json.error);
-        minutesFileUrl = json.fileUrl;
-        minutesFileName = minutesFile.name;
+        finalMinutesFileUrl = json.fileUrl;
+        finalMinutesFileName = minutesFile.name;
       }
 
-      let judgmentFileUrl = "";
-      let judgmentFileName = "";
+      let finalJudgmentFileUrl = judgmentFileUrl;
+      let finalJudgmentFileName = judgmentFileName;
       if (judgmentFile) {
-        setUploadStatus("جاري رفع ملف حكم الجلسة...");
+        setUploadStatus("جاري رفع ملف حكم الجلسة الجديد...");
         const fd = new FormData();
         fd.append("file", judgmentFile);
         const res = await fetch("/upload.php", { method: "POST", body: fd });
         if (!res.ok) throw new Error("فشل رفع ملف صك الحكم");
         const json = await res.json();
         if (json.error) throw new Error(json.error);
-        judgmentFileUrl = json.fileUrl;
-        judgmentFileName = judgmentFile.name;
+        finalJudgmentFileUrl = json.fileUrl;
+        finalJudgmentFileName = judgmentFile.name;
       }
 
       const payload = {
@@ -105,70 +99,66 @@ export function AddHearingModal({ isOpen, onClose, onSuccess, caseId }: { isOpen
         requiredActions: formData.requiredActions,
         result: formData.result,
         nextHearingDate: formData.nextHearingDate || null,
-        caseTitle: caseData.title || "بدون عنوان",
-        caseNumber: caseData.caseNumber || "---",
-        lawyerId,
         minutesText: formData.minutesText,
-        minutesFileUrl,
-        minutesFileName,
+        minutesFileUrl: finalMinutesFileUrl,
+        minutesFileName: finalMinutesFileName,
         judgmentText: formData.judgmentText,
-        judgmentFileUrl,
-        judgmentFileName,
-        createdAt: new Date().toISOString()
+        judgmentFileUrl: finalJudgmentFileUrl,
+        judgmentFileName: finalJudgmentFileName,
+        updatedAt: new Date().toISOString()
       };
 
-      await addDoc(collection(doc(db, "cases", formData.selectedCaseId), "hearings"), payload);
+      await updateDoc(doc(db, "cases", caseId, "hearings", hearingData.id), payload);
       
       onSuccess();
       onClose();
-      setFormData({ 
-        hearingDate: new Date().toISOString().split('T')[0], 
-        court: "", 
-        circuit: "", 
-        requiredActions: "", 
-        result: "",
-        nextHearingDate: "",
-        selectedCaseId: caseId || "",
-        minutesText: "",
-        judgmentText: "",
-      });
-      setMinutesFile(null);
-      setJudgmentFile(null);
-      setUploadStatus(null);
     } catch (error: any) {
       console.error(error);
-      alert("فشل حفظ الجلسة: " + error.message);
+      alert("فشل تحديث الجلسة: " + error.message);
     } finally {
       setLoading(false);
       setUploadStatus(null);
     }
   };
 
+  const handleDeleteHearing = async () => {
+    if (!window.confirm("هل أنت متأكد من حذف هذه الجلسة نهائياً؟")) return;
+    setLoading(true);
+    try {
+      const { doc, deleteDoc } = await import("firebase/firestore");
+      const { db } = await import("../lib/firebase");
+      await deleteDoc(doc(db, "cases", caseId, "hearings", hearingData.id));
+      onSuccess();
+      onClose();
+    } catch (error: any) {
+      console.error(error);
+      alert("فشل حذف الجلسة: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto" dir="rtl">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-[#0A192F]">إضافة جلسة جديدة</DialogTitle>
+        <DialogHeader className="flex flex-row justify-between items-center">
+          <DialogTitle className="text-xl font-bold text-[#0A192F]">تعديل بيانات الجلسة</DialogTitle>
+          {hearingData && (
+            <Button 
+              type="button" 
+              variant="ghost" 
+              size="icon" 
+              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+              onClick={handleDeleteHearing}
+              disabled={loading}
+              title="حذف الجلسة نهائياً"
+            >
+              <Trash2 className="h-5 w-5" />
+            </Button>
+          )}
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
-          {!caseId && (
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">القضية *</label>
-              <select 
-                required
-                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                value={formData.selectedCaseId}
-                onChange={e => setFormData({...formData, selectedCaseId: e.target.value})}
-              >
-                <option value="">اختر القضية...</option>
-                {cases.map(c => (
-                  <option key={c.id} value={c.id}>{c.caseNumber} - {c.title}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-bold text-[#0A192F]">تاريخ الجلسة *</label>
@@ -184,7 +174,7 @@ export function AddHearingModal({ isOpen, onClose, onSuccess, caseId }: { isOpen
               <label className="text-sm font-bold text-[#0A192F]">تاريخ الجلسة القادمة</label>
               <Input 
                 type="date"
-                value={formData.nextHearingDate}
+                value={formData.nextHearingDate || ""}
                 onChange={e => setFormData({...formData, nextHearingDate: e.target.value})}
               />
             </div>
@@ -229,7 +219,7 @@ export function AddHearingModal({ isOpen, onClose, onSuccess, caseId }: { isOpen
             />
           </div>
 
-          <div className="space-y-2 border-t pt-2 text-xs font-bold text-gray-500">أرشفة الجلسة (اختياري)</div>
+          <div className="space-y-2 border-t pt-2 text-xs font-bold text-gray-500">أرشفة الجلسة (محاضر الضبط والأحكام)</div>
 
           <div className="space-y-2">
             <label className="text-sm font-bold text-[#0A192F]">محضر الضبط (نصي)</label>
@@ -243,12 +233,25 @@ export function AddHearingModal({ isOpen, onClose, onSuccess, caseId }: { isOpen
 
           <div className="space-y-1">
             <label className="text-sm font-bold text-[#0A192F]">ملف محضر الضبط</label>
+            {minutesFileName && (
+              <div className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs mb-1">
+                <span className="truncate max-w-[200px] text-gray-700">{minutesFileName}</span>
+                <Button 
+                  type="button" 
+                  variant="link" 
+                  className="text-red-500 h-auto p-0 font-normal hover:text-red-700"
+                  onClick={() => { setMinutesFileUrl(""); setMinutesFileName(""); }}
+                >
+                  إزالة الملف الحالي
+                </Button>
+              </div>
+            )}
             <Input 
                type="file"
                onChange={e => setMinutesFile(e.target.files?.[0] || null)}
                className="bg-white"
             />
-            {minutesFile && <p className="text-[10px] text-gray-500">تم اختيار: {minutesFile.name}</p>}
+            {minutesFile && <p className="text-[10px] text-gray-500">تم اختيار ملف جديد: {minutesFile.name}</p>}
           </div>
 
           <div className="space-y-2">
@@ -263,12 +266,25 @@ export function AddHearingModal({ isOpen, onClose, onSuccess, caseId }: { isOpen
 
           <div className="space-y-1">
             <label className="text-sm font-bold text-[#0A192F]">ملف حكم الجلسة / القرار</label>
+            {judgmentFileName && (
+              <div className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs mb-1">
+                <span className="truncate max-w-[200px] text-gray-700">{judgmentFileName}</span>
+                <Button 
+                  type="button" 
+                  variant="link" 
+                  className="text-red-500 h-auto p-0 font-normal hover:text-red-700"
+                  onClick={() => { setJudgmentFileUrl(""); setJudgmentFileName(""); }}
+                >
+                  إزالة الملف الحالي
+                </Button>
+              </div>
+            )}
             <Input 
                type="file"
                onChange={e => setJudgmentFile(e.target.files?.[0] || null)}
                className="bg-white"
             />
-            {judgmentFile && <p className="text-[10px] text-gray-500">تم اختيار: {judgmentFile.name}</p>}
+            {judgmentFile && <p className="text-[10px] text-gray-500">تم اختيار ملف جديد: {judgmentFile.name}</p>}
           </div>
 
           {uploadStatus && (
@@ -281,7 +297,7 @@ export function AddHearingModal({ isOpen, onClose, onSuccess, caseId }: { isOpen
             <Button type="button" variant="outline" onClick={onClose}>إلغاء</Button>
             <Button type="submit" disabled={loading} className="bg-[#0A192F] hover:bg-[#0A192F]/90 text-white">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              حفظ الجلسة
+              حفظ التعديلات
             </Button>
           </DialogFooter>
         </form>

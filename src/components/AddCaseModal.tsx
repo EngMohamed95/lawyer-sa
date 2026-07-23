@@ -15,6 +15,10 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
     opponentName: "",
     opponentLawyer: "",
     courtName: "",
+    courtCircle: "",
+    plaintiffName: "",
+    defendantName: "",
+    caseSubject: "",
     startDate: new Date().toISOString().split('T')[0],
   });
 
@@ -69,6 +73,10 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
         opponentName: "",
         opponentLawyer: "",
         courtName: "",
+        courtCircle: "",
+        plaintiffName: "",
+        defendantName: "",
+        caseSubject: "",
         startDate: new Date().toISOString().split('T')[0],
       });
     } catch (error: any) {
@@ -81,7 +89,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]" dir="rtl">
+      <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-[#0A192F]">إضافة قضية جديدة</DialogTitle>
         </DialogHeader>
@@ -139,6 +147,26 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
               </select>
             </div>
 
+            <div className="space-y-2 border-t pt-2 md:col-span-2 text-xs font-bold text-gray-500">أطراف الدعوى والنزاع</div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-[#0A192F]">المدعي (المدعون)</label>
+              <Input 
+                value={formData.plaintiffName}
+                onChange={e => setFormData({...formData, plaintiffName: e.target.value})}
+                placeholder="اسم المدعي" 
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-[#0A192F]">المدعى عليه (المدعى عليهم)</label>
+              <Input 
+                value={formData.defendantName}
+                onChange={e => setFormData({...formData, defendantName: e.target.value})}
+                placeholder="اسم المدعى عليه" 
+              />
+            </div>
+
             <div className="space-y-2">
               <label className="text-sm font-bold text-[#0A192F]">اسم الخصم</label>
               <Input 
@@ -157,12 +185,32 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
               />
             </div>
 
+            <div className="space-y-2 border-t pt-2 md:col-span-2 text-xs font-bold text-gray-500">المحكمة وموضوع الدعوى</div>
+
             <div className="space-y-2">
               <label className="text-sm font-bold text-[#0A192F]">المحكمة المرفوع أمامها</label>
               <Input 
                 value={formData.courtName}
                 onChange={e => setFormData({...formData, courtName: e.target.value})}
-                placeholder="مثال: محكمة القاهرة الابتدائية" 
+                placeholder="مثال: المحكمة العامة بالرياض" 
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-[#0A192F]">الدائرة القضائية</label>
+              <Input 
+                value={formData.courtCircle}
+                onChange={e => setFormData({...formData, courtCircle: e.target.value})}
+                placeholder="مثال: الدائرة الحقوقية الثالثة" 
+              />
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-sm font-bold text-[#0A192F]">موضوع الدعوى / القضية</label>
+              <Input 
+                value={formData.caseSubject}
+                onChange={e => setFormData({...formData, caseSubject: e.target.value})}
+                placeholder="تفاصيل مختصرة لموضوع الدعوى..." 
               />
             </div>
 

@@ -184,7 +184,7 @@ export default function SettingsPage() {
 
     aiProvider: localStorage.getItem("sys_aiProvider") || "GEMINI",
     aiApiKey: localStorage.getItem("sys_aiApiKey") || "",
-    aiModel: localStorage.getItem("sys_aiModel") || "gemini-2.5-pro",
+    aiModel: localStorage.getItem("sys_aiModel") || "gemini-flash-latest",
     aiAnalysisEnabled: localStorage.getItem("sys_aiAnalysisEnabled") !== "false",
     aiDraftingEnabled: localStorage.getItem("sys_aiDraftingEnabled") !== "false",
     aiRisksEnabled: localStorage.getItem("sys_aiRisksEnabled") !== "false",
@@ -607,7 +607,7 @@ export default function SettingsPage() {
                             value={sysSettings.aiProvider}
                             onChange={e => {
                               const provider = e.target.value;
-                              let defModel = "gemini-2.5-pro";
+                              let defModel = "gemini-flash-latest";
                               if (provider === "GROQ") defModel = "llama-3.3-70b-versatile";
                               setSysSettings({ ...sysSettings, aiProvider: provider, aiModel: defModel });
                             }}
@@ -648,8 +648,10 @@ export default function SettingsPage() {
                           >
                             {sysSettings.aiProvider === "GEMINI" ? (
                               <>
-                                <option value="gemini-2.5-pro">Gemini 2.5 Pro (التحليل والاستنتاج القانوني)</option>
-                                <option value="gemini-2.5-flash">Gemini 2.5 Flash (التلخيص و OCR السريع)</option>
+                                <option value="gemini-flash-latest">Gemini Flash (الافتراضي السريع والمجاني - مستحسن)</option>
+                                <option value="gemini-pro-latest">Gemini Pro (التحليل الذكي والعميق)</option>
+                                <option value="gemini-3.5-flash">Gemini 3.5 Flash (إصدار حديث وسريع)</option>
+                                <option value="gemini-3.6-flash">Gemini 3.6 Flash (آخر إصدار مستقر)</option>
                               </>
                             ) : sysSettings.aiProvider === "GROQ" ? (
                               <>

@@ -11,10 +11,12 @@ import { AddHearingModal } from "../components/AddHearingModal";
 import { AddTaskModal } from "../components/AddTaskModal";
 import { EditCaseModal } from "../components/EditCaseModal";
 import { DocumentViewerModal } from "../components/DocumentViewerModal";
+import { EditHearingModal } from "../components/EditHearingModal";
+import { AiMemoDrafterModal } from "../components/AiMemoDrafterModal";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import RichTextEditor from "../components/RichTextEditor";
 import { Input } from "../components/ui/input";
-import { doc, getDoc, collection, getDocs, addDoc, updateDoc, query, where } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, addDoc, updateDoc, query, where, deleteField } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
 
@@ -117,6 +119,12 @@ export default function CaseDetails() {
   const [memoTitle, setMemoTitle] = useState("");
   const [memoContent, setMemoContent] = useState("");
   const [memoType, setMemoType] = useState("MEMO");
+
+  // New Case Modals & AI States
+  const [isEditHearingOpen, setIsEditHearingOpen] = useState(false);
+  const [selectedHearing, setSelectedHearing] = useState<any | null>(null);
+  const [isAiMemoDrafterOpen, setIsAiMemoDrafterOpen] = useState(false);
+  const [isSaveJudgmentLoading, setIsSaveJudgmentLoading] = useState(false);
 
   // Najiz integration states
   const [isSyncingNajiz, setIsSyncingNajiz] = useState(false);
@@ -392,6 +400,33 @@ export default function CaseDetails() {
         caseData={data}
       />
 
+      {isEditHearingOpen && selectedHearing && (
+        <EditHearingModal
+          isOpen={isEditHearingOpen}
+          onClose={() => {
+            setIsEditHearingOpen(false);
+            setSelectedHearing(null);
+          }}
+          onSuccess={fetchCaseData}
+          caseId={id!}
+          hearingData={selectedHearing}
+        />
+      )}
+
+      {isAiMemoDrafterOpen && (
+        <AiMemoDrafterModal
+          isOpen={isAiMemoDrafterOpen}
+          onClose={() => setIsAiMemoDrafterOpen(false)}
+          caseData={data}
+          onDraftCompleted={(title, type, content) => {
+            setMemoTitle(title);
+            setMemoType(type);
+            setMemoContent(content);
+            setIsWritingMemo(true);
+          }}
+        />
+      )}
+
       {activeAiTarget && (
         <AiSummarizerModal 
           isOpen={!!activeAiTarget} 
@@ -466,6 +501,10 @@ export default function CaseDetails() {
             <CheckSquare className="w-4 h-4 ml-2" /> المهام
             <Badge variant="secondary" className="mr-2 px-1.5 py-0 min-w-5 h-5 flex items-center justify-center rounded-full text-xs">{data.tasks.length}</Badge>
           </TabsTrigger>
+          <TabsTrigger value="judgment" className="data-[state=active]:bg-white data-[state=active]:border-t-2 data-[state=active]:border-[#0A192F] data-[state=active]:shadow-sm rounded-t-lg rounded-b-none px-6 py-3 font-semibold text-gray-600 data-[state=active]:text-[#0A192F]">
+            <Scale className="w-4 h-4 ml-2" /> الحكم القضائي
+            {data.finalJudgment && <Badge className="mr-2 bg-green-500 hover:bg-green-600 text-white font-bold text-[10px] px-1.5 py-0.5 rounded-full">صدر</Badge>}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="info" className="mt-0 outline-none space-y-6">
@@ -477,8 +516,16 @@ export default function CaseDetails() {
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex justify-between border-b pb-3 border-gray-100">
-                    <span className="text-gray-500">الموكل</span>
+                    <span className="text-gray-500">الموكل (العميل)</span>
                     <span className="font-bold text-[#0A192F]">{data.client?.fullName} <Badge variant="outline" className="mr-2 font-normal text-xs">{data.client?.clientType === 'COMPANY' ? 'شركة' : 'فرد'}</Badge></span>
+                  </div>
+                  <div className="flex justify-between border-b pb-3 border-gray-100">
+                    <span className="text-gray-500">المدعي (المدعون)</span>
+                    <span className="font-bold text-green-700">{data.plaintiffName || data.client?.fullName || "غير محدد"}</span>
+                  </div>
+                  <div className="flex justify-between border-b pb-3 border-gray-100">
+                    <span className="text-gray-500">المدعى عليه (المدعى عليهم)</span>
+                    <span className="font-bold text-red-700">{data.defendantName || data.opponentName || "غير محدد"}</span>
                   </div>
                   <div className="flex justify-between border-b pb-3 border-gray-100">
                     <span className="text-gray-500">الخصم</span>
@@ -503,6 +550,14 @@ export default function CaseDetails() {
                     <span className="font-medium">{data.type}</span>
                   </div>
                   <div className="flex justify-between border-b pb-3 border-gray-100">
+                    <span className="text-gray-500">المحكمة المرفوع أمامها</span>
+                    <span className="font-medium text-[#0A192F]">{data.courtName || "غير محدد"}</span>
+                  </div>
+                  <div className="flex justify-between border-b pb-3 border-gray-100">
+                    <span className="text-gray-500">الدائرة القضائية</span>
+                    <span className="font-medium text-[#0A192F]">{data.courtCircle || "غير محدد"}</span>
+                  </div>
+                  <div className="flex justify-between border-b pb-3 border-gray-100">
                     <span className="text-gray-500">تاريخ البداية</span>
                     <span className="font-medium" dir="ltr">{data.startDate ? new Date(data.startDate).toLocaleDateString('ar-EG') : "-"}</span>
                   </div>
@@ -511,6 +566,17 @@ export default function CaseDetails() {
                     <span className="font-medium border-b border-dashed border-gray-400 pb-0.5">{data.lawyerName || "غير محدد"}</span>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm md:col-span-2">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">موضوع الدعوى القضائية</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap bg-gray-50 p-4 rounded-lg border border-gray-100 font-medium">
+                  {data.caseSubject || "لم يتم تحديد موضوع تفصيلي للدعوى بعد."}
+                </p>
               </CardContent>
             </Card>
 
@@ -1048,13 +1114,15 @@ export default function CaseDetails() {
                   <TableRow className="bg-gray-50">
                     <TableHead className="text-right font-bold w-32 whitespace-nowrap">التاريخ</TableHead>
                     <TableHead className="text-right font-bold w-32 whitespace-nowrap">الرول/الدائرة</TableHead>
-                    <TableHead className="text-right font-bold min-w-[200px]">الطلبات / ما تم فيها</TableHead>
+                    <TableHead className="text-right font-bold min-w-[200px]">الالتمسات / ما تم فيها</TableHead>
                     <TableHead className="text-right font-bold w-48 whitespace-nowrap">القرار اللاحق</TableHead>
+                    <TableHead className="text-right font-bold min-w-[180px] whitespace-nowrap">أرشيف الجلسة (محاضر/أحكام)</TableHead>
+                    <TableHead className="text-center font-bold w-24 whitespace-nowrap">تعديل</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {data.hearings.length === 0 ? (
-                    <TableRow><TableCell colSpan={4} className="text-center py-8 text-gray-500">لا يوجد جلسات مسجلة</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-gray-500">لا يوجد جلسات مسجلة</TableCell></TableRow>
                   ) : (
                     data.hearings.map((h: any, index: number) => {
                       const isPast = new Date(h.hearingDate) < new Date();
@@ -1081,6 +1149,88 @@ export default function CaseDetails() {
                             {h.result ? (
                               <p className="text-red-700 font-medium text-sm bg-red-50 p-2 rounded-md inline-block w-full">{h.result}</p>
                             ) : <span className="text-gray-400">-</span>}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-2">
+                              {/* Minutes archiving */}
+                              {(h.minutesText || h.minutesFileUrl) ? (
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                                    <span className="text-[10px] font-bold text-gray-700">محضر الضبط:</span>
+                                  </div>
+                                  <div className="flex gap-1.5">
+                                    {h.minutesText && (
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="h-7 px-2 text-[10px] border-blue-200 text-blue-700 hover:bg-blue-50"
+                                        onClick={() => {
+                                          alert(`نص محضر الضبط:\n\n${h.minutesText}`);
+                                        }}
+                                      >
+                                        عرض النص
+                                      </Button>
+                                    )}
+                                    {h.minutesFileUrl && (
+                                      <a href={h.minutesFileUrl} target="_blank" rel="noreferrer" download>
+                                        <Button variant="outline" size="sm" className="h-7 px-2 text-[10px] border-gray-200 text-gray-700 hover:bg-gray-100">
+                                          تحميل
+                                        </Button>
+                                      </a>
+                                    )}
+                                  </div>
+                                </div>
+                              ) : null}
+
+                              {/* Judgment archiving */}
+                              {(h.judgmentText || h.judgmentFileUrl) ? (
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                                    <span className="text-[10px] font-bold text-gray-700">الحكم/القرار:</span>
+                                  </div>
+                                  <div className="flex gap-1.5">
+                                    {h.judgmentText && (
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="h-7 px-2 text-[10px] border-purple-200 text-purple-700 hover:bg-purple-50"
+                                        onClick={() => {
+                                          alert(`نص القرار/الحكم الصادر:\n\n${h.judgmentText}`);
+                                        }}
+                                      >
+                                        عرض النص
+                                      </Button>
+                                    )}
+                                    {h.judgmentFileUrl && (
+                                      <a href={h.judgmentFileUrl} target="_blank" rel="noreferrer" download>
+                                        <Button variant="outline" size="sm" className="h-7 px-2 text-[10px] border-gray-200 text-gray-700 hover:bg-gray-100">
+                                          تحميل
+                                        </Button>
+                                      </a>
+                                    )}
+                                  </div>
+                                </div>
+                              ) : null}
+
+                              {!(h.minutesText || h.minutesFileUrl || h.judgmentText || h.judgmentFileUrl) && (
+                                <span className="text-xs text-gray-400">لا يوجد أرشيف</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-[#0A192F] hover:bg-gray-100"
+                              onClick={() => {
+                                setSelectedHearing(h);
+                                setIsEditHearingOpen(true);
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       );
@@ -1444,6 +1594,203 @@ export default function CaseDetails() {
                </Table>
             </CardContent>
            </Card>
+         </TabsContent>
+
+        <TabsContent value="judgment" className="mt-0 outline-none space-y-6">
+          {data.finalJudgment ? (
+            <div className="space-y-6">
+              <Card className="shadow-sm border-green-200 bg-green-50/10">
+                <CardHeader className="pb-4 border-b border-green-100 flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg text-green-900 flex items-center gap-2">
+                      <Scale className="text-green-600 w-5 h-5" /> الحكم القضائي الصادر من المحكمة المختصة
+                    </CardTitle>
+                    <CardDescription className="text-gray-500">تم تسجيل صك الحكم النهائي وتاريخه</CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-green-300 text-green-800 hover:bg-green-100"
+                      onClick={() => {
+                        setActiveAiTarget({
+                          target: {
+                            title: "الحكم الصادر في قضية " + data.title,
+                            content: `تاريخ الحكم: ${data.finalJudgment.judgmentDate}\n\nمنطوق الحكم:\n${data.finalJudgment.judgmentRuling}\n\nأسباب وتفاصيل الحكم:\n${data.finalJudgment.judgmentDetails}`
+                          },
+                          type: 'memo'
+                        });
+                      }}
+                    >
+                      <Sparkles className="ml-1 h-3.5 w-3.5 text-green-600" /> تحليل بالـ AI
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-red-200 text-red-600 hover:bg-red-50"
+                      onClick={async () => {
+                        if (!window.confirm("هل أنت متأكد من حذف بيانات الحكم النهائي؟")) return;
+                        try {
+                          const { doc, updateDoc, deleteField } = await import("firebase/firestore");
+                          const { db } = await import("../lib/firebase");
+                          await updateDoc(doc(db, "cases", data.id), {
+                            finalJudgment: deleteField()
+                          });
+                          fetchCaseData();
+                        } catch (err) {
+                          console.error(err);
+                          alert("فشل حذف الحكم");
+                        }
+                      }}
+                    >
+                      حذف
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-1">
+                      <span className="text-sm font-bold text-gray-500">تاريخ صدور الحكم</span>
+                      <p className="text-base font-semibold text-[#0A192F]" dir="ltr">
+                        {new Date(data.finalJudgment.judgmentDate).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </p>
+                    </div>
+                    {data.finalJudgment.fileName && (
+                      <div className="space-y-1">
+                        <span className="text-sm font-bold text-gray-500">مرفق صك الحكم الرسمي</span>
+                        <div className="flex items-center gap-2 mt-1">
+                          <File className="h-4 w-4 text-green-600" />
+                          <a href={data.finalJudgment.fileUrl} target="_blank" rel="noreferrer" className="text-sm text-blue-600 underline font-semibold truncate hover:text-blue-800" download>
+                            {data.finalJudgment.fileName}
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border-t border-gray-100 pt-4 space-y-2">
+                    <span className="text-sm font-bold text-gray-500">منطوق الحكم النهائي</span>
+                    <p className="text-base text-gray-900 bg-white p-4 rounded-lg border border-gray-100 whitespace-pre-wrap leading-relaxed font-serif">
+                      {data.finalJudgment.judgmentRuling}
+                    </p>
+                  </div>
+
+                  {data.finalJudgment.judgmentDetails && (
+                    <div className="border-t border-gray-100 pt-4 space-y-2">
+                      <span className="text-sm font-bold text-gray-500">تفاصيل وأسباب الحكم</span>
+                      <p className="text-sm text-gray-700 bg-white p-4 rounded-lg border border-gray-100 whitespace-pre-wrap leading-relaxed">
+                        {data.finalJudgment.judgmentDetails}
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <Card className="shadow-sm">
+              <CardHeader className="pb-4 border-b">
+                <CardTitle className="text-lg text-[#0A192F]">تسجيل الحكم النهائي الصادر من المحكمة</CardTitle>
+                <CardDescription>أدخل بيانات صك الحكم النهائي الصادر لهذه القضية وأرشفة نسخته الرسمية</CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <form 
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const target = e.target as any;
+                    const date = target.elements.judgmentDate.value;
+                    const ruling = target.elements.judgmentRuling.value;
+                    const details = target.elements.judgmentDetails.value;
+                    const fileInput = target.elements.judgmentFile;
+                    
+                    if (!date || !ruling) {
+                      alert("الرجاء تعبئة الحقول الأساسية");
+                      return;
+                    }
+
+                    setIsSaveJudgmentLoading(true);
+                    try {
+                      let fileUrl = "";
+                      let fileName = "";
+                      if (fileInput.files && fileInput.files[0]) {
+                        const file = fileInput.files[0];
+                        const fd = new FormData();
+                        fd.append("file", file);
+                        const uploadRes = await fetch("/upload.php", { method: "POST", body: fd });
+                        if (!uploadRes.ok) throw new Error("فشل رفع صك الحكم");
+                        const uploadJson = await uploadRes.json();
+                        if (uploadJson.error) throw new Error(uploadJson.error);
+                        fileUrl = uploadJson.fileUrl;
+                        fileName = file.name;
+                      }
+
+                      const { doc, updateDoc } = await import("firebase/firestore");
+                      const { db } = await import("../lib/firebase");
+
+                      await updateDoc(doc(db, "cases", data.id), {
+                        finalJudgment: {
+                          judgmentDate: date,
+                          judgmentRuling: ruling,
+                          judgmentDetails: details,
+                          fileUrl,
+                          fileName,
+                          updatedAt: new Date().toISOString()
+                        }
+                      });
+
+                      fetchCaseData();
+                    } catch (error: any) {
+                      console.error(error);
+                      alert("حدث خطأ أثناء حفظ الحكم: " + error.message);
+                    } finally {
+                      setIsSaveJudgmentLoading(false);
+                    }
+                  }}
+                  className="space-y-4"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-[#0A192F]">تاريخ صدور الحكم *</label>
+                      <Input type="date" required name="judgmentDate" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-bold text-[#0A192F]">ملف صك الحكم الرسمي (PDF / صورة)</label>
+                      <Input type="file" name="judgmentFile" className="bg-white" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[#0A192F]">منطوق الحكم النهائي *</label>
+                    <textarea 
+                      required
+                      name="judgmentRuling"
+                      placeholder="اكتب منطوق الحكم الصادر كما ورد في صك الحكم..." 
+                      className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring font-serif leading-relaxed"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[#0A192F]">أسباب وتفاصيل الحكم (اختياري)</label>
+                    <textarea 
+                      name="judgmentDetails"
+                      placeholder="اكتب تفاصيل إضافية أو الحيثيات والأسباب التي بني عليها الحكم..." 
+                      className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring leading-relaxed"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-3 border-t pt-4">
+                    <Button 
+                      type="submit" 
+                      disabled={isSaveJudgmentLoading} 
+                      className="bg-green-600 hover:bg-green-700 text-white font-bold"
+                    >
+                      {isSaveJudgmentLoading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                      تسجيل وحفظ الحكم النهائي
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
       </Tabs>

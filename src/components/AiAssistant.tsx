@@ -324,7 +324,7 @@ ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionIns
       // AI Provider settings
       const aiProvider = localStorage.getItem("sys_aiProvider") || "GEMINI";
       const aiApiKey = localStorage.getItem("sys_aiApiKey") || "";
-      const aiModel = localStorage.getItem("sys_aiModel") || (aiProvider === "GEMINI" ? "gemini-2.5-pro" : "llama-3.3-70b-versatile");
+      const aiModel = localStorage.getItem("sys_aiModel") || (aiProvider === "GEMINI" ? "gemini-flash-latest" : "llama-3.3-70b-versatile");
 
       let responseText = "";
 
