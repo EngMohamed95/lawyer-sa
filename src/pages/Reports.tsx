@@ -238,55 +238,63 @@ export default function Reports() {
         <div className="space-y-6">
           {/* Section 1: KPI Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="shadow-xs border-gray-100">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-bold text-gray-500">إجمالي المقبوضات (الإيرادات)</CardTitle>
-                <div className="p-1.5 bg-green-50 rounded-lg"><DollarSign size={16} className="text-green-600" /></div>
+            <Card className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 p-0">
+                <CardTitle className="text-xs font-semibold text-slate-500">إجمالي المقبوضات (الإيرادات)</CardTitle>
+                <div className="p-2.5 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-600">
+                  <DollarSign size={20} />
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-xl font-black text-[#0A192F]">{(data.totalCollected || 0).toLocaleString('ar-EG')} {currencySymbol}</div>
-                <div className="text-[10px] text-green-600 mt-1 flex items-center gap-0.5">
-                  <ArrowUpRight size={10} /> مبالغ مستلمة من العملاء
+              <CardContent className="p-0 pt-2">
+                <div className="text-2xl font-extrabold text-[#0A192F]">{(data.totalCollected || 0).toLocaleString('ar-EG')} {currencySymbol}</div>
+                <div className="text-[11px] font-semibold text-emerald-600 mt-1 flex items-center gap-0.5">
+                  <ArrowUpRight size={12} /> مبالغ مستلمة من العملاء
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="shadow-xs border-gray-100">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-bold text-gray-500">إجمالي المصروفات</CardTitle>
-                <div className="p-1.5 bg-red-50 rounded-lg"><CreditCard size={16} className="text-red-600" /></div>
+            <Card className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 p-0">
+                <CardTitle className="text-xs font-semibold text-slate-500">إجمالي المصروفات</CardTitle>
+                <div className="p-2.5 bg-rose-50 border border-rose-100 rounded-xl text-rose-600">
+                  <CreditCard size={20} />
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-xl font-black text-[#0A192F]">{(data.totalExpenses || 0).toLocaleString('ar-EG')} {currencySymbol}</div>
-                <div className="text-[10px] text-red-500 mt-1 flex items-center gap-0.5">
-                  <ArrowDownRight size={10} /> رسوم قضائية ومصروفات إدارية
+              <CardContent className="p-0 pt-2">
+                <div className="text-2xl font-extrabold text-[#0A192F]">{(data.totalExpenses || 0).toLocaleString('ar-EG')} {currencySymbol}</div>
+                <div className="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-0.5">
+                  <ArrowDownRight size={12} /> رسوم قضائية ومصروفات إدارية
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="shadow-xs border-gray-100">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-bold text-gray-500">صافي الأرباح التشغيلية</CardTitle>
-                <div className="p-1.5 bg-blue-50 rounded-lg"><Wallet size={16} className="text-blue-600" /></div>
+            <Card className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 p-0">
+                <CardTitle className="text-xs font-semibold text-slate-500">صافي الأرباح التشغيلية</CardTitle>
+                <div className="p-2.5 bg-blue-50 border border-blue-100 rounded-xl text-blue-600">
+                  <Wallet size={20} />
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className={`text-xl font-black ${data.netProfit >= 0 ? "text-blue-700" : "text-red-600"}`}>
+              <CardContent className="p-0 pt-2">
+                <div className={`text-2xl font-extrabold ${data.netProfit >= 0 ? "text-blue-900" : "text-rose-600"}`}>
                   {(data.netProfit || 0).toLocaleString('ar-EG')} {currencySymbol}
                 </div>
-                <div className="text-[10px] text-gray-400 mt-1">
+                <div className="text-[11px] font-medium text-slate-400 mt-1">
                   الإيرادات مطروحاً منها المصروفات
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="shadow-xs border-gray-100">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-bold text-gray-500">المستحقات المعلقة (الديون)</CardTitle>
-                <div className="p-1.5 bg-amber-50 rounded-lg"><TrendingUp size={16} className="text-[#D4AF37]" /></div>
+            <Card className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 p-0">
+                <CardTitle className="text-xs font-semibold text-slate-500">المستحقات المعلقة (الديون)</CardTitle>
+                <div className="p-2.5 bg-amber-50 border border-amber-100 rounded-xl text-amber-600">
+                  <TrendingUp size={20} />
+                </div>
               </CardHeader>
-              <CardContent>
-                <div className="text-xl font-black text-amber-700">{(data.totalOwed || 0).toLocaleString('ar-EG')} {currencySymbol}</div>
-                <div className="text-[10px] text-amber-600 mt-1">
+              <CardContent className="p-0 pt-2">
+                <div className="text-2xl font-extrabold text-amber-700">{(data.totalOwed || 0).toLocaleString('ar-EG')} {currencySymbol}</div>
+                <div className="text-[11px] font-semibold text-amber-600 mt-1">
                   متبقي عقود الموكلين قيد التحصيل
                 </div>
               </CardContent>

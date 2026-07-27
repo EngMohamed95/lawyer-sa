@@ -165,41 +165,61 @@ export default function Dashboard() {
   }
 
   const statCards = [
-    { title: "إجمالي الموكلين", value: stats.totalClients, icon: <Users className="text-blue-600" />, color: "from-blue-50 to-white" },
-    { title: "إجمالي القضايا", value: stats.activeCases, icon: <Briefcase className="text-purple-600" />, color: "from-purple-50 to-white" },
-    { title: "الجلسات القادمة", value: stats.upcomingHearingsCount, icon: <Calendar className="text-amber-600" />, color: "from-amber-50 to-white" },
-    { title: "آخر القضايا", value: stats.recentCases.length, icon: <TrendingUp className="text-green-600" />, color: "from-green-50 to-white" },
+    { 
+      title: "إجمالي الموكلين", 
+      value: stats.totalClients, 
+      icon: <Users size={22} className="text-indigo-600" />, 
+      iconBg: "bg-indigo-100/70", 
+    },
+    { 
+      title: "إجمالي القضايا", 
+      value: stats.activeCases, 
+      icon: <Briefcase size={22} className="text-cyan-600" />, 
+      iconBg: "bg-cyan-100/70", 
+    },
+    { 
+      title: "الجلسات القادمة", 
+      value: stats.upcomingHearingsCount, 
+      icon: <Calendar size={22} className="text-amber-600" />, 
+      iconBg: "bg-amber-100/70", 
+    },
+    { 
+      title: "القضايا المضافة حديثاً", 
+      value: stats.recentCases.length, 
+      icon: <TrendingUp size={22} className="text-rose-600" />, 
+      iconBg: "bg-rose-100/70", 
+    },
   ];
 
   return (
     <div className="space-y-8">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-4xl font-black tracking-tight text-[#0A192F]">أهلا بك، {userName}</h1>
-          <p className="mt-2 text-lg text-gray-500">إليك ملخص سريع لأعمال المكتب اليوم.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-[#0A192F]">أهلا بك، {userName}</h1>
+          <p className="mt-1 text-base text-gray-500 font-medium">إليك ملخص سريع لأعمال المكتب اليوم.</p>
         </div>
-        <Badge className="border-none bg-green-100 px-4 py-2 font-bold text-green-700">النظام يعمل</Badge>
+        <Badge className="border-none bg-green-100 px-3 py-1 text-sm font-bold text-green-700">النظام يعمل</Badge>
       </div>
 
       {error && (
         <Card className="border-red-200 bg-red-50">
-          <CardContent className="flex items-center gap-3 p-4 text-red-700">
+          <CardContent className="flex items-center gap-3 p-4 text-red-700 font-medium">
             <AlertCircle size={20} />
             <span>{error}</span>
           </CardContent>
         </Card>
       )}
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
         {statCards.map(item => (
-          <Card key={item.title} className={`border-none bg-gradient-to-br ${item.color} shadow-md`}>
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
+          <Card key={item.title} className="bg-white border border-slate-100 shadow-md hover:shadow-lg transition-all rounded-2xl">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="mb-1 text-sm font-bold text-gray-500">{item.title}</p>
-                  <h3 className="text-3xl font-black text-[#0A192F]">{item.value}</h3>
+                  <p className="mb-2 text-xs font-semibold text-slate-400">{item.title}</p>
+                  <h3 className="text-3xl font-bold text-[#0A192F] tracking-tight">{item.value}</h3>
                 </div>
-                <div className="rounded-2xl bg-white p-3 shadow-sm">{item.icon}</div>
+                <div className={`rounded-2xl p-3.5 flex items-center justify-center shrink-0 ${item.iconBg}`}>{item.icon}</div>
               </div>
             </CardContent>
           </Card>
@@ -208,40 +228,40 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Recent Cases */}
-        <Card className="overflow-hidden border-none bg-white shadow-xl lg:col-span-2">
-          <CardHeader className="border-b bg-gray-50/70 p-6">
+        <Card className="overflow-hidden border border-slate-200/80 bg-white shadow-xs rounded-2xl lg:col-span-2">
+          <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-6">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0A192F] text-white">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0A192F] text-white shadow-xs">
                   <Briefcase size={20} />
                 </div>
-                <CardTitle className="text-xl font-bold">آخر القضايا المضافة</CardTitle>
+                <CardTitle className="text-xl font-bold text-[#0A192F]">آخر القضايا المضافة</CardTitle>
               </div>
               <Link to="/app/cases">
-                <Button variant="ghost" className="font-bold text-[#0A192F]">
+                <Button variant="ghost" className="font-bold text-[#0A192F] text-sm">
                   عرض الكل <ChevronRight size={16} className="mr-1 rotate-180" />
                 </Button>
               </Link>
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="divide-y">
+            <div className="divide-y divide-slate-100">
               {stats.recentCases.length === 0 ? (
-                <div className="p-10 text-center text-gray-500">لا توجد قضايا مضافة مؤخراً</div>
+                <div className="p-10 text-center text-gray-500 font-medium">لا توجد قضايا مضافة مؤخراً</div>
               ) : (
                 stats.recentCases.map(c => (
-                  <Link key={c.id} to={`/app/cases/${c.id}`} className="block p-5 transition-colors hover:bg-gray-50">
+                  <Link key={c.id} to={`/app/cases/${c.id}`} className="block p-5 transition-colors hover:bg-slate-50/60">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100 text-[#0A192F]">
-                          <Gavel size={24} />
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-[#0A192F] shrink-0">
+                          <Gavel size={22} />
                         </div>
                         <div>
-                          <p className="text-lg font-bold text-[#0A192F]">{c.title || "قضية بدون عنوان"}</p>
-                          <p className="text-sm text-gray-500">رقم القضية: {c.caseNumber || "---"}</p>
+                          <p className="text-base font-bold text-[#0A192F]">{c.title || "قضية بدون عنوان"}</p>
+                          <p className="text-sm font-medium text-gray-500">رقم القضية: {c.caseNumber || "---"}</p>
                         </div>
                       </div>
-                      <Badge className={c.status === "OPEN" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}>
+                      <Badge className={c.status === "OPEN" ? "bg-green-100 text-green-700 text-xs font-bold px-2.5 py-0.5" : "bg-slate-100 text-slate-700 text-xs font-bold px-2.5 py-0.5"}>
                         {c.status === "OPEN" ? "نشطة" : "مغلقة"}
                       </Badge>
                     </div>

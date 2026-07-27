@@ -3,10 +3,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Loader2 } from "lucide-react";
+import { AddClientModal } from "./AddClientModal";
 
 export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, onClose: () => void, onSuccess: () => void }) {
   const [loading, setLoading] = useState(false);
   const [clients, setClients] = useState<any[]>([]);
+  const [isAddClientOpen, setIsAddClientOpen] = useState(false);
+  const [clientRole, setClientRole] = useState("PLAINTIFF");
   const [formData, setFormData] = useState({
     title: "",
     caseNumber: "",
@@ -22,29 +25,30 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
     startDate: new Date().toISOString().split('T')[0],
   });
 
+  const fetchClients = async () => {
+    try {
+      const { collection, getDocs, query, orderBy } = await import("firebase/firestore");
+      const { db } = await import("../lib/firebase");
+      const lawyerId = localStorage.getItem("lawyerId");
+      const userRole = localStorage.getItem("userRole");
+
+      // Fetch all and filter in memory to avoid missing index errors
+      const q = query(collection(db, "clients"), orderBy("fullName", "asc"));
+      const snap = await getDocs(q);
+      
+      const allClients = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const filtered = allClients.filter((c: any) => 
+        userRole === "SUPER_ADMIN" || c.lawyerId === lawyerId
+      );
+      
+      setClients(filtered);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
-      const fetchClients = async () => {
-        try {
-          const { collection, getDocs, query, orderBy } = await import("firebase/firestore");
-          const { db } = await import("../lib/firebase");
-          const lawyerId = localStorage.getItem("lawyerId");
-          const userRole = localStorage.getItem("userRole");
-
-          // Fetch all and filter in memory to avoid missing index errors
-          const q = query(collection(db, "clients"), orderBy("fullName", "asc"));
-          const snap = await getDocs(q);
-          
-          const allClients = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          const filtered = allClients.filter((c: any) => 
-            userRole === "SUPER_ADMIN" || c.lawyerId === lawyerId
-          );
-          
-          setClients(filtered);
-        } catch (error) {
-          console.error(error);
-        }
-      };
       fetchClients();
     }
   }, [isOpen]);
@@ -56,8 +60,18 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
       const { collection, addDoc } = await import("firebase/firestore");
       const { db } = await import("../lib/firebase");
       const lawyerId = localStorage.getItem("lawyerId");
+
+      const selectedClient = clients.find(c => c.id === formData.clientId);
+      const clientName = selectedClient ? selectedClient.fullName : "";
+
+      const finalPlaintiffName = clientRole === "PLAINTIFF" ? clientName : formData.opponentName;
+      const finalDefendantName = clientRole === "PLAINTIFF" ? formData.opponentName : clientName;
+
       const data = {
         ...formData,
+        plaintiffName: finalPlaintiffName,
+        defendantName: finalDefendantName,
+        clientRole,
         lawyerId,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -79,6 +93,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
         caseSubject: "",
         startDate: new Date().toISOString().split('T')[0],
       });
+      setClientRole("PLAINTIFF");
     } catch (error: any) {
       console.error(error);
       alert("حدث خطأ أثناء حفظ القضية: " + error.message);
@@ -116,7 +131,16 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">الموكل *</label>
+              <div className="flex justify-between items-center">
+                <label className="text-sm font-bold text-[#0A192F]">الموكل *</label>
+                <button
+                  type="button"
+                  onClick={() => setIsAddClientOpen(true)}
+                  className="text-xs text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1"
+                >
+                  + إضافة موكل جديد
+                </button>
+              </div>
               <select 
                 required
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -149,35 +173,56 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
 
             <div className="space-y-2 border-t pt-2 md:col-span-2 text-xs font-bold text-gray-500">أطراف الدعوى والنزاع</div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">المدعي (المدعون)</label>
-              <Input 
-                value={formData.plaintiffName}
-                onChange={e => setFormData({...formData, plaintiffName: e.target.value})}
-                placeholder="اسم المدعي" 
-              />
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-sm font-bold text-[#0A192F]">صفة الموكل في القضية</label>
+              <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setClientRole("PLAINTIFF")}
+                  className={`flex-1 py-2 text-center text-sm font-bold rounded-lg transition-all ${
+                    clientRole === "PLAINTIFF"
+                      ? "bg-[#0A192F] text-white shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  مدعي (طالب الحق)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setClientRole("DEFENDANT")}
+                  className={`flex-1 py-2 text-center text-sm font-bold rounded-lg transition-all ${
+                    clientRole === "DEFENDANT"
+                      ? "bg-[#0A192F] text-white shadow-sm"
+                      : "text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  مدعى عليه (المطلوب منه)
+                </button>
+              </div>
+              <p className="text-xs font-medium mt-1">
+                {clientRole === "PLAINTIFF" ? (
+                  <span className="text-blue-700">← سيكون الموكل هو الطرف المدعي، والخصم هو الطرف المدعى عليه.</span>
+                ) : (
+                  <span className="text-rose-700">← سيكون الموكل هو الطرف المدعى عليه، والخصم هو الطرف المدعي.</span>
+                )}
+              </p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">المدعى عليه (المدعى عليهم)</label>
-              <Input 
-                value={formData.defendantName}
-                onChange={e => setFormData({...formData, defendantName: e.target.value})}
-                placeholder="اسم المدعى عليه" 
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">اسم الخصم</label>
+              <label className="text-sm font-bold text-[#0A192F]">
+                {clientRole === "PLAINTIFF" ? "اسم المدعى عليه (الخصم)" : "اسم المدعي (الخصم)"}
+              </label>
               <Input 
                 value={formData.opponentName}
                 onChange={e => setFormData({...formData, opponentName: e.target.value})}
-                placeholder="اسم الخصم" 
+                placeholder={clientRole === "PLAINTIFF" ? "اسم المدعى عليه" : "اسم المدعي"} 
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">محامي الخصم</label>
+              <label className="text-sm font-bold text-[#0A192F]">
+                {clientRole === "PLAINTIFF" ? "محامي المدعى عليه" : "محامي المدعي"}
+              </label>
               <Input 
                 value={formData.opponentLawyer}
                 onChange={e => setFormData({...formData, opponentLawyer: e.target.value})}
@@ -233,6 +278,15 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
             </Button>
           </DialogFooter>
         </form>
+
+        <AddClientModal 
+          isOpen={isAddClientOpen} 
+          onClose={() => setIsAddClientOpen(false)} 
+          onSuccess={() => {
+            fetchClients();
+            setIsAddClientOpen(false);
+          }} 
+        />
       </DialogContent>
     </Dialog>
   );

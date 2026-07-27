@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from "react";
-import { Plus, Search, File, Download, Folder, ChevronLeft, Home, User, Briefcase, Eye, Edit3, Trash2, Sparkles, FileSpreadsheet, Upload, FileCode, CheckCircle, AlertTriangle, Loader2, Bold, Italic, Underline, AlignRight, AlignCenter, AlignLeft, List, Heading1, Heading2, RotateCcw, Columns, Rows, FolderPlus, ChevronDown } from "lucide-react";
+import { Plus, Search, File, Download, Folder, ChevronLeft, Home, User, Briefcase, Eye, Edit3, Trash2, Sparkles, FileSpreadsheet, Upload, FileCode, CheckCircle, AlertTriangle, Loader2, Bold, Italic, Underline, AlignRight, AlignCenter, AlignLeft, List, Heading1, Heading2, RotateCcw, Columns, Rows, FolderPlus, ChevronDown, Save } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Button } from "../components/ui/button";
@@ -291,7 +291,13 @@ const LEGAL_TEMPLATES: LegalTemplate[] = [
   }
 ];
 
-export default function Documents() {
+export default function Documents({ 
+  embeddedCaseId, 
+  embeddedClientId 
+}: { 
+  embeddedCaseId?: string; 
+  embeddedClientId?: string; 
+}) {
   const [loading, setLoading] = useState(true);
   const [activeAiDoc, setActiveAiDoc] = useState<any>(null);
   const [editingDoc, setEditingDoc] = useState<any>(null);
@@ -374,7 +380,11 @@ export default function Documents() {
     mode: ViewMode;
     clientId: string | null;
     caseId: string | null;
-  }>({ mode: 'CLIENTS', clientId: null, caseId: null });
+  }>({ 
+    mode: embeddedCaseId ? 'DOCS' : 'CLIENTS', 
+    clientId: embeddedClientId || null, 
+    caseId: embeddedCaseId || null 
+  });
 
   const lawyerId = localStorage.getItem("lawyerId");
   const userRole = localStorage.getItem("userRole");
@@ -595,6 +605,130 @@ export default function Documents() {
     } catch (e) {
       console.error(e);
       alert("فشل الحذف");
+    }
+  };
+
+  const handleSaveGeneratedDoc = async (name: string, content: string) => {
+    const targetCaseId = embeddedCaseId || navigation.caseId;
+    const targetClientId = embeddedClientId || navigation.clientId;
+
+    if (!targetCaseId && !targetClientId) {
+      alert("يرجى اختيار قضية أو عميل أولاً من الخزانة الرقمية لحفظ المستند بها.");
+      return;
+    }
+
+    try {
+      const { collection, addDoc, doc } = await import("firebase/firestore");
+      const { db } = await import("../lib/firebase");
+      const lawyerId = localStorage.getItem("lawyerId");
+      
+      const payload = {
+        name: name || "مستند غير معنون",
+        type: "CONTRACT",
+        content: content,
+        fileUrl: "",
+        fileType: "text/html",
+        lawyerId,
+        uploadDate: new Date().toISOString(),
+      };
+
+      if (targetCaseId) {
+        await addDoc(collection(doc(db, "cases", targetCaseId), "documents"), payload);
+      } else if (targetClientId) {
+        await addDoc(collection(doc(db, "clients", targetClientId), "documents"), payload);
+      }
+
+      alert("تم حفظ المستند بنجاح في الخزانة الرقمية!");
+      fetchData();
+    } catch (e: any) {
+      console.error("Error saving document:", e);
+      alert("فشل حفظ المستند: " + e.message);
+    }
+  };
+
+  const handleSaveFreeExcel = async () => {
+    const targetCaseId = embeddedCaseId || navigation.caseId;
+    const targetClientId = embeddedClientId || navigation.clientId;
+
+    if (!targetCaseId && !targetClientId) {
+      alert("يرجى اختيار قضية أو عميل أولاً من الخزانة الرقمية لحفظ المستند بها.");
+      return;
+    }
+
+    try {
+      if (!(window as any).XLSX) {
+        const script = window.document.createElement("script");
+        script.src = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+        script.async = true;
+        window.document.body.appendChild(script);
+        await new Promise<void>((resolve) => {
+          script.onload = () => resolve();
+        });
+      }
+
+      const XLSX = (window as any).XLSX;
+      
+      const jsonRows = spreadsheetRows.map(row => {
+        const obj: Record<string, string> = {};
+        spreadsheetHeaders.forEach((h, index) => {
+          obj[h || `العمود ${index + 1}`] = row[index] || "";
+        });
+        return obj;
+      });
+
+      const worksheet = XLSX.utils.json_to_sheet(jsonRows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "ورقة ١");
+
+      if (!worksheet['!views']) worksheet['!views'] = [];
+      worksheet['!views'].push({ RTL: true });
+
+      const wopts: any = { bookType: 'xlsx', bookSST: false, type: 'binary' };
+      const wbout = XLSX.write(workbook, wopts);
+      
+      const buf = new ArrayBuffer(wbout.length);
+      const view = new Uint8Array(buf);
+      for (let i = 0; i !== wbout.length; ++i) view[i] = wbout.charCodeAt(i) & 0xFF;
+      
+      const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const file = new File([blob], `${freeExcelTitle}.xlsx`, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+      const formDataObj = new FormData();
+      formDataObj.append("file", file);
+
+      const response = await fetch("/upload.php", {
+        method: "POST",
+        body: formDataObj,
+      });
+
+      if (!response.ok) throw new Error("فشل الرفع للسيرفر");
+      const result = await response.json();
+      if (result.error) throw new Error(result.error);
+
+      const payload = {
+        name: `${freeExcelTitle}.xlsx`,
+        type: "OTHER",
+        fileUrl: result.fileUrl,
+        fileType: file.type,
+        content: "",
+        lawyerId: localStorage.getItem("lawyerId"),
+        uploadDate: new Date().toISOString(),
+      };
+
+      const { collection, addDoc, doc } = await import("firebase/firestore");
+      const { db } = await import("../lib/firebase");
+
+      if (targetCaseId) {
+        await addDoc(collection(doc(db, "cases", targetCaseId), "documents"), payload);
+      } else if (targetClientId) {
+        await addDoc(collection(doc(db, "clients", targetClientId), "documents"), payload);
+      }
+
+      alert("تم حفظ جدول البيانات بنجاح في الخزانة الرقمية!");
+      fetchData();
+    } catch (e: any) {
+      console.error(e);
+      alert("فشل حفظ الجدول: " + e.message);
     }
   };
 
@@ -1158,9 +1292,15 @@ export default function Documents() {
       {activeTab === 'ARCHIVE' && (
         <div className="space-y-6">
           <div className="flex items-center gap-2 text-sm text-gray-500 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-            <button onClick={() => setNavigation({ mode: 'CLIENTS', clientId: null, caseId: null })} className={`flex items-center gap-1 hover:text-[#0A192F] transition-colors ${navigation.mode === 'CLIENTS' ? 'text-[#D4AF37] font-bold' : ''}`}><Home size={16} /> الرئيسية</button>
-            {navigation.clientId && <><ChevronLeft size={14} className="text-gray-300" /><button onClick={() => setNavigation({ ...navigation, mode: 'CASES', caseId: null })} className={`flex items-center gap-1 hover:text-[#0A192F] transition-colors ${navigation.mode === 'CASES' ? 'text-[#D4AF37] font-bold' : ''}`}><User size={16} /> {selectedClient?.fullName}</button></>}
-            {navigation.caseId && <><ChevronLeft size={14} className="text-gray-300" /><span className="text-[#D4AF37] font-bold flex items-center gap-1"><Briefcase size={16} /> {selectedCase?.title}</span></>}
+            {embeddedCaseId ? (
+              <span className="text-[#D4AF37] font-bold flex items-center gap-1"><Briefcase size={16} /> أرشيف مستندات القضية الحالية</span>
+            ) : (
+              <>
+                <button onClick={() => setNavigation({ mode: 'CLIENTS', clientId: null, caseId: null })} className={`flex items-center gap-1 hover:text-[#0A192F] transition-colors ${navigation.mode === 'CLIENTS' ? 'text-[#D4AF37] font-bold' : ''}`}><Home size={16} /> الرئيسية</button>
+                {navigation.clientId && <><ChevronLeft size={14} className="text-gray-300" /><button onClick={() => setNavigation({ ...navigation, mode: 'CASES', caseId: null })} className={`flex items-center gap-1 hover:text-[#0A192F] transition-colors ${navigation.mode === 'CASES' ? 'text-[#D4AF37] font-bold' : ''}`}><User size={16} /> {selectedClient?.fullName}</button></>}
+                {navigation.caseId && <><ChevronLeft size={14} className="text-gray-300" /><span className="text-[#D4AF37] font-bold flex items-center gap-1"><Briefcase size={16} /> {selectedCase?.title}</span></>}
+              </>
+            )}
           </div>
 
           <Card className="shadow-sm border-gray-200 overflow-hidden bg-white">
@@ -1373,13 +1513,22 @@ export default function Documents() {
                   ))}
                 </div>
                 
-                <Button
-                  onClick={() => downloadWordDoc(activeTemplate?.generateHtml(templateValues) || "", activeTemplate?.name || "مستند")}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-6 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-green-600/10 mt-6 active:scale-[0.99] transition-transform"
-                >
-                  <Download size={18} />
-                  تحميل كملف Word (.doc)
-                </Button>
+                 <div className="flex flex-col gap-2 mt-6">
+                  <Button
+                    onClick={() => downloadWordDoc(activeTemplate?.generateHtml(templateValues) || "", activeTemplate?.name || "مستند")}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-6 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-green-600/10 active:scale-[0.99] transition-transform"
+                  >
+                    <Download size={18} />
+                    تحميل كملف Word (.doc)
+                  </Button>
+                  <Button
+                    onClick={() => handleSaveGeneratedDoc(activeTemplate?.name || "مستند", activeTemplate?.generateHtml(templateValues) || "")}
+                    className="w-full bg-[#0A192F] hover:bg-[#0A192F]/90 text-white font-bold py-6 rounded-2xl flex items-center justify-center gap-2 shadow-lg active:scale-[0.99] transition-transform"
+                  >
+                    <Save size={18} />
+                    حفظ في الأرشيف / القضية
+                  </Button>
+                </div>
               </div>
 
               {/* Live Print-ready Preview Pane */}
@@ -1771,21 +1920,38 @@ export default function Documents() {
                           </div>
                         </div>
 
-                        <Button
-                          onClick={() =>
-                            downloadWordDoc(
-                              renderCustomTemplateHtml(
-                                activeCustomTemplate.body,
-                                customTemplateValues
-                              ),
-                              activeCustomTemplate.name
-                            )
-                          }
-                          className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-6 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-green-600/10 mt-6 active:scale-[0.99] transition-transform"
-                        >
-                          <Download size={18} />
-                          تحميل كملف Word (.doc)
-                        </Button>
+                        <div className="flex flex-col gap-2 mt-6">
+                          <Button
+                            onClick={() =>
+                              downloadWordDoc(
+                                renderCustomTemplateHtml(
+                                  activeCustomTemplate.body,
+                                  customTemplateValues
+                                ),
+                                activeCustomTemplate.name
+                              )
+                            }
+                            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-6 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-green-600/10 active:scale-[0.99] transition-transform"
+                          >
+                            <Download size={18} />
+                            تحميل كملف Word (.doc)
+                          </Button>
+                          <Button
+                            onClick={() =>
+                              handleSaveGeneratedDoc(
+                                activeCustomTemplate.name,
+                                renderCustomTemplateHtml(
+                                  activeCustomTemplate.body,
+                                  customTemplateValues
+                                )
+                              )
+                            }
+                            className="w-full bg-[#0A192F] hover:bg-[#0A192F]/90 text-white font-bold py-6 rounded-2xl flex items-center justify-center gap-2 shadow-lg active:scale-[0.99] transition-transform"
+                          >
+                            <Save size={18} />
+                            حفظ في الأرشيف / القضية
+                          </Button>
+                        </div>
                       </div>
                     ) : (
                       <div className="text-center py-24 my-auto">
@@ -1873,12 +2039,20 @@ export default function Documents() {
                     placeholder="اكتب عنوان الملف..."
                   />
                 </div>
-                <Button
-                  onClick={handleFreeWordExport}
-                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-6 px-8 rounded-2xl shadow-lg shadow-green-600/15 active:scale-[0.98] w-full sm:w-auto self-stretch sm:self-auto"
-                >
-                  <Download className="ml-2 h-5 w-5" /> تصدير وتنزيل كملف Word (.doc)
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <Button
+                    onClick={handleFreeWordExport}
+                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-6 px-8 rounded-2xl shadow-lg shadow-green-600/15 active:scale-[0.98] flex-1 sm:flex-initial"
+                  >
+                    <Download className="ml-2 h-5 w-5" /> تصدير كملف Word (.doc)
+                  </Button>
+                  <Button
+                    onClick={() => handleSaveGeneratedDoc(freeDocTitle, freeEditorContent)}
+                    className="bg-[#0A192F] hover:bg-[#0A192F]/90 text-white font-bold py-6 px-8 rounded-2xl shadow-lg active:scale-[0.98] flex-1 sm:flex-initial"
+                  >
+                    <Save className="ml-2 h-5 w-5" /> حفظ في الأرشيف / القضية
+                  </Button>
+                </div>
               </div>
 
               {/* Upgraded Rich Text Editor */}
@@ -2161,9 +2335,15 @@ export default function Documents() {
                   </Button>
                   <Button
                     onClick={handleExportFreeExcel}
-                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-6 px-8 rounded-2xl shadow-lg shadow-green-600/15 active:scale-[0.98] flex-1 sm:flex-initial"
+                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-6 px-6 rounded-2xl shadow-lg active:scale-[0.98] flex-1 sm:flex-initial"
                   >
-                    <FileSpreadsheet className="ml-2 h-5 w-5" /> تنزيل ملف Excel (.xlsx)
+                    <FileSpreadsheet className="ml-2 h-5 w-5" /> تنزيل Excel
+                  </Button>
+                  <Button
+                    onClick={handleSaveFreeExcel}
+                    className="bg-[#0A192F] hover:bg-[#0A192F]/90 text-white font-bold py-6 px-6 rounded-2xl shadow-lg active:scale-[0.98] flex-1 sm:flex-initial"
+                  >
+                    <Save className="ml-2 h-5 w-5" /> حفظ في الأرشيف / القضية
                   </Button>
                 </div>
               </div>

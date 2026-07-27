@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router";
-import { ChevronRight, Calendar, FileText, CheckSquare, Plus, Download, Edit, Save, Trash2, File, Scale, FileSignature, Sparkles, RefreshCw, UploadCloud, Chrome, Info, CheckCircle2, Loader2, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
+import { ChevronRight, Calendar, FileText, CheckSquare, Plus, Download, Edit, Save, Trash2, File, Scale, FileSignature, Sparkles, RefreshCw, UploadCloud, Chrome, Info, CheckCircle2, Loader2, ChevronDown, ChevronUp, AlertTriangle, Gavel } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -18,6 +18,7 @@ import RichTextEditor from "../components/RichTextEditor";
 import { Input } from "../components/ui/input";
 import { doc, getDoc, collection, getDocs, addDoc, updateDoc, query, where, deleteField } from "firebase/firestore";
 import { db } from "../lib/firebase";
+import Documents from "./Documents";
 
 
 const enforcementStepsList = [
@@ -127,6 +128,7 @@ export default function CaseDetails() {
   const [isSaveJudgmentLoading, setIsSaveJudgmentLoading] = useState(false);
 
   // Najiz integration states
+  const [activeTab, setActiveTab] = useState("info");
   const [isSyncingNajiz, setIsSyncingNajiz] = useState(false);
   const [najizSyncSuccess, setNajizSyncSuccess] = useState(false);
   const [importFileLoading, setImportFileLoading] = useState(false);
@@ -385,6 +387,7 @@ export default function CaseDetails() {
         onClose={() => setIsAddHearingOpen(false)} 
         onSuccess={fetchCaseData} 
         caseId={id!} 
+        initialCaseData={data}
       />
       <AddTaskModal
         isOpen={isAddTaskOpen}
@@ -480,34 +483,117 @@ export default function CaseDetails() {
 
       <div className="print-content">
 
-      <Tabs defaultValue="info" className="w-full">
-        <TabsList className="bg-transparent border-b border-gray-200 w-full justify-start space-x-4 space-x-reverse h-auto p-0 mb-6 sticky top-16 z-0 bg-[#F3F4F6] overflow-x-auto overflow-y-hidden flex-nowrap scrollbar-hide">
-          <TabsTrigger value="info" className="data-[state=active]:bg-white data-[state=active]:border-t-2 data-[state=active]:border-[#0A192F] data-[state=active]:shadow-sm rounded-t-lg rounded-b-none px-6 py-3 font-semibold text-gray-600 data-[state=active]:text-[#0A192F]">
-            <Scale className="w-4 h-4 ml-2" /> التفاصيل العامة
-          </TabsTrigger>
-          <TabsTrigger value="hearings" className="data-[state=active]:bg-white data-[state=active]:border-t-2 data-[state=active]:border-[#0A192F] data-[state=active]:shadow-sm rounded-t-lg rounded-b-none px-6 py-3 font-semibold text-gray-600 data-[state=active]:text-[#0A192F]">
-            <Calendar className="w-4 h-4 ml-2" /> الجلسات 
-            <Badge variant="secondary" className="mr-2 px-1.5 py-0 min-w-5 h-5 flex items-center justify-center rounded-full text-xs">{data.hearings.length}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="memos" className="data-[state=active]:bg-white data-[state=active]:border-t-2 data-[state=active]:border-[#0A192F] data-[state=active]:shadow-sm rounded-t-lg rounded-b-none px-6 py-3 font-semibold text-gray-600 data-[state=active]:text-[#0A192F]">
-            <FileSignature className="w-4 h-4 ml-2" /> المذكرات والصحف
-            <Badge variant="secondary" className="mr-2 px-1.5 py-0 min-w-5 h-5 flex items-center justify-center rounded-full text-xs">{data.memos?.length || 0}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="docs" className="data-[state=active]:bg-white data-[state=active]:border-t-2 data-[state=active]:border-[#0A192F] data-[state=active]:shadow-sm rounded-t-lg rounded-b-none px-6 py-3 font-semibold text-gray-600 data-[state=active]:text-[#0A192F]">
-            <FileText className="w-4 h-4 ml-2" /> المستندات
-            <Badge variant="secondary" className="mr-2 px-1.5 py-0 min-w-5 h-5 flex items-center justify-center rounded-full text-xs">{data.documents.length}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="tasks" className="data-[state=active]:bg-white data-[state=active]:border-t-2 data-[state=active]:border-[#0A192F] data-[state=active]:shadow-sm rounded-t-lg rounded-b-none px-6 py-3 font-semibold text-gray-600 data-[state=active]:text-[#0A192F]">
-            <CheckSquare className="w-4 h-4 ml-2" /> المهام
-            <Badge variant="secondary" className="mr-2 px-1.5 py-0 min-w-5 h-5 flex items-center justify-center rounded-full text-xs">{data.tasks.length}</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="judgment" className="data-[state=active]:bg-white data-[state=active]:border-t-2 data-[state=active]:border-[#0A192F] data-[state=active]:shadow-sm rounded-t-lg rounded-b-none px-6 py-3 font-semibold text-gray-600 data-[state=active]:text-[#0A192F]">
-            <Scale className="w-4 h-4 ml-2" /> الحكم القضائي
-            {data.finalJudgment && <Badge className="mr-2 bg-green-500 hover:bg-green-600 text-white font-bold text-[10px] px-1.5 py-0.5 rounded-full">صدر</Badge>}
-          </TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as string)} className="w-full">
+        <div 
+          style={{ position: "sticky", top: 0, zIndex: 40 }} 
+          className="bg-[#F3F4F6]/95 backdrop-blur-md py-3 -mx-4 px-4 mb-6 shadow-sm border-b border-gray-200/50"
+        >
+          <TabsList className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 border-none p-0 w-full h-auto bg-transparent">
+            <TabsTrigger 
+              value="info" 
+              className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
+                activeTab === "info"
+                  ? "!bg-[#0A192F] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
+                  : "bg-white text-[#0A192F] border border-slate-200/80 shadow-xs hover:shadow-md"
+              }`}
+            >
+              <div>
+                <span className={`text-xs font-semibold block mb-1 ${activeTab === "info" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>التفاصيل العامة</span>
+                <span className={`text-xl font-bold block ${activeTab === "info" ? "!text-white font-extrabold" : "text-[#0A192F]"}`}>الملف الرئيسي</span>
+              </div>
+              <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "info" ? "!bg-white/20 !text-amber-300" : "bg-indigo-100/70 text-indigo-600"}`}>
+                <Scale size={22} />
+              </div>
+            </TabsTrigger>
 
-        <TabsContent value="info" className="mt-0 outline-none space-y-6">
+            <TabsTrigger 
+              value="hearings" 
+              className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
+                activeTab === "hearings"
+                  ? "!bg-[#0A192F] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
+                  : "bg-white text-[#0A192F] border border-slate-200/80 shadow-xs hover:shadow-md"
+              }`}
+            >
+              <div>
+                <span className={`text-xs font-semibold block mb-1 ${activeTab === "hearings" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>الجلسات</span>
+                <span className={`text-2xl font-bold block ${activeTab === "hearings" ? "!text-white font-extrabold" : "text-[#0A192F]"}`}>{data.hearings.length}</span>
+              </div>
+              <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "hearings" ? "!bg-white/20 !text-amber-300" : "bg-cyan-100/70 text-cyan-600"}`}>
+                <Calendar size={22} />
+              </div>
+            </TabsTrigger>
+
+            <TabsTrigger 
+              value="memos" 
+              className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
+                activeTab === "memos"
+                  ? "!bg-[#0A192F] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
+                  : "bg-white text-[#0A192F] border border-slate-200/80 shadow-xs hover:shadow-md"
+              }`}
+            >
+              <div>
+                <span className={`text-xs font-semibold block mb-1 ${activeTab === "memos" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>المذكرات والصحف</span>
+                <span className={`text-2xl font-bold block ${activeTab === "memos" ? "!text-white font-extrabold" : "text-[#0A192F]"}`}>{data.memos?.length || 0}</span>
+              </div>
+              <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "memos" ? "!bg-white/20 !text-amber-300" : "bg-amber-100/70 text-amber-600"}`}>
+                <FileSignature size={22} />
+              </div>
+            </TabsTrigger>
+
+            <TabsTrigger 
+              value="docs" 
+              className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
+                activeTab === "docs"
+                  ? "!bg-[#0A192F] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
+                  : "bg-white text-[#0A192F] border border-slate-200/80 shadow-xs hover:shadow-md"
+              }`}
+            >
+              <div>
+                <span className={`text-xs font-semibold block mb-1 ${activeTab === "docs" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>المستندات</span>
+                <span className={`text-2xl font-bold block ${activeTab === "docs" ? "!text-white font-extrabold" : "text-[#0A192F]"}`}>{data.documents.length}</span>
+              </div>
+              <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "docs" ? "!bg-white/20 !text-amber-300" : "bg-rose-100/70 text-rose-600"}`}>
+                <FileText size={22} />
+              </div>
+            </TabsTrigger>
+
+            <TabsTrigger 
+              value="tasks" 
+              className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
+                activeTab === "tasks"
+                  ? "!bg-[#0A192F] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
+                  : "bg-white text-[#0A192F] border border-slate-200/80 shadow-xs hover:shadow-md"
+              }`}
+            >
+              <div>
+                <span className={`text-xs font-semibold block mb-1 ${activeTab === "tasks" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>المهام</span>
+                <span className={`text-2xl font-bold block ${activeTab === "tasks" ? "!text-white font-extrabold" : "text-[#0A192F]"}`}>{data.tasks.length}</span>
+              </div>
+              <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "tasks" ? "!bg-white/20 !text-amber-300" : "bg-purple-100/70 text-purple-600"}`}>
+                <CheckSquare size={22} />
+              </div>
+            </TabsTrigger>
+
+            <TabsTrigger 
+              value="judgment" 
+              className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
+                activeTab === "judgment"
+                  ? "!bg-[#0A192F] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
+                  : "bg-white text-[#0A192F] border border-slate-200/80 shadow-xs hover:shadow-md"
+              }`}
+            >
+              <div>
+                <span className={`text-xs font-semibold block mb-1 ${activeTab === "judgment" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>الحكم القضائي</span>
+                <span className={`text-lg font-bold block ${activeTab === "judgment" ? "!text-white font-extrabold" : "text-[#0A192F]"}`}>{data.finalJudgment ? "صادر" : "معلق"}</span>
+              </div>
+              <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "judgment" ? "!bg-white/20 !text-amber-300" : "bg-emerald-100/70 text-emerald-600"}`}>
+                <Gavel size={22} />
+              </div>
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        <TabsContent value="info" className="mt-8 outline-none space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="shadow-sm">
               <CardHeader className="pb-3">
@@ -1097,7 +1183,7 @@ export default function CaseDetails() {
           </div>
         </TabsContent>
 
-        <TabsContent value="hearings" className="mt-0 outline-none">
+        <TabsContent value="hearings" className="mt-8 outline-none space-y-6">
           <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
               <div>
@@ -1242,7 +1328,7 @@ export default function CaseDetails() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="memos" className="mt-0 outline-none">
+        <TabsContent value="memos" className="mt-8 outline-none space-y-6">
           {!isWritingMemo ? (
             <div className="space-y-4">
               <div className="flex justify-end">
@@ -1413,155 +1499,14 @@ export default function CaseDetails() {
           )}
         </TabsContent>
 
-        <TabsContent value="docs" className="mt-0 outline-none">
-          <div className="space-y-4">
-
-            {/* Client documents (read-only, shared) */}
-            {(data.clientDocuments?.length ?? 0) > 0 && (
-              <Card className="shadow-sm border-amber-200">
-                <CardHeader className="pb-4 border-b border-amber-100 bg-amber-50/50">
-                  <div className="flex items-center gap-2">
-                    <FileSignature className="h-4 w-4 text-amber-600" />
-                    <CardTitle className="text-base text-amber-800">
-                      مستندات الموكل ({data.clientDocuments.length})
-                    </CardTitle>
-                    <CardDescription className="mr-auto text-amber-600 text-xs">
-                      تظهر تلقائياً من ملف الموكل — للتعديل اذهب إلى قائمة الموكلين
-                    </CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0 overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-amber-50/30">
-                        <TableHead className="text-right font-bold">اسم المستند</TableHead>
-                        <TableHead className="text-right font-bold w-32">النوع</TableHead>
-                        <TableHead className="text-right font-bold w-32">تاريخ الرفع</TableHead>
-                        <TableHead className="text-center font-bold w-24">عرض</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {data.clientDocuments.map((d: any) => (
-                        <TableRow key={d.id} className="hover:bg-amber-50/30">
-                          <TableCell className="font-medium text-[#0A192F]">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-amber-100 rounded-lg shrink-0">
-                                {d.fileType?.startsWith("image/") ? (
-                                  <img src={d.fileUrl} alt="" className="h-4 w-4 object-cover" />
-                                ) : (
-                                  <File className="h-4 w-4 text-amber-600" />
-                                )}
-                              </div>
-                              {d.name}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="border-amber-200 text-amber-700">
-                              {d.type === "POWER_OF_ATTORNEY" ? "توكيل"
-                                : d.type === "CONTRACT" ? "عقد"
-                                : d.type === "EVIDENCE" ? "دليل إثبات"
-                                : d.type === "JUDGMENT" ? "حكم"
-                                : d.type === "RECEIPT" ? "إيصال"
-                                : "أخرى"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-gray-500 text-sm">
-                            {new Date(d.uploadDate).toLocaleDateString("ar-EG")}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <div className="flex justify-center gap-1">
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50" onClick={() => setViewDocument(d)} title="عرض المستند">
-                                <FileText className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-purple-600 hover:bg-purple-50" onClick={() => setActiveAiTarget({ target: d, type: 'document' })} title="تحليل بالذكاء الاصطناعي">
-                                <Sparkles className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Case-specific documents */}
-            <Card className="shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
-                <div>
-                  <CardTitle className="text-lg">مستندات القضية والمرفقات</CardTitle>
-                  <CardDescription>ارفع المستندات الورقية الخاصة بهذه القضية</CardDescription>
-                </div>
-                <Button size="sm" className="bg-[#D4AF37] hover:bg-[#B8962E] text-white" onClick={() => setIsAddDocOpen(true)}>
-                  <Plus className="ml-2 h-4 w-4" /> رفع ملف جديد
-                </Button>
-              </CardHeader>
-              <CardContent className="p-0 overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-50">
-                      <TableHead className="text-right font-bold">اسم المستند</TableHead>
-                      <TableHead className="text-right font-bold w-32">النوع</TableHead>
-                      <TableHead className="text-right font-bold w-32">تاريخ الرفع</TableHead>
-                      <TableHead className="text-center font-bold w-32">إجراءات</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data.documents.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8 text-gray-500">
-                          لا يوجد مستندات مرفوعة لهذه القضية
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      data.documents.map((d: any) => (
-                        <TableRow key={d.id} className="hover:bg-gray-50/50">
-                          <TableCell className="font-medium text-[#0A192F]">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-gray-100 rounded-lg shrink-0">
-                                {d.fileType?.startsWith("image/") ? (
-                                  <img src={d.fileUrl} alt="" className="h-4 w-4 object-cover" />
-                                ) : (
-                                  <File className="h-4 w-4 text-gray-500" />
-                                )}
-                              </div>
-                              {d.name}
-                            </div>
-                          </TableCell>
-                          <TableCell><Badge variant="outline">{d.type}</Badge></TableCell>
-                          <TableCell dir="ltr" className="text-right text-gray-500">
-                            {new Date(d.uploadDate).toLocaleDateString("ar-EG")}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <div className="flex justify-center gap-2">
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-800 hover:bg-blue-50" onClick={() => setViewDocument(d)} title="عرض المستند">
-                                <FileText className="h-4 w-4" />
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-purple-600 hover:text-purple-800 hover:bg-purple-50" onClick={() => setActiveAiTarget({ target: d, type: 'document' })} title="تحليل المستند بالذكاء الاصطناعي">
-                                <Sparkles className="h-4 w-4" />
-                              </Button>
-                              {d.fileUrl && d.fileUrl !== "local-file" && (
-                                <a href={d.fileUrl} target="_blank" rel="noreferrer" download>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-[#0A192F] hover:bg-gray-100" title="تحميل">
-                                    <Download className="h-4 w-4" />
-                                  </Button>
-                                </a>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-
-          </div>
+        <TabsContent value="docs" className="mt-8 outline-none space-y-6">
+          <Documents 
+            embeddedCaseId={id} 
+            embeddedClientId={data.clientId} 
+          />
         </TabsContent>
 
-        <TabsContent value="tasks" className="mt-0 outline-none">
+        <TabsContent value="tasks" className="mt-8 outline-none space-y-6">
            <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
               <CardTitle className="text-lg">المهام المتعلقة بالقضية</CardTitle>
@@ -1596,7 +1541,7 @@ export default function CaseDetails() {
            </Card>
          </TabsContent>
 
-        <TabsContent value="judgment" className="mt-0 outline-none space-y-6">
+        <TabsContent value="judgment" className="mt-8 outline-none space-y-6">
           {data.finalJudgment ? (
             <div className="space-y-6">
               <Card className="shadow-sm border-green-200 bg-green-50/10">

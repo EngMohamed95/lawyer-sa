@@ -4,7 +4,19 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Loader2 } from "lucide-react";
 
-export function AddHearingModal({ isOpen, onClose, onSuccess, caseId }: { isOpen: boolean, onClose: () => void, onSuccess: () => void, caseId?: string }) {
+export function AddHearingModal({ 
+  isOpen, 
+  onClose, 
+  onSuccess, 
+  caseId,
+  initialCaseData 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onSuccess: () => void; 
+  caseId?: string;
+  initialCaseData?: any;
+}) {
   const [loading, setLoading] = useState(false);
   const [cases, setCases] = useState<any[]>([]);
   const [formData, setFormData] = useState({
@@ -17,14 +29,61 @@ export function AddHearingModal({ isOpen, onClose, onSuccess, caseId }: { isOpen
     selectedCaseId: caseId || "",
     minutesText: "",
     judgmentText: "",
+    plaintiffName: "",
+    defendantName: "",
   });
   const [minutesFile, setMinutesFile] = useState<File | null>(null);
   const [judgmentFile, setJudgmentFile] = useState<File | null>(null);
   const [uploadStatus, setUploadStatus] = useState<string | null>(null);
 
+  const getPlaintiffDefault = (cData: any) => {
+    if (!cData) return "";
+    if (cData.plaintiffName) return cData.plaintiffName;
+    if (cData.clientRole === "DEFENDANT") return cData.opponentName || "";
+    return cData.client?.fullName || cData.plaintiffName || "";
+  };
+
+  const getDefendantDefault = (cData: any) => {
+    if (!cData) return "";
+    if (cData.defendantName) return cData.defendantName;
+    if (cData.clientRole === "DEFENDANT") return cData.client?.fullName || "";
+    return cData.opponentName || cData.defendantName || "";
+  };
+
+  const fetchSelectedCaseDetails = async (targetCaseId: string) => {
+    try {
+      const { doc, getDoc } = await import("firebase/firestore");
+      const { db } = await import("../lib/firebase");
+      const caseDoc = await getDoc(doc(db, "cases", targetCaseId));
+      if (caseDoc.exists()) {
+        const caseData = caseDoc.data();
+        let clientData = null;
+        if (caseData.clientId) {
+          const clientDoc = await getDoc(doc(db, "clients", caseData.clientId));
+          if (clientDoc.exists()) {
+            clientData = clientDoc.data();
+          }
+        }
+        const resolvedCaseData = { ...caseData, client: clientData };
+        setFormData(prev => ({
+          ...prev,
+          selectedCaseId: targetCaseId,
+          court: caseData.courtName || caseData.court || "",
+          circuit: caseData.courtCircle || caseData.circuit || "",
+          plaintiffName: getPlaintiffDefault(resolvedCaseData),
+          defendantName: getDefendantDefault(resolvedCaseData),
+        }));
+      }
+    } catch (err) {
+      console.error("Error pre-populating case details:", err);
+    }
+  };
+
   useEffect(() => {
-    if (isOpen && !caseId) {
-      const fetchCases = async () => {
+    console.log("DEBUG: AddHearingModal useEffect", { isOpen, caseId, initialCaseData });
+    const loadData = async () => {
+      const activeCaseId = caseId || formData.selectedCaseId;
+      if (isOpen && !caseId) {
         try {
           const { collection, getDocs, query, where, limit } = await import("firebase/firestore");
           const { db } = await import("../lib/firebase");
@@ -39,22 +98,44 @@ export function AddHearingModal({ isOpen, onClose, onSuccess, caseId }: { isOpen
         } catch (error) {
           console.error(error);
         }
-      };
-      fetchCases();
-    }
+      }
+      
+      if (isOpen) {
+        if (initialCaseData) {
+          setFormData(prev => ({
+            ...prev,
+            selectedCaseId: activeCaseId,
+            court: initialCaseData.courtName || initialCaseData.court || "",
+            circuit: initialCaseData.courtCircle || initialCaseData.circuit || "",
+            plaintiffName: getPlaintiffDefault(initialCaseData),
+            defendantName: getDefendantDefault(initialCaseData),
+          }));
+        } else if (activeCaseId) {
+          fetchSelectedCaseDetails(activeCaseId);
+        }
+      }
+    };
+
     if (isOpen) {
-      setFormData(prev => ({ 
-        ...prev, 
-        selectedCaseId: caseId || "",
+      setFormData({
         hearingDate: new Date().toISOString().split('T')[0],
+        court: initialCaseData?.courtName || initialCaseData?.court || "",
+        circuit: initialCaseData?.courtCircle || initialCaseData?.circuit || "",
+        requiredActions: "",
+        result: "",
+        nextHearingDate: "",
+        selectedCaseId: caseId || "",
         minutesText: "",
         judgmentText: "",
-      }));
+        plaintiffName: getPlaintiffDefault(initialCaseData),
+        defendantName: getDefendantDefault(initialCaseData),
+      });
       setMinutesFile(null);
       setJudgmentFile(null);
       setUploadStatus(null);
+      loadData();
     }
-  }, [isOpen, caseId]);
+  }, [isOpen, caseId, initialCaseData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,6 +195,8 @@ export function AddHearingModal({ isOpen, onClose, onSuccess, caseId }: { isOpen
         judgmentText: formData.judgmentText,
         judgmentFileUrl,
         judgmentFileName,
+        plaintiffName: formData.plaintiffName,
+        defendantName: formData.defendantName,
         createdAt: new Date().toISOString()
       };
 
@@ -131,6 +214,8 @@ export function AddHearingModal({ isOpen, onClose, onSuccess, caseId }: { isOpen
         selectedCaseId: caseId || "",
         minutesText: "",
         judgmentText: "",
+        plaintiffName: "",
+        defendantName: "",
       });
       setMinutesFile(null);
       setJudgmentFile(null);
@@ -159,7 +244,13 @@ export function AddHearingModal({ isOpen, onClose, onSuccess, caseId }: { isOpen
                 required
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={formData.selectedCaseId}
-                onChange={e => setFormData({...formData, selectedCaseId: e.target.value})}
+                onChange={e => {
+                  const newCaseId = e.target.value;
+                  setFormData({...formData, selectedCaseId: newCaseId});
+                  if (newCaseId) {
+                    fetchSelectedCaseDetails(newCaseId);
+                  }
+                }}
               >
                 <option value="">اختر القضية...</option>
                 {cases.map(c => (
@@ -206,6 +297,26 @@ export function AddHearingModal({ isOpen, onClose, onSuccess, caseId }: { isOpen
                 value={formData.circuit}
                 onChange={e => setFormData({...formData, circuit: e.target.value})}
                 placeholder="مثال: دائرة ٥، رول ٢٥..." 
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-[#0A192F]">المدعي</label>
+              <Input 
+                value={formData.plaintiffName}
+                onChange={e => setFormData({...formData, plaintiffName: e.target.value})}
+                placeholder="اسم المدعي" 
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-[#0A192F]">المدعى عليه</label>
+              <Input 
+                value={formData.defendantName}
+                onChange={e => setFormData({...formData, defendantName: e.target.value})}
+                placeholder="اسم المدعى عليه" 
               />
             </div>
           </div>

@@ -182,32 +182,46 @@ export default function Accounting() {
         onSuccess={fetchAccountingData}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">إجمالي المدفوعات</CardTitle>
-            <div className="p-2 bg-green-50 rounded-xl"><DollarSign size={20} className="text-green-600" /></div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-[#0A192F]">{(data.summary?.totalPaid || 0).toLocaleString('ar-EG')} {currencySymbol}</div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <Card className="bg-white border border-slate-100 shadow-md hover:shadow-lg transition-all rounded-2xl">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="mb-2 text-xs font-semibold text-slate-400">إجمالي المدفوعات</p>
+                <h3 className="text-3xl font-bold text-[#0A192F] tracking-tight">{(data.summary?.totalPaid || 0).toLocaleString('ar-EG')} {currencySymbol}</h3>
+              </div>
+              <div className="p-3.5 bg-emerald-100/70 rounded-2xl text-emerald-600 flex items-center justify-center shrink-0">
+                <DollarSign size={22} />
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">إجمالي المصروفات</CardTitle>
-            <div className="p-2 bg-red-50 rounded-xl"><CreditCard size={20} className="text-red-600" /></div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-[#0A192F]">{(data.summary?.totalExpenses || 0).toLocaleString('ar-EG')} {currencySymbol}</div>
+
+        <Card className="bg-white border border-slate-100 shadow-md hover:shadow-lg transition-all rounded-2xl">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="mb-2 text-xs font-semibold text-slate-400">إجمالي المصروفات</p>
+                <h3 className="text-3xl font-bold text-[#0A192F] tracking-tight">{(data.summary?.totalExpenses || 0).toLocaleString('ar-EG')} {currencySymbol}</h3>
+              </div>
+              <div className="p-3.5 bg-rose-100/70 rounded-2xl text-rose-600 flex items-center justify-center shrink-0">
+                <CreditCard size={22} />
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">المستحقات المتبقية</CardTitle>
-            <div className="p-2 bg-orange-50 rounded-xl"><Banknote size={20} className="text-orange-600" /></div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-[#0A192F]">{(data.summary?.totalOwed || 0).toLocaleString('ar-EG')} {currencySymbol}</div>
+
+        <Card className="bg-white border border-slate-100 shadow-md hover:shadow-lg transition-all rounded-2xl">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="mb-2 text-xs font-semibold text-slate-400">المستحقات المتبقية</p>
+                <h3 className="text-3xl font-bold text-[#0A192F] tracking-tight">{(data.summary?.totalOwed || 0).toLocaleString('ar-EG')} {currencySymbol}</h3>
+              </div>
+              <div className="p-3.5 bg-amber-100/70 rounded-2xl text-amber-600 flex items-center justify-center shrink-0">
+                <Banknote size={22} />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
