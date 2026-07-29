@@ -818,7 +818,7 @@ export default function CaseDetails() {
               value="info" 
               className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
                 activeTab === "info"
-                  ? "!bg-[#133B2E] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
+                  ? "!bg-[#133B2E] !text-white shadow-xl shadow-[#133B2E]/35 border-2 border-[#133B2E]"
                   : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
@@ -835,7 +835,7 @@ export default function CaseDetails() {
               value="memos" 
               className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
                 activeTab === "memos"
-                  ? "!bg-[#133B2E] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
+                  ? "!bg-[#133B2E] !text-white shadow-xl shadow-[#133B2E]/35 border-2 border-[#133B2E]"
                   : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
@@ -852,7 +852,7 @@ export default function CaseDetails() {
               value="hearings" 
               className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
                 activeTab === "hearings"
-                  ? "!bg-[#133B2E] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
+                  ? "!bg-[#133B2E] !text-white shadow-xl shadow-[#133B2E]/35 border-2 border-[#133B2E]"
                   : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
@@ -869,7 +869,7 @@ export default function CaseDetails() {
               value="docs" 
               className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
                 activeTab === "docs"
-                  ? "!bg-[#133B2E] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
+                  ? "!bg-[#133B2E] !text-white shadow-xl shadow-[#133B2E]/35 border-2 border-[#133B2E]"
                   : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
@@ -886,7 +886,7 @@ export default function CaseDetails() {
               value="tasks" 
               className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
                 activeTab === "tasks"
-                  ? "!bg-[#133B2E] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
+                  ? "!bg-[#133B2E] !text-white shadow-xl shadow-[#133B2E]/35 border-2 border-[#133B2E]"
                   : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
@@ -903,7 +903,7 @@ export default function CaseDetails() {
               value="judgment" 
               className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
                 activeTab === "judgment"
-                  ? "!bg-[#133B2E] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
+                  ? "!bg-[#133B2E] !text-white shadow-xl shadow-[#133B2E]/35 border-2 border-[#133B2E]"
                   : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
