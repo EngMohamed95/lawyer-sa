@@ -96,8 +96,8 @@ export default function SubscribePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A192F] text-white font-['Tajawal']" dir="rtl">
-      <nav className="border-b border-white/10 bg-[#0A192F]/90 backdrop-blur-md px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-[#133B2E] text-white font-['Tajawal']" dir="rtl">
+      <nav className="border-b border-white/10 bg-[#133B2E]/90 backdrop-blur-md px-6 py-4 flex items-center justify-between">
         <Link to="/">
           <img src="/logo.png" alt="LawyerOS" className="h-10 w-auto" />
         </Link>
@@ -115,13 +115,13 @@ export default function SubscribePage() {
           <div className="inline-flex items-center bg-white/10 rounded-2xl p-1 mt-8">
             <button
               onClick={() => setBilling("monthly")}
-              className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${billing === "monthly" ? "bg-[#D4AF37] text-[#0A192F]" : "text-gray-300"}`}
+              className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${billing === "monthly" ? "bg-[#D4AF37] text-[#133B2E]" : "text-gray-300"}`}
             >
               شهري
             </button>
             <button
               onClick={() => setBilling("annual")}
-              className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${billing === "annual" ? "bg-[#D4AF37] text-[#0A192F]" : "text-gray-300"}`}
+              className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${billing === "annual" ? "bg-[#D4AF37] text-[#133B2E]" : "text-gray-300"}`}
             >
               سنوي
               <span className="mr-2 bg-green-500/20 text-green-400 text-xs px-2 py-0.5 rounded-full">وفر 17%</span>
@@ -166,10 +166,10 @@ export default function SubscribePage() {
                 whileHover={{ y: -4 }}
                 className={`relative rounded-[28px] border-2 p-8 bg-white/5 transition-all ${
                   plan.badge ? "border-[#D4AF37] scale-105 shadow-xl shadow-[#D4AF37]/10" : plan.color
-                } ${selectedPlan === plan.key ? "ring-2 ring-[#D4AF37] ring-offset-2 ring-offset-[#0A192F]" : ""}`}
+                } ${selectedPlan === plan.key ? "ring-2 ring-[#D4AF37] ring-offset-2 ring-offset-[#133B2E]" : ""}`}
               >
                 {plan.badge && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#D4AF37] text-[#0A192F] text-xs font-black px-4 py-1.5 rounded-full whitespace-nowrap">
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#D4AF37] text-[#133B2E] text-xs font-black px-4 py-1.5 rounded-full whitespace-nowrap">
                     {plan.badge}
                   </div>
                 )}
@@ -199,7 +199,7 @@ export default function SubscribePage() {
                   onClick={() => handleSelectPlan(plan.key)}
                   className={`w-full py-3 rounded-2xl font-black text-sm transition ${
                     plan.badge
-                      ? "bg-[#D4AF37] text-[#0A192F] hover:bg-[#B8962E]"
+                      ? "bg-[#D4AF37] text-[#133B2E] hover:bg-[#B8962E]"
                       : "bg-white/10 text-white hover:bg-white/20"
                   }`}
                 >
@@ -218,7 +218,7 @@ export default function SubscribePage() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-[#0A192F] border border-white/20 rounded-3xl p-8 w-full max-w-md shadow-2xl"
+              className="bg-[#133B2E] border border-white/20 rounded-3xl p-8 w-full max-w-md shadow-2xl"
             >
               <div className="flex items-center justify-between mb-6">
                 <div>
@@ -277,7 +277,7 @@ export default function SubscribePage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-[#D4AF37] hover:bg-[#B8962E] text-[#0A192F] font-black py-4 rounded-2xl transition flex items-center justify-center gap-2"
+                  className="w-full bg-[#D4AF37] hover:bg-[#B8962E] text-[#133B2E] font-black py-4 rounded-2xl transition flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <Loader2 size={18} className="animate-spin" />

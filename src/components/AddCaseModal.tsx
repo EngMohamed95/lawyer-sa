@@ -106,13 +106,13 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-[#0A192F]">إضافة قضية جديدة</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-[#133B2E]">إضافة قضية جديدة</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">عنوان القضية *</label>
+              <label className="text-sm font-bold text-[#133B2E]">عنوان القضية *</label>
               <Input 
                 required
                 value={formData.title}
@@ -121,7 +121,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">رقم القضية *</label>
+              <label className="text-sm font-bold text-[#133B2E]">رقم القضية *</label>
               <Input 
                 required
                 value={formData.caseNumber}
@@ -132,7 +132,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
             
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="text-sm font-bold text-[#0A192F]">الموكل *</label>
+                <label className="text-sm font-bold text-[#133B2E]">الموكل *</label>
                 <button
                   type="button"
                   onClick={() => setIsAddClientOpen(true)}
@@ -155,7 +155,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">نوع القضية</label>
+              <label className="text-sm font-bold text-[#133B2E]">نوع القضية</label>
               <select 
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={formData.type}
@@ -174,14 +174,14 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
             <div className="space-y-2 border-t pt-2 md:col-span-2 text-xs font-bold text-gray-500">أطراف الدعوى والنزاع</div>
 
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-bold text-[#0A192F]">صفة الموكل في القضية</label>
+              <label className="text-sm font-bold text-[#133B2E]">صفة الموكل في القضية</label>
               <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
                 <button
                   type="button"
                   onClick={() => setClientRole("PLAINTIFF")}
                   className={`flex-1 py-2 text-center text-sm font-bold rounded-lg transition-all ${
                     clientRole === "PLAINTIFF"
-                      ? "bg-[#0A192F] text-white shadow-sm"
+                      ? "bg-[#133B2E] text-white shadow-sm"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -192,7 +192,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
                   onClick={() => setClientRole("DEFENDANT")}
                   className={`flex-1 py-2 text-center text-sm font-bold rounded-lg transition-all ${
                     clientRole === "DEFENDANT"
-                      ? "bg-[#0A192F] text-white shadow-sm"
+                      ? "bg-[#133B2E] text-white shadow-sm"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -209,7 +209,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">
+              <label className="text-sm font-bold text-[#133B2E]">
                 {clientRole === "PLAINTIFF" ? "اسم المدعى عليه (الخصم)" : "اسم المدعي (الخصم)"}
               </label>
               <Input 
@@ -220,7 +220,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">
+              <label className="text-sm font-bold text-[#133B2E]">
                 {clientRole === "PLAINTIFF" ? "محامي المدعى عليه" : "محامي المدعي"}
               </label>
               <Input 
@@ -233,7 +233,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
             <div className="space-y-2 border-t pt-2 md:col-span-2 text-xs font-bold text-gray-500">المحكمة وموضوع الدعوى</div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">المحكمة المرفوع أمامها</label>
+              <label className="text-sm font-bold text-[#133B2E]">المحكمة المرفوع أمامها</label>
               <Input 
                 value={formData.courtName}
                 onChange={e => setFormData({...formData, courtName: e.target.value})}
@@ -242,7 +242,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">الدائرة القضائية</label>
+              <label className="text-sm font-bold text-[#133B2E]">الدائرة القضائية</label>
               <Input 
                 value={formData.courtCircle}
                 onChange={e => setFormData({...formData, courtCircle: e.target.value})}
@@ -251,7 +251,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-bold text-[#0A192F]">موضوع الدعوى / القضية</label>
+              <label className="text-sm font-bold text-[#133B2E]">موضوع الدعوى / القضية</label>
               <Input 
                 value={formData.caseSubject}
                 onChange={e => setFormData({...formData, caseSubject: e.target.value})}
@@ -260,7 +260,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">تاريخ البداية</label>
+              <label className="text-sm font-bold text-[#133B2E]">تاريخ البداية</label>
               <Input 
                 type="date"
                 required
@@ -272,7 +272,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
 
           <DialogFooter className="mt-6">
             <Button type="button" variant="outline" onClick={onClose}>إلغاء</Button>
-            <Button type="submit" disabled={loading} className="bg-[#0A192F] hover:bg-[#0A192F]/90 text-white">
+            <Button type="submit" disabled={loading} className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               حفظ القضية
             </Button>

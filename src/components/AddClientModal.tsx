@@ -59,13 +59,13 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: { isOpen: boolean
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-[#0A192F]">إضافة موكل جديد</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-[#133B2E]">إضافة موكل جديد</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">الاسم الكامل *</label>
+              <label className="text-sm font-bold text-[#133B2E]">الاسم الكامل *</label>
               <Input 
                 required
                 value={formData.fullName}
@@ -75,7 +75,7 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: { isOpen: boolean
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">النوع</label>
+              <label className="text-sm font-bold text-[#133B2E]">النوع</label>
               <select 
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={formData.clientType}
@@ -87,7 +87,7 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: { isOpen: boolean
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">رقم الهاتف *</label>
+              <label className="text-sm font-bold text-[#133B2E]">رقم الهاتف *</label>
               <Input 
                 required
                 value={formData.phone}
@@ -99,7 +99,7 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: { isOpen: boolean
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">{formData.clientType === "COMPANY" ? "الرقم الضريبي" : "رقم الهوية"}</label>
+              <label className="text-sm font-bold text-[#133B2E]">{formData.clientType === "COMPANY" ? "الرقم الضريبي" : "رقم الهوية"}</label>
               <Input 
                 value={formData.nationalId}
                 onChange={e => setFormData({...formData, nationalId: e.target.value})}
@@ -110,7 +110,7 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: { isOpen: boolean
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">أتعاب متوقعة ({currencySymbol})</label>
+              <label className="text-sm font-bold text-[#133B2E]">أتعاب متوقعة ({currencySymbol})</label>
               <Input
                 type="number"
                 step="0.01"
@@ -124,7 +124,7 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: { isOpen: boolean
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-bold text-[#0A192F]">العنوان</label>
+              <label className="text-sm font-bold text-[#133B2E]">العنوان</label>
               <Input 
                 value={formData.address}
                 onChange={e => setFormData({...formData, address: e.target.value})}
@@ -135,7 +135,7 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: { isOpen: boolean
 
           <DialogFooter className="mt-6">
             <Button type="button" variant="outline" onClick={onClose}>إلغاء</Button>
-            <Button type="submit" disabled={loading} className="bg-[#0A192F] hover:bg-[#0A192F]/90 text-white">
+            <Button type="submit" disabled={loading} className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               حفظ الموكل
             </Button>

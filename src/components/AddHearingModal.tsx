@@ -233,13 +233,13 @@ export function AddHearingModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-[#0A192F]">إضافة جلسة جديدة</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-[#133B2E]">إضافة جلسة جديدة</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           {!caseId && (
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">القضية *</label>
+              <label className="text-sm font-bold text-[#133B2E]">القضية *</label>
               <select 
                 required
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -262,7 +262,7 @@ export function AddHearingModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">تاريخ الجلسة *</label>
+              <label className="text-sm font-bold text-[#133B2E]">تاريخ الجلسة *</label>
               <Input 
                 type="date"
                 required
@@ -272,7 +272,7 @@ export function AddHearingModal({
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">تاريخ الجلسة القادمة</label>
+              <label className="text-sm font-bold text-[#133B2E]">تاريخ الجلسة القادمة</label>
               <Input 
                 type="date"
                 value={formData.nextHearingDate}
@@ -283,7 +283,7 @@ export function AddHearingModal({
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">المحكمة / الغرفة</label>
+              <label className="text-sm font-bold text-[#133B2E]">المحكمة / الغرفة</label>
               <Input 
                 value={formData.court}
                 onChange={e => setFormData({...formData, court: e.target.value})}
@@ -292,7 +292,7 @@ export function AddHearingModal({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">الدائرة / الرول</label>
+              <label className="text-sm font-bold text-[#133B2E]">الدائرة / الرول</label>
               <Input 
                 value={formData.circuit}
                 onChange={e => setFormData({...formData, circuit: e.target.value})}
@@ -303,7 +303,7 @@ export function AddHearingModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">المدعي</label>
+              <label className="text-sm font-bold text-[#133B2E]">المدعي</label>
               <Input 
                 value={formData.plaintiffName}
                 onChange={e => setFormData({...formData, plaintiffName: e.target.value})}
@@ -312,7 +312,7 @@ export function AddHearingModal({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">المدعى عليه</label>
+              <label className="text-sm font-bold text-[#133B2E]">المدعى عليه</label>
               <Input 
                 value={formData.defendantName}
                 onChange={e => setFormData({...formData, defendantName: e.target.value})}
@@ -322,7 +322,7 @@ export function AddHearingModal({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#0A192F]">الالتمسات / ما تم فيها</label>
+            <label className="text-sm font-bold text-[#133B2E]">الالتمسات / ما تم فيها</label>
             <Input 
                value={formData.requiredActions}
                onChange={e => setFormData({...formData, requiredActions: e.target.value})}
@@ -331,7 +331,7 @@ export function AddHearingModal({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#0A192F]">قرار الجلسة (النتيجة)</label>
+            <label className="text-sm font-bold text-[#133B2E]">قرار الجلسة (النتيجة)</label>
             <Input 
                value={formData.result}
                onChange={e => setFormData({...formData, result: e.target.value})}
@@ -343,7 +343,7 @@ export function AddHearingModal({
           <div className="space-y-2 border-t pt-2 text-xs font-bold text-gray-500">أرشفة الجلسة (اختياري)</div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#0A192F]">محضر الضبط (نصي)</label>
+            <label className="text-sm font-bold text-[#133B2E]">محضر الضبط (نصي)</label>
             <textarea 
                value={formData.minutesText}
                onChange={e => setFormData({...formData, minutesText: e.target.value})}
@@ -353,7 +353,7 @@ export function AddHearingModal({
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-bold text-[#0A192F]">ملف محضر الضبط</label>
+            <label className="text-sm font-bold text-[#133B2E]">ملف محضر الضبط</label>
             <Input 
                type="file"
                onChange={e => setMinutesFile(e.target.files?.[0] || null)}
@@ -363,7 +363,7 @@ export function AddHearingModal({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#0A192F]">الحكم الصادر في الجلسة (نصي)</label>
+            <label className="text-sm font-bold text-[#133B2E]">الحكم الصادر في الجلسة (نصي)</label>
             <textarea 
                value={formData.judgmentText}
                onChange={e => setFormData({...formData, judgmentText: e.target.value})}
@@ -373,7 +373,7 @@ export function AddHearingModal({
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-bold text-[#0A192F]">ملف حكم الجلسة / القرار</label>
+            <label className="text-sm font-bold text-[#133B2E]">ملف حكم الجلسة / القرار</label>
             <Input 
                type="file"
                onChange={e => setJudgmentFile(e.target.files?.[0] || null)}
@@ -390,7 +390,7 @@ export function AddHearingModal({
 
           <DialogFooter className="mt-6">
             <Button type="button" variant="outline" onClick={onClose}>إلغاء</Button>
-            <Button type="submit" disabled={loading} className="bg-[#0A192F] hover:bg-[#0A192F]/90 text-white">
+            <Button type="submit" disabled={loading} className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               حفظ الجلسة
             </Button>

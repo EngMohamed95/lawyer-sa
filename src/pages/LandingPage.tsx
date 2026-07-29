@@ -36,15 +36,15 @@ function Badge({ children, className = "" }: { children: ReactNode; className?: 
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#0A192F] text-white font-['Tajawal']" dir="rtl">
-      <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-[#0A192F]/90 backdrop-blur-md">
+    <div className="min-h-screen bg-[#133B2E] text-white font-['Tajawal']" dir="rtl">
+      <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-[#133B2E]/90 backdrop-blur-md">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
           <img src="/logo.png" alt="LawyerOS" className="h-12 w-auto" />
           <div className="hidden items-center gap-8 text-sm font-medium md:flex">
             <a href="#features" className="transition-colors hover:text-[#D4AF37]">المميزات</a>
             <a href="#services" className="transition-colors hover:text-[#D4AF37]">الخدمات</a>
             <a href="#ai" className="transition-colors hover:text-[#D4AF37]">الذكاء الاصطناعي</a>
-            <Link to="/login" className="rounded-full bg-[#D4AF37] px-6 py-2 font-bold text-[#0A192F] transition hover:bg-[#D4AF37]/90">
+            <Link to="/login" className="rounded-full bg-[#D4AF37] px-6 py-2 font-bold text-[#133B2E] transition hover:bg-[#D4AF37]/90">
               دخول النظام
             </Link>
           </div>
@@ -66,7 +66,7 @@ export default function LandingPage() {
             منصة متكاملة لإدارة مكاتب المحاماة تساعدك على تنظيم القضايا، الموكلين، الجلسات، المهام، والحسابات في مكان واحد.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link to="/login" className="w-full rounded-2xl bg-[#D4AF37] px-10 py-5 text-center text-lg font-black text-[#0A192F] shadow-xl shadow-[#D4AF37]/20 transition hover:scale-105 sm:w-auto">
+            <Link to="/login" className="w-full rounded-2xl bg-[#D4AF37] px-10 py-5 text-center text-lg font-black text-[#133B2E] shadow-xl shadow-[#D4AF37]/20 transition hover:scale-105 sm:w-auto">
               ابدأ تجربتك
             </Link>
             <a href="#features" className="w-full rounded-2xl border border-white/15 px-10 py-5 text-center text-lg font-bold text-white transition hover:bg-white/10 sm:w-auto">
@@ -280,7 +280,7 @@ export default function LandingPage() {
       </section>
 
 
-      <footer className="border-t border-white/10 bg-[#0A192F] px-6 py-12">
+      <footer className="border-t border-white/10 bg-[#133B2E] px-6 py-12">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 md:flex-row">
           <div className="flex items-center gap-4">
             <img src="/logo.png" alt="LawyerOS" className="h-10 w-auto" />

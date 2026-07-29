@@ -132,12 +132,12 @@ export default function SubscriptionRequests() {
     <div className="font-['Tajawal']" dir="rtl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-black text-[#0A192F]">طلبات الاشتراك</h1>
+          <h1 className="text-2xl font-black text-[#133B2E]">طلبات الاشتراك</h1>
           {pendingCount > 0 && (
             <p className="text-sm text-orange-600 font-bold mt-1">⚠️ {pendingCount} طلب ينتظر الموافقة</p>
           )}
         </div>
-        <button onClick={fetchRequests} className="flex items-center gap-2 text-sm text-[#0A192F] hover:text-[#D4AF37] transition">
+        <button onClick={fetchRequests} className="flex items-center gap-2 text-sm text-[#133B2E] hover:text-[#D4AF37] transition">
           <RefreshCw size={16} /> تحديث
         </button>
       </div>
@@ -148,7 +148,7 @@ export default function SubscriptionRequests() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-4 py-2 rounded-full text-sm font-bold transition ${filter === f ? "bg-[#0A192F] text-[#D4AF37]" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+            className={`px-4 py-2 rounded-full text-sm font-bold transition ${filter === f ? "bg-[#133B2E] text-[#D4AF37]" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
           >
             {f === "all" ? "الكل" : f === "pending" ? "قيد الانتظار" : f === "approved" ? "مفعّل" : "مرفوض"}
             {f === "pending" && pendingCount > 0 && (
@@ -160,7 +160,7 @@ export default function SubscriptionRequests() {
 
       {loading ? (
         <div className="flex items-center justify-center h-48">
-          <Loader2 size={32} className="animate-spin text-[#0A192F]" />
+          <Loader2 size={32} className="animate-spin text-[#133B2E]" />
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
@@ -177,7 +177,7 @@ export default function SubscriptionRequests() {
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-3 flex-wrap">
-                      <h3 className="font-black text-[#0A192F] text-lg">{req.name}</h3>
+                      <h3 className="font-black text-[#133B2E] text-lg">{req.name}</h3>
                       <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${status.color}`}>
                         {status.icon} {status.label}
                       </span>
@@ -230,7 +230,7 @@ export default function SubscriptionRequests() {
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
               className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-black text-[#0A192F]">تفعيل الاشتراك</h2>
+                <h2 className="text-xl font-black text-[#133B2E]">تفعيل الاشتراك</h2>
                 <button onClick={() => setApproveModal(null)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
               </div>
               <div className="bg-gray-50 rounded-2xl p-4 mb-6 space-y-2 text-sm">
@@ -243,7 +243,7 @@ export default function SubscriptionRequests() {
                   value={approveEmail}
                   onChange={e => setApproveEmail(e.target.value)}
                   placeholder="example@mail.com"
-                  className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#0A192F]"
+                  className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#133B2E]"
                 />
                 <p className="text-xs text-gray-400 mt-2">تأكد أن البريد مطابق للحساب الموجود في النظام</p>
               </div>

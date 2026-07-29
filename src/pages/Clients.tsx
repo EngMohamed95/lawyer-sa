@@ -131,7 +131,7 @@ export default function Clients() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#0A192F] tracking-tight font-['Tajawal']">قائمة الموكلين</h1>
+          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight font-['Tajawal']">قائمة الموكلين</h1>
           <p className="text-gray-500 mt-1">إدارة كافة بيانات الموكلين والشركات</p>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
@@ -144,7 +144,7 @@ export default function Clients() {
           </Button>
           <Button
             onClick={() => setIsAddModalOpen(true)}
-            className="bg-[#0A192F] hover:bg-[#0A192F]/90 text-white shadow-lg shadow-[#0A192F]/20 px-6 py-6 rounded-2xl transition-all active:scale-[0.98] font-bold font-['Tajawal']"
+            className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white shadow-lg shadow-[#133B2E]/20 px-6 py-6 rounded-2xl transition-all active:scale-[0.98] font-bold font-['Tajawal']"
           >
             <Plus className="ml-2 h-5 w-5" /> إضافة موكل جديد
           </Button>
@@ -167,17 +167,17 @@ export default function Clients() {
           <Table>
             <TableHeader className="bg-gray-50">
               <TableRow>
-                <TableHead className="text-right font-bold text-[#0A192F]">الاسم</TableHead>
-                <TableHead className="text-right font-bold text-[#0A192F]">التواصل</TableHead>
-                <TableHead className="text-right font-bold text-[#0A192F] hidden sm:table-cell">النوع</TableHead>
-                <TableHead className="text-right font-bold text-[#0A192F] hidden md:table-cell">رقم الهوية</TableHead>
-                <TableHead className="text-right font-bold text-[#0A192F] hidden lg:table-cell">العنوان</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E]">الاسم</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E]">التواصل</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E] hidden sm:table-cell">النوع</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E] hidden md:table-cell">رقم الهوية</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E] hidden lg:table-cell">العنوان</TableHead>
                 {userRole === "SUPER_ADMIN" && (
                   <TableHead className="text-right font-bold text-purple-600 hidden xl:table-cell">
                     المحامي
                   </TableHead>
                 )}
-                <TableHead className="text-center font-bold text-[#0A192F]">إجراءات</TableHead>
+                <TableHead className="text-center font-bold text-[#133B2E]">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -204,9 +204,9 @@ export default function Clients() {
                   try {
                     return (
                       <TableRow key={client.id} className="hover:bg-gray-50/50 transition-colors">
-                        <TableCell className="font-medium text-[#0A192F]">
+                        <TableCell className="font-medium text-[#133B2E]">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-[#0A192F]">
+                            <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-[#133B2E]">
                               <User size={18} />
                             </div>
                             {client.fullName || "غير مسجل"}
@@ -214,7 +214,7 @@ export default function Clients() {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col text-sm">
-                            <a href={`tel:${client.phone}`} className="flex items-center gap-1 text-[#0A192F] hover:underline decoration-[#D4AF37]">
+                            <a href={`tel:${client.phone}`} className="flex items-center gap-1 text-[#133B2E] hover:underline decoration-[#D4AF37]">
                               <Phone size={12} className="text-gray-400" /> {client.phone || "-"}
                             </a>
                           </div>

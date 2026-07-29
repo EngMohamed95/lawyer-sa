@@ -94,7 +94,7 @@ export default function Hearings() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#0A192F] tracking-tight">الجلسات</h1>
+          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">الجلسات</h1>
           <p className="text-gray-500 mt-1">جدول الجلسات والمواعيد القادمة</p>
         </div>
         <div className="flex gap-2">
@@ -135,11 +135,11 @@ export default function Hearings() {
           <Table>
             <TableHeader className="bg-gray-50">
               <TableRow>
-                <TableHead className="text-right font-bold text-[#0A192F]">تاريخ الجلسة</TableHead>
-                <TableHead className="text-right font-bold text-[#0A192F]">القضية</TableHead>
-                <TableHead className="text-right font-bold text-[#0A192F] hidden sm:table-cell">المحكمة</TableHead>
-                <TableHead className="text-right font-bold text-[#0A192F] hidden md:table-cell">طلبات الجلسة</TableHead>
-                <TableHead className="text-right font-bold text-[#0A192F]">الحالة</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E]">تاريخ الجلسة</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E]">القضية</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E] hidden sm:table-cell">المحكمة</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E] hidden md:table-cell">طلبات الجلسة</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E]">الحالة</TableHead>
                 {userRole === "SUPER_ADMIN" && (
                   <TableHead className="text-right font-bold text-purple-600 hidden lg:table-cell">المحامي</TableHead>
                 )}

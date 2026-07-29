@@ -82,7 +82,7 @@ export function ClientDocumentsModal({ isOpen, onClose, client }: Props) {
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-[#0A192F] flex items-center gap-2">
+            <DialogTitle className="text-xl font-bold text-[#133B2E] flex items-center gap-2">
               <FolderOpen className="h-5 w-5 text-[#D4AF37]" />
               مستندات الموكل: {client?.fullName}
             </DialogTitle>
@@ -122,7 +122,7 @@ export function ClientDocumentsModal({ isOpen, onClose, client }: Props) {
               <TableBody>
                 {documents.map(d => (
                   <TableRow key={d.id} className="hover:bg-gray-50/50">
-                    <TableCell className="font-medium text-[#0A192F]">
+                    <TableCell className="font-medium text-[#133B2E]">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-amber-50 rounded-lg shrink-0">
                           {d.fileType?.startsWith("image/") ? (

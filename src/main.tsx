@@ -8,7 +8,7 @@ function showBootError(error: unknown) {
 
   if (root) {
     root.innerHTML = `
-      <div dir="rtl" style="min-height:100vh;background:#0A192F;color:white;padding:32px;font-family:Arial,sans-serif">
+      <div dir="rtl" style="min-height:100vh;background:#133B2E;color:white;padding:32px;font-family:Arial,sans-serif">
         <div style="max-width:760px;margin:80px auto;border:1px solid rgba(248,113,113,.35);background:rgba(239,68,68,.12);border-radius:18px;padding:24px">
           <h1 style="font-size:26px;margin:0 0 14px">حدث خطأ أثناء تحميل النظام</h1>
           <pre style="white-space:pre-wrap;color:#fecaca;font-size:14px;line-height:1.7">${message}</pre>
@@ -37,7 +37,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
   render() {
     if (this.state.error) {
       return (
-        <div dir="rtl" className="min-h-screen bg-[#0A192F] p-8 text-white">
+        <div dir="rtl" className="min-h-screen bg-[#133B2E] p-8 text-white">
           <div className="mx-auto mt-20 max-w-2xl rounded-2xl border border-red-400/30 bg-red-500/10 p-6">
             <h1 className="text-2xl font-bold">حدث خطأ أثناء تحميل النظام</h1>
             <p className="mt-3 text-sm text-red-100">{this.state.error.message}</p>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router";
-import { ChevronRight, Calendar, FileText, CheckSquare, Plus, Download, Edit, Save, Trash2, File, Scale, FileSignature, Sparkles, RefreshCw, UploadCloud, Chrome, Info, CheckCircle2, Loader2, ChevronDown, ChevronUp, AlertTriangle, Gavel } from "lucide-react";
+import { ChevronRight, Calendar, FileText, CheckSquare, Plus, Download, Edit, Save, Trash2, File, Scale, FileSignature, Sparkles, RefreshCw, UploadCloud, Chrome, Info, CheckCircle2, Loader2, ChevronDown, ChevronUp, AlertTriangle, Gavel, Database } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -13,6 +13,7 @@ import { EditCaseModal } from "../components/EditCaseModal";
 import { DocumentViewerModal } from "../components/DocumentViewerModal";
 import { EditHearingModal } from "../components/EditHearingModal";
 import { AiMemoDrafterModal } from "../components/AiMemoDrafterModal";
+import { HearingSelectModal } from "../components/HearingSelectModal";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import RichTextEditor from "../components/RichTextEditor";
 import { Input } from "../components/ui/input";
@@ -119,13 +120,326 @@ export default function CaseDetails() {
   const [isWritingMemo, setIsWritingMemo] = useState(false);
   const [memoTitle, setMemoTitle] = useState("");
   const [memoContent, setMemoContent] = useState("");
-  const [memoType, setMemoType] = useState("MEMO");
+  const [memoType, setMemoType] = useState("LAWSUIT");
+  const [isDraftingWithAi, setIsDraftingWithAi] = useState(false);
+
+  const handleMemoTypeChange = (type: string, force = false, customData = data) => {
+    setMemoType(type);
+    if (!customData) return;
+    
+    // Auto-update title if it's empty or matches standard prefixes
+    const prefixes = ["صحيفة دعوى", "مذكرة رد / دفاع", "مذكرة مرافعة"];
+    const isStandardTitle = !memoTitle || memoTitle === "" || prefixes.some(p => memoTitle.startsWith(p));
+    
+    const newPrefix = type === "LAWSUIT" ? "صحيفة دعوى" : type === "MEMO" ? "مذكرة رد / دفاع" : "مذكرة مرافعة";
+    if (isStandardTitle) {
+      setMemoTitle(`${newPrefix} - ${customData.title || ""}`);
+    }
+
+    // Prepare template variables
+    const dateStr = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const clientName = customData.client?.fullName || '..........';
+    const lawyerName = customData.lawyerName || '..........';
+    const courtName = customData.courtName || '..........';
+    const opponentName = customData.opponentName || '..........';
+    const courtCircle = customData.courtCircle || '..........';
+    const caseSubject = customData.caseSubject || '<em>(يرجى كتابة موضوع الدعوى هنا...)</em>';
+    const caseSummary = customData.summary || '<em>(يرجى كتابة وقائع الدعوى هنا...)</em>';
+
+    let template = "";
+    if (type === "LAWSUIT") {
+      template = `<p style="text-align: center;"><strong>بسم الله الرحمن الرحيم</strong></p>
+<p style="text-align: center; font-size: 16pt;"><strong>صحيفة دعوى</strong></p>
+<p><strong>إنه في يوم:</strong> ${dateStr}</p>
+<p><strong>بناءً على طلب السيد:</strong> ${clientName} <strong>ومحله المختار مكتب الأستاذ:</strong> ${lawyerName} المحامي.</p>
+<p><strong>أنا محضر محكمة:</strong> ${courtName} قد انتقلت وأعلنت:</p>
+<p><strong>السيد/</strong> ${opponentName} المقيم في: .......... مخاطباً مع/ ..........</p>
+<hr />
+<p><strong>الموضوع:</strong></p>
+<p>بموجب هذه الصحيفة، يتقدم الطالب برفع هذه الدعوى ضد المعلن إليه، حيث أن:</p>
+<p>${caseSubject}</p>
+<p>وحيث أن الطالب قد طالب المعلن إليه ودياً بإنهاء النزاع دون جدوى، مما حدا به لإقامة هذه الدعوى القضائية.</p>
+<p><strong>بناءً عليه:</strong></p>
+<p>أنا المحضر سالف الذكر قد انتقلت في التاريخ أعلاه إلى حيث إقامة المعلن إليه وسلمته صورة من هذه الصحيفة وكلفته بالحضور أمام محكمة: <strong>${courtName}</strong> - الدائرة: <strong>${courtCircle}</strong> بجلستها المنعقدة يوم .......... الموافق .......... في تمام الساعة .......... لسماع الحكم بـ:</p>
+<p><strong>الطلبات:</strong></p>
+<ol>
+  <li>..........</li>
+  <li>إلزام المعلن إليه بالمصاريف وأتعاب المحاماة.</li>
+</ol>
+<p style="text-align: left;"><strong>ولأجل العلم،،،</strong></p>`;
+    } else if (type === "MEMO") {
+      template = `<p style="text-align: center;"><strong>بسم الله الرحمن الرحيم</strong></p>
+<p style="text-align: center; font-size: 16pt;"><strong>مذكرة رد ودفاع</strong></p>
+<p><strong>مقدمة إلى محكمة:</strong> ${courtName} - الدائرة: <strong>${courtCircle}</strong></p>
+<p><strong>في القضية رقم:</strong> ${customData.caseNumber || '..........'} <strong>المحجوزة للحكم/المنظورة بجلسة:</strong> ..........</p>
+<p><strong>من السيد:</strong> ${clientName} <em>(صفته: ${customData.plaintiffName === clientName ? 'مدعي' : 'مدعى عليه'})</em></p>
+<p><strong>ضد السيد:</strong> ${opponentName} <em>(صفته: ${customData.plaintiffName === clientName ? 'مدعى عليه' : 'مدعي'})</em></p>
+<hr />
+<p><strong>الوقائع:</strong></p>
+<p>نحيل بشأنها إلى ما ورد بأوراق الدعوى وصحيفة الافتتاحية، ونلخصها في الآتي:</p>
+<p>${caseSummary}</p>
+<p><strong>الدفاع والأسانيد القانونية:</strong></p>
+<p>نؤسس دفاعنا على الآتي:</p>
+<ol>
+  <li><strong>أولاً:</strong> ..........</li>
+  <li><strong>ثانياً:</strong> ..........</li>
+</ol>
+<p><strong>الطلبات:</strong></p>
+<p>يلتمس مقدم المذكرة من عدالة المحكمة الموقرة الحكم بـ:</p>
+<ol>
+  <li>..........</li>
+  <li>رفض الدعوى وإلزام رافعها بالمصروفات وأتعاب المحاماة.</li>
+</ol>
+<p style="text-align: left;"><strong>وكيل الطالب/ الأستاذ:</strong> ${lawyerName}</p>`;
+    } else if (type === "PLEADING") {
+      template = `<p style="text-align: center;"><strong>بسم الله الرحمن الرحيم</strong></p>
+<p style="text-align: center; font-size: 16pt;"><strong>مذكرة مرافعة ختامية</strong></p>
+<p><strong>أمام محكمة:</strong> ${courtName} - الدائرة: <strong>${courtCircle}</strong></p>
+<p><strong>في الدعوى المقيدة برقم:</strong> ${customData.caseNumber || '..........'}</p>
+<p><strong>مقدمة من الطالب:</strong> ${clientName}</p>
+<p><strong>ضد المعلن إليه:</strong> ${opponentName}</p>
+<hr />
+<p><strong>الهيئة الموقرة:</strong></p>
+<p>إن ما نطرحه بين أيديكم الكريمة في هذه المرافعة هو بيان للحق والعدل ودحض للمزاعم الموجهة ضد موكلنا، وذلك استناداً للحقائق التالية:</p>
+<p>${caseSubject}</p>
+<p><strong>خاتمة وطلبات ختامية:</strong></p>
+<p>بناءً على ما تقدم من وقائع وأسانيد قانونية، نطلب من فضيلتكم الموقرة الحكم بـ:</p>
+<ol>
+  <li>..........</li>
+  <li>إلزام المدعى عليه بالمصاريف القضائية.</li>
+</ol>
+<p style="text-align: left;"><strong>وتقبلوا فائق الاحترام والتقدير،،،</strong></p>
+<p style="text-align: left;"><strong>مقدمه لفضيلتكم/</strong> ${lawyerName}</p>`;
+    }
+
+    if (force || !memoContent || memoContent === "" || memoContent.includes("بسم الله الرحمن الرحيم")) {
+      setMemoContent(template);
+    }
+  };
+
+  const draftWithAi = async (type: string, customData = data) => {
+    if (!customData) return;
+    setIsDraftingWithAi(true);
+    setMemoType(type);
+    
+    // Auto-update title if it's empty or matches standard prefixes
+    const prefixes = ["صحيفة دعوى", "مذكرة رد / دفاع", "مذكرة مرافعة"];
+    const isStandardTitle = !memoTitle || memoTitle === "" || prefixes.some(p => memoTitle.startsWith(p));
+    
+    const newPrefix = type === "LAWSUIT" ? "صحيفة دعوى" : type === "MEMO" ? "مذكرة رد / دفاع" : "مذكرة مرافعة";
+    if (isStandardTitle) {
+      setMemoTitle(`${newPrefix} - ${customData.title || ""}`);
+    }
+
+    setMemoContent("<p style='text-align: center; color: #666;'>جاري صياغة المسودة الأولى بالذكاء الاصطناعي بناءً على بيانات القضية... الرجاء الانتظار...</p>");
+
+    try {
+      const aiProvider = localStorage.getItem("sys_aiProvider") || "GEMINI";
+      const aiApiKey = localStorage.getItem("sys_aiApiKey") || "";
+      const aiModel = localStorage.getItem("sys_aiModel") || (aiProvider === "GEMINI" ? "gemini-flash-latest" : "llama-3.3-70b-versatile");
+      const apiKeyToUse = aiApiKey || import.meta.env.VITE_GEMINI_API_KEY || "";
+
+      if (!apiKeyToUse && aiProvider === "GEMINI") {
+        throw new Error("لم يتم تكوين مفتاح Gemini API Key. يرجى تهيئته في شاشة الإعدادات.");
+      }
+
+      const clientName = customData.client?.fullName || '..........';
+      const opponentName = customData.opponentName || '..........';
+      const courtName = customData.courtName || '..........';
+      const courtCircle = customData.courtCircle || '..........';
+      const caseSubject = customData.caseSubject || 'نزاع قضائي';
+      const caseSummary = customData.summary || 'نزاع قضائي بين الطرفين';
+
+      let prompt = `أنت مستشار قانوني ومحامٍ خبير في الأنظمة واللوائح القضائية السعودية والعربية.
+وظيفتك هي صياغة مسودة قانونية بأسلوب احترافي ورصين.
+بيانات القضية الحالية:
+- عنوان القضية: ${customData.title}
+- رقم القضية: ${customData.caseNumber}
+- المحكمة: ${courtName}
+- الدائرة القضائية: ${courtCircle}
+- المدعي: ${customData.plaintiffName || clientName}
+- المدعى عليه: ${customData.defendantName || opponentName}
+- موضوع القضية العام: ${caseSubject}
+- ملخص القضية: ${caseSummary}`;
+
+      if (type === "LAWSUIT") {
+        prompt += `\nالمطلوب: صياغة "صحيفة دعوى" (مذكرة ادعاء) مفصلة واحترافية.
+توجيهات الصياغة لصحيفة الدعوى:
+1. ابدأ بالبسملة والتحية والتوجه إلى فضيلة رئيس وأعضاء الدائرة القضائية الموقرين.
+2. اذكر أطراف الدعوى بوضوح (المدعي والمدعى عليه وصفاتهم).
+3. اعرض الوقائع بشكل متسلسل ومنطقي بناءً على موضوع القضية وملخصها.
+4. اذكر الأسانيد الشرعية والنظامية المناسبة للموضوع (حسب القوانين السارية).
+5. لخص الطلبات النهائية للمدعي بوضوح ودقة (مثل إلزام المدعى عليه بدفع المبالغ المستحقة، إلخ).
+6. اختم بعبارة "والله يحفظكم ويرعاكم، مقدمه لفضيلتكم..."
+7. صِغ المذكرة بلغة عربية فصحى قانونية بليغة وبصيغة HTML منسقة (مثل استخدام فقرات <p>، وعناوين <h3>، وقوائم <ul> <li>، ونصوص عريضة <strong>) بدون كود هيكلي كامل <html> أو <body>، فقط المحتوى الداخلي المنسق.`;
+      } else if (type === "MEMO") {
+        prompt += `\nالمطلوب: صياغة "مذكرة رد ودفاع" مفصلة واحترافية.
+توجيهات الصياغة لمذكرة الرد:
+1. ابدأ بالبسملة والتوجه إلى فضيلة رئيس وأعضاء الدائرة القضائية الموقرين.
+2. اذكر أطراف الدعوى وعلاقتهم بموضوع الرد.
+3. قم بالرد على وقائع الادعاء بأسلوب قانوني مفند ومقنع.
+4. اذكر الدفوع القانونية والأدلة المستندة إلى ملخص القضية ووقائعها.
+5. ادعم الدفوع بالأسانيد الشرعية والنظامية المناسبة.
+6. حدد الطلبات الختامية بوضوح (مثل: رد الدعوى، إلزام المدعي بالتعويض أو المصاريف القضائية، إلخ).
+7. اختم بعبارة مناسبة ومقدمه.
+8. صِغ المذكرة بلغة عربية فصحى قانونية بليغة وبصيغة HTML منسقة (مثل استخدام فقرات <p>، وعناوين <h3>، وقوائم <ul> <li>، ونصوص عريضة <strong>) بدون كود هيكلي كامل <html> أو <body>، فقط المحتوى الداخلي المنسق.`;
+      } else {
+        prompt += `\nالمطلوب: صياغة "مذكرة مرافعة ختامية" مفصلة واحترافية.
+توجيهات الصياغة لمذكرة المرافعة:
+1. ابدأ بالبسملة والتحية والتوجه للمحكمة الموقرة.
+2. لخص أسباب المرافعة والأسانيد القانونية المؤيدة لموكلنا.
+3. حدد الطلبات الختامية بوضوح.
+4. صِغ المذكرة بلغة عربية فصحى قانونية بليغة وبصيغة HTML منسقة (مثل استخدام فقرات <p>، وعناوين <h3>، وقوائم <ul> <li>، ونصوص عريضة <strong>) بدون كود هيكلي كامل <html> أو <body>، فقط المحتوى الداخلي المنسق.`;
+      }
+
+      let responseText = "";
+      if (aiProvider === "GEMINI") {
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${aiModel}:generateContent?key=${apiKeyToUse}`;
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.7, maxOutputTokens: 3000 }
+          })
+        });
+
+        const dataJson = await response.json();
+        if (dataJson.error) {
+          throw new Error(dataJson.error.message || "خطأ في معالجة طلب Gemini");
+        }
+        responseText = dataJson.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      } else {
+        // Groq API fallback
+        const API_URL = "https://api.groq.com/openai/v1/chat/completions";
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKeyToUse}`
+          },
+          body: JSON.stringify({
+            model: aiModel,
+            messages: [{ role: "user", content: prompt }],
+            temperature: 0.7,
+            max_tokens: 2500
+          })
+        });
+        const dataJson = await response.json();
+        responseText = dataJson.choices?.[0]?.message?.content || "";
+      }
+
+      // Cleanup responseText if it contains markdown code blocks
+      let cleanedHtml = responseText.trim();
+      if (cleanedHtml.startsWith("```html")) {
+        cleanedHtml = cleanedHtml.replace(/^```html/, "").replace(/```$/, "");
+      } else if (cleanedHtml.startsWith("```")) {
+        cleanedHtml = cleanedHtml.replace(/^```/, "").replace(/```$/, "");
+      }
+
+      setMemoContent(cleanedHtml);
+    } catch (err: any) {
+      console.error(err);
+      // Fallback to static template
+      handleMemoTypeChange(type, true, customData);
+    } finally {
+      setIsDraftingWithAi(false);
+    }
+  };
 
   // New Case Modals & AI States
   const [isEditHearingOpen, setIsEditHearingOpen] = useState(false);
   const [selectedHearing, setSelectedHearing] = useState<any | null>(null);
   const [isAiMemoDrafterOpen, setIsAiMemoDrafterOpen] = useState(false);
   const [isSaveJudgmentLoading, setIsSaveJudgmentLoading] = useState(false);
+
+  // Hearing Attachment States
+  const [isHearingSelectOpen, setIsHearingSelectOpen] = useState(false);
+  const [selectedMemoForHearing, setSelectedMemoForHearing] = useState<any | null>(null);
+  const [isAdoptingMemoLoading, setIsAdoptingMemoLoading] = useState(false);
+
+  const handleAdoptMemoToHearing = async (hearingId: string) => {
+    if (!selectedMemoForHearing || !id) return;
+    setIsAdoptingMemoLoading(true);
+    try {
+      // 1. Ensure html2pdf is loaded
+      if (!(window as any).html2pdf) {
+        const script = window.document.createElement("script");
+        script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+        script.async = true;
+        window.document.body.appendChild(script);
+        await new Promise<void>((resolve, reject) => {
+          script.onload = () => resolve();
+          script.onerror = (err) => reject(err);
+        });
+      }
+
+      // 2. Generate PDF Blob
+      const element = document.createElement("div");
+      element.innerHTML = `
+        <div style="font-family: 'Tajawal', sans-serif; padding: 40px; line-height: 1.8; direction: rtl; text-align: right;">
+          <h1 style="text-align: center; color: #133B2E; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; font-size: 22pt;">${selectedMemoForHearing.title}</h1>
+          <div style="color: #666; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 10pt;">
+            قضية رقم: ${data.caseNumber || '---'} | تاريخ الاعتماد: ${new Date().toLocaleDateString('ar-EG')}
+          </div>
+          <div style="font-size: 14pt; text-align: justify;">${selectedMemoForHearing.content}</div>
+        </div>
+      `;
+      document.body.appendChild(element);
+      const opt = {
+        margin:       15,
+        filename:     `${selectedMemoForHearing.title}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      const pdfBlob = await (window as any).html2pdf().from(element).set(opt).output('blob');
+      document.body.removeChild(element);
+
+      // 3. Upload PDF file
+      const fileOfBlob = new File([pdfBlob], `${selectedMemoForHearing.title}.pdf`, { type: 'application/pdf' });
+      const fd = new FormData();
+      fd.append("file", fileOfBlob);
+
+      const response = await fetch("/upload.php", {
+        method: "POST",
+        body: fd,
+      });
+
+      if (!response.ok) {
+        throw new Error("فشل رفع ملف PDF إلى الاستضافة");
+      }
+
+      const uploadResult = await response.json();
+      if (uploadResult.error) {
+        throw new Error(uploadResult.error);
+      }
+
+      const fileUrl = uploadResult.fileUrl;
+
+      // 4. Update the hearing document in Firestore
+      const { doc, updateDoc } = await import("firebase/firestore");
+      const { db } = await import("../lib/firebase");
+
+      const hearingRef = doc(db, "cases", id, "hearings", hearingId);
+      await updateDoc(hearingRef, {
+        memoFileUrl: fileUrl,
+        memoFileName: `${selectedMemoForHearing.title}.pdf`,
+        updatedAt: new Date().toISOString()
+      });
+
+      // 5. Reload case details
+      alert("تم اعتماد المذكرة بنجاح وتحويلها لـ PDF وإرفاقها بالجلسة المحددة!");
+      setSelectedMemoForHearing(null);
+      fetchCaseData();
+    } catch (err: any) {
+      console.error("Adoption error:", err);
+      alert("حدث خطأ أثناء اعتماد المذكرة: " + err.message);
+    } finally {
+      setIsAdoptingMemoLoading(false);
+    }
+  };
 
   // Najiz integration states
   const [activeTab, setActiveTab] = useState("info");
@@ -375,6 +689,17 @@ export default function CaseDetails() {
         document={viewDocument}
       />
 
+      <HearingSelectModal 
+        isOpen={isHearingSelectOpen}
+        onClose={() => {
+          setIsHearingSelectOpen(false);
+          setSelectedMemoForHearing(null);
+        }}
+        hearings={data?.hearings || []}
+        onConfirm={handleAdoptMemoToHearing}
+        loading={isAdoptingMemoLoading}
+      />
+
       <AddDocumentModal 
         isOpen={isAddDocOpen} 
         onClose={() => setIsAddDocOpen(false)} 
@@ -441,14 +766,14 @@ export default function CaseDetails() {
 
       {/* Header */}
       <div className="flex flex-col gap-4">
-        <Link to="/app/cases" className="text-gray-500 hover:text-[#0A192F] inline-flex items-center text-sm font-medium transition-colors">
+        <Link to="/app/cases" className="text-gray-500 hover:text-[#133B2E] inline-flex items-center text-sm font-medium transition-colors">
           <ChevronRight size={16} className="ml-1" />
           العودة للقضايا
         </Link>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-4">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold text-[#0A192F] tracking-tight">{data.title}</h1>
+              <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">{data.title}</h1>
               {getStatusBadge(data.status)}
             </div>
             <p className="text-gray-500 mt-1 flex items-center gap-2">
@@ -493,13 +818,13 @@ export default function CaseDetails() {
               value="info" 
               className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
                 activeTab === "info"
-                  ? "!bg-[#0A192F] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
-                  : "bg-white text-[#0A192F] border border-slate-200/80 shadow-xs hover:shadow-md"
+                  ? "!bg-[#133B2E] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
+                  : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
               <div>
                 <span className={`text-xs font-semibold block mb-1 ${activeTab === "info" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>التفاصيل العامة</span>
-                <span className={`text-xl font-bold block ${activeTab === "info" ? "!text-white font-extrabold" : "text-[#0A192F]"}`}>الملف الرئيسي</span>
+                <span className={`text-xl font-bold block ${activeTab === "info" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>الملف الرئيسي</span>
               </div>
               <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "info" ? "!bg-white/20 !text-amber-300" : "bg-indigo-100/70 text-indigo-600"}`}>
                 <Scale size={22} />
@@ -507,33 +832,16 @@ export default function CaseDetails() {
             </TabsTrigger>
 
             <TabsTrigger 
-              value="hearings" 
-              className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
-                activeTab === "hearings"
-                  ? "!bg-[#0A192F] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
-                  : "bg-white text-[#0A192F] border border-slate-200/80 shadow-xs hover:shadow-md"
-              }`}
-            >
-              <div>
-                <span className={`text-xs font-semibold block mb-1 ${activeTab === "hearings" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>الجلسات</span>
-                <span className={`text-2xl font-bold block ${activeTab === "hearings" ? "!text-white font-extrabold" : "text-[#0A192F]"}`}>{data.hearings.length}</span>
-              </div>
-              <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "hearings" ? "!bg-white/20 !text-amber-300" : "bg-cyan-100/70 text-cyan-600"}`}>
-                <Calendar size={22} />
-              </div>
-            </TabsTrigger>
-
-            <TabsTrigger 
               value="memos" 
               className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
                 activeTab === "memos"
-                  ? "!bg-[#0A192F] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
-                  : "bg-white text-[#0A192F] border border-slate-200/80 shadow-xs hover:shadow-md"
+                  ? "!bg-[#133B2E] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
+                  : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
               <div>
                 <span className={`text-xs font-semibold block mb-1 ${activeTab === "memos" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>المذكرات والصحف</span>
-                <span className={`text-2xl font-bold block ${activeTab === "memos" ? "!text-white font-extrabold" : "text-[#0A192F]"}`}>{data.memos?.length || 0}</span>
+                <span className={`text-2xl font-bold block ${activeTab === "memos" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.memos?.length || 0}</span>
               </div>
               <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "memos" ? "!bg-white/20 !text-amber-300" : "bg-amber-100/70 text-amber-600"}`}>
                 <FileSignature size={22} />
@@ -541,16 +849,33 @@ export default function CaseDetails() {
             </TabsTrigger>
 
             <TabsTrigger 
+              value="hearings" 
+              className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
+                activeTab === "hearings"
+                  ? "!bg-[#133B2E] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
+                  : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
+              }`}
+            >
+              <div>
+                <span className={`text-xs font-semibold block mb-1 ${activeTab === "hearings" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>الجلسات</span>
+                <span className={`text-2xl font-bold block ${activeTab === "hearings" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.hearings.length}</span>
+              </div>
+              <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "hearings" ? "!bg-white/20 !text-amber-300" : "bg-cyan-100/70 text-cyan-600"}`}>
+                <Calendar size={22} />
+              </div>
+            </TabsTrigger>
+
+            <TabsTrigger 
               value="docs" 
               className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
                 activeTab === "docs"
-                  ? "!bg-[#0A192F] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
-                  : "bg-white text-[#0A192F] border border-slate-200/80 shadow-xs hover:shadow-md"
+                  ? "!bg-[#133B2E] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
+                  : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
               <div>
                 <span className={`text-xs font-semibold block mb-1 ${activeTab === "docs" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>المستندات</span>
-                <span className={`text-2xl font-bold block ${activeTab === "docs" ? "!text-white font-extrabold" : "text-[#0A192F]"}`}>{data.documents.length}</span>
+                <span className={`text-2xl font-bold block ${activeTab === "docs" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.documents.length}</span>
               </div>
               <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "docs" ? "!bg-white/20 !text-amber-300" : "bg-rose-100/70 text-rose-600"}`}>
                 <FileText size={22} />
@@ -561,13 +886,13 @@ export default function CaseDetails() {
               value="tasks" 
               className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
                 activeTab === "tasks"
-                  ? "!bg-[#0A192F] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
-                  : "bg-white text-[#0A192F] border border-slate-200/80 shadow-xs hover:shadow-md"
+                  ? "!bg-[#133B2E] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
+                  : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
               <div>
                 <span className={`text-xs font-semibold block mb-1 ${activeTab === "tasks" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>المهام</span>
-                <span className={`text-2xl font-bold block ${activeTab === "tasks" ? "!text-white font-extrabold" : "text-[#0A192F]"}`}>{data.tasks.length}</span>
+                <span className={`text-2xl font-bold block ${activeTab === "tasks" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.tasks.length}</span>
               </div>
               <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "tasks" ? "!bg-white/20 !text-amber-300" : "bg-purple-100/70 text-purple-600"}`}>
                 <CheckSquare size={22} />
@@ -578,13 +903,13 @@ export default function CaseDetails() {
               value="judgment" 
               className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
                 activeTab === "judgment"
-                  ? "!bg-[#0A192F] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
-                  : "bg-white text-[#0A192F] border border-slate-200/80 shadow-xs hover:shadow-md"
+                  ? "!bg-[#133B2E] !text-white shadow-xl border-2 !border-[#D4AF37] ring-2 ring-[#D4AF37]"
+                  : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
               <div>
                 <span className={`text-xs font-semibold block mb-1 ${activeTab === "judgment" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>الحكم القضائي</span>
-                <span className={`text-lg font-bold block ${activeTab === "judgment" ? "!text-white font-extrabold" : "text-[#0A192F]"}`}>{data.finalJudgment ? "صادر" : "معلق"}</span>
+                <span className={`text-lg font-bold block ${activeTab === "judgment" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.finalJudgment ? "صادر" : "معلق"}</span>
               </div>
               <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "judgment" ? "!bg-white/20 !text-amber-300" : "bg-emerald-100/70 text-emerald-600"}`}>
                 <Gavel size={22} />
@@ -603,7 +928,7 @@ export default function CaseDetails() {
                 <div className="space-y-4">
                   <div className="flex justify-between border-b pb-3 border-gray-100">
                     <span className="text-gray-500">الموكل (العميل)</span>
-                    <span className="font-bold text-[#0A192F]">{data.client?.fullName} <Badge variant="outline" className="mr-2 font-normal text-xs">{data.client?.clientType === 'COMPANY' ? 'شركة' : 'فرد'}</Badge></span>
+                    <span className="font-bold text-[#133B2E]">{data.client?.fullName} <Badge variant="outline" className="mr-2 font-normal text-xs">{data.client?.clientType === 'COMPANY' ? 'شركة' : 'فرد'}</Badge></span>
                   </div>
                   <div className="flex justify-between border-b pb-3 border-gray-100">
                     <span className="text-gray-500">المدعي (المدعون)</span>
@@ -637,11 +962,11 @@ export default function CaseDetails() {
                   </div>
                   <div className="flex justify-between border-b pb-3 border-gray-100">
                     <span className="text-gray-500">المحكمة المرفوع أمامها</span>
-                    <span className="font-medium text-[#0A192F]">{data.courtName || "غير محدد"}</span>
+                    <span className="font-medium text-[#133B2E]">{data.courtName || "غير محدد"}</span>
                   </div>
                   <div className="flex justify-between border-b pb-3 border-gray-100">
                     <span className="text-gray-500">الدائرة القضائية</span>
-                    <span className="font-medium text-[#0A192F]">{data.courtCircle || "غير محدد"}</span>
+                    <span className="font-medium text-[#133B2E]">{data.courtCircle || "غير محدد"}</span>
                   </div>
                   <div className="flex justify-between border-b pb-3 border-gray-100">
                     <span className="text-gray-500">تاريخ البداية</span>
@@ -681,12 +1006,12 @@ export default function CaseDetails() {
             <Card className="shadow-sm md:col-span-2 border-amber-100 bg-[#FBF9F2]">
               <CardHeader className="pb-3 border-b border-amber-100 flex flex-row items-center justify-between">
                 <div>
-                  <CardTitle className="text-lg text-[#0A192F] flex items-center gap-2">
+                  <CardTitle className="text-lg text-[#133B2E] flex items-center gap-2">
                     <Scale className="text-[#D4AF37] w-5 h-5" /> تكامل منصة ناجز العدلية
                   </CardTitle>
                   <CardDescription className="text-gray-500">مزامنة بيانات القضية والجلسات والأحكام تلقائياً</CardDescription>
                 </div>
-                <Badge className="bg-[#D4AF37]/20 text-[#0A192F] hover:bg-[#D4AF37]/30 font-bold border border-[#D4AF37]/30">
+                <Badge className="bg-[#D4AF37]/20 text-[#133B2E] hover:bg-[#D4AF37]/30 font-bold border border-[#D4AF37]/30">
                   {localStorage.getItem("sys_najizMode") === "OFFICIAL_API" 
                     ? "ربط رسمي مباشر"
                     : localStorage.getItem("sys_najizMode") === "CHROME_EXTENSION"
@@ -701,13 +1026,13 @@ export default function CaseDetails() {
                   <div className="space-y-4">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-gray-100">
                       <div>
-                        <p className="text-sm font-bold text-[#0A192F]">حالة الربط التلقائي بالخوادم</p>
+                        <p className="text-sm font-bold text-[#133B2E]">حالة الربط التلقائي بالخوادم</p>
                         <p className="text-xs text-gray-500 mt-1">آخر مزامنة ناجحة: اليوم منذ ساعتين</p>
                       </div>
                       <Button 
                         onClick={handleOfficialNajizSync} 
                         disabled={isSyncingNajiz}
-                        className="bg-[#0A192F] hover:bg-[#0A192F]/90 text-white font-bold"
+                        className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white font-bold"
                       >
                         {isSyncingNajiz ? (
                           <>
@@ -770,7 +1095,7 @@ export default function CaseDetails() {
                           </div>
                         ) : (
                           <>
-                            <p className="text-sm font-bold text-[#0A192F]">اسحب وأفلت تقرير ناجز هنا أو تصفح جهازك</p>
+                            <p className="text-sm font-bold text-[#133B2E]">اسحب وأفلت تقرير ناجز هنا أو تصفح جهازك</p>
                             <p className="text-xs text-gray-400">يدعم صيغ PDF و HTML المصدرة من وزارة العدل</p>
                           </>
                         )}
@@ -804,7 +1129,7 @@ export default function CaseDetails() {
               <Card className="shadow-sm md:col-span-2 border border-amber-200/60 overflow-hidden bg-white">
                 <CardHeader className="pb-4 bg-amber-50/30 border-b border-amber-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
-                    <CardTitle className="text-lg text-[#0A192F] flex items-center gap-2">
+                    <CardTitle className="text-lg text-[#133B2E] flex items-center gap-2">
                       <Scale className="text-[#D4AF37] w-5 h-5" /> مسار سير إجراءات التنفيذ في نظام ناجز
                     </CardTitle>
                     <CardDescription className="text-gray-500 text-xs">
@@ -812,7 +1137,7 @@ export default function CaseDetails() {
                     </CardDescription>
                   </div>
                   <div className="flex flex-col items-end gap-1 w-full md:w-auto">
-                    <span className="text-xs font-bold text-[#0A192F] bg-amber-100 text-amber-800 px-3 py-1 rounded-full">
+                    <span className="text-xs font-bold text-[#133B2E] bg-amber-100 text-amber-800 px-3 py-1 rounded-full">
                       مكتمل: {completedStepsCount} من 22 ({enforcementProgress}%)
                     </span>
                   </div>
@@ -838,7 +1163,7 @@ export default function CaseDetails() {
                         className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-[#0A192F] text-sm">1. تقديم طلب التنفيذ والتحقق</span>
+                          <span className="font-bold text-[#133B2E] text-sm">1. تقديم طلب التنفيذ والتحقق</span>
                           <span className="text-xs text-gray-500 font-medium">({enforcementStepsList.filter(s => s.stage === "SUBMISSION").filter(s => data.enforcementSteps?.[s.id]).length}/5)</span>
                         </div>
                         {expandedStages.SUBMISSION ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
@@ -871,7 +1196,7 @@ export default function CaseDetails() {
                         className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-[#0A192F] text-sm">2. التبليغ والمهلة النظامية</span>
+                          <span className="font-bold text-[#133B2E] text-sm">2. التبليغ والمهلة النظامية</span>
                           <span className="text-xs text-gray-500 font-medium">({enforcementStepsList.filter(s => s.stage === "NOTIFY").filter(s => data.enforcementSteps?.[s.id]).length}/4)</span>
                         </div>
                         {expandedStages.NOTIFY ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
@@ -904,7 +1229,7 @@ export default function CaseDetails() {
                         className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-[#0A192F] text-sm">3. إجراءات التنفيذ الجبري</span>
+                          <span className="font-bold text-[#133B2E] text-sm">3. إجراءات التنفيذ الجبري</span>
                           <span className="text-xs text-gray-500 font-medium">({enforcementStepsList.filter(s => s.stage === "ENFORCE").filter(s => data.enforcementSteps?.[s.id]).length}/9)</span>
                         </div>
                         {expandedStages.ENFORCE ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
@@ -937,7 +1262,7 @@ export default function CaseDetails() {
                         className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-[#0A192F] text-sm">4. إنهاء التنفيذ وإقفال الملف</span>
+                          <span className="font-bold text-[#133B2E] text-sm">4. إنهاء التنفيذ وإقفال الملف</span>
                           <span className="text-xs text-gray-500 font-medium">({enforcementStepsList.filter(s => s.stage === "FINISH").filter(s => data.enforcementSteps?.[s.id]).length}/4)</span>
                         </div>
                         {expandedStages.FINISH ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
@@ -966,14 +1291,14 @@ export default function CaseDetails() {
 
                   {/* Special Scenarios Section */}
                   <div className="pt-4 border-t border-gray-100 space-y-3">
-                    <h4 className="text-sm font-bold text-[#0A192F] flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-[#133B2E] flex items-center gap-2">
                       <AlertTriangle className="text-amber-500 w-4 h-4" /> حالات طارئة قد تطرأ أثناء التنفيذ
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-amber-50/20 p-4 rounded-xl border border-amber-100/50">
                       {enforcementScenariosList.map(item => (
                         <label 
                           key={item.id} 
-                          className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer transition select-none ${data.enforcementScenarios?.[item.id] ? "bg-amber-100/50 text-[#0A192F] font-bold" : "hover:bg-gray-50 text-gray-600"}`}
+                          className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer transition select-none ${data.enforcementScenarios?.[item.id] ? "bg-amber-100/50 text-[#133B2E] font-bold" : "hover:bg-gray-50 text-gray-600"}`}
                         >
                           <input 
                             type="checkbox"
@@ -995,7 +1320,7 @@ export default function CaseDetails() {
               <Card className="shadow-sm md:col-span-2 border border-blue-200/60 overflow-hidden bg-white">
                 <CardHeader className="pb-4 bg-blue-50/20 border-b border-blue-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
-                    <CardTitle className="text-lg text-[#0A192F] flex items-center gap-2">
+                    <CardTitle className="text-lg text-[#133B2E] flex items-center gap-2">
                       <Scale className="text-blue-600 w-5 h-5" /> مسار سير إجراءات التقاضي في نظام ناجز
                     </CardTitle>
                     <CardDescription className="text-gray-500 text-xs">
@@ -1029,7 +1354,7 @@ export default function CaseDetails() {
                         className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-[#0A192F] text-sm">1. تقديم قيد الدعوى وإحالتها</span>
+                          <span className="font-bold text-[#133B2E] text-sm">1. تقديم قيد الدعوى وإحالتها</span>
                           <span className="text-xs text-gray-500 font-medium">({litigationStepsList.filter(s => s.stage === "SUBMIT").filter(s => data.litigationSteps?.[s.id]).length}/8)</span>
                         </div>
                         {expandedStages.SUBMIT ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
@@ -1062,7 +1387,7 @@ export default function CaseDetails() {
                         className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-[#0A192F] text-sm">2. الترافع وتبادل المذكرات والجلسات</span>
+                          <span className="font-bold text-[#133B2E] text-sm">2. الترافع وتبادل المذكرات والجلسات</span>
                           <span className="text-xs text-gray-500 font-medium">({litigationStepsList.filter(s => s.stage === "PLEADING").filter(s => data.litigationSteps?.[s.id]).length}/6)</span>
                         </div>
                         {expandedStages.PLEADING ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
@@ -1095,7 +1420,7 @@ export default function CaseDetails() {
                         className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-[#0A192F] text-sm">3. الأحكام والاعتراض والاستئناف</span>
+                          <span className="font-bold text-[#133B2E] text-sm">3. الأحكام والاعتراض والاستئناف</span>
                           <span className="text-xs text-gray-500 font-medium">({litigationStepsList.filter(s => s.stage === "JUDGMENT").filter(s => data.litigationSteps?.[s.id]).length}/6)</span>
                         </div>
                         {expandedStages.JUDGMENT ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
@@ -1128,7 +1453,7 @@ export default function CaseDetails() {
                         className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-[#0A192F] text-sm">4. السند والتنفيذ والتحصيل</span>
+                          <span className="font-bold text-[#133B2E] text-sm">4. السند والتنفيذ والتحصيل</span>
                           <span className="text-xs text-gray-500 font-medium">({litigationStepsList.filter(s => s.stage === "EXECUTION").filter(s => data.litigationSteps?.[s.id]).length}/5)</span>
                         </div>
                         {expandedStages.EXECUTION ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
@@ -1157,14 +1482,14 @@ export default function CaseDetails() {
 
                   {/* Special Scenarios Section */}
                   <div className="pt-4 border-t border-gray-100 space-y-3">
-                    <h4 className="text-sm font-bold text-[#0A192F] flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-[#133B2E] flex items-center gap-2">
                       <AlertTriangle className="text-blue-500 w-4 h-4" /> حالات طارئة قد تطرأ أثناء سير القضية
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-blue-50/10 p-4 rounded-xl border border-blue-100/50">
                       {litigationScenariosList.map(item => (
                         <label 
                           key={item.id} 
-                          className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer transition select-none ${data.litigationScenarios?.[item.id] ? "bg-blue-100/30 text-[#0A192F] font-bold" : "hover:bg-gray-50 text-gray-600"}`}
+                          className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer transition select-none ${data.litigationScenarios?.[item.id] ? "bg-blue-100/30 text-[#133B2E] font-bold" : "hover:bg-gray-50 text-gray-600"}`}
                         >
                           <input 
                             type="checkbox"
@@ -1190,7 +1515,7 @@ export default function CaseDetails() {
                 <CardTitle className="text-lg">سجل الجلسات</CardTitle>
                 <CardDescription>الترتيب من الأقدم للأحدث</CardDescription>
               </div>
-              <Button size="sm" className="bg-[#0A192F] hover:bg-[#0A192F]/90" onClick={() => setIsAddHearingOpen(true)}>
+              <Button size="sm" className="bg-[#133B2E] hover:bg-[#133B2E]/90" onClick={() => setIsAddHearingOpen(true)}>
                 <Plus className="ml-2 h-4 w-4" /> اضافة جلسة جديدة
               </Button>
             </CardHeader>
@@ -1214,7 +1539,7 @@ export default function CaseDetails() {
                       const isPast = new Date(h.hearingDate) < new Date();
                       return (
                         <TableRow key={h.id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
-                          <TableCell className="font-semibold text-[#0A192F]">
+                          <TableCell className="font-semibold text-[#133B2E]">
                             <div className="flex flex-col gap-1">
                               <span dir="ltr" className="text-right">{new Date(h.hearingDate).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
                               {!isPast && <Badge className="bg-green-100 text-green-800 w-fit text-[10px] px-1 py-0 hover:bg-green-200">قادمة</Badge>}
@@ -1300,7 +1625,23 @@ export default function CaseDetails() {
                                 </div>
                               ) : null}
 
-                              {!(h.minutesText || h.minutesFileUrl || h.judgmentText || h.judgmentFileUrl) && (
+                              {h.memoFileUrl ? (
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                                    <span className="text-[10px] font-bold text-gray-700">المذكرة المعتمدة:</span>
+                                  </div>
+                                  <div className="flex gap-1.5">
+                                    <a href={h.memoFileUrl} target="_blank" rel="noreferrer" download>
+                                      <Button variant="outline" size="sm" className="h-7 px-2 text-[10px] border-green-200 text-green-700 hover:bg-green-50 font-bold">
+                                        تحميل PDF
+                                      </Button>
+                                    </a>
+                                  </div>
+                                </div>
+                              ) : null}
+
+                              {!(h.minutesText || h.minutesFileUrl || h.judgmentText || h.judgmentFileUrl || h.memoFileUrl) && (
                                 <span className="text-xs text-gray-400">لا يوجد أرشيف</span>
                               )}
                             </div>
@@ -1309,7 +1650,7 @@ export default function CaseDetails() {
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              className="h-8 w-8 text-[#0A192F] hover:bg-gray-100"
+                              className="h-8 w-8 text-[#133B2E] hover:bg-gray-100"
                               onClick={() => {
                                 setSelectedHearing(h);
                                 setIsEditHearingOpen(true);
@@ -1332,7 +1673,10 @@ export default function CaseDetails() {
           {!isWritingMemo ? (
             <div className="space-y-4">
               <div className="flex justify-end">
-                <Button onClick={() => setIsWritingMemo(true)} className="bg-[#D4AF37] hover:bg-[#B8962E] text-white">
+                <Button onClick={() => {
+                  setIsWritingMemo(true);
+                  handleMemoTypeChange("LAWSUIT", true);
+                }} className="bg-[#D4AF37] hover:bg-[#B8962E] text-white">
                   <FileSignature className="ml-2 h-4 w-4" /> كتابة مذكرة / صحيفة جديدة
                 </Button>
               </div>
@@ -1346,7 +1690,7 @@ export default function CaseDetails() {
                     <Card key={memo.id} className="shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
                       <CardHeader className="pb-3 border-b border-gray-100">
                         <div className="flex justify-between items-start">
-                          <CardTitle className="text-lg text-[#0A192F] line-clamp-1" title={memo.title}>{memo.title}</CardTitle>
+                          <CardTitle className="text-lg text-[#133B2E] line-clamp-1" title={memo.title}>{memo.title}</CardTitle>
                           <Badge variant="outline" className="bg-gray-50 text-[10px]">{memo.type === 'LAWSUIT' ? 'صحيفة دعوى' : memo.type === 'PLEADING' ? 'مرافعة' : 'مذكرة'}</Badge>
                         </div>
                         <CardDescription dir="ltr" className="text-right text-xs mt-2">
@@ -1364,7 +1708,7 @@ export default function CaseDetails() {
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="text-[#0A192F] hover:bg-white bg-white shadow-sm border border-gray-200"
+                            className="text-[#133B2E] hover:bg-white bg-white shadow-sm border border-gray-200"
                             onClick={() => {
                               const printWindow = window.open('', '_blank');
                               if (printWindow) {
@@ -1374,7 +1718,7 @@ export default function CaseDetails() {
                                       <title>${memo.title}</title>
                                       <style>
                                         body { font-family: 'Tajawal', serif; padding: 50px; line-height: 1.8; }
-                                        h1 { text-align: center; color: #0A192F; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+                                        h1 { text-align: center; color: #133B2E; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
                                         .meta { color: #666; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
                                         .content { font-size: 14pt; text-align: justify; }
                                       </style>
@@ -1392,6 +1736,18 @@ export default function CaseDetails() {
                             }}
                           >
                             طباعة
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-green-700 hover:text-green-800 hover:bg-green-50 bg-white shadow-sm border border-gray-200"
+                            title="اعتماد المذكرة كـ PDF وإرفاقها بالجلسة"
+                            onClick={() => {
+                              setSelectedMemoForHearing(memo);
+                              setIsHearingSelectOpen(true);
+                            }}
+                          >
+                            اعتماد وإرسال للجلسة
                           </Button>
                           <Button variant="ghost" size="sm" className="text-purple-600 hover:text-purple-800 hover:bg-purple-100" title="استخراج أهم النقاط القانونية بالذكاء الاصطناعي" onClick={() => setActiveAiTarget({ target: memo, type: 'memo' })}>
                             <Sparkles className="w-4 h-4" />
@@ -1417,7 +1773,7 @@ export default function CaseDetails() {
               <CardContent className="pt-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2 md:col-span-2">
-                    <label className="text-sm font-bold text-[#0A192F]">عنوان المذكرة / المستند</label>
+                    <label className="text-sm font-bold text-[#133B2E]">عنوان المذكرة / المستند</label>
                     <Input 
                       placeholder="مثال: صحيفة دعوى تعويض، مذكرة دفاع..." 
                       className="text-lg bg-gray-50"
@@ -1426,11 +1782,12 @@ export default function CaseDetails() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-[#0A192F]">النوع</label>
+                    <label className="text-sm font-bold text-[#133B2E]">النوع</label>
                     <select 
                       className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       value={memoType}
-                      onChange={e => setMemoType(e.target.value)}
+                      disabled={isDraftingWithAi}
+                      onChange={e => draftWithAi(e.target.value)}
                     >
                       <option value="LAWSUIT">صحيفة دعوى</option>
                       <option value="MEMO">مذكرة رد / دفاع</option>
@@ -1440,10 +1797,36 @@ export default function CaseDetails() {
                 </div>
                 
                 <div className="space-y-2 relative">
-                  <label className="text-sm font-bold text-[#0A192F]">المحتوى</label>
-                  <Button variant="outline" size="sm" className="absolute left-0 top-0 text-purple-600 border-purple-200 hover:bg-purple-50" title="اكتب المحتوى باستخدام الذكاء الاصطناعي">
-                    <Sparkles className="ml-2 h-3 w-3" /> صياغة بالـ AI
-                  </Button>
+                  <label className="text-sm font-bold text-[#133B2E] flex items-center gap-2">
+                    المحتوى
+                    {isDraftingWithAi && <Loader2 className="h-4 w-4 animate-spin text-purple-600" />}
+                  </label>
+                  <div className="absolute left-0 top-0 flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50" 
+                      title="سحب وتعبئة بيانات القضية الحالية تلقائياً"
+                      disabled={isDraftingWithAi}
+                      onClick={() => {
+                        if (confirm("هل تريد تعبئة محتوى المحرر بنموذج ذكي يسحب بيانات هذه القضية؟ سيؤدي ذلك لاستبدال المحتوى الحالي.")) {
+                          handleMemoTypeChange(memoType, true);
+                        }
+                      }}
+                    >
+                      <Database className="ml-1.5 h-3.5 w-3.5" /> سحب البيانات
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-purple-600 border-purple-200 hover:bg-purple-50" 
+                      title="اكتب المحتوى باستخدام الذكاء الاصطناعي"
+                      disabled={isDraftingWithAi}
+                      onClick={() => draftWithAi(memoType)}
+                    >
+                      <Sparkles className="ml-2 h-3 w-3" /> صياغة بالـ AI
+                    </Button>
+                  </div>
                   <RichTextEditor 
                     value={memoContent}
                     onChange={(val) => setMemoContent(val)}
@@ -1466,7 +1849,7 @@ export default function CaseDetails() {
                               <title>${memoTitle}</title>
                               <style>
                                 body { font-family: 'Tajawal', serif; padding: 50px; line-height: 1.8; }
-                                h1 { text-align: center; color: #0A192F; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+                                h1 { text-align: center; color: #133B2E; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
                                 .meta { color: #666; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
                                 .content { font-size: 14pt; text-align: justify; }
                               </style>
@@ -1487,7 +1870,7 @@ export default function CaseDetails() {
                     <Download className="ml-2 h-4 w-4" /> حفظ وطباعة فورية
                   </Button>
                   <Button 
-                    className="bg-[#0A192F] hover:bg-[#0A192F]/90 text-white" 
+                    className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white" 
                     onClick={handleSaveMemo}
                     disabled={!memoTitle || !memoContent}
                   >
@@ -1510,7 +1893,7 @@ export default function CaseDetails() {
            <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
               <CardTitle className="text-lg">المهام المتعلقة بالقضية</CardTitle>
-              <Button size="sm" variant="outline" className="border-[#0A192F] text-[#0A192F]" onClick={() => setIsAddTaskOpen(true)}>
+              <Button size="sm" variant="outline" className="border-[#133B2E] text-[#133B2E]" onClick={() => setIsAddTaskOpen(true)}>
                 <Plus className="ml-2 h-4 w-4" /> اضافة مهمة
               </Button>
             </CardHeader>
@@ -1525,7 +1908,7 @@ export default function CaseDetails() {
                          <TableCell>
                            <div className="flex items-center gap-3">
                              <div className={`w-3 h-3 rounded-full ${t.priority === 'HIGH' || t.priority === 'URGENT' ? 'bg-red-500' : 'bg-blue-500'}`} />
-                             <span className="font-medium text-[#0A192F]">{t.title}</span>
+                             <span className="font-medium text-[#133B2E]">{t.title}</span>
                            </div>
                          </TableCell>
                          <TableCell className="text-gray-500">{t.assigneeName || "-"}</TableCell>
@@ -1596,7 +1979,7 @@ export default function CaseDetails() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-1">
                       <span className="text-sm font-bold text-gray-500">تاريخ صدور الحكم</span>
-                      <p className="text-base font-semibold text-[#0A192F]" dir="ltr">
+                      <p className="text-base font-semibold text-[#133B2E]" dir="ltr">
                         {new Date(data.finalJudgment.judgmentDate).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
                       </p>
                     </div>
@@ -1634,7 +2017,7 @@ export default function CaseDetails() {
           ) : (
             <Card className="shadow-sm">
               <CardHeader className="pb-4 border-b">
-                <CardTitle className="text-lg text-[#0A192F]">تسجيل الحكم النهائي الصادر من المحكمة</CardTitle>
+                <CardTitle className="text-lg text-[#133B2E]">تسجيل الحكم النهائي الصادر من المحكمة</CardTitle>
                 <CardDescription>أدخل بيانات صك الحكم النهائي الصادر لهذه القضية وأرشفة نسخته الرسمية</CardDescription>
               </CardHeader>
               <CardContent className="p-6">
@@ -1694,17 +2077,17 @@ export default function CaseDetails() {
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-[#0A192F]">تاريخ صدور الحكم *</label>
+                      <label className="text-sm font-bold text-[#133B2E]">تاريخ صدور الحكم *</label>
                       <Input type="date" required name="judgmentDate" />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-bold text-[#0A192F]">ملف صك الحكم الرسمي (PDF / صورة)</label>
+                      <label className="text-sm font-bold text-[#133B2E]">ملف صك الحكم الرسمي (PDF / صورة)</label>
                       <Input type="file" name="judgmentFile" className="bg-white" />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-[#0A192F]">منطوق الحكم النهائي *</label>
+                    <label className="text-sm font-bold text-[#133B2E]">منطوق الحكم النهائي *</label>
                     <textarea 
                       required
                       name="judgmentRuling"
@@ -1714,7 +2097,7 @@ export default function CaseDetails() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-[#0A192F]">أسباب وتفاصيل الحكم (اختياري)</label>
+                    <label className="text-sm font-bold text-[#133B2E]">أسباب وتفاصيل الحكم (اختياري)</label>
                     <textarea 
                       name="judgmentDetails"
                       placeholder="اكتب تفاصيل إضافية أو الحيثيات والأسباب التي بني عليها الحكم..." 

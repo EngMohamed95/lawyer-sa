@@ -142,7 +142,7 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader className="flex flex-row justify-between items-center">
-          <DialogTitle className="text-xl font-bold text-[#0A192F]">تعديل بيانات الجلسة</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-[#133B2E]">تعديل بيانات الجلسة</DialogTitle>
           {hearingData && (
             <Button 
               type="button" 
@@ -161,7 +161,7 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">تاريخ الجلسة *</label>
+              <label className="text-sm font-bold text-[#133B2E]">تاريخ الجلسة *</label>
               <Input 
                 type="date"
                 required
@@ -171,7 +171,7 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">تاريخ الجلسة القادمة</label>
+              <label className="text-sm font-bold text-[#133B2E]">تاريخ الجلسة القادمة</label>
               <Input 
                 type="date"
                 value={formData.nextHearingDate || ""}
@@ -182,7 +182,7 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">المحكمة / الغرفة</label>
+              <label className="text-sm font-bold text-[#133B2E]">المحكمة / الغرفة</label>
               <Input 
                 value={formData.court}
                 onChange={e => setFormData({...formData, court: e.target.value})}
@@ -191,7 +191,7 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#0A192F]">الدائرة / الرول</label>
+              <label className="text-sm font-bold text-[#133B2E]">الدائرة / الرول</label>
               <Input 
                 value={formData.circuit}
                 onChange={e => setFormData({...formData, circuit: e.target.value})}
@@ -201,7 +201,7 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#0A192F]">الالتمسات / ما تم فيها</label>
+            <label className="text-sm font-bold text-[#133B2E]">الالتمسات / ما تم فيها</label>
             <Input 
                value={formData.requiredActions}
                onChange={e => setFormData({...formData, requiredActions: e.target.value})}
@@ -210,7 +210,7 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#0A192F]">قرار الجلسة (النتيجة)</label>
+            <label className="text-sm font-bold text-[#133B2E]">قرار الجلسة (النتيجة)</label>
             <Input 
                value={formData.result}
                onChange={e => setFormData({...formData, result: e.target.value})}
@@ -222,7 +222,7 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
           <div className="space-y-2 border-t pt-2 text-xs font-bold text-gray-500">أرشفة الجلسة (محاضر الضبط والأحكام)</div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#0A192F]">محضر الضبط (نصي)</label>
+            <label className="text-sm font-bold text-[#133B2E]">محضر الضبط (نصي)</label>
             <textarea 
                value={formData.minutesText}
                onChange={e => setFormData({...formData, minutesText: e.target.value})}
@@ -232,7 +232,7 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-bold text-[#0A192F]">ملف محضر الضبط</label>
+            <label className="text-sm font-bold text-[#133B2E]">ملف محضر الضبط</label>
             {minutesFileName && (
               <div className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs mb-1">
                 <span className="truncate max-w-[200px] text-gray-700">{minutesFileName}</span>
@@ -255,7 +255,7 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#0A192F]">الحكم الصادر في الجلسة (نصي)</label>
+            <label className="text-sm font-bold text-[#133B2E]">الحكم الصادر في الجلسة (نصي)</label>
             <textarea 
                value={formData.judgmentText}
                onChange={e => setFormData({...formData, judgmentText: e.target.value})}
@@ -265,7 +265,7 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-bold text-[#0A192F]">ملف حكم الجلسة / القرار</label>
+            <label className="text-sm font-bold text-[#133B2E]">ملف حكم الجلسة / القرار</label>
             {judgmentFileName && (
               <div className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs mb-1">
                 <span className="truncate max-w-[200px] text-gray-700">{judgmentFileName}</span>
@@ -295,7 +295,7 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
 
           <DialogFooter className="mt-6">
             <Button type="button" variant="outline" onClick={onClose}>إلغاء</Button>
-            <Button type="submit" disabled={loading} className="bg-[#0A192F] hover:bg-[#0A192F]/90 text-white">
+            <Button type="submit" disabled={loading} className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               حفظ التعديلات
             </Button>

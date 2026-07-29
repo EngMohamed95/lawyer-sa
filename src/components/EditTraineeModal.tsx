@@ -58,9 +58,9 @@ export default function EditTraineeModal({ isOpen, onClose, onSuccess, traineeDa
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
       <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-[#0A192F] text-white">
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-[#133B2E] text-white">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center text-[#0A192F]">
+            <div className="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center text-[#133B2E]">
               <X size={20} className="hidden" />
               <Mail size={20} />
             </div>
@@ -82,7 +82,7 @@ export default function EditTraineeModal({ isOpen, onClose, onSuccess, traineeDa
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0A192F]/10 focus:border-[#0A192F] transition-all"
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/10 focus:border-[#133B2E] transition-all"
             />
           </div>
 
@@ -96,7 +96,7 @@ export default function EditTraineeModal({ isOpen, onClose, onSuccess, traineeDa
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full pr-12 pl-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0A192F]/10 focus:border-[#0A192F] transition-all"
+                  className="w-full pr-12 pl-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/10 focus:border-[#133B2E] transition-all"
                 />
               </div>
             </div>
@@ -110,7 +110,7 @@ export default function EditTraineeModal({ isOpen, onClose, onSuccess, traineeDa
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full pr-12 pl-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0A192F]/10 focus:border-[#0A192F] transition-all"
+                  className="w-full pr-12 pl-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/10 focus:border-[#133B2E] transition-all"
                 />
               </div>
             </div>
@@ -125,7 +125,7 @@ export default function EditTraineeModal({ isOpen, onClose, onSuccess, traineeDa
                 type="text"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full pr-12 pl-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0A192F]/10 focus:border-[#0A192F] transition-all"
+                className="w-full pr-12 pl-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/10 focus:border-[#133B2E] transition-all"
                 placeholder="••••••••"
               />
             </div>
@@ -136,7 +136,7 @@ export default function EditTraineeModal({ isOpen, onClose, onSuccess, traineeDa
             <Button
               type="submit"
               disabled={loading}
-              className="flex-1 py-6 bg-[#0A192F] text-[#D4AF37] font-bold rounded-2xl hover:bg-[#0A192F]/90 active:scale-[0.98] transition-all"
+              className="flex-1 py-6 bg-[#133B2E] text-[#D4AF37] font-bold rounded-2xl hover:bg-[#133B2E]/90 active:scale-[0.98] transition-all"
             >
               <Save size={18} className="ml-2" />
               {loading ? "جاري الحفظ..." : "حفظ التعديلات"}

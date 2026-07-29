@@ -42,9 +42,9 @@ export default function CreateAdmin() {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#0A192F] text-white flex items-center justify-center p-6 font-['Tajawal']">
+    <div dir="rtl" className="min-h-screen bg-[#133B2E] text-white flex items-center justify-center p-6 font-['Tajawal']">
       <div className="bg-white text-gray-900 p-8 rounded-2xl max-w-md w-full shadow-2xl">
-        <h1 className="text-2xl font-bold text-center text-[#0A192F] mb-6">إنشاء حساب المدير العام (Super Admin)</h1>
+        <h1 className="text-2xl font-bold text-center text-[#133B2E] mb-6">إنشاء حساب المدير العام (Super Admin)</h1>
         
         <form onSubmit={handleCreate} className="space-y-4">
           <div>

@@ -146,7 +146,7 @@ export default function Accounting() {
     <div className="space-y-6 font-['Tajawal']" dir="rtl">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#0A192F] tracking-tight">الحسابات</h1>
+          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">الحسابات</h1>
           <p className="text-gray-500 mt-1 text-sm">إدارة المدفوعات، الأتعاب، والمصروفات بالعملة النشطة ({currencyCode})</p>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -188,7 +188,7 @@ export default function Accounting() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="mb-2 text-xs font-semibold text-slate-400">إجمالي المدفوعات</p>
-                <h3 className="text-3xl font-bold text-[#0A192F] tracking-tight">{(data.summary?.totalPaid || 0).toLocaleString('ar-EG')} {currencySymbol}</h3>
+                <h3 className="text-3xl font-bold text-[#133B2E] tracking-tight">{(data.summary?.totalPaid || 0).toLocaleString('ar-EG')} {currencySymbol}</h3>
               </div>
               <div className="p-3.5 bg-emerald-100/70 rounded-2xl text-emerald-600 flex items-center justify-center shrink-0">
                 <DollarSign size={22} />
@@ -202,7 +202,7 @@ export default function Accounting() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="mb-2 text-xs font-semibold text-slate-400">إجمالي المصروفات</p>
-                <h3 className="text-3xl font-bold text-[#0A192F] tracking-tight">{(data.summary?.totalExpenses || 0).toLocaleString('ar-EG')} {currencySymbol}</h3>
+                <h3 className="text-3xl font-bold text-[#133B2E] tracking-tight">{(data.summary?.totalExpenses || 0).toLocaleString('ar-EG')} {currencySymbol}</h3>
               </div>
               <div className="p-3.5 bg-rose-100/70 rounded-2xl text-rose-600 flex items-center justify-center shrink-0">
                 <CreditCard size={22} />
@@ -216,7 +216,7 @@ export default function Accounting() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="mb-2 text-xs font-semibold text-slate-400">المستحقات المتبقية</p>
-                <h3 className="text-3xl font-bold text-[#0A192F] tracking-tight">{(data.summary?.totalOwed || 0).toLocaleString('ar-EG')} {currencySymbol}</h3>
+                <h3 className="text-3xl font-bold text-[#133B2E] tracking-tight">{(data.summary?.totalOwed || 0).toLocaleString('ar-EG')} {currencySymbol}</h3>
               </div>
               <div className="p-3.5 bg-amber-100/70 rounded-2xl text-amber-600 flex items-center justify-center shrink-0">
                 <Banknote size={22} />
@@ -243,10 +243,10 @@ export default function Accounting() {
               <Table>
                 <TableHeader className="bg-white">
                   <TableRow>
-                    <TableHead className="text-right font-bold text-[#0A192F]">التاريخ</TableHead>
-                    <TableHead className="text-right font-bold text-[#0A192F]">القضية / الموكل</TableHead>
-                    <TableHead className="text-right font-bold text-[#0A192F]">المبلغ</TableHead>
-                    <TableHead className="text-right font-bold text-[#0A192F] hidden sm:table-cell">البيان</TableHead>
+                    <TableHead className="text-right font-bold text-[#133B2E]">التاريخ</TableHead>
+                    <TableHead className="text-right font-bold text-[#133B2E]">القضية / الموكل</TableHead>
+                    <TableHead className="text-right font-bold text-[#133B2E]">المبلغ</TableHead>
+                    <TableHead className="text-right font-bold text-[#133B2E] hidden sm:table-cell">البيان</TableHead>
                     {userRole === "SUPER_ADMIN" && <TableHead className="text-right font-bold text-purple-600 hidden md:table-cell">المحامي</TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -260,7 +260,7 @@ export default function Accounting() {
                       <TableRow key={p.id} className="hover:bg-gray-50/50">
                         <TableCell dir="ltr" className="text-right">{p.date ? new Date(p.date).toLocaleDateString('ar-EG') : "-"}</TableCell>
                         <TableCell>
-                           <div className="font-semibold text-[#0A192F]">{p.caseRef?.title || "دفعة عامة"}</div>
+                           <div className="font-semibold text-[#133B2E]">{p.caseRef?.title || "دفعة عامة"}</div>
                            <div className="text-xs text-gray-500">{p.client?.fullName || "-"}</div>
                         </TableCell>
                         <TableCell className="font-bold text-green-600">{(p.amount || 0).toLocaleString('ar-EG')} {currencySymbol}</TableCell>
@@ -277,10 +277,10 @@ export default function Accounting() {
               <Table>
                 <TableHeader className="bg-white">
                   <TableRow>
-                    <TableHead className="text-right font-bold text-[#0A192F]">التاريخ</TableHead>
-                    <TableHead className="text-right font-bold text-[#0A192F]">النوع / القضية</TableHead>
-                    <TableHead className="text-right font-bold text-[#0A192F]">المبلغ</TableHead>
-                    <TableHead className="text-right font-bold text-[#0A192F]">البيان / ملاحظات</TableHead>
+                    <TableHead className="text-right font-bold text-[#133B2E]">التاريخ</TableHead>
+                    <TableHead className="text-right font-bold text-[#133B2E]">النوع / القضية</TableHead>
+                    <TableHead className="text-right font-bold text-[#133B2E]">المبلغ</TableHead>
+                    <TableHead className="text-right font-bold text-[#133B2E]">البيان / ملاحظات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -293,7 +293,7 @@ export default function Accounting() {
                       <TableRow key={e.id} className="hover:bg-gray-50/50">
                         <TableCell dir="ltr" className="text-right">{e.date ? new Date(e.date).toLocaleDateString('ar-EG') : "-"}</TableCell>
                         <TableCell>
-                           <div className="font-semibold text-[#0A192F]">
+                           <div className="font-semibold text-[#133B2E]">
                              {e.type === "COURT" ? "رسوم قضائية" : e.type === "TRANSPORTATION" ? "انتقالات ومواصلات" : e.type === "DOCUMENT" ? "أوراق ومستندات" : "أخرى"}
                            </div>
                            <div className="text-xs text-gray-500">{e.caseRef?.title || "مصروف عام"}</div>

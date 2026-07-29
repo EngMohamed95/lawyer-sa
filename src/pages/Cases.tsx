@@ -145,7 +145,7 @@ export default function Cases() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#0A192F] tracking-tight">إدارة القضايا</h1>
+          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">إدارة القضايا</h1>
           <p className="text-gray-500 mt-1">سجل القضايا والموكلين</p>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
@@ -183,13 +183,13 @@ export default function Cases() {
           <Table>
             <TableHeader className="bg-gray-50">
               <TableRow>
-                <TableHead className="text-right font-bold text-[#0A192F]">رقم القضية</TableHead>
-                <TableHead className="text-right font-bold text-[#0A192F]">عنوان القضية</TableHead>
-                <TableHead className="text-right font-bold text-[#0A192F] hidden sm:table-cell">الموكل</TableHead>
-                <TableHead className="text-right font-bold text-[#0A192F] hidden md:table-cell">الخصم</TableHead>
-                <TableHead className="text-right font-bold text-[#0A192F]">الحالة</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E]">رقم القضية</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E]">عنوان القضية</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E] hidden sm:table-cell">الموكل</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E] hidden md:table-cell">الخصم</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E]">الحالة</TableHead>
                 {userRole === "SUPER_ADMIN" && <TableHead className="text-right font-bold text-purple-600 hidden lg:table-cell">المحامي</TableHead>}
-                <TableHead className="text-center font-bold text-[#0A192F]">عرض</TableHead>
+                <TableHead className="text-center font-bold text-[#133B2E]">عرض</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -207,19 +207,20 @@ export default function Cases() {
                     return (
                       <TableRow key={c.id} className="hover:bg-gray-50/50">
                         <TableCell className="font-mono text-sm">{c.caseNumber || "-"}</TableCell>
-                        <TableCell className="font-medium text-[#0A192F]">{c.title || "بدون عنوان"}</TableCell>
+                        <TableCell className="font-medium text-[#133B2E]">{c.title || "بدون عنوان"}</TableCell>
                         <TableCell className="hidden sm:table-cell">{c.client?.fullName || "-"}</TableCell>
                         <TableCell className="hidden md:table-cell">{c.opponentName || "-"}</TableCell>
                         <TableCell>{getStatusBadge(c.status || "OPEN")}</TableCell>
                         {userRole === "SUPER_ADMIN" && <TableCell className="text-xs text-purple-600 hidden lg:table-cell">{c.lawyerId || "غير محدد"}</TableCell>}
                         <TableCell className="text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-purple-600 hover:text-purple-800 hover:bg-purple-50" title="تلخيص ذكي (AI)" onClick={() => setActiveAiCase(c)}>
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-                            </Button>
+                          <div className="flex items-center justify-center">
                             <Link to={`/app/cases/${c.id}`}>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-[#D4AF37] hover:text-[#B8962E] hover:bg-[#D4AF37]/10" title="تفاصيل القضية">
-                                <Eye className="h-4 w-4" />
+                              <Button 
+                                variant="outline" 
+                                className="border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#B8962E] flex items-center gap-2 px-3 py-1.5 h-auto text-xs font-bold rounded-xl transition-all"
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                                <span>تفاصيل القضية</span>
                               </Button>
                             </Link>
                           </div>

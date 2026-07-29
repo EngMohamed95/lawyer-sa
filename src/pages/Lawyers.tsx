@@ -238,10 +238,10 @@ export default function Lawyers() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-black text-[#0A192F]">إدارة المشتركين</h1>
+          <h1 className="text-2xl font-black text-[#133B2E]">إدارة المشتركين</h1>
           <p className="text-gray-500 mt-1 text-sm">متابعة الاشتراكات والتجديدات</p>
         </div>
-        <Button onClick={() => setIsAddModalOpen(true)} className="bg-[#0A192F] hover:bg-[#0A192F]/90 text-[#D4AF37] px-6 py-5 rounded-2xl font-bold">
+        <Button onClick={() => setIsAddModalOpen(true)} className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-[#D4AF37] px-6 py-5 rounded-2xl font-bold">
           <Plus className="ml-2 h-4 w-4" /> إضافة مشترك جديد
         </Button>
       </div>
@@ -266,14 +266,14 @@ export default function Lawyers() {
       <div className="flex items-center gap-3">
         <span className="text-sm text-gray-500 font-bold">ترتيب حسب:</span>
         <button onClick={() => setSortBy("expiry")}
-          className={`px-4 py-1.5 rounded-full text-sm font-bold transition ${sortBy === "expiry" ? "bg-[#0A192F] text-[#D4AF37]" : "bg-gray-100 text-gray-600"}`}>
+          className={`px-4 py-1.5 rounded-full text-sm font-bold transition ${sortBy === "expiry" ? "bg-[#133B2E] text-[#D4AF37]" : "bg-gray-100 text-gray-600"}`}>
           أقرب انتهاء
         </button>
         <button onClick={() => setSortBy("name")}
-          className={`px-4 py-1.5 rounded-full text-sm font-bold transition ${sortBy === "name" ? "bg-[#0A192F] text-[#D4AF37]" : "bg-gray-100 text-gray-600"}`}>
+          className={`px-4 py-1.5 rounded-full text-sm font-bold transition ${sortBy === "name" ? "bg-[#133B2E] text-[#D4AF37]" : "bg-gray-100 text-gray-600"}`}>
           الاسم
         </button>
-        <button onClick={fetchLawyers} className="mr-auto flex items-center gap-1 text-sm text-gray-500 hover:text-[#0A192F]">
+        <button onClick={fetchLawyers} className="mr-auto flex items-center gap-1 text-sm text-gray-500 hover:text-[#133B2E]">
           <RefreshCw size={14} /> تحديث
         </button>
       </div>
@@ -284,12 +284,12 @@ export default function Lawyers() {
           <Table>
             <TableHeader className="bg-gray-50">
               <TableRow>
-                <TableHead className="text-right font-bold text-[#0A192F]">المحامي</TableHead>
-                <TableHead className="text-right font-bold text-[#0A192F] hidden sm:table-cell">الباقة</TableHead>
-                <TableHead className="text-right font-bold text-[#0A192F]">المتبقي</TableHead>
-                <TableHead className="text-right font-bold text-[#0A192F] hidden md:table-cell">تاريخ الانتهاء</TableHead>
-                <TableHead className="text-right font-bold text-[#0A192F] hidden lg:table-cell">النوع</TableHead>
-                <TableHead className="text-center font-bold text-[#0A192F]">إجراءات</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E]">المحامي</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E] hidden sm:table-cell">الباقة</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E]">المتبقي</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E] hidden md:table-cell">تاريخ الانتهاء</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E] hidden lg:table-cell">النوع</TableHead>
+                <TableHead className="text-center font-bold text-[#133B2E]">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -305,11 +305,11 @@ export default function Lawyers() {
                   <TableRow key={lawyer.id} className={`hover:bg-gray-50 transition-colors ${rowBg}`}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-[#0A192F] rounded-full flex items-center justify-center text-[#D4AF37] font-black text-sm">
+                        <div className="w-9 h-9 bg-[#133B2E] rounded-full flex items-center justify-center text-[#D4AF37] font-black text-sm">
                           {(lawyer.name || "?").charAt(0)}
                         </div>
                         <div>
-                          <p className="font-bold text-[#0A192F] text-sm">{lawyer.name}</p>
+                          <p className="font-bold text-[#133B2E] text-sm">{lawyer.name}</p>
                           <p className="text-xs text-gray-400">{lawyer.email}</p>
                         </div>
                       </div>
@@ -342,7 +342,7 @@ export default function Lawyers() {
                           <RefreshCw size={12} /> تجديد
                         </button>
                         <button onClick={() => { setCredLawyer(lawyer); setCredForm({ email: "", password: "" }); setShowPass(false); }}
-                          className="flex items-center gap-1 bg-[#D4AF37] hover:bg-[#B8962E] text-[#0A192F] text-xs font-bold px-3 py-1.5 rounded-xl transition">
+                          className="flex items-center gap-1 bg-[#D4AF37] hover:bg-[#B8962E] text-[#133B2E] text-xs font-bold px-3 py-1.5 rounded-xl transition">
                           <KeyRound size={12} /> بيانات الدخول
                         </button>
                         <button onClick={() => setEditingLawyer(lawyer)}
@@ -367,7 +367,7 @@ export default function Lawyers() {
       {renewLawyer && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl p-8">
-            <h2 className="text-xl font-black text-[#0A192F] mb-2">تجديد الاشتراك</h2>
+            <h2 className="text-xl font-black text-[#133B2E] mb-2">تجديد الاشتراك</h2>
             <p className="text-sm text-gray-500 mb-6">
               المحامي: <strong>{renewLawyer.name}</strong> — الباقة: <strong>{PLANS.find(p => p.id === renewLawyer.plan)?.name}</strong>
             </p>
@@ -393,7 +393,7 @@ export default function Lawyers() {
                 ].map(opt => (
                   <button key={opt.months} onClick={() => setRenewMonths(opt.months)}
                     className={`p-3 rounded-2xl border-2 text-center transition ${renewMonths === opt.months ? "border-[#D4AF37] bg-[#D4AF37]/10" : "border-gray-200 hover:border-gray-300"}`}>
-                    <p className="font-black text-[#0A192F] text-sm">{opt.label}</p>
+                    <p className="font-black text-[#133B2E] text-sm">{opt.label}</p>
                     <p className="text-xs text-gray-500 mt-1">{opt.price.toLocaleString()} ج.م</p>
                   </button>
                 ))}
@@ -402,7 +402,7 @@ export default function Lawyers() {
 
             <div className="bg-gray-50 rounded-2xl p-4 mb-6 text-sm">
               <p className="text-gray-600">سينتهي الاشتراك الجديد في:</p>
-              <p className="font-black text-[#0A192F] text-lg mt-1">
+              <p className="font-black text-[#133B2E] text-lg mt-1">
                 {(() => {
                   const base = renewLawyer.subscriptionExpiry
                     ? new Date(Math.max(Date.now(), new Date(renewLawyer.subscriptionExpiry).getTime()))
@@ -433,10 +433,10 @@ export default function Lawyers() {
           <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
             <div className="p-5 bg-[#D4AF37] flex justify-between items-center">
               <div>
-                <h2 className="text-lg font-black text-[#0A192F]">تغيير بيانات الدخول</h2>
-                <p className="text-xs text-[#0A192F]/70 mt-0.5">{credLawyer.name} — {credLawyer.email}</p>
+                <h2 className="text-lg font-black text-[#133B2E]">تغيير بيانات الدخول</h2>
+                <p className="text-xs text-[#133B2E]/70 mt-0.5">{credLawyer.name} — {credLawyer.email}</p>
               </div>
-              <button onClick={() => setCredLawyer(null)} className="text-[#0A192F]/60 hover:text-[#0A192F] text-xl font-bold">✕</button>
+              <button onClick={() => setCredLawyer(null)} className="text-[#133B2E]/60 hover:text-[#133B2E] text-xl font-bold">✕</button>
             </div>
 
             <div className="p-6 space-y-5">
@@ -485,7 +485,7 @@ export default function Lawyers() {
                 <button
                   onClick={handleChangeCredentials}
                   disabled={credLoading}
-                  className="flex-1 bg-[#0A192F] hover:bg-[#0A192F]/90 text-[#D4AF37] font-black py-3 rounded-2xl transition flex items-center justify-center gap-2 text-sm"
+                  className="flex-1 bg-[#133B2E] hover:bg-[#133B2E]/90 text-[#D4AF37] font-black py-3 rounded-2xl transition flex items-center justify-center gap-2 text-sm"
                 >
                   {credLoading
                     ? <><span className="w-4 h-4 border-2 border-[#D4AF37]/30 border-t-[#D4AF37] rounded-full animate-spin" /> جاري التحديث...</>
@@ -505,7 +505,7 @@ export default function Lawyers() {
       {isAddModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
-            <div className="p-5 bg-[#0A192F] text-white flex justify-between items-center">
+            <div className="p-5 bg-[#133B2E] text-white flex justify-between items-center">
               <h2 className="text-lg font-black">إضافة مشترك جديد</h2>
               <button onClick={() => setIsAddModalOpen(false)} className="text-white/70 hover:text-white">✕</button>
             </div>
@@ -539,7 +539,7 @@ export default function Lawyers() {
                   {PLANS.map(p => (
                     <button type="button" key={p.id} onClick={() => setNewLawyer({ ...newLawyer, plan: p.id })}
                       className={`p-3 rounded-2xl border-2 text-center transition ${newLawyer.plan === p.id ? "border-[#D4AF37] bg-[#D4AF37]/10" : "border-gray-200"}`}>
-                      <p className="font-bold text-[#0A192F] text-xs">{p.name}</p>
+                      <p className="font-bold text-[#133B2E] text-xs">{p.name}</p>
                       <p className="text-xs text-gray-400 mt-0.5">{p.price}</p>
                     </button>
                   ))}
@@ -555,7 +555,7 @@ export default function Lawyers() {
                   ].map(opt => (
                     <button type="button" key={opt.val} onClick={() => setNewLawyer({ ...newLawyer, billing: opt.val })}
                       className={`p-3 rounded-2xl border-2 text-center transition ${newLawyer.billing === opt.val ? "border-[#D4AF37] bg-[#D4AF37]/10" : "border-gray-200"}`}>
-                      <p className="font-bold text-sm text-[#0A192F]">{opt.label}</p>
+                      <p className="font-bold text-sm text-[#133B2E]">{opt.label}</p>
                       <p className="text-xs text-gray-400">{opt.sub}</p>
                     </button>
                   ))}
@@ -563,7 +563,7 @@ export default function Lawyers() {
               </div>
 
               <Button type="submit" disabled={actionLoading}
-                className="w-full bg-[#0A192F] text-[#D4AF37] font-black py-5 rounded-2xl">
+                className="w-full bg-[#133B2E] text-[#D4AF37] font-black py-5 rounded-2xl">
                 {actionLoading ? "جاري الإنشاء..." : "إنشاء الحساب"}
               </Button>
             </form>

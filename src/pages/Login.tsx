@@ -82,7 +82,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-[#0A192F] font-['Tajawal']" dir="rtl">
+    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-[#133B2E] font-['Tajawal']" dir="rtl">
       {/* Background Image with Overlay */}
       <div 
         className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-transform duration-[20s] hover:scale-105"
@@ -91,7 +91,7 @@ export default function Login() {
         }}
       >
         {/* Adjusted overlay to make the image visible on the entire page */}
-        <div className="absolute inset-0 bg-[#0A192F]/60 backdrop-blur-[2px]"></div>
+        <div className="absolute inset-0 bg-[#133B2E]/60 backdrop-blur-[2px]"></div>
       </div>
 
       {/* Decorative Elements */}
@@ -104,10 +104,10 @@ export default function Login() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="relative z-10 w-full max-w-[1100px] flex flex-col md:flex-row bg-[#0A192F]/40 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden m-4"
+        className="relative z-10 w-full max-w-[1100px] flex flex-col md:flex-row bg-[#133B2E]/40 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden m-4"
       >
         {/* Left Side: Information/Branding */}
-        <div className="hidden md:flex md:w-1/2 p-12 flex-col justify-between relative overflow-hidden bg-gradient-to-bl from-[#0A192F]/50 to-transparent">
+        <div className="hidden md:flex md:w-1/2 p-12 flex-col justify-between relative overflow-hidden bg-gradient-to-bl from-[#133B2E]/50 to-transparent">
             <div className="relative z-10">
                 <motion.div 
                     initial={{ scale: 0.8, opacity: 0 }}
@@ -164,7 +164,7 @@ export default function Login() {
         <div className="w-full md:w-1/2 p-8 lg:p-16 bg-white flex flex-col justify-center">
           <div className="max-w-md mx-auto w-full">
             <div className="mb-10 text-center md:text-right">
-                <h2 className="text-3xl font-bold text-[#0A192F] mb-2">تسجيل الدخول</h2>
+                <h2 className="text-3xl font-bold text-[#133B2E] mb-2">تسجيل الدخول</h2>
                 <p className="text-gray-500">الرجاء إدخال بياناتك للوصول إلى لوحة التحكم</p>
             </div>
 
@@ -186,13 +186,13 @@ export default function Login() {
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700 block mr-1">البريد الإلكتروني</label>
                 <div className="relative group">
-                  <User className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#0A192F] transition-colors" size={20} />
+                  <User className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#133B2E] transition-colors" size={20} />
                   <input
                     type="email"
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full pr-12 pl-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0A192F]/20 focus:border-[#0A192F] transition-all"
+                    className="w-full pr-12 pl-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/20 focus:border-[#133B2E] transition-all"
                     placeholder="example@mail.com"
                   />
                 </div>
@@ -201,19 +201,19 @@ export default function Login() {
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700 block mr-1">كلمة المرور</label>
                 <div className="relative group">
-                  <Lock className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#0A192F] transition-colors" size={20} />
+                  <Lock className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#133B2E] transition-colors" size={20} />
                   <input
                     type={showPassword ? "text" : "password"}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pr-12 pl-12 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#0A192F]/20 focus:border-[#0A192F] transition-all"
+                    className="w-full pr-12 pl-12 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/20 focus:border-[#133B2E] transition-all"
                     placeholder="••••••••"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#0A192F] transition-colors"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#133B2E] transition-colors"
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
@@ -222,10 +222,10 @@ export default function Login() {
 
               <div className="flex items-center justify-between py-2">
                 <label className="flex items-center gap-2 cursor-pointer group">
-                  <input type="checkbox" className="w-5 h-5 rounded border-gray-300 text-[#0A192F] focus:ring-[#0A192F]" />
+                  <input type="checkbox" className="w-5 h-5 rounded border-gray-300 text-[#133B2E] focus:ring-[#133B2E]" />
                   <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors">تذكرني</span>
                 </label>
-                <button type="button" className="text-sm font-semibold text-[#0A192F] hover:underline">
+                <button type="button" className="text-sm font-semibold text-[#133B2E] hover:underline">
                   نسيت كلمة المرور؟
                 </button>
               </div>
@@ -233,7 +233,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-4 bg-[#0A192F] text-[#D4AF37] font-bold rounded-2xl shadow-xl shadow-[#0A192F]/20 hover:bg-[#0A192F]/90 active:scale-[0.98] transition-all flex items-center justify-center gap-3 relative overflow-hidden"
+                className="w-full py-4 bg-[#133B2E] text-[#D4AF37] font-bold rounded-2xl shadow-xl shadow-[#133B2E]/20 hover:bg-[#133B2E]/90 active:scale-[0.98] transition-all flex items-center justify-center gap-3 relative overflow-hidden"
               >
                 {isLoading ? (
                   <motion.div

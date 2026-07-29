@@ -66,7 +66,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
         onClick={onClose}
       />
       
-      <aside className={`fixed md:sticky top-0 right-0 h-screen w-64 bg-[#0A192F] text-white flex flex-col shadow-2xl transition-transform duration-300 z-50 md:translate-x-0 ${isOpen ? "translate-x-0" : "translate-x-full md:translate-x-0"}`}>
+      <aside className={`fixed md:sticky top-0 right-0 h-screen w-64 bg-[#133B2E] text-white flex flex-col shadow-2xl transition-transform duration-300 z-50 md:translate-x-0 ${isOpen ? "translate-x-0" : "translate-x-full md:translate-x-0"}`}>
         <div className="p-8 flex flex-col items-center border-b border-white/10 relative">
           <button onClick={onClose} className="md:hidden absolute top-4 left-4 text-white/70 hover:text-white">
             <Menu size={24} />
@@ -300,7 +300,7 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
             description: t.description || `باقي ${diffDays} أيام على التسليم.`,
             date: t.dueDate,
             badge: `خلال ${diffDays} يوم`,
-            badgeColor: "bg-amber-400 text-[#0A192F]",
+            badgeColor: "bg-amber-400 text-[#133B2E]",
             link: "/app/tasks"
           });
         }
@@ -340,7 +340,7 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 sticky top-0 z-30 shadow-sm">
       <div className="flex items-center gap-4">
-        <button onClick={onMenuOpen} className="md:hidden text-[#0A192F] hover:text-gray-700 p-1">
+        <button onClick={onMenuOpen} className="md:hidden text-[#133B2E] hover:text-gray-700 p-1">
           <Menu size={24} />
         </button>
         <div className="relative hidden sm:block">
@@ -348,7 +348,7 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
           <input
             type="text"
             placeholder="بحث..."
-            className="pl-4 pr-10 py-2 border border-gray-300 rounded-full text-sm focus:outline-none focus:border-[#0A192F] focus:ring-1 focus:ring-[#0A192F] w-64 bg-gray-50"
+            className="pl-4 pr-10 py-2 border border-gray-300 rounded-full text-sm focus:outline-none focus:border-[#133B2E] focus:ring-1 focus:ring-[#133B2E] w-64 bg-gray-50"
           />
         </div>
       </div>
@@ -382,7 +382,7 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
                   className="absolute left-0 mt-2 w-80 sm:w-96 bg-white border border-gray-200 shadow-2xl rounded-2xl overflow-hidden z-50 font-['Tajawal'] text-right"
                   dir="rtl"
                 >
-                  <div className="bg-[#0A192F] p-4 text-white flex items-center justify-between">
+                  <div className="bg-[#133B2E] p-4 text-white flex items-center justify-between">
                     <span className="font-bold text-sm">التنبيهات والإشعارات ({notifications.length})</span>
                     <button 
                       onClick={fetchNotifications}
@@ -396,7 +396,7 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
                   <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100">
                     {loadingNotifications && notifications.length === 0 ? (
                       <div className="p-8 text-center text-gray-500 text-sm flex flex-col items-center gap-2">
-                        <Loader2 className="animate-spin text-[#0A192F]" size={20} />
+                        <Loader2 className="animate-spin text-[#133B2E]" size={20} />
                         <span>جاري تحميل التنبيهات...</span>
                       </div>
                     ) : notifications.length === 0 ? (
@@ -420,7 +420,7 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
                           </div>
                           <div className="flex-1 min-w-0 space-y-1">
                             <div className="flex items-start justify-between gap-2">
-                              <p className="font-bold text-xs text-[#0A192F] truncate">{n.title}</p>
+                              <p className="font-bold text-xs text-[#133B2E] truncate">{n.title}</p>
                               <span className={`shrink-0 text-[9px] font-bold px-2 py-0.5 rounded-full ${n.badgeColor}`}>
                                 {n.badge}
                               </span>
@@ -440,7 +440,7 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
 
         <div className="flex items-center gap-2 md:gap-3 border-l pr-2 md:pl-4 border-gray-200">
           <div className="text-right hidden sm:block">
-            <p className="text-sm font-semibold text-[#0A192F]">{userName}</p>
+            <p className="text-sm font-semibold text-[#133B2E]">{userName}</p>
             <p className="text-xs text-gray-500">{roleName}</p>
           </div>
           <div className="w-8 h-8 md:w-10 md:h-10 bg-[#D4AF37] rounded-full flex items-center justify-center font-bold text-lg overflow-hidden border-2 border-white/20 shadow-sm">
@@ -492,7 +492,7 @@ function Layout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#F3F4F6] text-[#0A192F] font-['Tajawal']" dir="rtl">
+    <div className="flex min-h-screen bg-[#F3F4F6] text-[#133B2E] font-['Tajawal']" dir="rtl">
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header onMenuOpen={() => setIsSidebarOpen(true)} />
@@ -510,8 +510,8 @@ function LoadingFallback() {
     return (
         <div className="flex items-center justify-center min-h-[50vh]">
             <div className="flex flex-col items-center gap-4">
-                <div className="w-10 h-10 border-4 border-[#0A192F] border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-[#0A192F] font-bold">جاري التحميل...</p>
+                <div className="w-10 h-10 border-4 border-[#133B2E] border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-[#133B2E] font-bold">جاري التحميل...</p>
             </div>
         </div>
     );

@@ -70,7 +70,7 @@ export default function Trainees() {
       
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#0A192F] tracking-tight">المتدربين</h1>
+          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">المتدربين</h1>
           <p className="text-gray-500 mt-1">إدارة المحامين تحت التدريب وتقييم الأداء</p>
         </div>
         <div className="flex gap-2">
@@ -79,7 +79,7 @@ export default function Trainees() {
           </Button>
           <Button 
             onClick={() => setIsAddModalOpen(true)}
-            className="bg-[#0A192F] hover:bg-[#0A192F]/90 text-white shadow-lg shadow-[#0A192F]/20"
+            className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white shadow-lg shadow-[#133B2E]/20"
           >
             <Plus className="ml-2 h-4 w-4" /> إضافة متدرب
           </Button>
@@ -103,12 +103,12 @@ export default function Trainees() {
               <Table>
                 <TableHeader className="bg-white">
                   <TableRow>
-                    <TableHead className="text-right font-bold text-[#0A192F]">الاسم</TableHead>
-                    <TableHead className="text-right font-bold text-[#0A192F]">رقم الهاتف</TableHead>
-                    <TableHead className="text-right font-bold text-[#0A192F] hidden sm:table-cell">تاريخ الالتحاق</TableHead>
+                    <TableHead className="text-right font-bold text-[#133B2E]">الاسم</TableHead>
+                    <TableHead className="text-right font-bold text-[#133B2E]">رقم الهاتف</TableHead>
+                    <TableHead className="text-right font-bold text-[#133B2E] hidden sm:table-cell">تاريخ الالتحاق</TableHead>
                     {userRole === "SUPER_ADMIN" && <TableHead className="text-right font-bold text-purple-600 hidden md:table-cell">المحامي</TableHead>}
-                    <TableHead className="text-right font-bold text-[#0A192F] hidden lg:table-cell">المشرف</TableHead>
-                    <TableHead className="text-center font-bold text-[#0A192F]">إجراءات</TableHead>
+                    <TableHead className="text-right font-bold text-[#133B2E] hidden lg:table-cell">المشرف</TableHead>
+                    <TableHead className="text-center font-bold text-[#133B2E]">إجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -119,9 +119,9 @@ export default function Trainees() {
                   ) : (
                     data.trainees.map((t: any) => (
                       <TableRow key={t.id} className="hover:bg-gray-50/50">
-                        <TableCell className="font-medium text-[#0A192F]">{t.name}</TableCell>
+                        <TableCell className="font-medium text-[#133B2E]">{t.name}</TableCell>
                         <TableCell>
-                          <a href={`tel:${t.phone}`} className="flex items-center gap-2 text-[#0A192F] hover:underline decoration-[#D4AF37] decoration-2 underline-offset-4">
+                          <a href={`tel:${t.phone}`} className="flex items-center gap-2 text-[#133B2E] hover:underline decoration-[#D4AF37] decoration-2 underline-offset-4">
                             <PhoneIcon size={14} className="text-gray-400" />
                             {t.phone || "-"}
                           </a>
@@ -143,11 +143,11 @@ export default function Trainees() {
               <Table>
                 <TableHeader className="bg-white">
                   <TableRow>
-                    <TableHead className="text-right font-bold text-[#0A192F]">تاريخ التقييم</TableHead>
-                    <TableHead className="text-right font-bold text-[#0A192F]">المتدرب</TableHead>
-                    <TableHead className="text-right font-bold text-[#0A192F]">التقييم (من 5)</TableHead>
-                    <TableHead className="text-right font-bold text-[#0A192F]">المقيّم (المشرف)</TableHead>
-                    <TableHead className="text-right font-bold text-[#0A192F]">ملاحظات</TableHead>
+                    <TableHead className="text-right font-bold text-[#133B2E]">تاريخ التقييم</TableHead>
+                    <TableHead className="text-right font-bold text-[#133B2E]">المتدرب</TableHead>
+                    <TableHead className="text-right font-bold text-[#133B2E]">التقييم (من 5)</TableHead>
+                    <TableHead className="text-right font-bold text-[#133B2E]">المقيّم (المشرف)</TableHead>
+                    <TableHead className="text-right font-bold text-[#133B2E]">ملاحظات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

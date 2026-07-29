@@ -157,7 +157,7 @@ export default function Dashboard() {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#0A192F] border-t-transparent" />
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#133B2E] border-t-transparent" />
           <p className="font-medium text-gray-500">جاري تحميل لوحة التحكم...</p>
         </div>
       </div>
@@ -195,7 +195,7 @@ export default function Dashboard() {
     <div className="space-y-8">
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-[#0A192F]">أهلا بك، {userName}</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-[#133B2E]">أهلا بك، {userName}</h1>
           <p className="mt-1 text-base text-gray-500 font-medium">إليك ملخص سريع لأعمال المكتب اليوم.</p>
         </div>
         <Badge className="border-none bg-green-100 px-3 py-1 text-sm font-bold text-green-700">النظام يعمل</Badge>
@@ -217,7 +217,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="mb-2 text-xs font-semibold text-slate-400">{item.title}</p>
-                  <h3 className="text-3xl font-bold text-[#0A192F] tracking-tight">{item.value}</h3>
+                  <h3 className="text-3xl font-bold text-[#133B2E] tracking-tight">{item.value}</h3>
                 </div>
                 <div className={`rounded-2xl p-3.5 flex items-center justify-center shrink-0 ${item.iconBg}`}>{item.icon}</div>
               </div>
@@ -232,13 +232,13 @@ export default function Dashboard() {
           <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-6">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#0A192F] text-white shadow-xs">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#133B2E] text-white shadow-xs">
                   <Briefcase size={20} />
                 </div>
-                <CardTitle className="text-xl font-bold text-[#0A192F]">آخر القضايا المضافة</CardTitle>
+                <CardTitle className="text-xl font-bold text-[#133B2E]">آخر القضايا المضافة</CardTitle>
               </div>
               <Link to="/app/cases">
-                <Button variant="ghost" className="font-bold text-[#0A192F] text-sm">
+                <Button variant="ghost" className="font-bold text-[#133B2E] text-sm">
                   عرض الكل <ChevronRight size={16} className="mr-1 rotate-180" />
                 </Button>
               </Link>
@@ -253,11 +253,11 @@ export default function Dashboard() {
                   <Link key={c.id} to={`/app/cases/${c.id}`} className="block p-5 transition-colors hover:bg-slate-50/60">
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-4">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-[#0A192F] shrink-0">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100 text-[#133B2E] shrink-0">
                           <Gavel size={22} />
                         </div>
                         <div>
-                          <p className="text-base font-bold text-[#0A192F]">{c.title || "قضية بدون عنوان"}</p>
+                          <p className="text-base font-bold text-[#133B2E]">{c.title || "قضية بدون عنوان"}</p>
                           <p className="text-sm font-medium text-gray-500">رقم القضية: {c.caseNumber || "---"}</p>
                         </div>
                       </div>
@@ -283,7 +283,7 @@ export default function Dashboard() {
                 <CardTitle className="text-xl font-bold">الجلسات القادمة</CardTitle>
               </div>
               <Link to="/app/hearings">
-                <Button variant="ghost" className="font-bold text-[#0A192F]">
+                <Button variant="ghost" className="font-bold text-[#133B2E]">
                   عرض الكل <ChevronRight size={16} className="mr-1 rotate-180" />
                 </Button>
               </Link>
@@ -302,7 +302,7 @@ export default function Dashboard() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-bold text-[#0A192F]">{h.caseTitle || "—"}</p>
+                        <p className="truncate text-sm font-bold text-[#133B2E]">{h.caseTitle || "—"}</p>
                         <p className="mt-0.5 truncate text-xs text-gray-500">{h.court || "—"}</p>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
