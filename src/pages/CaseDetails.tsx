@@ -811,7 +811,7 @@ export default function CaseDetails() {
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as string)} className="w-full">
         <div 
           style={{ position: "sticky", top: 0, zIndex: 40 }} 
-          className="bg-[#F3F4F6]/95 backdrop-blur-md py-3 -mx-4 px-4 mb-6 shadow-sm border-b border-gray-200/50"
+          className="bg-[#F3F4F6]/95 backdrop-blur-md py-3 -mx-4 px-4 mb-6 border-b border-gray-200/50"
         >
           <TabsList className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 border-none p-0 w-full h-auto bg-transparent">
             <TabsTrigger 
