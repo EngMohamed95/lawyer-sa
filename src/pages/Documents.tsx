@@ -400,7 +400,13 @@ export default function Documents({
       let foldersQ: any = collection(db, "template_folders");
       let customTemplatesQ: any = collection(db, "custom_templates");
 
-      if (userRole !== "SUPER_ADMIN") {
+      if (userRole === "OFFICE_LAWYER") {
+        const userId = localStorage.getItem("userId");
+        casesQ = query(collection(db, "cases"), where("lawyerId", "==", lawyerId), where("assignedLawyerId", "==", userId));
+        clientsQ = query(collection(db, "clients"), where("lawyerId", "==", lawyerId));
+        foldersQ = query(collection(db, "template_folders"), where("lawyerId", "==", lawyerId));
+        customTemplatesQ = query(collection(db, "custom_templates"), where("lawyerId", "==", lawyerId));
+      } else if (userRole !== "SUPER_ADMIN") {
         casesQ = query(collection(db, "cases"), where("lawyerId", "==", lawyerId));
         clientsQ = query(collection(db, "clients"), where("lawyerId", "==", lawyerId));
         foldersQ = query(collection(db, "template_folders"), where("lawyerId", "==", lawyerId));
@@ -415,8 +421,13 @@ export default function Documents({
         getDocs(customTemplatesQ)
       ]);
       
-      const clients = clientsSnap.docs.map(d => ({ id: d.id, ...d.data() as any }));
       const cases = casesSnap.docs.map(d => ({ id: d.id, ...d.data() as any }));
+      let clients = clientsSnap.docs.map(d => ({ id: d.id, ...d.data() as any }));
+      if (userRole === "OFFICE_LAWYER") {
+        const clientIds = new Set(cases.map((c: any) => c.clientId).filter(Boolean));
+        clients = clients.filter(cl => clientIds.has(cl.id));
+      }
+
       const documents = docsSnap.docs
         .map(doc => {
           const d = doc.data() as any;
@@ -425,7 +436,20 @@ export default function Documents({
           const parentType = parentPath.split('/')[0];
           return { id: doc.id, fullPath: doc.ref.path, ...d, parentId, parentType };
         })
-        .filter(d => userRole === "SUPER_ADMIN" || d.lawyerId === lawyerId);
+        .filter(d => {
+          if (userRole === "SUPER_ADMIN") return true;
+          if (d.lawyerId !== lawyerId) return false;
+          if (userRole === "OFFICE_LAWYER") {
+            if (d.parentType === "cases") {
+              return cases.some((c: any) => c.id === d.parentId);
+            }
+            if (d.parentType === "clients") {
+              return cases.some((c: any) => c.clientId === d.parentId);
+            }
+            return false;
+          }
+          return true;
+        });
 
       const fetchedFolders = foldersSnap.docs.map(d => ({ id: d.id, ...d.data() as any }));
       const fetchedCustomTemplates = customTemplatesSnap.docs.map(d => ({ id: d.id, ...d.data() as any }));

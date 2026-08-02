@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Outlet, Link, useLocation, Navigate, useNavigate } from "react-router";
-import { LayoutDashboard, Users, Briefcase, Calendar, CheckSquare, FileText, Settings, Bell, Search, Menu, Calculator, GraduationCap, BarChart, LogOut, Shield, CreditCard, Loader2, BookOpen } from "lucide-react";
+import { LayoutDashboard, Users, Briefcase, Calendar, CheckSquare, FileText, Settings, Bell, Search, Menu, Calculator, GraduationCap, BarChart, LogOut, Shield, CreditCard, Loader2, BookOpen, Sparkles } from "lucide-react";
 import { useState, lazy, Suspense, useEffect, useRef } from "react";
 import { collection, getDocs, query, where, collectionGroup, limit } from "firebase/firestore";
 import { db } from "./lib/firebase";
@@ -26,6 +26,8 @@ const Lawyers = lazy(() => import("./pages/Lawyers"));
 const SubscriptionRequests = lazy(() => import("./pages/SubscriptionRequests"));
 const SubscribePage = lazy(() => import("./pages/SubscribePage"));
 const LegalLibrary = lazy(() => import("./pages/LegalLibrary"));
+const OfficeLawyers = lazy(() => import("./pages/OfficeLawyers"));
+const AiChat = lazy(() => import("./pages/AiChat"));
 
 function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const location = useLocation();
@@ -43,13 +45,15 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
     { name: "الجلسات", path: "/app/hearings", icon: <Calendar size={20} />, hidden: userRole === "SUPER_ADMIN" },
     
     // Baka 2: Pro (Tasks, Documents, Accounting, Trainees)
-    { name: "المهام", path: "/app/tasks", icon: <CheckSquare size={20} />, hidden: userRole === "SUPER_ADMIN" || (userRole === "LAWYER" && localStorage.getItem("userPlan") === "BASIC") },
-    { name: "المستندات", path: "/app/documents", icon: <FileText size={20} />, hidden: userRole === "SUPER_ADMIN" || (userRole === "LAWYER" && localStorage.getItem("userPlan") === "BASIC") },
-    { name: "الحسابات", path: "/app/accounting", icon: <Calculator size={20} />, hidden: userRole === "TRAINEE" || userRole === "SUPER_ADMIN" || (userRole === "LAWYER" && localStorage.getItem("userPlan") === "BASIC") },
+    { name: "المهام", path: "/app/tasks", icon: <CheckSquare size={20} />, hidden: userRole === "SUPER_ADMIN" || ((userRole === "LAWYER" || userRole === "OFFICE_LAWYER") && localStorage.getItem("userPlan") === "BASIC") },
+    { name: "المستندات", path: "/app/documents", icon: <FileText size={20} />, hidden: userRole === "SUPER_ADMIN" || ((userRole === "LAWYER" || userRole === "OFFICE_LAWYER") && localStorage.getItem("userPlan") === "BASIC") },
+    { name: "الحسابات", path: "/app/accounting", icon: <Calculator size={20} />, hidden: userRole === "TRAINEE" || userRole === "OFFICE_LAWYER" || userRole === "SUPER_ADMIN" || (userRole === "LAWYER" && localStorage.getItem("userPlan") === "BASIC") },
     { name: "المتدربين", path: "/app/trainees", icon: <GraduationCap size={20} />, hidden: userRole !== "LAWYER" || localStorage.getItem("userPlan") === "BASIC" },
+    { name: "محامو المكتب", path: "/app/office-lawyers", icon: <Shield size={20} />, hidden: userRole !== "LAWYER" || localStorage.getItem("userPlan") === "BASIC" },
     
     // Baka 3: Premium (Reports + AI services)
-    { name: "التقارير", path: "/app/reports", icon: <BarChart size={20} />, hidden: userRole === "TRAINEE" || userRole === "SUPER_ADMIN" || (userRole === "LAWYER" && localStorage.getItem("userPlan") !== "PREMIUM") },
+    { name: "التقارير", path: "/app/reports", icon: <BarChart size={20} />, hidden: userRole === "TRAINEE" || userRole === "OFFICE_LAWYER" || userRole === "SUPER_ADMIN" || (userRole === "LAWYER" && localStorage.getItem("userPlan") !== "PREMIUM") },
+    { name: "المساعد الذكي", path: "/app/ai-chat", icon: <Sparkles size={20} />, hidden: userRole === "SUPER_ADMIN" || (localStorage.getItem("userPlan") !== "PREMIUM") },
     { name: "المكتبة القانونية", path: "/app/library", icon: <BookOpen size={20} />, hidden: userRole === "SUPER_ADMIN" },
   ];
 
@@ -122,7 +126,7 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
   const userRole = localStorage.getItem("userRole");
   const lawyerId = localStorage.getItem("lawyerId");
   const userId = localStorage.getItem("userId");
-  const roleName = userRole === "SUPER_ADMIN" ? "المدير العام" : userRole === "LAWYER" ? "محامي" : "متدرب";
+  const roleName = userRole === "SUPER_ADMIN" ? "المدير العام" : userRole === "LAWYER" ? "المدير" : userRole === "OFFICE_LAWYER" ? "محامي مكتب" : "متدرب";
 
   interface NotificationAlert {
     id: string;
@@ -183,7 +187,7 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
       const tasksSnap = await getDocs(tasksQ);
       let tasksList = tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() as any }));
 
-      if (userRole === "TRAINEE") {
+      if (userRole === "TRAINEE" || userRole === "OFFICE_LAWYER") {
         tasksList = tasksList.filter(t => t.assignedTo === userId);
       }
 
@@ -197,9 +201,13 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
           caseId: doc.data().caseId || doc.ref.parent.parent?.id,
         }));
       } else {
-        const casesSnap = await getDocs(
-          query(collection(db, "cases"), where("lawyerId", "==", lawyerId), limit(100))
-        );
+        let casesQuery;
+        if (userRole === "OFFICE_LAWYER") {
+          casesQuery = query(collection(db, "cases"), where("lawyerId", "==", lawyerId), where("assignedLawyerId", "==", userId), limit(100));
+        } else {
+          casesQuery = query(collection(db, "cases"), where("lawyerId", "==", lawyerId), limit(100));
+        }
+        const casesSnap = await getDocs(casesQuery);
         const arrays = await Promise.all(
           casesSnap.docs.map(cd =>
             getDocs(collection(db, "cases", cd.id, "hearings")).then(s =>
@@ -500,7 +508,6 @@ function Layout() {
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6">
           <Outlet />
         </main>
-        <AiAssistant />
       </div>
     </div>
   );
@@ -538,6 +545,8 @@ export default function App() {
             <Route path="documents" element={<Documents />} />
             <Route path="accounting" element={<Accounting />} />
             <Route path="trainees" element={<Trainees />} />
+            <Route path="office-lawyers" element={<OfficeLawyers />} />
+            <Route path="ai-chat" element={<AiChat />} />
             <Route path="reports" element={<Reports />} />
             <Route path="library" element={<LegalLibrary />} />
             <Route path="subscriptions" element={<SubscriptionRequests />} />

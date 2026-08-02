@@ -595,7 +595,11 @@ export default function CaseDetails() {
       const userRole = localStorage.getItem("userRole");
 
       // SaaS Security Check: Ensure lawyer only sees their own case
-      if (userRole !== "SUPER_ADMIN" && caseData.lawyerId !== currentLawyerId) {
+      const currentUserId = localStorage.getItem("userId");
+      if (
+        userRole !== "SUPER_ADMIN" && 
+        (caseData.lawyerId !== currentLawyerId || (userRole === "OFFICE_LAWYER" && caseData.assignedLawyerId !== currentUserId))
+      ) {
           setData({ error: "غير مصرح لك بالدخول لهذه القضية" });
           return;
       }

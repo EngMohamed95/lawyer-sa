@@ -31,11 +31,26 @@ export default function Clients() {
   const fetchClients = async () => {
     setLoading(true);
     try {
-      const base = userRole !== "SUPER_ADMIN"
-        ? query(collection(db, "clients"), where("lawyerId", "==", lawyerId), limit(200))
-        : query(collection(db, "clients"), limit(200));
+      let base;
+      if (userRole === "SUPER_ADMIN") {
+        base = query(collection(db, "clients"), limit(200));
+      } else {
+        base = query(collection(db, "clients"), where("lawyerId", "==", lawyerId), limit(200));
+      }
+
       const snap = await getDocs(base);
-      setClients(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      let clientsData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      if (userRole === "OFFICE_LAWYER") {
+        const userId = localStorage.getItem("userId");
+        const casesSnap = await getDocs(
+          query(collection(db, "cases"), where("lawyerId", "==", lawyerId), where("assignedLawyerId", "==", userId))
+        );
+        const clientIds = new Set(casesSnap.docs.map(doc => doc.data().clientId).filter(Boolean));
+        clientsData = clientsData.filter(c => clientIds.has(c.id));
+      }
+
+      setClients(clientsData);
       setPage(1);
     } catch (error) {
       console.error("Error fetching clients:", error);

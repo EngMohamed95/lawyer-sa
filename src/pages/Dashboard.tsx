@@ -72,11 +72,19 @@ export default function Dashboard() {
       setError(null);
       try {
         const isSuperAdmin = userRole === "SUPER_ADMIN";
+        const isOfficeLawyer = userRole === "OFFICE_LAWYER";
         const shouldFilter = !isSuperAdmin && Boolean(lawyerId);
 
-        const casesQ = shouldFilter
-          ? query(collection(db, "cases"), where("lawyerId", "==", lawyerId))
-          : collection(db, "cases");
+        let casesQ;
+        if (isSuperAdmin) {
+          casesQ = collection(db, "cases");
+        } else if (isOfficeLawyer) {
+          const userId = localStorage.getItem("userId");
+          casesQ = query(collection(db, "cases"), where("lawyerId", "==", lawyerId), where("assignedLawyerId", "==", userId));
+        } else {
+          casesQ = query(collection(db, "cases"), where("lawyerId", "==", lawyerId));
+        }
+
         const clientsQ = shouldFilter
           ? query(collection(db, "clients"), where("lawyerId", "==", lawyerId))
           : collection(db, "clients");
@@ -119,11 +127,21 @@ export default function Dashboard() {
             .slice(0, 8);
         };
 
+        const getClientsCount = async () => {
+          if (isOfficeLawyer) {
+            const userId = localStorage.getItem("userId");
+            const casesSnap = await getDocs(query(collection(db, "cases"), where("lawyerId", "==", lawyerId), where("assignedLawyerId", "==", userId)));
+            const clientIds = new Set(casesSnap.docs.map(doc => doc.data().clientId).filter(Boolean));
+            return clientIds.size;
+          }
+          return getCountFromServer(clientsQ).then(s => s.data().count).catch(() => 0);
+        };
+
         // ── Run all three fetches in parallel ────────────────────────────────
         const [[casesCount, clientsCount], recentCases, upcomingHearings] = await Promise.all([
           Promise.all([
             getCountFromServer(casesQ).then(s => s.data().count).catch(() => 0),
-            getCountFromServer(clientsQ).then(s => s.data().count).catch(() => 0),
+            getClientsCount(),
           ]),
           getDocs(query(casesQ, orderBy("createdAt", "desc"), limit(5)))
             .then(snap => snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<RecentCase, "id">) })))

@@ -43,9 +43,14 @@ export default function Hearings() {
         }));
       } else {
         // Fetch cases (capped at 100), then their hearings in parallel
-        const casesSnap = await getDocs(
-          query(collection(db, "cases"), where("lawyerId", "==", lawyerId), limit(100))
-        );
+        let casesQuery;
+        if (userRole === "OFFICE_LAWYER") {
+          const userId = localStorage.getItem("userId");
+          casesQuery = query(collection(db, "cases"), where("lawyerId", "==", lawyerId), where("assignedLawyerId", "==", userId), limit(100));
+        } else {
+          casesQuery = query(collection(db, "cases"), where("lawyerId", "==", lawyerId), limit(100));
+        }
+        const casesSnap = await getDocs(casesQuery);
         const arrays = await Promise.all(
           casesSnap.docs.map(cd =>
             getDocs(collection(db, "cases", cd.id, "hearings")).then(s =>

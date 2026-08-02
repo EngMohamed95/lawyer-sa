@@ -38,9 +38,9 @@ export default function Login() {
       let lawyerId = null;
       if (role === "LAWYER") {
           lawyerId = firebaseUser.uid;
-      } else if (role === "TRAINEE") {
+      } else if (role === "TRAINEE" || role === "OFFICE_LAWYER") {
           lawyerId = userData.lawyerId; 
-          // Fetch Lawyer's plan for the Trainee
+          // Fetch Lawyer's plan for the Trainee / Office Lawyer
           const lawyerDoc = await getDoc(doc(db, "users", lawyerId));
           if (lawyerDoc.exists()) {
             plan = lawyerDoc.data().plan || "BASIC";

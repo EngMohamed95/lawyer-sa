@@ -55,8 +55,8 @@ export default function Tasks() {
       const snap = await getDocs(q);
       const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       
-      // Filter for trainees (they only see tasks assigned to them)
-      if (userRole === "TRAINEE") {
+      // Filter for trainees and associate lawyers (they only see tasks assigned to them)
+      if (userRole === "TRAINEE" || userRole === "OFFICE_LAWYER") {
         setTasks(data.filter((t: any) => t.assignedTo === userId)); 
       } else {
         setTasks(data);

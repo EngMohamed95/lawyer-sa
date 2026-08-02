@@ -36,9 +36,15 @@ export default function Cases() {
   const fetchCases = async () => {
     setLoading(true);
     try {
-      const casesQuery = userRole !== "SUPER_ADMIN"
-        ? query(collection(db, "cases"), where("lawyerId", "==", lawyerId), limit(200))
-        : query(collection(db, "cases"), limit(200));
+      let casesQuery;
+      if (userRole === "SUPER_ADMIN") {
+        casesQuery = query(collection(db, "cases"), limit(200));
+      } else if (userRole === "OFFICE_LAWYER") {
+        const userId = localStorage.getItem("userId");
+        casesQuery = query(collection(db, "cases"), where("lawyerId", "==", lawyerId), where("assignedLawyerId", "==", userId), limit(200));
+      } else {
+        casesQuery = query(collection(db, "cases"), where("lawyerId", "==", lawyerId), limit(200));
+      }
       const clientsQuery = userRole !== "SUPER_ADMIN"
         ? query(collection(db, "clients"), where("lawyerId", "==", lawyerId), limit(200))
         : query(collection(db, "clients"), limit(200));
@@ -188,6 +194,7 @@ export default function Cases() {
                 <TableHead className="text-right font-bold text-[#133B2E] hidden sm:table-cell">الموكل</TableHead>
                 <TableHead className="text-right font-bold text-[#133B2E] hidden md:table-cell">الخصم</TableHead>
                 <TableHead className="text-right font-bold text-[#133B2E]">الحالة</TableHead>
+                {(userRole === "LAWYER" || userRole === "OFFICE_LAWYER") && <TableHead className="text-right font-bold text-[#133B2E] hidden lg:table-cell">المحامي المسؤول</TableHead>}
                 {userRole === "SUPER_ADMIN" && <TableHead className="text-right font-bold text-purple-600 hidden lg:table-cell">المحامي</TableHead>}
                 <TableHead className="text-center font-bold text-[#133B2E]">عرض</TableHead>
               </TableRow>
@@ -211,6 +218,7 @@ export default function Cases() {
                         <TableCell className="hidden sm:table-cell">{c.client?.fullName || "-"}</TableCell>
                         <TableCell className="hidden md:table-cell">{c.opponentName || "-"}</TableCell>
                         <TableCell>{getStatusBadge(c.status || "OPEN")}</TableCell>
+                        {(userRole === "LAWYER" || userRole === "OFFICE_LAWYER") && <TableCell className="hidden lg:table-cell text-sm">{c.assignedLawyerName || "المدير"}</TableCell>}
                         {userRole === "SUPER_ADMIN" && <TableCell className="text-xs text-purple-600 hidden lg:table-cell">{c.lawyerId || "غير محدد"}</TableCell>}
                         <TableCell className="text-center">
                           <div className="flex items-center justify-center">

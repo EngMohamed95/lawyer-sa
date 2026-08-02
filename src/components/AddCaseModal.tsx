@@ -10,6 +10,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
   const [clients, setClients] = useState<any[]>([]);
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
   const [clientRole, setClientRole] = useState("PLAINTIFF");
+  const [officeLawyers, setOfficeLawyers] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     title: "",
     caseNumber: "",
@@ -23,6 +24,8 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
     defendantName: "",
     caseSubject: "",
     startDate: new Date().toISOString().split('T')[0],
+    assignedLawyerId: localStorage.getItem("userId") || "",
+    assignedLawyerName: localStorage.getItem("userName") || "",
   });
 
   const fetchClients = async () => {
@@ -47,9 +50,33 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
     }
   };
 
+  const fetchOfficeLawyers = async () => {
+    try {
+      const { collection, getDocs, query, where } = await import("firebase/firestore");
+      const { db } = await import("../lib/firebase");
+      const lawyerId = localStorage.getItem("lawyerId");
+      
+      const managerId = localStorage.getItem("lawyerId") || "";
+      const managerName = localStorage.getItem("userName") || "المدير";
+
+      const q = query(
+        collection(db, "users"),
+        where("lawyerId", "==", lawyerId),
+        where("role", "==", "OFFICE_LAWYER")
+      );
+      const snap = await getDocs(q);
+      const associates = snap.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
+      
+      setOfficeLawyers([{ id: managerId, name: managerName }, ...associates]);
+    } catch (e) {
+      console.error("Error fetching office lawyers for assignment:", e);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       fetchClients();
+      fetchOfficeLawyers();
     }
   }, [isOpen]);
 
@@ -92,6 +119,8 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
         defendantName: "",
         caseSubject: "",
         startDate: new Date().toISOString().split('T')[0],
+        assignedLawyerId: localStorage.getItem("userId") || "",
+        assignedLawyerName: localStorage.getItem("userName") || "",
       });
       setClientRole("PLAINTIFF");
     } catch (error: any) {
@@ -268,6 +297,28 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
                 onChange={e => setFormData({...formData, startDate: e.target.value})}
               />
             </div>
+
+            {(localStorage.getItem("userRole") === "LAWYER" || localStorage.getItem("userRole") === "SUPER_ADMIN") && (
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-[#133B2E] block mr-1">المحامي المسؤول</label>
+                <select
+                  value={formData.assignedLawyerId}
+                  onChange={e => {
+                    const selected = officeLawyers.find(l => l.id === e.target.value);
+                    setFormData({
+                      ...formData,
+                      assignedLawyerId: e.target.value,
+                      assignedLawyerName: selected ? selected.name : ""
+                    });
+                  }}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/10 focus:border-[#133B2E] transition-all text-sm h-10"
+                >
+                  {officeLawyers.map(l => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           <DialogFooter className="mt-6">
