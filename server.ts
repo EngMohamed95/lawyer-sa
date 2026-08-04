@@ -3,6 +3,7 @@ import { createServer as createViteServer } from "vite";
 import path from "path";
 import fs from "fs";
 import cors from "cors";
+import multer from "multer";
 import net from "net";
 import apiRouter from "./src/server/api.js";
 import { checkDbHealth } from "./src/server/db.js";
@@ -95,6 +96,82 @@ async function startServer() {
   });
 
   app.use("/api", apiRouter);
+
+  /**
+   * رفع الملفات محلياً — بديل upload.php أثناء التطوير.
+   *
+   * على الاستضافة يعمل public/upload.php لأن PHP متاح هناك. أما محلياً
+   * فلا يوجد مُفسّر PHP، وVite كان يُرجع نص الملف الخام فيفشل JSON.parse
+   * برسالة: Unexpected token '<', "<?php hea"...
+   *
+   * هذا المسار يُنفَّذ قبل Vite ويُرجع نفس شكل الاستجابة بالضبط
+   * { success, fileUrl, fileName } فلا يحتاج كود الواجهة أي تعديل.
+   * ملف upload.php باقٍ كما هو للنشر.
+   */
+  const uploadsDir = path.join(process.cwd(), "public", "uploads");
+  fs.mkdirSync(uploadsDir, { recursive: true });
+
+  // امتدادات مرفوضة — لا نسمح برفع ما يمكن تنفيذه على الخادم
+  const BLOCKED_EXT = new Set([
+    ".php", ".php3", ".php4", ".php5", ".phtml", ".phar",
+    ".js", ".mjs", ".cjs", ".exe", ".bat", ".cmd", ".com",
+    ".sh", ".ps1", ".jsp", ".asp", ".aspx", ".cgi", ".pl", ".py", ".htaccess",
+  ]);
+
+  const upload = multer({
+    storage: multer.diskStorage({
+      destination: (_req, _file, cb) => cb(null, uploadsDir),
+      filename: (_req, file, cb) => {
+        // multer/busboy يقرأ اسم الملف بترميز latin1، فتتشوّه الأسماء العربية.
+        // نُعيد فكّه كـ UTF-8 حتى يبقى «عقد-اختبار.txt» كما هو.
+        const decoded = Buffer.from(file.originalname || "file", "latin1").toString("utf8");
+        // نُنظّف الاسم: نمنع مسارات نسبية ونقصر المسموح على حروف آمنة
+        const original = path.basename(decoded);
+        const ext = path.extname(original).toLowerCase();
+        const base = path
+          .basename(original, path.extname(original))
+          .replace(/[^\p{L}\p{N}._-]/gu, "_")
+          .slice(0, 80) || "file";
+        cb(null, `${Date.now()}_${base}${ext}`);
+      },
+    }),
+    limits: { fileSize: 50 * 1024 * 1024, files: 1 },
+    fileFilter: (_req, file, cb) => {
+      const decoded = Buffer.from(file.originalname || "", "latin1").toString("utf8");
+      const ext = path.extname(decoded).toLowerCase();
+      if (BLOCKED_EXT.has(ext)) {
+        cb(new Error(`نوع الملف ${ext} غير مسموح برفعه`));
+        return;
+      }
+      cb(null, true);
+    },
+  });
+
+  app.options("/upload.php", (_req, res) => res.sendStatus(200));
+
+  app.post("/upload.php", (req, res) => {
+    upload.single("file")(req, res, (err: unknown) => {
+      if (err) {
+        const message = err instanceof Error ? err.message : "Upload failed";
+        res.status(400).json({ error: message });
+        return;
+      }
+      // multer يُلحق req.file — نوصّفه صراحةً لأن @types/multer غير مثبّت
+      const uploaded = (req as typeof req & { file?: { filename: string } }).file;
+      if (!uploaded) {
+        res.status(400).json({ error: "No file uploaded" });
+        return;
+      }
+      res.json({
+        success: true,
+        fileUrl: `${req.protocol}://${req.get("host")}/uploads/${uploaded.filename}`,
+        fileName: uploaded.filename,
+      });
+    });
+  });
+
+  // تقديم الملفات المرفوعة محلياً (على الاستضافة يتولاها الخادم مباشرة)
+  app.use("/uploads", express.static(uploadsDir, { index: false }));
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {

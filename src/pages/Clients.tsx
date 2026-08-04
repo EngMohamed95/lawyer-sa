@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, User, Phone, MapPin, Edit, FolderOpen, FileSpreadsheet } from "lucide-react";
+import { Plus, Search, User, Phone, MapPin, Edit, FolderOpen, FileSpreadsheet, Link2, X } from "lucide-react";
 import { Card, CardContent, CardHeader } from "../components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Button } from "../components/ui/button";
@@ -9,8 +9,11 @@ import { AddClientModal } from "../components/AddClientModal";
 import { EditClientModal } from "../components/EditClientModal";
 import { ClientDocumentsModal } from "../components/ClientDocumentsModal";
 import { collection, getDocs, query, where, limit, orderBy } from "firebase/firestore";
+import type { Query, DocumentData } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { Pagination } from "../components/ui/Pagination";
+import RelatedPanel from "../components/RelatedPanel";
+import { relatedToClient } from "../lib/links";
 
 export default function Clients() {
   const [clients, setClients] = useState<any[]>([]);
@@ -19,6 +22,8 @@ export default function Clients() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<any>(null);
   const [docsClient, setDocsClient] = useState<{ id: string; fullName: string } | null>(null);
+  /** العميل المفتوح ملفه المرتبط (قضاياه وعقوده ودفعاته) */
+  const [linkedClient, setLinkedClient] = useState<{ id: string; fullName: string; lawyerId: string } | null>(null);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
 
@@ -31,7 +36,7 @@ export default function Clients() {
   const fetchClients = async () => {
     setLoading(true);
     try {
-      let base;
+      let base: Query<DocumentData>;
       if (userRole === "SUPER_ADMIN") {
         base = query(collection(db, "clients"), limit(200));
       } else {
@@ -95,13 +100,13 @@ export default function Clients() {
 
       const worksheet = XLSX.utils.json_to_sheet(rows);
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "الموكلين");
+      XLSX.utils.book_append_sheet(workbook, worksheet, "العملاء");
       
       // Set sheet direction to RTL for Arabic layouts
       if (!worksheet['!views']) worksheet['!views'] = [];
       worksheet['!views'].push({ RTL: true });
 
-      XLSX.writeFile(workbook, `قائمة_الموكلين_${currencyCode}.xlsx`);
+      XLSX.writeFile(workbook, `قائمة_العملاء_${currencyCode}.xlsx`);
     } catch (err) {
       console.error("Excel export error:", err);
       alert("حدث خطأ أثناء تصدير ملف الإكسل");
@@ -144,10 +149,41 @@ export default function Clients() {
         client={docsClient}
       />
 
+      {linkedClient && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          dir="rtl" onClick={() => setLinkedClient(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[88vh] overflow-y-auto shadow-2xl"
+            onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b bg-[#133B2E] text-white flex justify-between items-center sticky top-0 z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center text-[#133B2E]">
+                  <Link2 size={20} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold">{linkedClient.fullName}</h2>
+                  <p className="text-xs text-[#D4AF37]">القضايا والعقود والدفعات المرتبطة بهذا العميل</p>
+                </div>
+              </div>
+              <button onClick={() => setLinkedClient(null)} className="p-2 hover:bg-white/10 rounded-full">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-5">
+              <RelatedPanel
+                title="سجلات العميل"
+                emptyText="لا توجد قضايا أو عقود أو دفعات لهذا العميل بعد"
+                loader={() => relatedToClient(linkedClient.lawyerId, linkedClient.id)}
+                refreshKey={linkedClient.id}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight font-['Tajawal']">قائمة الموكلين</h1>
-          <p className="text-gray-500 mt-1">إدارة كافة بيانات الموكلين والشركات</p>
+          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight font-['Tajawal']">قائمة العملاء</h1>
+          <p className="text-gray-500 mt-1">إدارة كافة بيانات العملاء والشركات</p>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
           <Button
@@ -161,7 +197,7 @@ export default function Clients() {
             onClick={() => setIsAddModalOpen(true)}
             className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white shadow-lg shadow-[#133B2E]/20 px-6 py-6 rounded-2xl transition-all active:scale-[0.98] font-bold font-['Tajawal']"
           >
-            <Plus className="ml-2 h-5 w-5" /> إضافة موكل جديد
+            <Plus className="ml-2 h-5 w-5" /> إضافة عميل جديد
           </Button>
         </div>
       </div>
@@ -171,7 +207,7 @@ export default function Clients() {
           <div className="flex items-center space-x-2 space-x-reverse relative w-full sm:w-96">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
-              placeholder="بحث باسم الموكل أو رقم الهاتف..."
+              placeholder="بحث باسم العميل أو رقم الهاتف..."
               className="pl-4 pr-10 bg-white"
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(1); }}
@@ -211,7 +247,7 @@ export default function Clients() {
                     colSpan={userRole === "SUPER_ADMIN" ? 7 : 6}
                     className="text-center py-10 text-gray-500"
                   >
-                    لا يوجد موكلين مسجلين
+                    لا يوجد عملاء مسجلين
                   </TableCell>
                 </TableRow>
               ) : (
@@ -254,6 +290,21 @@ export default function Clients() {
                         )}
                         <TableCell className="text-center">
                           <div className="flex items-center justify-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+                              onClick={() =>
+                                setLinkedClient({
+                                  id: client.id,
+                                  fullName: client.fullName || "عميل",
+                                  lawyerId: client.lawyerId || lawyerId || "",
+                                })
+                              }
+                              title="القضايا والعقود والدفعات المرتبطة بهذا العميل"
+                            >
+                              <Link2 className="ml-1 h-3 w-3" /> الملف المرتبط
+                            </Button>
                             <Button
                               variant="outline"
                               size="sm"

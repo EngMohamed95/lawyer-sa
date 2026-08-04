@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
+import type { Query, DocumentData } from "firebase/firestore";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -58,7 +59,7 @@ export function EditTaskModal({
         const { collection, getDocs, query, where } = await import("firebase/firestore");
         const { db } = await import("../lib/firebase");
         
-        let q;
+        let q: Query<DocumentData>;
         if (lawyerId && lawyerId !== "ALL") {
           q = query(collection(db, "users"), where("lawyerId", "==", lawyerId));
         } else {

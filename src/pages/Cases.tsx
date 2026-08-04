@@ -8,6 +8,7 @@ import { Badge } from "../components/ui/badge";
 import { AiSummarizerModal } from "../components/AiSummarizerModal";
 import { AddCaseModal } from "../components/AddCaseModal";
 import { collection, getDocs, query, where, limit } from "firebase/firestore";
+import type { Query, DocumentData } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { Pagination } from "../components/ui/Pagination";
 import { Link } from "react-router";
@@ -36,7 +37,7 @@ export default function Cases() {
   const fetchCases = async () => {
     setLoading(true);
     try {
-      let casesQuery;
+      let casesQuery: Query<DocumentData>;
       if (userRole === "SUPER_ADMIN") {
         casesQuery = query(collection(db, "cases"), limit(200));
       } else if (userRole === "OFFICE_LAWYER") {
@@ -61,7 +62,7 @@ export default function Cases() {
 
       setCases(casesSnap.docs.map(doc => {
         const data = doc.data();
-        return { id: doc.id, ...data, client: clients[data.clientId] || { fullName: "موكل غير معروف" } };
+        return { id: doc.id, ...data, client: clients[data.clientId] || { fullName: "عميل غير معروف" } };
       }));
       setPage(1);
     } catch (error) {
@@ -99,7 +100,7 @@ export default function Cases() {
         "رقم القضية": c.caseNumber || "",
         "عنوان القضية": c.title || "",
         "نوع القضية": c.type || "",
-        "الموكل": c.client?.fullName || "",
+        "العميل": c.client?.fullName || "",
         "الخصم": c.opponentName || "",
         "محامي الخصم": c.opponentLawyer || "",
         "المحكمة": c.courtName || "",
@@ -152,7 +153,7 @@ export default function Cases() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">إدارة القضايا</h1>
-          <p className="text-gray-500 mt-1">سجل القضايا والموكلين</p>
+          <p className="text-gray-500 mt-1">سجل القضايا والعملاء</p>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
           <Button
@@ -191,7 +192,7 @@ export default function Cases() {
               <TableRow>
                 <TableHead className="text-right font-bold text-[#133B2E]">رقم القضية</TableHead>
                 <TableHead className="text-right font-bold text-[#133B2E]">عنوان القضية</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E] hidden sm:table-cell">الموكل</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E] hidden sm:table-cell">العميل</TableHead>
                 <TableHead className="text-right font-bold text-[#133B2E] hidden md:table-cell">الخصم</TableHead>
                 <TableHead className="text-right font-bold text-[#133B2E]">الحالة</TableHead>
                 {(userRole === "LAWYER" || userRole === "OFFICE_LAWYER") && <TableHead className="text-right font-bold text-[#133B2E] hidden lg:table-cell">المحامي المسؤول</TableHead>}

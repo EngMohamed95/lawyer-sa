@@ -1,4 +1,5 @@
 import { FormEvent, useState, useEffect } from "react";
+import type { Query, DocumentData } from "firebase/firestore";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -53,7 +54,7 @@ export function AddTaskModal({
         const { collection, getDocs, query, where } = await import("firebase/firestore");
         const { db } = await import("../lib/firebase");
         
-        let q;
+        let q: Query<DocumentData>;
         if (lawyerId && lawyerId !== "ALL") {
           // Fetch only users belonging to this lawyer's office
           q = query(collection(db, "users"), where("lawyerId", "==", lawyerId));

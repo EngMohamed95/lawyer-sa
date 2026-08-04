@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { DollarSign, Search, Plus, CreditCard, Banknote, FileText, FileSpreadsheet } from "lucide-react";
+import { Link } from "react-router";
+import { DollarSign, Search, Plus, CreditCard, Banknote, FileText, FileSpreadsheet, Scale } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Button } from "../components/ui/button";
@@ -8,6 +9,7 @@ import { Badge } from "../components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { AddPaymentModal } from "../components/AddPaymentModal";
 import { AddExpenseModal } from "../components/AddExpenseModal";
+import { ReceiptsTab, VouchersTab } from "../components/VouchersTab";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
@@ -121,7 +123,7 @@ export default function Accounting() {
       
       const rows = data.payments.map(p => ({
         "التاريخ": p.date ? new Date(p.date).toLocaleDateString("ar-EG") : "",
-        "الموكل": p.client?.fullName || "",
+        "العميل": p.client?.fullName || "",
         "القضية": p.caseRef?.title || "دفعة عامة أتعاب",
         [`المبلغ المستلم (${currencySymbol})`]: p.amount || 0,
         "ملاحظات / البيان": p.notes || ""
@@ -236,6 +238,13 @@ export default function Accounting() {
               <TabsTrigger value="expenses" className="data-[state=active]:bg-white data-[state=active]:border-t-2 data-[state=active]:border-[#D4AF37] data-[state=active]:shadow-none rounded-none px-6 py-3 font-semibold">
                 المصروفات
               </TabsTrigger>
+              {/* تبويبان جديدان — التبويبان أعلاه يبقيان كما هما تماماً */}
+              <TabsTrigger value="receipts" className="data-[state=active]:bg-white data-[state=active]:border-t-2 data-[state=active]:border-[#D4AF37] data-[state=active]:shadow-none rounded-none px-6 py-3 font-semibold">
+                سندات القبض
+              </TabsTrigger>
+              <TabsTrigger value="vouchers" className="data-[state=active]:bg-white data-[state=active]:border-t-2 data-[state=active]:border-[#D4AF37] data-[state=active]:shadow-none rounded-none px-6 py-3 font-semibold">
+                سندات الصرف
+              </TabsTrigger>
             </TabsList>
           </CardHeader>
           <CardContent className="p-0">
@@ -244,7 +253,7 @@ export default function Accounting() {
                 <TableHeader className="bg-white">
                   <TableRow>
                     <TableHead className="text-right font-bold text-[#133B2E]">التاريخ</TableHead>
-                    <TableHead className="text-right font-bold text-[#133B2E]">القضية / الموكل</TableHead>
+                    <TableHead className="text-right font-bold text-[#133B2E]">القضية / العميل</TableHead>
                     <TableHead className="text-right font-bold text-[#133B2E]">المبلغ</TableHead>
                     <TableHead className="text-right font-bold text-[#133B2E] hidden sm:table-cell">البيان</TableHead>
                     {userRole === "SUPER_ADMIN" && <TableHead className="text-right font-bold text-purple-600 hidden md:table-cell">المحامي</TableHead>}
@@ -260,7 +269,14 @@ export default function Accounting() {
                       <TableRow key={p.id} className="hover:bg-gray-50/50">
                         <TableCell dir="ltr" className="text-right">{p.date ? new Date(p.date).toLocaleDateString('ar-EG') : "-"}</TableCell>
                         <TableCell>
-                           <div className="font-semibold text-[#133B2E]">{p.caseRef?.title || "دفعة عامة"}</div>
+                           {p.caseId && p.caseRef ? (
+                             <Link to={`/app/cases/${p.caseId}`}
+                               className="font-semibold text-[#133B2E] hover:text-indigo-700 hover:underline inline-flex items-center gap-1">
+                               <Scale size={12} className="text-indigo-500" /> {p.caseRef.title}
+                             </Link>
+                           ) : (
+                             <div className="font-semibold text-[#133B2E]">دفعة عامة</div>
+                           )}
                            <div className="text-xs text-gray-500">{p.client?.fullName || "-"}</div>
                         </TableCell>
                         <TableCell className="font-bold text-green-600">{(p.amount || 0).toLocaleString('ar-EG')} {currencySymbol}</TableCell>
@@ -296,7 +312,14 @@ export default function Accounting() {
                            <div className="font-semibold text-[#133B2E]">
                              {e.type === "COURT" ? "رسوم قضائية" : e.type === "TRANSPORTATION" ? "انتقالات ومواصلات" : e.type === "DOCUMENT" ? "أوراق ومستندات" : "أخرى"}
                            </div>
-                           <div className="text-xs text-gray-500">{e.caseRef?.title || "مصروف عام"}</div>
+                           {e.caseId && e.caseRef ? (
+                             <Link to={`/app/cases/${e.caseId}`}
+                               className="text-xs text-indigo-700 hover:underline inline-flex items-center gap-1">
+                               <Scale size={11} /> {e.caseRef.title}
+                             </Link>
+                           ) : (
+                             <div className="text-xs text-gray-500">مصروف عام</div>
+                           )}
                         </TableCell>
                         <TableCell className="font-bold text-red-600">{(e.amount || 0).toLocaleString('ar-EG')} {currencySymbol}</TableCell>
                         <TableCell>{e.notes || "-"}</TableCell>
@@ -305,6 +328,14 @@ export default function Accounting() {
                   )}
                 </TableBody>
               </Table>
+            </TabsContent>
+
+            <TabsContent value="receipts" className="m-0 border-none outline-none p-0">
+              <ReceiptsTab currencySymbol={currencySymbol} />
+            </TabsContent>
+
+            <TabsContent value="vouchers" className="m-0 border-none outline-none p-0">
+              <VouchersTab currencySymbol={currencySymbol} />
             </TabsContent>
           </CardContent>
         </Tabs>

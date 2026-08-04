@@ -151,3 +151,92 @@
     font-family: 'IBM Plex Sans Arabic', sans-serif !important;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────
+   أشرطة التمرير — بهوية LawyerOS: أخضر #133B2E وذهبي #D4AF37
+   ───────────────────────────────────────────────────────────── */
+@layer base {
+  :root {
+    --los-green: #133B2E;
+    --los-gold: #D4AF37;
+  }
+
+  /*
+   * Firefox فقط.
+   * ملاحظة مهمة: Chrome يتجاهل قواعد ::-webkit-scrollbar تماماً متى
+   * وُجد scrollbar-color أو scrollbar-width على نفس العنصر. لذلك نعزل
+   * الخصائص القياسية داخل @supports لا يدعمه WebKit، فيأخذ كل متصفح مساره.
+   */
+  @supports not selector(::-webkit-scrollbar) {
+    html {
+      scrollbar-width: thin;
+      scrollbar-color: var(--los-green) rgb(19 59 46 / 0.08);
+    }
+    aside,
+    .los-scroll-dark {
+      scrollbar-width: thin;
+      scrollbar-color: var(--los-gold) rgb(255 255 255 / 0.08);
+    }
+  }
+
+  /* WebKit / Chromium / Edge — الافتراضي على الخلفيات الفاتحة */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background-color: rgb(19 59 46 / 0.06);
+    border-radius: 9999px;
+  }
+
+  /* نستخدم background-color لا الاختصار: الاختصار يُصفّر background-clip */
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--los-green);
+    border: 2px solid transparent;
+    background-clip: content-box;
+    border-radius: 9999px;
+    transition: background-color 0.2s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--los-gold);
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background-color: #0d2a20;
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* الأسطح الداكنة (القائمة الجانبية ورؤوس النوافذ) — ذهبي على أخضر غامق */
+  aside ::-webkit-scrollbar-track,
+  aside::-webkit-scrollbar-track,
+  .los-scroll-dark::-webkit-scrollbar-track,
+  [class*="bg-[#133B2E]"]::-webkit-scrollbar-track {
+    background-color: rgb(255 255 255 / 0.06);
+  }
+
+  aside ::-webkit-scrollbar-thumb,
+  aside::-webkit-scrollbar-thumb,
+  .los-scroll-dark::-webkit-scrollbar-thumb,
+  [class*="bg-[#133B2E]"]::-webkit-scrollbar-thumb {
+    background-color: rgb(212 175 55 / 0.65);
+    background-clip: content-box;
+  }
+
+  aside ::-webkit-scrollbar-thumb:hover,
+  aside::-webkit-scrollbar-thumb:hover,
+  .los-scroll-dark::-webkit-scrollbar-thumb:hover,
+  [class*="bg-[#133B2E]"]::-webkit-scrollbar-thumb:hover {
+    background-color: var(--los-gold);
+  }
+
+  /* شريط أرفع داخل النوافذ المنبثقة والقوائم القصيرة */
+  .los-scroll-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+}

@@ -6,6 +6,7 @@ import { Button } from "../components/ui/button";
 import AddOfficeLawyerModal from "../components/AddOfficeLawyerModal";
 import EditOfficeLawyerModal from "../components/EditOfficeLawyerModal";
 import { collection, getDocs, query, where } from "firebase/firestore";
+import type { Query, DocumentData } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
 export default function OfficeLawyers() {
@@ -20,7 +21,7 @@ export default function OfficeLawyers() {
   const fetchOfficeLawyers = async () => {
     setLoading(true);
     try {
-      let q;
+      let q: Query<DocumentData>;
       if (userRole === "SUPER_ADMIN") {
         q = query(collection(db, "users"), where("role", "==", "OFFICE_LAWYER"));
       } else if (lawyerId) {

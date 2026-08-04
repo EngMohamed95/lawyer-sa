@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { X, UserEdit, Mail, Phone, Lock, Save } from "lucide-react";
+// UserEdit لم تعد موجودة في lucide-react — اسمها الحالي UserPen
+import { X, UserPen, Mail, Phone, Lock, Save } from "lucide-react";
 import { Button } from "./ui/button";
 
 interface EditTraineeModalProps {

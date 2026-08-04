@@ -248,10 +248,10 @@ export default function AiChat() {
 
     try {
       // 1. Generate Context Index (RAG)
-      const clientsSummaryIndex = clients.map(c => `- الموكل: ${c.fullName || c.name || "غير معروف"} (هاتف: ${c.phone || "غير مسجل"})`).join("\n");
+      const clientsSummaryIndex = clients.map(c => `- العميل: ${c.fullName || c.name || "غير معروف"} (هاتف: ${c.phone || "غير مسجل"})`).join("\n");
       const casesSummaryIndex = cases.map(c => {
         const client = clients.find(cl => cl.id === c.clientId);
-        return `- القضية: ${c.title || c.subject} | رقم: ${c.caseNumber || "غير مسجل"} | موكل: ${client ? (client.fullName || client.name) : "غير معروف"} | حالة: ${c.status || "نشطة"}`;
+        return `- القضية: ${c.title || c.subject} | رقم: ${c.caseNumber || "غير مسجل"} | عميل: ${client ? (client.fullName || client.name) : "غير معروف"} | حالة: ${c.status || "نشطة"}`;
       }).join("\n");
 
       let matchedDocs = searchRelevantDocs(userMsg);
@@ -274,13 +274,13 @@ export default function AiChat() {
           let parentInfo = "";
           if (d.parentType === "clients") {
             const client = clients.find(c => c.id === d.parentId);
-            if (client) parentInfo = `الموكل: ${client.fullName || client.name}`;
+            if (client) parentInfo = `العميل: ${client.fullName || client.name}`;
           } else if (d.parentType === "cases") {
             const kase = cases.find(c => c.id === d.parentId);
             if (kase) {
               parentInfo = `القضية: ${kase.title || kase.subject || ""}`;
               const client = clients.find(c => c.id === kase.clientId);
-              if (client) parentInfo += ` (للموكل: ${client.fullName || client.name})`;
+              if (client) parentInfo += ` (للعميل: ${client.fullName || client.name})`;
             }
           }
           detailedDocsContext += `[مستند ${idx + 1}] اسم الملف: ${d.name} | النوع: ${d.type} | ${parentInfo}\n`;
@@ -309,7 +309,7 @@ export default function AiChat() {
 - الخصم: ${activeCase.opponentName || "غير مسجل"}
 - حالة القضية: ${activeCase.status || "غير مسجل"}
 - تفاصيل إضافية/ملاحظات: ${activeCase.notes || "لا توجد ملاحظات"}
-- الموكل المرتبط بالقضية: ${client ? (client.fullName || client.name) : "غير معروف"} (هاتف: ${client?.phone || "غير مسجل"})
+- العميل المرتبط بالقضية: ${client ? (client.fullName || client.name) : "غير معروف"} (هاتف: ${client?.phone || "غير مسجل"})
 `;
         }
       }
@@ -318,13 +318,13 @@ export default function AiChat() {
       const countryContext = currencyCode === "SAR" ? "المملكة العربية السعودية" : currencyCode === "EGP" ? "جمهورية مصر العربية" : "مكتبك القانوني";
       
       const systemPrompt = `أنت مساعد قانوني ذكي محترف تعمل داخل منصة "LawyerOS" لإدارة مكاتب المحاماة في ${countryContext}.
-مهمتك هي مساعدة المحامي في تنظيم عمله، الإجابة على أسئلته القانونية بناءً على الملفات والقضايا والموكلين المتاحة في أرشيفه، وتقديم نصائح إدارية.
+مهمتك هي مساعدة المحامي في تنظيم عمله، الإجابة على أسئلته القانونية بناءً على الملفات والقضايا والعملاء المتاحة في أرشيفه، وتقديم نصائح إدارية.
 تحدث دائماً بلهجة مهنية محترمة باللغة العربية واعتمد في مراجعاتك وقوانينك على الأنظمة السارية في ${countryContext}.
 
 إليك فهرس كامل بكافة محتويات قاعدة بيانات مكتب المحامي حالياً:
 
-أولاً: قائمة جميع الموكلين بالمكتب:
-${clientsSummaryIndex || "لا يوجد موكلين مسجلين حالياً."}
+أولاً: قائمة جميع العملاء بالمكتب:
+${clientsSummaryIndex || "لا يوجد عملاء مسجلين حالياً."}
 
 ثانياً: قائمة جميع القضايا بالمكتب:
 ${casesSummaryIndex || "لا يوجد قضايا مسجلة حالياً."}
@@ -337,7 +337,7 @@ ${detailedDocsContext || "لا يوجد مستندات مرفوعة ذات صل�
 
 تعليمات هامة جداً للرد:
 1. اعتمد بشكل كامل ومباشر على البيانات والفهرس الموضحين أعلاه للإجابة على أسئلة المستخدم.
-2. لا تخترع أو تدعي وجود موكلين أو قضايا أو مستندات غير مسجلة في الفهرس أعلاه.
+2. لا تخترع أو تدعي وجود عملاء أو قضايا أو مستندات غير مسجلة في الفهرس أعلاه.
 3. عندما تقتبس معلومات من مستند معين، اذكر اسم المستند بوضوح.
 ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionInstruction}` : ""}`;
 

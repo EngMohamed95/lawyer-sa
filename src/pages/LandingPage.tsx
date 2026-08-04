@@ -10,7 +10,7 @@ const FEATURES = [
   },
   {
     title: "إدارة شاملة للمكتب",
-    description: "تحكم في الموكلين والقضايا والجلسات والحسابات من لوحة واحدة واضحة.",
+    description: "تحكم في العملاء والقضايا والجلسات والحسابات من لوحة واحدة واضحة.",
     icon: <Gavel className="text-[#D4AF37]" size={32} />,
   },
   {
@@ -63,7 +63,7 @@ export default function LandingPage() {
             أدر مكتبك بذكاء مع قوة <span className="text-[#D4AF37]">الذكاء الاصطناعي</span>
           </h1>
           <p className="mx-auto mt-8 max-w-3xl text-lg leading-relaxed text-gray-300 md:text-xl">
-            منصة متكاملة لإدارة مكاتب المحاماة تساعدك على تنظيم القضايا، الموكلين، الجلسات، المهام، والحسابات في مكان واحد.
+            منصة متكاملة لإدارة مكاتب المحاماة تساعدك على تنظيم القضايا، العملاء، الجلسات، المهام، والحسابات في مكان واحد.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link to="/login" className="w-full rounded-2xl bg-[#D4AF37] px-10 py-5 text-center text-lg font-black text-[#133B2E] shadow-xl shadow-[#D4AF37]/20 transition hover:scale-105 sm:w-auto">
@@ -163,10 +163,10 @@ export default function LandingPage() {
                 سجّل قضاياك وتتبّع كل تفاصيلها بدقة
               </h3>
               <p className="text-gray-400 text-lg leading-relaxed mb-8">
-                منظومة متكاملة لإدارة ملفات القضايا — أضف قضايا جديدة، حدد الخصوم والموكلين، تابع الحالة القانونية، وابحث بسرعة في آلاف الملفات بلحظة واحدة.
+                منظومة متكاملة لإدارة ملفات القضايا — أضف قضايا جديدة، حدد الخصوم والعملاء، تابع الحالة القانونية، وابحث بسرعة في آلاف الملفات بلحظة واحدة.
               </p>
               <ul className="space-y-3">
-                {["رقم القضية والمحكمة والدائرة", "ربط كل قضية بموكلها تلقائياً", "تصفية حسب الحالة: مفتوحة / مغلقة / معلقة", "عرض كامل لتفاصيل القضية والجلسات والمستندات"].map(item => (
+                {["رقم القضية والمحكمة والدائرة", "ربط كل قضية بعميلها تلقائياً", "تصفية حسب الحالة: مفتوحة / مغلقة / معلقة", "عرض كامل لتفاصيل القضية والجلسات والمستندات"].map(item => (
                   <li key={item} className="flex items-start gap-3 text-gray-300">
                     <CheckCircle2 size={18} className="text-[#D4AF37] mt-0.5 shrink-0" />
                     {item}
@@ -228,7 +228,7 @@ export default function LandingPage() {
                 نظام محاسبي مبسّط مصمم للمحامين — سجّل الأتعاب والمدفوعات والمصروفات، واحصل على صورة مالية واضحة لمكتبك في أي وقت.
               </p>
               <ul className="space-y-3">
-                {["تسجيل الأتعاب لكل قضية وموكل", "تتبع المدفوعات والمستحقات المتبقية", "إضافة مصروفات المكتب الشهرية", "ملخص مالي فوري: إجمالي الإيرادات والمصروفات"].map(item => (
+                {["تسجيل الأتعاب لكل قضية وعميل", "تتبع المدفوعات والمستحقات المتبقية", "إضافة مصروفات المكتب الشهرية", "ملخص مالي فوري: إجمالي الإيرادات والمصروفات"].map(item => (
                   <li key={item} className="flex items-start gap-3 text-gray-300">
                     <CheckCircle2 size={18} className="text-green-400 mt-0.5 shrink-0" />
                     {item}

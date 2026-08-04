@@ -473,7 +473,8 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
           contentEditable
           onInput={handleInput}
           className={`min-h-[500px] outline-none focus:outline-none bg-white text-sm leading-relaxed text-gray-800 dir-rtl prose prose-slate max-w-none transition-all duration-300 rounded-2xl shadow-sm ${getBorderClassName(borderStyle)}`}
-          placeholder={placeholder}
+          // div لا يقبل السمة placeholder — الصيغة الصحيحة لمحرّر contentEditable هي data-placeholder
+          data-placeholder={placeholder}
           style={{ direction: 'rtl', textAlign: 'right', fontFamily: "'Tajawal', sans-serif" }}
         />
       </div>

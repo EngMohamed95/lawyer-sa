@@ -5,10 +5,12 @@ import {
   Calendar,
   ChevronRight,
   Gavel,
+  RefreshCw,
   TrendingUp,
   Users,
 } from "lucide-react";
 import { Link } from "react-router";
+import TodayAgenda from "../components/TodayAgenda";
 import {
   collection,
   collectionGroup,
@@ -58,6 +60,8 @@ export default function Dashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  /** يزيد عند طلب إعادة المحاولة فيُعيد تشغيل التحميل */
+  const [reloadKey, setReloadKey] = useState(0);
 
   const userRole = localStorage.getItem("userRole");
   const lawyerId = localStorage.getItem("lawyerId");
@@ -162,14 +166,22 @@ export default function Dashboard() {
         });
       } catch (err) {
         console.error(err);
-        setError("حدث خطأ أثناء تحميل بيانات لوحة التحكم.");
+        // نُظهر السبب متى عرفناه — «حدث خطأ» وحده لا يساعد أحداً
+        const code = (err as { code?: string })?.code ?? "";
+        const reason =
+          code === "permission-denied" ? "لا تملك صلاحية قراءة هذه البيانات."
+          : code === "resource-exhausted" ? "تجاوز حد الاستخدام اليومي لقاعدة البيانات."
+          : code === "unavailable" ? "تعذّر الوصول لقاعدة البيانات — تحقق من الاتصال."
+          : code === "failed-precondition" ? "الاستعلام يحتاج فهرساً في قاعدة البيانات."
+          : "";
+        setError(`تعذّر تحميل بيانات لوحة التحكم.${reason ? ` ${reason}` : ""}`);
       } finally {
         setLoading(false);
       }
     }
 
     fetchDashboardData();
-  }, [userRole, lawyerId]);
+  }, [userRole, lawyerId, reloadKey]);
 
   if (loading) {
     return (
@@ -184,7 +196,7 @@ export default function Dashboard() {
 
   const statCards = [
     { 
-      title: "إجمالي الموكلين", 
+      title: "إجمالي العملاء", 
       value: stats.totalClients, 
       icon: <Users size={22} className="text-indigo-600" />, 
       iconBg: "bg-indigo-100/70", 
@@ -221,9 +233,17 @@ export default function Dashboard() {
 
       {error && (
         <Card className="border-red-200 bg-red-50">
-          <CardContent className="flex items-center gap-3 p-4 text-red-700 font-medium">
-            <AlertCircle size={20} />
-            <span>{error}</span>
+          <CardContent className="flex flex-wrap items-center gap-3 p-4 text-red-700 font-medium">
+            <AlertCircle size={20} className="shrink-0" />
+            <span className="flex-1 min-w-0">{error}</span>
+            <button
+              onClick={() => setReloadKey(k => k + 1)}
+              disabled={loading}
+              className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-red-200 text-red-700 text-sm font-bold hover:bg-red-50 transition disabled:opacity-50"
+            >
+              <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
+              {loading ? "جاري المحاولة..." : "إعادة المحاولة"}
+            </button>
           </CardContent>
         </Card>
       )}
@@ -243,6 +263,9 @@ export default function Dashboard() {
           </Card>
         ))}
       </div>
+
+      {/* بطاقة جديدة: أجندة اليوم — البطاقات القائمة لم تتغيّر */}
+      <TodayAgenda />
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Recent Cases */}

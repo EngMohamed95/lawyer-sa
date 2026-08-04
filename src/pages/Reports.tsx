@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Badge } from "../components/ui/badge";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
+import AgingReport from "../components/AgingReport";
 
 export default function Reports() {
   const [data, setData] = useState<any>(null);
@@ -295,7 +296,7 @@ export default function Reports() {
               <CardContent className="p-0 pt-2">
                 <div className="text-2xl font-extrabold text-amber-700">{(data.totalOwed || 0).toLocaleString('ar-EG')} {currencySymbol}</div>
                 <div className="text-[11px] font-semibold text-amber-600 mt-1">
-                  متبقي عقود الموكلين قيد التحصيل
+                  متبقي عقود العملاء قيد التحصيل
                 </div>
               </CardContent>
             </Card>
@@ -524,11 +525,11 @@ export default function Reports() {
                   <span className="text-green-600 font-bold">٨٥٪</span>
                 </div>
                 <div className="flex justify-between border-b pb-2 text-sm font-semibold">
-                  <span className="text-gray-500">معدل رضا الموكلين وتقييمهم</span>
+                  <span className="text-gray-500">معدل رضا العملاء وتقييمهم</span>
                   <span className="text-purple-600 font-bold">٤.٨ / ٥</span>
                 </div>
                 <div className="flex justify-between pb-2 text-sm font-semibold">
-                  <span className="text-gray-500">إجمالي الموكلين النشطين</span>
+                  <span className="text-gray-500">إجمالي العملاء النشطين</span>
                   <span className="text-blue-600 font-bold">{data.totalClients} عملاء</span>
                 </div>
               </CardContent>
@@ -581,6 +582,9 @@ export default function Reports() {
               </Table>
             </CardContent>
           </Card>
+
+          {/* قسم جديد: أعمار الديون — الأقسام القائمة أعلاه وأدناه لم تتغيّر */}
+          <AgingReport currencySymbol={currencySymbol} />
 
           {/* Section 5: Recent Financial Activity */}
           <Card className="shadow-sm border-gray-100">

@@ -41,6 +41,24 @@ export default function CreateAdmin() {
     }
   };
 
+  // طبقة حماية ثانية: حتى لو وصل أحد لهذا المكوّن بأي طريقة، لا يعمل إلا بتفعيل صريح.
+  if (import.meta.env.VITE_ENABLE_CREATE_ADMIN !== "true") {
+    return (
+      <div dir="rtl" className="min-h-screen bg-[#133B2E] text-white flex items-center justify-center p-6 font-['Tajawal']">
+        <div className="bg-white text-gray-900 p-8 rounded-2xl max-w-md w-full shadow-2xl text-center space-y-3">
+          <h1 className="text-xl font-bold text-[#133B2E]">هذه الصفحة معطّلة</h1>
+          <p className="text-sm text-gray-600 leading-relaxed">
+            إنشاء حساب المدير العام غير متاح من المتصفح لأسباب أمنية.
+            يتم إنشاؤه من الخادم عبر <span className="font-mono text-xs">create_admin.mjs</span> فقط.
+          </p>
+          <a href="/login" className="inline-block mt-2 px-6 py-2 bg-[#133B2E] text-[#D4AF37] rounded-xl font-bold text-sm">
+            العودة لتسجيل الدخول
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div dir="rtl" className="min-h-screen bg-[#133B2E] text-white flex items-center justify-center p-6 font-['Tajawal']">
       <div className="bg-white text-gray-900 p-8 rounded-2xl max-w-md w-full shadow-2xl">

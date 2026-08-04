@@ -55,7 +55,7 @@ export function EditClientModal({ isOpen, onClose, onSuccess, clientData }: { is
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-[#133B2E]">تعديل بيانات الموكل</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-[#133B2E]">تعديل بيانات العميل</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -66,7 +66,7 @@ export function EditClientModal({ isOpen, onClose, onSuccess, clientData }: { is
                 required
                 value={formData.fullName}
                 onChange={e => setFormData({...formData, fullName: e.target.value})}
-                placeholder="اسم الموكل رباعي" 
+                placeholder="اسم العميل رباعي" 
               />
             </div>
             

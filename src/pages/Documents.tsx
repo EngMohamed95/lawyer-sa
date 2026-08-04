@@ -11,6 +11,16 @@ import RichTextEditor from "../components/RichTextEditor";
 import { AddDocumentModal } from "../components/AddDocumentModal";
 import { collection, getDocs, collectionGroup, query, where, doc, deleteDoc, updateDoc, addDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
+import { Link } from "react-router";
+import { FileSignature, ShieldCheck } from "lucide-react";
+import { createContractFromDocument } from "../lib/contractFromDocument";
+import DocumentPermissionsModal from "../components/DocumentPermissionsModal";
+import { normalizeRole } from "../lib/roles";
+import {
+  CONFIDENTIALITY_COLORS, CONFIDENTIALITY_SHORT_AR, canManageDocument, confidentialityOf,
+  filterReadable, isArchived, logDocumentAccess, matchesSearch, onlyLatest, versionChain, versionOf as docVersion,
+  type VaultDocument,
+} from "../lib/documentAcl";
 
 type ViewMode = 'CLIENTS' | 'CASES' | 'DOCS';
 type HubTab = 'ARCHIVE' | 'WORD_GENERATOR' | 'EXCEL_IMPORTER';
@@ -33,11 +43,11 @@ const LEGAL_TEMPLATES: LegalTemplate[] = [
     category: "توكيلات وإقرارات",
     description: "توكيل محامي لمباشرة قضية محددة أمام جهات المحاكم والنيابات المختصة.",
     fields: [
-      { key: "lawyerName", label: "اسم المحامي الموكل", placeholder: "الأستاذ / محمد أحمد المحامي", defaultValue: localStorage.getItem("userName") || "" },
+      { key: "lawyerName", label: "اسم المحامي العميل", placeholder: "الأستاذ / محمد أحمد المحامي", defaultValue: localStorage.getItem("userName") || "" },
       { key: "lawyerDegree", label: "درجة قيد المحامي", placeholder: "المحامي لدى محكمة الاستئناف" },
-      { key: "clientName", label: "اسم الموكل بالكامل", placeholder: "الاسم الرباعي للموكل" },
-      { key: "clientNatId", label: "رقم الهوية للموكل", placeholder: "١٤ رقماً قومياً" },
-      { key: "clientNationality", label: "جنسية الموكل", placeholder: "مصري", defaultValue: "مصري" },
+      { key: "clientName", label: "اسم العميل بالكامل", placeholder: "الاسم الرباعي للعميل" },
+      { key: "clientNatId", label: "رقم الهوية للعميل", placeholder: "١٤ رقماً قومياً" },
+      { key: "clientNationality", label: "جنسية العميل", placeholder: "مصري", defaultValue: "مصري" },
       { key: "opponentName", label: "اسم الخصم", placeholder: "الاسم الكامل للطرف الخصم" },
       { key: "caseNumber", label: "رقم القضية (إن وجد)", placeholder: "مثال: ١٢٣٤ لسنة ٢٠٢٦" },
       { key: "courtName", label: "اسم المحكمة المختصة", placeholder: "محكمة القاهرة الابتدائية" },
@@ -85,7 +95,7 @@ const LEGAL_TEMPLATES: LegalTemplate[] = [
         
         <div style="margin-top: 50px; display: flex; justify-content: space-between; border-top: 1px solid #eee; padding-top: 20px;">
           <div style="text-align: center; width: 45%;">
-            <p><strong>الموكل بما فيه (الموقع):</strong></p>
+            <p><strong>العميل بما فيه (الموقع):</strong></p>
             <p style="margin-top: 40px;">التوقيع: .......................................</p>
             <p>البصمة: .......................................</p>
           </div>
@@ -212,7 +222,7 @@ const LEGAL_TEMPLATES: LegalTemplate[] = [
     description: "صحيفة افتتاح دعوى أمام المحكمة الابتدائية للمطالبة بمستحقات مالية متأخرة.",
     fields: [
       { key: "lawyerName", label: "المحامي وكيل المدعي", placeholder: "اسمك أو مكتب المحاماة", defaultValue: localStorage.getItem("userName") || "" },
-      { key: "plaintiffName", label: "اسم المدعي (الموكل)", placeholder: "اسم المدعي بالكامل" },
+      { key: "plaintiffName", label: "اسم المدعي (العميل)", placeholder: "اسم المدعي بالكامل" },
       { key: "defendantName", label: "اسم المدعى عليه (الخصم)", placeholder: "اسم المدعى عليه بالكامل" },
       { key: "amountOwed", label: "المبلغ المطالب به", placeholder: "مثال: ١٥٠,٠٠٠ جنيه مصري" },
       { key: "reasonOfDebt", label: "سبب الدين والمستند السند", placeholder: "عقد توريد، إيصال أمانة، شيك بنكي" },
@@ -390,6 +400,58 @@ export default function Documents({
   const userRole = localStorage.getItem("userRole");
 
   const [viewDocument, setViewDocument] = useState<any>(null);
+  /** المستند الجاري ربطه بمديول العقود */
+  const [linkingDocId, setLinkingDocId] = useState<string | null>(null);
+  /** تبويب الأرشيف — المستندات المؤرشفة تخرج من القائمة النشطة وتبقى هنا */
+  const [showArchived, setShowArchived] = useState(false);
+  /** المستند المفتوحة صلاحياته */
+  const [permsDoc, setPermsDoc] = useState<{ doc: VaultDocument; path: string[] } | null>(null);
+  /** المستند الجاري رفع إصدار جديد له */
+  const [versionOf, setVersionOf] = useState<any>(null);
+
+  const aclContext = useMemo(
+    () => ({ role: normalizeRole(userRole), userId: localStorage.getItem("userId") }),
+    [userRole],
+  );
+
+  /**
+   * يربط مستنداً نوعه «عقد» بمديول العقود العام.
+   * يُستخدم للمستندات القديمة التي رُفعت قبل تفعيل الربط التلقائي.
+   */
+  const linkDocumentToContracts = async (d: any) => {
+    if (!lawyerId) { alert("تعذّر تحديد المكتب."); return; }
+    const path: string[] = String(d.fullPath || "").split("/").filter(Boolean);
+    if (path.length < 4) { alert("تعذّر تحديد مسار المستند."); return; }
+
+    // نستنتج العميل والقضية من موضع المستند
+    const parentType = path[0];
+    const parentId = path[1];
+    const caseId = parentType === "cases" ? parentId : null;
+    const clientId = parentType === "clients"
+      ? parentId
+      : (allData.cases.find((c: any) => c.id === parentId)?.clientId ?? null);
+
+    setLinkingDocId(d.id);
+    try {
+      const res = await createContractFromDocument(
+        {
+          path, id: d.id, name: d.name || "عقد",
+          fileUrl: d.fileUrl || d.url || null,
+          fileType: d.fileType || null,
+          content: d.content || null,
+          notes: d.notes || null,
+        },
+        { lawyerId, clientId, caseId, userId: localStorage.getItem("userId") },
+      );
+      await fetchData();
+      alert(`أُضيف إلى مديول العقود برقم ${res.contractNumber}`);
+    } catch (err) {
+      console.error("تعذّر ربط المستند بالعقود:", err);
+      alert("تعذّر إضافته للعقود. تحقق من الاتصال ثم أعد المحاولة.");
+    } finally {
+      setLinkingDocId(null);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -715,7 +777,8 @@ export default function Documents({
       for (let i = 0; i !== wbout.length; ++i) view[i] = wbout.charCodeAt(i) & 0xFF;
       
       const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const file = new File([blob], `${freeExcelTitle}.xlsx`, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      // window.File وليس File — لأن File مستوردة كأيقونة من lucide-react وتحجب النوع الأصلي
+      const file = new window.File([blob], `${freeExcelTitle}.xlsx`, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 
       const formDataObj = new FormData();
       formDataObj.append("file", file);
@@ -785,13 +848,38 @@ export default function Documents({
       );
     }
     if (navigation.mode === 'DOCS') {
-      return allData.documents.filter(d => 
-        (d.parentId === navigation.caseId || d.parentId === navigation.clientId) && 
-        (search ? d.name?.toLowerCase().includes(search.toLowerCase()) : true)
-      );
+      const inScope = allData.documents.filter(d =>
+        d.parentId === navigation.caseId || d.parentId === navigation.clientId);
+
+      // خزنة المستندات: الأحدث فقط · حسب حالة الأرشفة · بما يحقّ للدور رؤيته
+      const latest = onlyLatest(inScope as VaultDocument[]) as any[];
+      const byStatus = latest.filter(d => (showArchived ? isArchived(d) : !isArchived(d)));
+      const readable = filterReadable(byStatus as VaultDocument[], aclContext) as any[];
+
+      // البحث يشمل الاسم والوسوم والملاحظات والمحتوى المستخرج
+      return search ? readable.filter(d => matchesSearch(d as VaultDocument, search)) : readable;
     }
     return [];
-  }, [allData, navigation, search]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allData, navigation, search, showArchived, aclContext]);
+
+  /** عدد المؤرشفة في الموضع الحالي — لعرضه على زر التبويب */
+  const archivedCount = useMemo(() => {
+    if (navigation.mode !== 'DOCS') return 0;
+    const inScope = allData.documents.filter(d =>
+      d.parentId === navigation.caseId || d.parentId === navigation.clientId);
+    return onlyLatest(inScope as VaultDocument[]).filter(d => isArchived(d)).length;
+  }, [allData, navigation]);
+
+  /** المستندات المحجوبة عن الدور الحالي — نُعلم المستخدم بوجودها بلا كشف محتواها */
+  const hiddenCount = useMemo(() => {
+    if (navigation.mode !== 'DOCS') return 0;
+    const inScope = allData.documents.filter(d =>
+      d.parentId === navigation.caseId || d.parentId === navigation.clientId);
+    const latest = onlyLatest(inScope as VaultDocument[])
+      .filter(d => (showArchived ? isArchived(d) : !isArchived(d)));
+    return latest.length - filterReadable(latest, aclContext).length;
+  }, [allData, navigation, showArchived, aclContext]);
 
   const selectedClient = allData.clients.find(c => c.id === navigation.clientId);
   const selectedCase = allData.cases.find(c => c.id === navigation.caseId);
@@ -881,13 +969,13 @@ export default function Documents({
             "الأتعاب المتوقعة": 50000
           }
         ];
-        filename = "نموذج_استيراد_الموكلين.xlsx";
+        filename = "نموذج_استيراد_العملاء.xlsx";
       } else {
         rows = [
           {
             "عنوان القضية": "دعوى مطالبة مالية توريد مواد خام",
             "رقم القضية": "٤٥٢٦ / ٢٠٢٦",
-            "اسم الموكل": "محمد علي الشريف",
+            "اسم العميل": "محمد علي الشريف",
             "نوع القضية": "تجاري",
             "اسم الخصم": "شركة النور التجارية",
             "محامي الخصم": "الأستاذ حسن يوسف",
@@ -897,7 +985,7 @@ export default function Documents({
           {
             "عنوان القضية": "فسخ عقد إيجار لعدم السداد",
             "رقم القضية": "١٢٩٣ / ٢٠٢٦",
-            "اسم الموكل": "شركة الأمل للمقاولات",
+            "اسم العميل": "شركة الأمل للمقاولات",
             "نوع القضية": "مدني",
             "اسم الخصم": "حسام عبد الرحيم",
             "محامي الخصم": "",
@@ -1027,12 +1115,12 @@ export default function Documents({
           const sampleRow = rawRows[0] as any;
           if (importType === 'CLIENTS') {
             if (!("الاسم الكامل" in sampleRow) || !("الهاتف" in sampleRow)) {
-              setExcelError("الملف لا يتطابق مع نموذج الموكلين! يجب أن يحتوي على عمودين باسم 'الاسم الكامل' و 'الهاتف'.");
+              setExcelError("الملف لا يتطابق مع نموذج العملاء! يجب أن يحتوي على عمودين باسم 'الاسم الكامل' و 'الهاتف'.");
               return;
             }
           } else {
-            if (!("عنوان القضية" in sampleRow) || !("رقم القضية" in sampleRow) || !("اسم الموكل" in sampleRow)) {
-              setExcelError("الملف لا يتطابق مع نموذج القضايا! يجب أن يحتوي على أعمدة 'عنوان القضية' و 'رقم القضية' و 'اسم الموكل'.");
+            if (!("عنوان القضية" in sampleRow) || !("رقم القضية" in sampleRow) || !("اسم العميل" in sampleRow)) {
+              setExcelError("الملف لا يتطابق مع نموذج القضايا! يجب أن يحتوي على أعمدة 'عنوان القضية' و 'رقم القضية' و 'اسم العميل'.");
               return;
             }
           }
@@ -1062,12 +1150,12 @@ export default function Documents({
       let successCount = 0;
 
       if (importType === 'CLIENTS') {
-        setImportProgress(`جاري استيراد ${excelData.length} موكل جديد...`);
+        setImportProgress(`جاري استيراد ${excelData.length} عميل جديد...`);
         
         for (let i = 0; i < excelData.length; i++) {
           const row = excelData[i];
           const data = {
-            fullName: row["الاسم الكامل"] || "موكل مستورد",
+            fullName: row["الاسم الكامل"] || "عميل مستورد",
             clientType: String(row["النوع (فرد/شركة)"] || "").trim() === "شركة" ? "COMPANY" : "INDIVIDUAL",
             phone: String(row["الهاتف"] || ""),
             nationalId: String(row["الهوية_الرقم الضريبي"] || ""),
@@ -1082,9 +1170,9 @@ export default function Documents({
           successCount++;
         }
         
-        setImportSuccessMessage(`تم استيراد عدد ${successCount} موكل بنجاح وبسرعة فائقة!`);
+        setImportSuccessMessage(`تم استيراد عدد ${successCount} عميل بنجاح وبسرعة فائقة!`);
       } else {
-        setImportProgress("جاري جلب قائمة الموكلين الحالية للربط التلقائي...");
+        setImportProgress("جاري جلب قائمة العملاء الحالية للربط التلقائي...");
         
         // Fetch existing clients to resolve names to client IDs
         const clientsSnap = await getDocs(query(collection(db, "clients"), where("lawyerId", "==", lawyerId)));
@@ -1096,7 +1184,7 @@ export default function Documents({
 
         for (let i = 0; i < excelData.length; i++) {
           const row = excelData[i];
-          const clientName = String(row["اسم الموكل"] || "").trim();
+          const clientName = String(row["اسم العميل"] || "").trim();
           
           if (!clientName) continue;
 
@@ -1104,7 +1192,7 @@ export default function Documents({
 
           // Auto Client creation if name not found in existing system
           if (!clientId) {
-            setImportProgress(`موكل غير معروف: "${clientName}". جاري تسجيله تلقائياً أولاً...`);
+            setImportProgress(`عميل غير معروف: "${clientName}". جاري تسجيله تلقائياً أولاً...`);
             const newClientData = {
               fullName: clientName,
               clientType: "INDIVIDUAL",
@@ -1142,7 +1230,7 @@ export default function Documents({
           successCount++;
         }
 
-        setImportSuccessMessage(`تم استيراد عدد ${successCount} قضية وربطها بالموكلين بنجاح!`);
+        setImportSuccessMessage(`تم استيراد عدد ${successCount} قضية وربطها بالعملاء بنجاح!`);
       }
 
       setExcelData([]);
@@ -1169,6 +1257,7 @@ export default function Documents({
         isOpen={!!viewDocument}
         onClose={() => setViewDocument(null)}
         document={viewDocument}
+        versions={viewDocument ? versionChain(allData.documents as VaultDocument[], viewDocument as VaultDocument) : []}
       />
 
       {/* Edit Modal */}
@@ -1266,6 +1355,27 @@ export default function Documents({
         clientId={navigation.clientId || undefined}
       />
 
+      {/* رفع إصدار جديد لمستند قائم — الإصدار السابق يبقى محفوظاً */}
+      {versionOf && (
+        <AddDocumentModal
+          isOpen
+          onClose={() => setVersionOf(null)}
+          onSuccess={() => { setVersionOf(null); fetchData(); }}
+          caseId={navigation.caseId || undefined}
+          clientId={navigation.clientId || undefined}
+          newVersionOf={versionOf}
+        />
+      )}
+
+      {permsDoc && (
+        <DocumentPermissionsModal
+          document={permsDoc.doc}
+          path={permsDoc.path}
+          onClose={() => setPermsDoc(null)}
+          onDone={() => { setPermsDoc(null); fetchData(); }}
+        />
+      )}
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-5">
         <div>
           <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">إدارة ملفات Word & Excel</h1>
@@ -1331,10 +1441,29 @@ export default function Documents({
             <CardHeader className="border-b bg-gray-50/50 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center space-x-2 space-x-reverse relative w-full sm:w-96">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input placeholder="بحث بالاسم..." className="pl-4 pr-10 bg-white border-gray-200 focus:ring-[#133B2E]/10" value={search} onChange={(e) => setSearch(e.target.value)} />
+                <Input
+                  placeholder={navigation.mode === 'DOCS' ? "بحث بالاسم أو الوسم أو المحتوى..." : "بحث بالاسم..."}
+                  className="pl-4 pr-10 bg-white border-gray-200 focus:ring-[#133B2E]/10"
+                  value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
-              <div className="flex items-center gap-2 self-end sm:self-auto">
+              <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
                 {navigation.mode === 'DOCS' && (
+                  <div className="flex gap-1">
+                    <button onClick={() => setShowArchived(false)}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition ${
+                        !showArchived ? "bg-[#133B2E] text-[#D4AF37] border-[#133B2E]" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                      }`}>
+                      النشطة
+                    </button>
+                    <button onClick={() => setShowArchived(true)}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold border transition ${
+                        showArchived ? "bg-[#133B2E] text-[#D4AF37] border-[#133B2E]" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                      }`}>
+                      الأرشيف ({archivedCount})
+                    </button>
+                  </div>
+                )}
+                {navigation.mode === 'DOCS' && !showArchived && (
                   <Button
                     onClick={() => setIsAddDocModalOpen(true)}
                     className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white font-bold py-5 px-5 rounded-2xl flex items-center gap-2 shadow-lg shadow-[#133B2E]/15 active:scale-[0.98] transition-transform text-xs"
@@ -1351,6 +1480,14 @@ export default function Documents({
               </div>
             </CardHeader>
             <CardContent className="p-6">
+              {navigation.mode === 'DOCS' && hiddenCount > 0 && (
+                <div className="mb-4 flex items-center gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs">
+                  <ShieldCheck size={15} className="shrink-0" />
+                  <span>
+                    <strong>{hiddenCount}</strong> مستند محجوب عن دورك بسبب تصنيفه الأمني — راجع مدير المكتب إن كنت تحتاجه.
+                  </span>
+                </div>
+              )}
               {loading ? (
                 <div className="text-center py-20 text-gray-500 font-bold flex flex-col items-center justify-center gap-3">
                   <Loader2 className="h-8 w-8 text-[#133B2E] animate-spin" />
@@ -1359,7 +1496,9 @@ export default function Documents({
               ) : currentItems.length === 0 ? (
                 <div className="text-center py-20 bg-gray-50/50 rounded-2xl border-2 border-dashed border-gray-100">
                   <Folder className="h-12 w-12 text-gray-200 mx-auto mb-4" />
-                  <p className="text-gray-400">لا توجد عناصر هنا</p>
+                  <p className="text-gray-400">
+                    {navigation.mode === 'DOCS' && showArchived ? "لا مستندات مؤرشفة هنا" : "لا توجد عناصر هنا"}
+                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
@@ -1398,6 +1537,31 @@ export default function Documents({
                                   <div className="flex flex-col min-w-0">
                                     <span className="truncate font-bold text-sm max-w-[250px]">{d.name || "مستند بدون اسم"}</span>
                                     <span className="text-xs text-gray-400 font-mono" dir="ltr">{d.fileUrl?.split('/').pop()?.slice(-20) || "ملف رقمي"}</span>
+                                    <div className="flex items-center gap-1 mt-1 flex-wrap">
+                                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${CONFIDENTIALITY_COLORS[confidentialityOf(d)]}`}>
+                                        {CONFIDENTIALITY_SHORT_AR[confidentialityOf(d)]}
+                                      </span>
+                                      {docVersion(d) > 1 && (
+                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100">
+                                          إصدار {docVersion(d)}
+                                        </span>
+                                      )}
+                                      {d.sharedWithClient && (
+                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-100">
+                                          مشارَك مع العميل
+                                        </span>
+                                      )}
+                                      {isArchived(d) && (
+                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                                          مؤرشف
+                                        </span>
+                                      )}
+                                      {(d.tags ?? []).slice(0, 2).map((t: string) => (
+                                        <span key={t} className="text-[10px] px-1.5 py-0.5 rounded bg-gray-50 text-gray-500 border border-gray-200">
+                                          {t}
+                                        </span>
+                                      ))}
+                                    </div>
                                   </div>
                                 </div>
                               </TableCell>
@@ -1410,19 +1574,59 @@ export default function Documents({
                                     : d.type === "RECEIPT" ? "إيصال"
                                     : "أخرى"}
                                 </Badge>
+
+                                {/* المستندات نوعها «عقد» مربوطة بمديول العقود العام */}
+                                {d.type === "CONTRACT" && (
+                                  d.contractId ? (
+                                    <Link to="/app/contracts" title="فتحه في مديول العقود"
+                                      className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-100 hover:bg-amber-100 transition">
+                                      <FileSignature size={12} />
+                                      {d.contractNumber || "في العقود"}
+                                    </Link>
+                                  ) : (
+                                    <button type="button" disabled={linkingDocId === d.id}
+                                      onClick={() => linkDocumentToContracts(d)}
+                                      title="إنشاء سجل عقد من هذا المستند في المديول العام"
+                                      className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg bg-gray-50 text-gray-600 border border-gray-200 hover:bg-amber-50 hover:text-amber-800 hover:border-amber-100 transition disabled:opacity-50">
+                                      <FileSignature size={12} />
+                                      {linkingDocId === d.id ? "جارٍ..." : "أضِفه للعقود"}
+                                    </button>
+                                  )
+                                )}
                               </TableCell>
                               <TableCell className="text-center">
                                 <div className="flex items-center justify-center gap-1">
                                   {(d.fileUrl || d.url) && (
                                     <>
-                                      <Button variant="ghost" size="icon" className="h-9 w-9 text-blue-600 hover:bg-blue-50" title="معاينة فورية" onClick={() => setViewDocument(d)}>
+                                      <Button variant="ghost" size="icon" className="h-9 w-9 text-blue-600 hover:bg-blue-50" title="معاينة فورية"
+                                        onClick={() => { void logDocumentAccess(d, "VIEW", aclContext); setViewDocument(d); }}>
                                         <Eye className="h-4.5 w-4.5" />
                                       </Button>
-                                      <a href={d.fileUrl || d.url} download target="_blank" rel="noreferrer">
+                                      <a href={d.fileUrl || d.url} download target="_blank" rel="noreferrer"
+                                        onClick={() => { void logDocumentAccess(d, "DOWNLOAD", aclContext); }}>
                                         <Button variant="ghost" size="icon" className="h-9 w-9 text-[#D4AF37] hover:bg-amber-50" title="تحميل الملف">
                                           <Download className="h-4.5 w-4.5" />
                                         </Button>
                                       </a>
+                                    </>
+                                  )}
+                                  {canManageDocument(aclContext.role) && d.fullPath && (
+                                    <>
+                                      <Button variant="ghost" size="icon" className="h-9 w-9 text-emerald-600 hover:bg-emerald-50"
+                                        title="رفع إصدار جديد"
+                                        onClick={() => setVersionOf({
+                                          id: d.id, name: d.name || "مستند", version: docVersion(d),
+                                          parentDocumentId: d.parentDocumentId ?? null,
+                                          confidentiality: confidentialityOf(d),
+                                          path: String(d.fullPath).split("/"),
+                                        })}>
+                                        <Upload className="h-4.5 w-4.5" />
+                                      </Button>
+                                      <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-600 hover:bg-slate-100"
+                                        title="التصنيف والصلاحيات والأرشفة"
+                                        onClick={() => setPermsDoc({ doc: d as VaultDocument, path: String(d.fullPath).split("/") })}>
+                                        <ShieldCheck className="h-4.5 w-4.5" />
+                                      </Button>
                                     </>
                                   )}
                                   {localStorage.getItem('userPlan') === 'PREMIUM' && (
@@ -1691,7 +1895,7 @@ export default function Documents({
                       <p className="text-[11px] text-amber-700 mt-1 leading-relaxed">
                         ضع أي كلمة تريد تعبئتها ديناميكياً بين قوسين مزدوجين، مثل:{" "}
                         <span className="font-mono bg-white px-1.5 py-0.5 rounded border border-amber-200 font-bold font-sans">
-                          {"{{اسم_الموكل}}"}
+                          {"{{اسم_العميل}}"}
                         </span>{" "}
                         أو{" "}
                         <span className="font-mono bg-white px-1.5 py-0.5 rounded border border-amber-200 font-bold font-sans">
@@ -2137,21 +2341,21 @@ export default function Documents({
                   <CardContent className="space-y-4">
                     <div className="p-4 bg-gray-50 border rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
                       <div className="space-y-1 text-center sm:text-right">
-                        <p className="text-sm font-bold text-[#133B2E]">نموذج الموكلين الجماعي (.xlsx)</p>
-                        <p className="text-xs text-gray-500">لرفع قائمة الموكلين بالاسم والهواتف والهويات</p>
+                        <p className="text-sm font-bold text-[#133B2E]">نموذج العملاء الجماعي (.xlsx)</p>
+                        <p className="text-xs text-gray-500">لرفع قائمة العملاء بالاسم والهواتف والهويات</p>
                       </div>
                       <Button
                         onClick={() => downloadExcelTemplate('CLIENTS')}
                         className="bg-green-600 hover:bg-green-700 text-white font-bold"
                       >
-                        تحميل نموذج الموكلين
+                        تحميل نموذج العملاء
                       </Button>
                     </div>
                     
                     <div className="p-4 bg-gray-50 border rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
                       <div className="space-y-1 text-center sm:text-right">
                         <p className="text-sm font-bold text-[#133B2E]">نموذج القضايا والسجلات (.xlsx)</p>
-                        <p className="text-xs text-gray-500">لرفع سجلات القضايا وربطها تلقائياً بالموكلين</p>
+                        <p className="text-xs text-gray-500">لرفع سجلات القضايا وربطها تلقائياً بالعملاء</p>
                       </div>
                       <Button
                         onClick={() => downloadExcelTemplate('CASES')}
@@ -2186,7 +2390,7 @@ export default function Documents({
                             importType === 'CLIENTS' ? "bg-white text-[#133B2E] shadow-sm" : "text-gray-500 hover:text-[#133B2E]"
                           }`}
                         >
-                          استيراد قائمة موكلين
+                          استيراد قائمة عملاء
                         </button>
                         <button
                           onClick={() => { setImportType('CASES'); setExcelData([]); setExcelFileName(""); setExcelError(""); setImportSuccessMessage(""); }}
@@ -2288,7 +2492,7 @@ export default function Documents({
                             <>
                               <TableHead className="text-right font-bold text-[#133B2E]">عنوان القضية</TableHead>
                               <TableHead className="text-right font-bold text-[#133B2E]">رقم القضية</TableHead>
-                              <TableHead className="text-right font-bold text-[#133B2E]">اسم الموكل (الرابط)</TableHead>
+                              <TableHead className="text-right font-bold text-[#133B2E]">اسم العميل (الرابط)</TableHead>
                               <TableHead className="text-right font-bold text-[#133B2E]">نوع القضية</TableHead>
                               <TableHead className="text-right font-bold text-[#133B2E]">المحكمة المرفوعة</TableHead>
                             </>
@@ -2312,7 +2516,7 @@ export default function Documents({
                               <>
                                 <TableCell className="font-bold text-[#133B2E]">{row["عنوان القضية"] || "-"}</TableCell>
                                 <TableCell className="font-mono text-sm">{row["رقم القضية"] || "-"}</TableCell>
-                                <TableCell className="text-[#D4AF37] font-bold">{row["اسم الموكل"] || "-"}</TableCell>
+                                <TableCell className="text-[#D4AF37] font-bold">{row["اسم العميل"] || "-"}</TableCell>
                                 <TableCell>{row["نوع القضية"] || "-"}</TableCell>
                                 <TableCell className="truncate max-w-xs">{row["المحكمة"] || "-"}</TableCell>
                               </>

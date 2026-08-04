@@ -186,13 +186,13 @@ export function EditCaseModal({
             </div>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="text-sm font-bold text-[#133B2E]">الموكل *</label>
+                <label className="text-sm font-bold text-[#133B2E]">العميل *</label>
                 <button
                   type="button"
                   onClick={() => setIsAddClientOpen(true)}
                   className="text-xs text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1"
                 >
-                  + إضافة موكل جديد
+                  + إضافة عميل جديد
                 </button>
               </div>
               <select
@@ -201,7 +201,7 @@ export function EditCaseModal({
                 value={formData.clientId}
                 onChange={e => setFormData({ ...formData, clientId: e.target.value })}
               >
-                <option value="">اختر الموكل...</option>
+                <option value="">اختر العميل...</option>
                 {clients.map(c => (
                   <option key={c.id} value={c.id}>
                     {c.fullName}
@@ -227,7 +227,7 @@ export function EditCaseModal({
             <div className="space-y-2 border-t pt-2 md:col-span-2 text-xs font-bold text-gray-500">أطراف الدعوى والنزاع</div>
 
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-bold text-[#133B2E]">صفة الموكل في القضية</label>
+              <label className="text-sm font-bold text-[#133B2E]">صفة العميل في القضية</label>
               <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
                 <button
                   type="button"
@@ -254,9 +254,9 @@ export function EditCaseModal({
               </div>
               <p className="text-xs font-medium mt-1">
                 {clientRole === "PLAINTIFF" ? (
-                  <span className="text-blue-700">← سيكون الموكل هو الطرف المدعي، والخصم هو الطرف المدعى عليه.</span>
+                  <span className="text-blue-700">← سيكون العميل هو الطرف المدعي، والخصم هو الطرف المدعى عليه.</span>
                 ) : (
-                  <span className="text-rose-700">← سيكون الموكل هو الطرف المدعى عليه، والخصم هو الطرف المدعي.</span>
+                  <span className="text-rose-700">← سيكون العميل هو الطرف المدعى عليه، والخصم هو الطرف المدعي.</span>
                 )}
               </p>
             </div>

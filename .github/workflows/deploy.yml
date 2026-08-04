@@ -43,7 +43,19 @@ jobs:
         run: |
           mkdir -p tmp
           touch tmp/restart.txt
-          zip -r -9 deploy.zip dist package.json index.js .env serviceAccountKey.json tmp/restart.txt
+
+          # مفتاح حساب الخدمة غير مُتتبَّع في المستودع (وهذا صحيح أمنياً).
+          # نكتبه من أسرار GitHub متى وُجد، وإلا نتخطّاه بدل أن يفشل الأرشفة.
+          EXTRA=""
+          if [ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" ]; then
+            printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}' > serviceAccountKey.json
+            EXTRA="serviceAccountKey.json"
+            echo "أُضيف مفتاح حساب الخدمة للحزمة."
+          else
+            echo "تنبيه: لا يوجد سرّ FIREBASE_SERVICE_ACCOUNT_KEY — تُنشر الحزمة بدونه."
+          fi
+
+          zip -r -9 deploy.zip dist package.json index.js .env tmp/restart.txt $EXTRA
  
       - name: Create Unzip Script
         run: |

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import type { Query, DocumentData } from "firebase/firestore";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -25,8 +26,8 @@ export function AddPaymentModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
           const lawyerId = localStorage.getItem("lawyerId");
           const userRole = localStorage.getItem("userRole");
 
-          let clientsQ: any = collection(db, "clients");
-          let casesQ: any = collection(db, "cases");
+          let clientsQ: Query<DocumentData> = collection(db, "clients");
+          let casesQ: Query<DocumentData> = collection(db, "cases");
 
           if (userRole !== "SUPER_ADMIN") {
             clientsQ = query(collection(db, "clients"), where("lawyerId", "==", lawyerId));
@@ -83,14 +84,14 @@ export function AddPaymentModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-bold text-[#133B2E]">الموكل *</label>
+              <label className="text-sm font-bold text-[#133B2E]">العميل *</label>
               <select
                 required
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={formData.clientId}
                 onChange={e => setFormData({ ...formData, clientId: e.target.value, caseId: "" })}
               >
-                <option value="">اختر الموكل...</option>
+                <option value="">اختر العميل...</option>
                 {clients.map(client => (
                   <option key={client.id} value={client.id}>{client.fullName}</option>
                 ))}

@@ -1,14 +1,33 @@
 import { BrowserRouter as Router, Routes, Route, Outlet, Link, useLocation, Navigate, useNavigate } from "react-router";
-import { LayoutDashboard, Users, Briefcase, Calendar, CheckSquare, FileText, Settings, Bell, Search, Menu, Calculator, GraduationCap, BarChart, LogOut, Shield, CreditCard, Loader2, BookOpen, Sparkles } from "lucide-react";
-import { useState, lazy, Suspense, useEffect, useRef } from "react";
+import { LayoutDashboard, Users, Briefcase, Calendar, CheckSquare, FileText, Settings, Bell, Search, Menu, Calculator, GraduationCap, BarChart, LogOut, Shield, CreditCard, Loader2, BookOpen, Sparkles, ChevronDown, ScrollText, Trash2, FileSignature, ReceiptText, Handshake, Timer, CalendarDays, Globe } from "lucide-react";
+import { useState, lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
 import { collection, getDocs, query, where, collectionGroup, limit } from "firebase/firestore";
 import { db } from "./lib/firebase";
+import { usePermissions } from "./lib/usePermissions";
+import { generateNotifications, loadPreferences, shouldAutoScan } from "./lib/notifications";
+import { clearLocalSession, useAuthSession } from "./lib/useAuthSession";
+import { loadOfficeSettings } from "./lib/officeSettings";
+import { roleLabel } from "./lib/roles";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Standard Import for Critical Pages (Faster initial load)
 import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import CreateAdmin from "./pages/CreateAdmin";
+
+// أمان: مسار إنشاء المدير العام معطّل افتراضياً.
+// كان مفتوحاً للجميع، فكان بإمكان أي زائر إنشاء حساب SUPER_ADMIN لنفسه.
+// لتفعيله مؤقتاً: ضع VITE_ENABLE_CREATE_ADMIN=true في .env ثم أعده إلى false فوراً بعد الاستخدام.
+const CREATE_ADMIN_ENABLED = import.meta.env.VITE_ENABLE_CREATE_ADMIN === "true";
+
+/** عنصر في القائمة الجانبية — قد يحتوي قائمة فرعية */
+interface NavItem {
+  name: string;
+  path: string;
+  icon: ReactNode;
+  hidden?: boolean;
+  children?: NavItem[];
+}
 
 // Lazy Loading for Dashboard & App Pages
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -27,35 +46,132 @@ const SubscriptionRequests = lazy(() => import("./pages/SubscriptionRequests"));
 const SubscribePage = lazy(() => import("./pages/SubscribePage"));
 const LegalLibrary = lazy(() => import("./pages/LegalLibrary"));
 const OfficeLawyers = lazy(() => import("./pages/OfficeLawyers"));
+const Team = lazy(() => import("./pages/Team"));
+const AuditLog = lazy(() => import("./pages/AuditLog"));
+const RecycleBin = lazy(() => import("./pages/RecycleBin"));
+const Contracts = lazy(() => import("./pages/Contracts"));
+const Invoices = lazy(() => import("./pages/Invoices"));
+const FeeAgreements = lazy(() => import("./pages/FeeAgreements"));
+const CalendarPage = lazy(() => import("./pages/Calendar"));
+const NotificationsPage = lazy(() => import("./pages/Notifications"));
+const ClientPortalAdmin = lazy(() => import("./pages/ClientPortalAdmin"));
+const TimeEntries = lazy(() => import("./pages/TimeEntries"));
 const AiChat = lazy(() => import("./pages/AiChat"));
 
 function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const userRole = localStorage.getItem("userRole");
+  const perms = usePermissions();
 
-  const navItems = [
+  // بوابة الباقة منفصلة تماماً عن بوابة الدور: الدور يحدد "هل يحق له"،
+  // والباقة تحدد "هل اشترك فيها". الشرطان يبقيان كما كانا بالضبط.
+  const plan = localStorage.getItem("userPlan");
+  const isBasic = plan === "BASIC";
+  const isPremium = plan === "PREMIUM";
+
+  // حجب باقة BASIC للمهام والمستندات كان — ولا يزال — مقصوراً على LAWYER
+  // و OFFICE_LAWYER دون المتدرب. سلوك قائم نحافظ عليه حرفياً.
+  const paidRoleOnBasic = isBasic && (perms.role === "LAWYER" || perms.role === "OFFICE_LAWYER");
+
+  // التقارير: صفحة التقارير الحالية تعرض أرقام المكتب كاملة (قضايا + أداء
+  // محامين + مالية) بلا أي تصفية. فحتى تُنفَّذ نطاقات OWN و FINANCIAL في
+  // الميزة 013، نقصرها على من يملك "كامل" فقط.
+  // هذا يطابق سلوك النظام اليوم، ويمنع المحاسب من رؤية بيانات القضايا
+  // (فصل الصلاحيات المالية عن القانونية — الوثيقة §خامساً).
+  const canSeeFullReports = perms.scopeOf("report.view") === "FULL";
+
+  const navItems: NavItem[] = [
     { name: "لوحة التحكم", path: "/app/dashboard", icon: <LayoutDashboard size={20} /> },
-    { name: "المحامين", path: "/app/lawyers", icon: <Shield size={20} />, hidden: userRole !== "SUPER_ADMIN" },
-    { name: "الاشتراكات", path: "/app/subscriptions", icon: <CreditCard size={20} />, hidden: userRole !== "SUPER_ADMIN" },
-    
-    // Baka 1: Basic (Clients, Cases, Hearings)
-    { name: "الموكلين", path: "/app/clients", icon: <Users size={20} />, hidden: userRole === "SUPER_ADMIN" },
-    { name: "القضايا", path: "/app/cases", icon: <Briefcase size={20} />, hidden: userRole === "SUPER_ADMIN" },
-    { name: "الجلسات", path: "/app/hearings", icon: <Calendar size={20} />, hidden: userRole === "SUPER_ADMIN" },
-    
-    // Baka 2: Pro (Tasks, Documents, Accounting, Trainees)
-    { name: "المهام", path: "/app/tasks", icon: <CheckSquare size={20} />, hidden: userRole === "SUPER_ADMIN" || ((userRole === "LAWYER" || userRole === "OFFICE_LAWYER") && localStorage.getItem("userPlan") === "BASIC") },
-    { name: "المستندات", path: "/app/documents", icon: <FileText size={20} />, hidden: userRole === "SUPER_ADMIN" || ((userRole === "LAWYER" || userRole === "OFFICE_LAWYER") && localStorage.getItem("userPlan") === "BASIC") },
-    { name: "الحسابات", path: "/app/accounting", icon: <Calculator size={20} />, hidden: userRole === "TRAINEE" || userRole === "OFFICE_LAWYER" || userRole === "SUPER_ADMIN" || (userRole === "LAWYER" && localStorage.getItem("userPlan") === "BASIC") },
-    { name: "المتدربين", path: "/app/trainees", icon: <GraduationCap size={20} />, hidden: userRole !== "LAWYER" || localStorage.getItem("userPlan") === "BASIC" },
-    { name: "محامو المكتب", path: "/app/office-lawyers", icon: <Shield size={20} />, hidden: userRole !== "LAWYER" || localStorage.getItem("userPlan") === "BASIC" },
-    
-    // Baka 3: Premium (Reports + AI services)
-    { name: "التقارير", path: "/app/reports", icon: <BarChart size={20} />, hidden: userRole === "TRAINEE" || userRole === "OFFICE_LAWYER" || userRole === "SUPER_ADMIN" || (userRole === "LAWYER" && localStorage.getItem("userPlan") !== "PREMIUM") },
-    { name: "المساعد الذكي", path: "/app/ai-chat", icon: <Sparkles size={20} />, hidden: userRole === "SUPER_ADMIN" || (localStorage.getItem("userPlan") !== "PREMIUM") },
-    { name: "المكتبة القانونية", path: "/app/library", icon: <BookOpen size={20} />, hidden: userRole === "SUPER_ADMIN" },
+    { name: "المحامين", path: "/app/lawyers", icon: <Shield size={20} />, hidden: !perms.can("platform.manage") },
+    { name: "الاشتراكات", path: "/app/subscriptions", icon: <CreditCard size={20} />, hidden: !perms.can("platform.manage") },
+
+    // العملاء تضم بوابة العملاء كقائمة فرعية
+    {
+      name: "العملاء",
+      path: "/app/clients",
+      icon: <Users size={20} />,
+      hidden: !perms.can("client.manage"),
+      children: [
+        { name: "بوابة العملاء", path: "/app/client-portal", icon: <Globe size={18} />, hidden: !perms.can("client.manage") },
+      ],
+    },
+
+    // ── العمل القضائي: القضية هي الجذر، وتحتها ما يتفرّع عنها ──
+    // شرط الإخفاء لكل عنصر لم يتغيّر حرفاً واحداً؛ التغيير في الترتيب فقط.
+    // ولو أُخفي الأب وظهر أبناؤه (العميل مثلاً يرى الجلسات ولا يرى القضايا)
+    // يرفعهم visibleNavItems للمستوى الأعلى فلا يفقد أحد وصولاً كان يملكه.
+    {
+      name: "القضايا",
+      path: "/app/cases",
+      icon: <Briefcase size={20} />,
+      hidden: !perms.can("case.update"),
+      children: [
+        { name: "الجلسات", path: "/app/hearings", icon: <Calendar size={18} />, hidden: !perms.can("hearing.manage") },
+        { name: "المواعيد والتقويم", path: "/app/calendar", icon: <CalendarDays size={18} />, hidden: !perms.can("appointment.manage") },
+        { name: "المهام", path: "/app/tasks", icon: <CheckSquare size={18} />, hidden: !perms.can("task.manage") || paidRoleOnBasic },
+        { name: "المستندات", path: "/app/documents", icon: <FileText size={18} />, hidden: !perms.can("document.manage") || paidRoleOnBasic },
+      ],
+    },
+
+    { name: "العقود", path: "/app/contracts", icon: <FileSignature size={20} />, hidden: !perms.can("contract.manage") },
+
+    // ── المالية: الحسابات هي الجذر، وتحتها الفوترة والأتعاب والساعات ──
+    {
+      name: "الحسابات",
+      path: "/app/accounting",
+      icon: <Calculator size={20} />,
+      hidden: !perms.can("finance.manage") || isBasic,
+      children: [
+        { name: "الفواتير", path: "/app/invoices", icon: <ReceiptText size={18} />, hidden: !perms.can("invoice.manage") },
+        { name: "اتفاقيات الأتعاب", path: "/app/fee-agreements", icon: <Handshake size={18} />, hidden: !perms.can("invoice.manage") },
+        { name: "تسجيل الساعات", path: "/app/time-entries", icon: <Timer size={18} />, hidden: !perms.can("invoice.manage") },
+      ],
+    },
+
+    // ── فريق المكتب ──
+    {
+      name: "فريق المكتب",
+      path: "/app/team",
+      icon: <Users size={20} />,
+      hidden: !perms.can("users.manage"),
+      children: [
+        { name: "المتدربين", path: "/app/trainees", icon: <GraduationCap size={18} />, hidden: !perms.can("trainee.manage") || isBasic },
+        { name: "محامو المكتب", path: "/app/office-lawyers", icon: <Shield size={18} />, hidden: !perms.can("officelawyer.manage") || isBasic },
+      ],
+    },
+
+    // ── التقارير والأدوات ──
+    { name: "التقارير", path: "/app/reports", icon: <BarChart size={20} />, hidden: !canSeeFullReports || !isPremium },
+    { name: "المساعد الذكي", path: "/app/ai-chat", icon: <Sparkles size={20} />, hidden: !perms.can("ai.use") || !isPremium },
+    { name: "المكتبة القانونية", path: "/app/library", icon: <BookOpen size={20} />, hidden: !perms.can("library.view") },
+
+    // ── إدارة النظام ──
+    { name: "سجل التدقيق", path: "/app/audit-log", icon: <ScrollText size={20} />, hidden: !perms.can("audit.view") },
+    { name: "سلة المحذوفات", path: "/app/recycle-bin", icon: <Trash2 size={20} />, hidden: !perms.can("recyclebin.manage") },
   ];
+
+  // لو كان عنصر الأب مخفياً وله أبناء ظاهرون، نرفع الأبناء للمستوى الأعلى
+  // حتى لا يفقد أي دور وصولاً كان يملكه (الشريك مثلاً يرى المتدربين
+  // ومحامي المكتب لكنه لا يملك إدارة المستخدمين).
+  const visibleNavItems = navItems.flatMap((item) => {
+    const kids = (item.children ?? []).filter((c) => !c.hidden);
+    if (item.hidden) return kids.map((c) => ({ ...c, children: undefined }));
+    return [{ ...item, children: kids }];
+  });
+
+  const [openGroups, setOpenGroups] = useState<string[]>([]);
+
+  // تُفتح المجموعة تلقائياً عند الدخول لأحد أبنائها، ويبقى للمستخدم حق طيّها
+  useEffect(() => {
+    const parent = navItems.find((i) => (i.children ?? []).some((c) => c.path === location.pathname));
+    if (parent) setOpenGroups((g) => (g.includes(parent.path) ? g : [...g, parent.path]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
+
+  const toggleGroup = (path: string) =>
+    setOpenGroups((g) => (g.includes(path) ? g.filter((p) => p !== path) : [...g, path]));
+
+  const isGroupOpen = (path: string) => openGroups.includes(path);
 
   const handleLogout = () => {
     localStorage.clear();
@@ -81,22 +197,78 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
         </div>
         <nav className="flex-1 py-4 overflow-y-auto">
           <ul className="space-y-1">
-            {navItems.filter(item => !item.hidden).map((item) => (
-              <li key={item.path}>
-                <Link
-                  to={item.path}
-                  onClick={onClose}
-                  className={`flex items-center gap-3 px-6 py-3 transition-all duration-200 ${
-                    location.pathname === item.path
-                      ? "bg-[#D4AF37]/20 text-[#D4AF37] border-r-4 border-[#D4AF37] font-bold"
-                      : "hover:bg-white/5 text-gray-300 hover:text-white"
-                  }`}
-                >
-                  {item.icon}
-                  <span className="font-medium">{item.name}</span>
-                </Link>
-              </li>
-            ))}
+            {visibleNavItems.map((item) => {
+              const kids = (item.children ?? []).filter(c => !c.hidden);
+              const isActive = location.pathname === item.path;
+
+              // لا قائمة فرعية ← عنصر عادي كما كان تماماً
+              if (kids.length === 0) {
+                return (
+                  <li key={item.path}>
+                    <Link
+                      to={item.path}
+                      onClick={onClose}
+                      className={`flex items-center gap-3 px-6 py-3 transition-all duration-200 ${
+                        isActive
+                          ? "bg-[#D4AF37]/20 text-[#D4AF37] border-r-4 border-[#D4AF37] font-bold"
+                          : "hover:bg-white/5 text-gray-300 hover:text-white"
+                      }`}
+                    >
+                      {item.icon}
+                      <span className="font-medium">{item.name}</span>
+                    </Link>
+                  </li>
+                );
+              }
+
+              const expanded = isGroupOpen(item.path);
+              return (
+                <li key={item.path}>
+                  <div
+                    className={`flex items-center transition-all duration-200 ${
+                      isActive
+                        ? "bg-[#D4AF37]/20 text-[#D4AF37] border-r-4 border-[#D4AF37] font-bold"
+                        : "hover:bg-white/5 text-gray-300 hover:text-white"
+                    }`}
+                  >
+                    <Link to={item.path} onClick={onClose} className="flex items-center gap-3 px-6 py-3 flex-1 min-w-0">
+                      {item.icon}
+                      <span className="font-medium truncate">{item.name}</span>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => toggleGroup(item.path)}
+                      aria-expanded={expanded}
+                      aria-label={expanded ? `طيّ ${item.name}` : `توسيع ${item.name}`}
+                      className="px-4 py-3 text-current opacity-70 hover:opacity-100 shrink-0"
+                    >
+                      <ChevronDown size={16} className={`transition-transform ${expanded ? "" : "rotate-90"}`} />
+                    </button>
+                  </div>
+
+                  {expanded && (
+                    <ul className="bg-black/15">
+                      {kids.map((child) => (
+                        <li key={child.path}>
+                          <Link
+                            to={child.path}
+                            onClick={onClose}
+                            className={`flex items-center gap-3 pr-12 pl-6 py-2.5 text-sm transition-all duration-200 ${
+                              location.pathname === child.path
+                                ? "text-[#D4AF37] border-r-4 border-[#D4AF37] font-bold bg-[#D4AF37]/10"
+                                : "hover:bg-white/5 text-gray-400 hover:text-white"
+                            }`}
+                          >
+                            {child.icon}
+                            <span className="font-medium">{child.name}</span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </nav>
         <div className="p-6 border-t border-white/10 space-y-2">
@@ -126,7 +298,8 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
   const userRole = localStorage.getItem("userRole");
   const lawyerId = localStorage.getItem("lawyerId");
   const userId = localStorage.getItem("userId");
-  const roleName = userRole === "SUPER_ADMIN" ? "المدير العام" : userRole === "LAWYER" ? "المدير" : userRole === "OFFICE_LAWYER" ? "محامي مكتب" : "متدرب";
+  // كان يعرض "متدرب" لأي دور غير الثلاثة المعروفة — وهو خطأ مع الأدوار الجديدة
+  const roleName = roleLabel(userRole);
 
   interface NotificationAlert {
     id: string;
@@ -345,6 +518,33 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
     return () => clearInterval(interval);
   }, [lawyerId, userRole]);
 
+  // يملأ كولكشن notifications ليعمل مركز التنبيهات وتفضيلات القنوات.
+  // منفصل عن حساب الجرس أعلاه فلا يغيّر سلوكه، ومنعُ التكرار يجعل
+  // إعادة التشغيل آمنة مهما تكررت.
+  //
+  // مُقيَّد بحدّين: فحص واحد كل نصف ساعة، ومؤجَّل بعد تحميل الصفحة —
+  // الفحص يقرأ خمس مجموعات وجلسات كل قضية، وتشغيله مع باقي استعلامات
+  // اللوحة في اللحظة نفسها كان يُحمّل الاتصال بلا داعٍ.
+  useEffect(() => {
+    const uid = localStorage.getItem("userId");
+    if (!lawyerId || !uid) return;
+    if (!shouldAutoScan(uid)) return;
+
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      void (async () => {
+        try {
+          const prefs = await loadPreferences(uid);
+          if (!cancelled) await generateNotifications(lawyerId, uid, prefs);
+        } catch {
+          // التنبيهات مساعدة — فشلها لا يُعطّل الواجهة
+        }
+      })();
+    }, 6000);
+
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [lawyerId]);
+
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 sticky top-0 z-30 shadow-sm">
       <div className="flex items-center gap-4">
@@ -440,6 +640,15 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
                       ))
                     )}
                   </div>
+
+                  {/* رابط مركز التنبيهات الكامل */}
+                  <Link
+                    to="/app/notifications"
+                    onClick={() => setShowDropdown(false)}
+                    className="block border-t bg-gray-50/70 px-4 py-2.5 text-center text-xs font-bold text-[#133B2E] hover:bg-gray-100 transition"
+                  >
+                    عرض كل التنبيهات
+                  </Link>
                 </motion.div>
               </>
             )}
@@ -491,12 +700,62 @@ function SubscriptionBanner() {
   );
 }
 
+/**
+ * تُعرض حين ينتهي توكن Firebase بينما التخزين المحلي ما زال يدّعي الدخول.
+ * كل قراءة من قاعدة البيانات في هذه الحالة تُرفض بـ permission-denied،
+ * فالأصدق أن نقولها صراحةً بدل عرض أصفار وأخطاء غامضة.
+ */
+function SessionExpired({ email }: { email: string | null }) {
+  const goLogin = () => {
+    clearLocalSession();
+    window.location.href = "/login";
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#F3F4F6] p-6 font-['Tajawal']" dir="rtl">
+      <div className="bg-white rounded-3xl shadow-xl max-w-md w-full p-8 text-center space-y-4 border border-gray-100">
+        <div className="w-16 h-16 mx-auto rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+          <Shield size={30} />
+        </div>
+        <h1 className="text-2xl font-bold text-[#133B2E]">انتهت جلستك</h1>
+        <p className="text-sm text-gray-600 leading-relaxed">
+          انتهت صلاحية تسجيل دخولك، ولهذا ظهرت البيانات فارغة.
+          سجّل الدخول مرة أخرى لمتابعة العمل — لم يُفقد أي شيء من بياناتك.
+        </p>
+        {email && (
+          <p className="text-xs text-gray-400 font-mono" dir="ltr">{email}</p>
+        )}
+        <button
+          onClick={goLogin}
+          className="w-full py-3.5 rounded-2xl bg-[#133B2E] text-[#D4AF37] font-bold hover:bg-[#133B2E]/90 transition"
+        >
+          تسجيل الدخول من جديد
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function Layout() {
   const isAuthenticated = localStorage.getItem("isAuthenticated") === "true";
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const lawyerId = localStorage.getItem("lawyerId");
+  // مصدر الحقيقة لحالة الدخول هو Firebase لا localStorage
+  const session = useAuthSession();
+
+  // تجاوزات الصلاحيات محفوظة في Firestore على مستوى المكتب — تُحمّل مرة واحدة
+  useEffect(() => {
+    void loadOfficeSettings(lawyerId);
+  }, [lawyerId]);
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  // انتهت جلسة Firebase بينما التخزين المحلي يدّعي أننا داخل:
+  // نُعلم المستخدم بدل تركه يرى أصفاراً وأخطاء صلاحيات لا يفهمها.
+  if (session.state === "expired") {
+    return <SessionExpired email={session.email} />;
   }
 
   return (
@@ -532,7 +791,10 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/subscribe" element={<SubscribePage />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/create-admin" element={<CreateAdmin />} />
+          <Route
+            path="/create-admin"
+            element={CREATE_ADMIN_ENABLED ? <CreateAdmin /> : <Navigate to="/login" replace />}
+          />
           <Route path="/app" element={<Layout />}>
             <Route index element={<Navigate to="/app/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
@@ -546,6 +808,16 @@ export default function App() {
             <Route path="accounting" element={<Accounting />} />
             <Route path="trainees" element={<Trainees />} />
             <Route path="office-lawyers" element={<OfficeLawyers />} />
+            <Route path="team" element={<Team />} />
+            <Route path="audit-log" element={<AuditLog />} />
+            <Route path="recycle-bin" element={<RecycleBin />} />
+            <Route path="contracts" element={<Contracts />} />
+            <Route path="invoices" element={<Invoices />} />
+            <Route path="calendar" element={<CalendarPage />} />
+            <Route path="notifications" element={<NotificationsPage />} />
+            <Route path="client-portal" element={<ClientPortalAdmin />} />
+            <Route path="fee-agreements" element={<FeeAgreements />} />
+            <Route path="time-entries" element={<TimeEntries />} />
             <Route path="ai-chat" element={<AiChat />} />
             <Route path="reports" element={<Reports />} />
             <Route path="library" element={<LegalLibrary />} />

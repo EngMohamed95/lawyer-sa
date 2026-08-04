@@ -398,7 +398,8 @@ export default function CaseDetails() {
       document.body.removeChild(element);
 
       // 3. Upload PDF file
-      const fileOfBlob = new File([pdfBlob], `${selectedMemoForHearing.title}.pdf`, { type: 'application/pdf' });
+      // window.File وليس File — لأن File مستوردة كأيقونة من lucide-react وتحجب النوع الأصلي
+      const fileOfBlob = new window.File([pdfBlob], `${selectedMemoForHearing.title}.pdf`, { type: 'application/pdf' });
       const fd = new FormData();
       fd.append("file", fileOfBlob);
 
@@ -919,6 +920,7 @@ export default function CaseDetails() {
                 <Gavel size={22} />
               </div>
             </TabsTrigger>
+
           </TabsList>
         </div>
 
@@ -931,7 +933,7 @@ export default function CaseDetails() {
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex justify-between border-b pb-3 border-gray-100">
-                    <span className="text-gray-500">الموكل (العميل)</span>
+                    <span className="text-gray-500">العميل (العميل)</span>
                     <span className="font-bold text-[#133B2E]">{data.client?.fullName} <Badge variant="outline" className="mr-2 font-normal text-xs">{data.client?.clientType === 'COMPANY' ? 'شركة' : 'فرد'}</Badge></span>
                   </div>
                   <div className="flex justify-between border-b pb-3 border-gray-100">
@@ -2124,6 +2126,7 @@ export default function CaseDetails() {
             </Card>
           )}
         </TabsContent>
+
 
       </Tabs>
       </div>

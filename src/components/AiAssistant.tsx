@@ -210,18 +210,18 @@ export function AiAssistant() {
       }));
 
       // 1. Generate lightweight global summaries for the system prompt index
-      const clientsSummaryIndex = clients.map(c => `- الموكل: ${c.fullName || c.name || "غير معروف"} (هاتف: ${c.phone || "غير مسجل"})`).join("\n");
+      const clientsSummaryIndex = clients.map(c => `- العميل: ${c.fullName || c.name || "غير معروف"} (هاتف: ${c.phone || "غير مسجل"})`).join("\n");
       
       const casesSummaryIndex = cases.map(c => {
         const client = clients.find(cl => cl.id === c.clientId);
-        return `- القضية: ${c.title || c.subject} | رقم: ${c.caseNumber || "غير مسجل"} | موكل: ${client ? (client.fullName || client.name) : "غير معروف"} | حالة: ${c.status || "نشطة"}`;
+        return `- القضية: ${c.title || c.subject} | رقم: ${c.caseNumber || "غير مسجل"} | عميل: ${client ? (client.fullName || client.name) : "غير معروف"} | حالة: ${c.status || "نشطة"}`;
       }).join("\n");
 
       const docsSummaryIndex = documents.map(d => {
         let parentInfo = "";
         if (d.parentType === "clients") {
           const client = clients.find(c => c.id === d.parentId);
-          if (client) parentInfo = ` (ملف الموكل: ${client.fullName || client.name})`;
+          if (client) parentInfo = ` (ملف العميل: ${client.fullName || client.name})`;
         } else if (d.parentType === "cases") {
           const kase = cases.find(c => c.id === d.parentId);
           if (kase) parentInfo = ` (ملف القضية: ${kase.title || kase.subject || ""})`;
@@ -253,13 +253,13 @@ export function AiAssistant() {
           let parentInfo = "";
           if (d.parentType === "clients") {
             const client = clients.find(c => c.id === d.parentId);
-            if (client) parentInfo = `الموكل: ${client.fullName || client.name}`;
+            if (client) parentInfo = `العميل: ${client.fullName || client.name}`;
           } else if (d.parentType === "cases") {
             const kase = cases.find(c => c.id === d.parentId);
             if (kase) {
               parentInfo = `القضية: ${kase.title || kase.subject || ""}`;
               const client = clients.find(c => c.id === kase.clientId);
-              if (client) parentInfo += ` (للموكل: ${client.fullName || client.name})`;
+              if (client) parentInfo += ` (للعميل: ${client.fullName || client.name})`;
             }
           }
           
@@ -289,7 +289,7 @@ export function AiAssistant() {
 - الخصم: ${activeCase.opponentName || "غير مسجل"}
 - حالة القضية: ${activeCase.status || "غير مسجل"}
 - تفاصيل إضافية/ملاحظات: ${activeCase.notes || "لا توجد ملاحظات"}
-- الموكل المرتبط بالقضية: ${client ? (client.fullName || client.name) : "غير معروف"} (هاتف: ${client?.phone || "غير مسجل"})
+- العميل المرتبط بالقضية: ${client ? (client.fullName || client.name) : "غير معروف"} (هاتف: ${client?.phone || "غير مسجل"})
 `;
         }
       }
@@ -298,13 +298,13 @@ export function AiAssistant() {
       const countryContext = currencyCode === "SAR" ? "المملكة العربية السعودية" : currencyCode === "EGP" ? "جمهورية مصر العربية" : "مكتبك القانوني";
       
       const systemPrompt = `أنت مساعد قانوني ذكي محترف تعمل داخل منصة "LawyerOS" لإدارة مكاتب المحاماة في ${countryContext}.
-مهمتك هي مساعدة المحامي في تنظيم عمله، الإجابة على أسئلته القانونية بناءً على الملفات والقضايا والموكلين المتاحة في أرشيفه، وتقديم نصائح إدارية.
+مهمتك هي مساعدة المحامي في تنظيم عمله، الإجابة على أسئلته القانونية بناءً على الملفات والقضايا والعملاء المتاحة في أرشيفه، وتقديم نصائح إدارية.
 تحدث دائماً بلهجة مهنية محترمة باللغة العربية واعتمد في مراجعاتك وقوانينك على الأنظمة السارية في ${countryContext}.
 
 إليك فهرس كامل بكافة محتويات قاعدة بيانات مكتب المحامي حالياً:
 
-أولاً: قائمة جميع الموكلين بالمكتب:
-${clientsSummaryIndex || "لا يوجد موكلين مسجلين حالياً."}
+أولاً: قائمة جميع العملاء بالمكتب:
+${clientsSummaryIndex || "لا يوجد عملاء مسجلين حالياً."}
 
 ثانياً: قائمة جميع القضايا بالمكتب:
 ${casesSummaryIndex || "لا يوجد قضايا مسجلة حالياً."}
@@ -315,9 +315,9 @@ ${selectedCaseContext ? `\nرابعاً: معلومات القضية النشط�
 ${detailedDocsContext ? `\nخامساً: تفاصيل المستندات ذات الصلة بالقضية أو السؤال الحالي ومحتوياتها:\n${detailedDocsContext}` : ""}
 
 تعليمات هامة جداً للرد:
-1. اعتمد بشكل كامل ومباشر على البيانات والفهرس الموضحين أعلاه للإجابة على أسئلة المستخدم (مثل أسماء الموكلين، هواتفهم، أرقام القضايا، الحالات، تفاصيل الملفات).
-2. إذا سأل المستخدم عن أسماء الموكلين، أو قائمة القضايا، أو عددها، استخرج الإجابة مباشرة من الفهرس أعلاه واذكرهم له بشكل منسق وجميل.
-3. لا تخترع أو تدعي وجود موكلين أو قضايا أو مستندات غير مسجلة في الفهرس أعلاه.
+1. اعتمد بشكل كامل ومباشر على البيانات والفهرس الموضحين أعلاه للإجابة على أسئلة المستخدم (مثل أسماء العملاء، هواتفهم، أرقام القضايا، الحالات، تفاصيل الملفات).
+2. إذا سأل المستخدم عن أسماء العملاء، أو قائمة القضايا، أو عددها، استخرج الإجابة مباشرة من الفهرس أعلاه واذكرهم له بشكل منسق وجميل.
+3. لا تخترع أو تدعي وجود عملاء أو قضايا أو مستندات غير مسجلة في الفهرس أعلاه.
 4. عندما تقتبس معلومات من مستند معين، اذكر اسم المستند بوضوح.
 ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionInstruction}` : ""}`;
 
@@ -539,7 +539,8 @@ ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionIns
                     onChange={(e) => setInput(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                   />
-                  <Button onClick={handleSend} className="bg-[#D4AF37] hover:bg-[#B8962E] text-[#133B2E] rounded-xl px-3">
+                  {/* () => handleSend() وليس handleSend مباشرة — وإلا مرّر React كائن الحدث كـ customMsg وأُرسل بدل نص السؤال */}
+                  <Button onClick={() => handleSend()} className="bg-[#D4AF37] hover:bg-[#B8962E] text-[#133B2E] rounded-xl px-3">
                     <Send size={18} />
                   </Button>
                 </div>

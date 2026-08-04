@@ -144,7 +144,7 @@ export default function AddTraineeModal({ isOpen, onClose, onSuccess }: AddTrain
           <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 flex items-start gap-3">
             <Shield className="text-amber-600 mt-1" size={18} />
             <p className="text-xs text-amber-800 leading-relaxed">
-              سيتم منح هذا المستخدم صلاحية **متدرب**. لن يتمكن من الوصول إلى البيانات المالية أو أتعاب الموكلين، وسيكون له حق الاطلاع فقط على القضايا والجلسات المسندة إليه.
+              سيتم منح هذا المستخدم صلاحية **متدرب**. لن يتمكن من الوصول إلى البيانات المالية أو أتعاب العملاء، وسيكون له حق الاطلاع فقط على القضايا والجلسات المسندة إليه.
             </p>
           </div>
 

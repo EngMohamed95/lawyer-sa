@@ -84,13 +84,13 @@ export function ClientDocumentsModal({ isOpen, onClose, client }: Props) {
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-[#133B2E] flex items-center gap-2">
               <FolderOpen className="h-5 w-5 text-[#D4AF37]" />
-              مستندات الموكل: {client?.fullName}
+              مستندات العميل: {client?.fullName}
             </DialogTitle>
           </DialogHeader>
 
           <div className="flex items-center justify-between py-2">
             <p className="text-sm text-gray-500">
-              هذه المستندات ستظهر تلقائياً في جميع قضايا هذا الموكل
+              هذه المستندات ستظهر تلقائياً في جميع قضايا هذا العميل
             </p>
             <Button
               className="bg-[#D4AF37] hover:bg-[#B8962E] text-white"
@@ -107,7 +107,7 @@ export function ClientDocumentsModal({ isOpen, onClose, client }: Props) {
           ) : documents.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-400">
               <FolderOpen className="h-12 w-12" />
-              <p className="text-sm">لا توجد مستندات مضافة لهذا الموكل بعد</p>
+              <p className="text-sm">لا توجد مستندات مضافة لهذا العميل بعد</p>
             </div>
           ) : (
             <Table>

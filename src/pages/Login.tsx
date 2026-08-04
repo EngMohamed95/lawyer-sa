@@ -67,7 +67,14 @@ export default function Login() {
       localStorage.setItem("userName", userData?.name || firebaseUser.email?.split('@')[0] || "مستخدم");
       localStorage.setItem("userId", firebaseUser.uid);
       localStorage.setItem("lawyerId", lawyerId || "");
-      
+
+      // سجل تدقيق للدخول — نمرّر الهوية صراحة لأن الـ hook لم يُحدَّث بعد
+      const { writeAudit } = await import("../lib/audit");
+      await writeAudit(
+        { action: "LOGIN", entity: "session", entityId: firebaseUser.uid, entityLabel: userData?.name || username },
+        { lawyerId, actorId: firebaseUser.uid, actorName: userData?.name || username, actorRole: role },
+      );
+
       navigate("/app");
     } catch (err: any) {
       console.error(err);
@@ -137,7 +144,7 @@ export default function Login() {
                     transition={{ delay: 0.6, duration: 0.5 }}
                     className="text-gray-300 text-lg leading-relaxed max-w-md"
                 >
-                    منصة متكاملة تمنحك القوة والتحكم الكامل في قضاياك، موكليك، ومكتبك في مكان واحد وبكل سهولة.
+                    منصة متكاملة تمنحك القوة والتحكم الكامل في قضاياك، عملائك، ومكتبك في مكان واحد وبكل سهولة.
                 </motion.p>
             </div>
 

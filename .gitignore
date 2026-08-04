@@ -16,3 +16,9 @@ lawyer-system.zip
 
 /src/generated/prisma
 serviceAccountKey.json
+
+# ملفات مرفوعة محلياً أثناء التطوير — لا تُرفع للمستودع
+public/uploads/
+
+# وثيقة المتطلبات — مستند عمل خاص، لا يُرفع للمستودع
+*.docx

@@ -1,20 +1,31 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import { Download, FileText, Image, File, Loader2, Table2, AlertCircle } from "lucide-react";
+import { Download, FileText, Image, File, Loader2, Table2, AlertCircle, History } from "lucide-react";
 import { useState, useEffect } from "react";
+
+interface ViewerDocument {
+  id?: string;
+  name?: string;
+  fileUrl?: string;
+  fileType?: string;
+  content?: string;
+  type?: string;
+  uploadDate?: string;
+  version?: number;
+  isLatest?: boolean;
+  parentDocumentId?: string | null;
+}
 
 interface DocumentViewerProps {
   isOpen: boolean;
   onClose: () => void;
-  document: {
-    name?: string;
-    fileUrl?: string;
-    fileType?: string;
-    content?: string;
-    type?: string;
-    uploadDate?: string;
-  } | null;
+  document: ViewerDocument | null;
+  /**
+   * كل إصدارات هذا المستند مرتّبة من الأحدث للأقدم.
+   * اختياري — عند غيابه يعمل المكوّن كما كان تماماً.
+   */
+  versions?: ViewerDocument[];
 }
 
 const DOC_TYPE_LABELS: Record<string, string> = {
@@ -26,7 +37,16 @@ const DOC_TYPE_LABELS: Record<string, string> = {
   OTHER: "أخرى",
 };
 
-export function DocumentViewerModal({ isOpen, onClose, document: activeDoc }: DocumentViewerProps) {
+export function DocumentViewerModal({
+  isOpen, onClose, document: baseDoc, versions = [],
+}: DocumentViewerProps) {
+  /** الإصدار المعروض — الافتراضي هو المستند المُمرَّر */
+  const [shownVersion, setShownVersion] = useState<ViewerDocument | null>(null);
+  const activeDoc = shownVersion ?? baseDoc;
+
+  // تبديل المستند يُعيد العرض لإصداره الافتراضي
+  useEffect(() => { setShownVersion(null); }, [baseDoc?.id, isOpen]);
+
   const [wordHtml, setWordHtml] = useState<string>("");
   const [wordLoading, setWordLoading] = useState(false);
   const [wordError, setWordError] = useState("");
@@ -178,6 +198,41 @@ export function DocumentViewerModal({ isOpen, onClose, document: activeDoc }: Do
               )}
             </div>
           </div>
+
+          {/* سجل الإصدارات — يظهر فقط متى وُجد أكثر من إصدار */}
+          {versions.length > 1 && (
+            <div className="mt-3 pt-3 border-t">
+              <p className="text-xs font-bold text-gray-600 mb-2 flex items-center gap-1">
+                <History size={14} /> سجل الإصدارات ({versions.length})
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {versions.map((v) => {
+                  const active = v.id === (shownVersion?.id ?? activeDoc.id);
+                  return (
+                    <button key={v.id} onClick={() => setShownVersion(v)}
+                      className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition text-right ${
+                        active
+                          ? "bg-[#133B2E] text-[#D4AF37] border-[#133B2E]"
+                          : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                      }`}>
+                      إصدار {v.version}
+                      {v.isLatest !== false && <span className="mr-1 opacity-70">(الأحدث)</span>}
+                      {v.uploadDate && (
+                        <span className="block opacity-60 font-normal">
+                          {new Date(v.uploadDate).toLocaleDateString("ar-EG")}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              {shownVersion && shownVersion.id !== activeDoc.id && (
+                <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-2">
+                  تعرض إصداراً سابقاً — الإصدار الأحدث ما زال هو المعتمد في القوائم.
+                </p>
+              )}
+            </div>
+          )}
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto py-4 space-y-4 min-h-0 bg-gray-50/50 px-2">

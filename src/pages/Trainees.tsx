@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import AddTraineeModal from "../components/AddTraineeModal";
 import EditTraineeModal from "../components/EditTraineeModal";
 import { collection, getDocs, query, where } from "firebase/firestore";
+import type { Query, DocumentData } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
 export default function Trainees() {
@@ -24,7 +25,7 @@ export default function Trainees() {
     setLoading(true);
     try {
       // SaaS Filtering: Only show trainees belonging to this specific lawyer
-      let q;
+      let q: Query<DocumentData>;
       if (userRole === "SUPER_ADMIN") {
         q = query(collection(db, "users"), where("role", "==", "TRAINEE"));
       } else if (lawyerId) {

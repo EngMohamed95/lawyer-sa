@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Shield, Bell, User, Lock, Palette, Globe, Settings as SettingsIcon, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, Sparkles, DollarSign, FileEdit, Link, Key, Check } from "lucide-react";
 import { auth } from "../lib/firebase";
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
+import PermissionsTab from "../components/settings/PermissionsTab";
+import NotificationsTab from "../components/settings/NotificationsTab";
 
 function ChangePasswordForm() {
   const [form, setForm]         = useState({ current: "", newPass: "", confirm: "" });
@@ -334,7 +336,7 @@ export default function SettingsPage() {
       const fakeTasks = [
         { title: "صياغة مذكرة دفاع جوابية", description: "إعداد الدفوع القانونية للقضية التجارية", priority: "HIGH", status: "IN_PROGRESS", caseId: caseRefs[0].id, assignedTo: lawyerId },
         { title: "إرفاق سند لأمر إلكترونياً", description: "رفع السند التنفيذي في طلب التنفيذ بمحكمة التنفيذ", priority: "URGENT", status: "COMPLETED", caseId: caseRefs[1].id, assignedTo: lawyerId },
-        { title: "تجهيز مستندات الرواتب", description: "جمع كشوف الحسابات البنكية للموكل لإثبات عدم استلام الرواتب", priority: "MEDIUM", status: "NEW", caseId: caseRefs[2].id, assignedTo: lawyerId }
+        { title: "تجهيز مستندات الرواتب", description: "جمع كشوف الحسابات البنكية للعميل لإثبات عدم استلام الرواتب", priority: "MEDIUM", status: "NEW", caseId: caseRefs[2].id, assignedTo: lawyerId }
       ];
 
       for (const t of fakeTasks) {
@@ -359,7 +361,7 @@ export default function SettingsPage() {
         });
       }
 
-      alert("🎉 تم توليد البيانات التجريبية المتكاملة بنجاح (الموكلين، القضايا، الجلسات، المهام، والمدفوعات)!");
+      alert("🎉 تم توليد البيانات التجريبية المتكاملة بنجاح (العملاء، القضايا، الجلسات، المهام، والمدفوعات)!");
       window.location.reload();
     } catch (err) {
       console.error("Seeding error:", err);
@@ -476,32 +478,10 @@ export default function SettingsPage() {
               )}
 
               {/* ========== PERMISSIONS TAB ========== */}
-              {activeTab === "permissions" && (
-                <div className="space-y-4">
-                  <div className="p-4 rounded-xl bg-blue-50 border border-blue-100 flex items-start gap-3">
-                    <Shield className="text-blue-600 mt-1 shrink-0" size={20} />
-                    <div>
-                      <p className="font-bold text-blue-900 text-sm">نظام الصلاحيات</p>
-                      <p className="text-sm text-blue-700">تحديد ما يمكن للمتدربين والموظفين الوصول إليه.</p>
-                    </div>
-                  </div>
-                  {[
-                    { label: "عرض الماليات للمتدربين", desc: "إظهار الأتعاب والمصروفات لحسابات المتدربين", active: false },
-                    { label: "إضافة قضايا جديدة",    desc: "السماح للمتدربين بفتح ملفات قضايا",          active: true },
-                    { label: "حذف المستندات",         desc: "منع المتدربين من حذف المستندات المرفوعة",     active: false },
-                  ].map(item => (
-                    <div key={item.label} className="flex items-center justify-between p-4 rounded-xl border border-gray-100">
-                      <div>
-                        <p className="font-bold text-[#133B2E] text-sm">{item.label}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
-                      </div>
-                      <div className={`w-11 h-6 rounded-full relative ${item.active ? "bg-[#D4AF37]" : "bg-gray-200"}`}>
-                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all ${item.active ? "right-1" : "left-1"}`} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {activeTab === "permissions" && <PermissionsTab />}
+
+              {/* تبويب التنبيهات — كان فارغاً */}
+              {activeTab === "notifications" && <NotificationsTab />}
 
               {/* ========== GENERAL TAB ========== */}
               {activeTab === "general" && (

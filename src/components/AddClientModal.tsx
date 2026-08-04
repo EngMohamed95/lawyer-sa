@@ -59,7 +59,7 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: { isOpen: boolean
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-[#133B2E]">إضافة موكل جديد</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-[#133B2E]">إضافة عميل جديد</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -70,7 +70,7 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: { isOpen: boolean
                 required
                 value={formData.fullName}
                 onChange={e => setFormData({...formData, fullName: e.target.value})}
-                placeholder="اسم الموكل رباعي" 
+                placeholder="اسم العميل رباعي" 
               />
             </div>
             
@@ -137,7 +137,7 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: { isOpen: boolean
             <Button type="button" variant="outline" onClick={onClose}>إلغاء</Button>
             <Button type="submit" disabled={loading} className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              حفظ الموكل
+              حفظ العميل
             </Button>
           </DialogFooter>
         </form>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Search, CheckCircle, Edit3, Trash2 } from "lucide-react";
+import { Link } from "react-router";
+import { Plus, Search, CheckCircle, Edit3, Trash2, Scale } from "lucide-react";
 import { Card, CardContent, CardHeader } from "../components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Button } from "../components/ui/button";
@@ -8,6 +9,9 @@ import { Badge } from "../components/ui/badge";
 import { AddTaskModal } from "../components/AddTaskModal";
 import { EditTaskModal } from "../components/EditTaskModal";
 import { collection, getDocs, query, where, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import type { Query, DocumentData } from "firebase/firestore";
+import { excludeDeleted, softDelete } from "../lib/softDelete";
+import { fetchCaseOptions, type CaseOption } from "../lib/links";
 import { db } from "../lib/firebase";
 
 const getPriorityBadge = (p: string) => {
@@ -37,6 +41,8 @@ export default function Tasks() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [activeTask, setActiveTask] = useState<any>(null);
+  /** خريطة القضايا لعرض القضية المرتبطة بكل مهمة كرابط */
+  const [casesById, setCasesById] = useState<Record<string, CaseOption>>({});
 
   const userRole = localStorage.getItem("userRole");
   const lawyerId = localStorage.getItem("lawyerId");
@@ -45,7 +51,7 @@ export default function Tasks() {
   const fetchTasks = async () => {
     setLoading(true);
     try {
-      let q: any = collection(db, "tasks");
+      let q: Query<DocumentData> = collection(db, "tasks");
       
       // SaaS Filtering: Only show tasks belonging to this specific lawyer
       if (userRole !== "SUPER_ADMIN") {
@@ -53,13 +59,20 @@ export default function Tasks() {
       }
 
       const snap = await getDocs(q);
-      const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
+      // نستبعد المحذوفات ناعماً — السجلات القديمة بلا الحقل تُعتبر نشطة
+      const data = excludeDeleted(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
       // Filter for trainees and associate lawyers (they only see tasks assigned to them)
       if (userRole === "TRAINEE" || userRole === "OFFICE_LAWYER") {
         setTasks(data.filter((t: any) => t.assignedTo === userId)); 
       } else {
         setTasks(data);
+      }
+
+      // القضايا المرتبطة — نقرأها مرة واحدة ونعرضها كروابط بجانب كل مهمة
+      if (lawyerId) {
+        const opts = await fetchCaseOptions(lawyerId);
+        setCasesById(Object.fromEntries(opts.map(c => [c.id, c])));
       }
     } catch (error) {
       console.error("Error fetching tasks:", error);
@@ -92,10 +105,11 @@ export default function Tasks() {
     }
   };
 
-  const removeTask = async (taskId: string) => {
-    if (!confirm("هل أنت متأكد من حذف هذه المهمة؟")) return;
+  const removeTask = async (taskId: string, title?: string) => {
+    if (!confirm("سيتم نقل المهمة إلى سلة المحذوفات ويمكنك استرجاعها لاحقاً. متابعة؟")) return;
     try {
-        await deleteDoc(doc(db, "tasks", taskId));
+        // حذف ناعم بدل الحذف النهائي — الوثيقة §خامساً
+        await softDelete({ path: ["tasks", taskId], entity: "task", label: title });
         fetchTasks();
     } catch (e) {
         console.error(e);
@@ -168,7 +182,18 @@ export default function Tasks() {
                   const dueDate = t.dueDate ? new Date(t.dueDate) : null;
                   return (
                     <TableRow key={t.id} className="hover:bg-gray-50/50">
-                      <TableCell className="font-medium text-[#133B2E]">{t.title}</TableCell>
+                      <TableCell className="font-medium text-[#133B2E]">
+                        {t.title}
+                        {t.caseId && casesById[t.caseId] && (
+                          <Link to={`/app/cases/${t.caseId}`}
+                            className="flex items-center gap-1 mt-1 text-[11px] font-bold text-indigo-700 hover:underline">
+                            <Scale size={11} />
+                            {casesById[t.caseId].caseNumber
+                              ? `${casesById[t.caseId].caseNumber} — ${casesById[t.caseId].label}`
+                              : casesById[t.caseId].label}
+                          </Link>
+                        )}
+                      </TableCell>
                       <TableCell className="hidden sm:table-cell text-gray-600 text-sm max-w-[300px] truncate">{t.description || "بدون تفاصيل"}</TableCell>
                       <TableCell dir="ltr" className="text-right hidden md:table-cell">
                         {dueDate ? dueDate.toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' }) : "-"}
@@ -200,7 +225,7 @@ export default function Tasks() {
                           size="icon"
                           className="h-8 w-8 text-red-600 hover:text-red-800 hover:bg-red-50"
                           title="حذف المهمة"
-                          onClick={() => removeTask(t.id)}
+                          onClick={() => removeTask(t.id, t.title)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
