@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - main
+  # يسمح بتشغيل النشر يدوياً من تبويب Actions عند الحاجة
+  workflow_dispatch:
+
+# نشرة واحدة في كل مرة — يمنع تداخل رفعتين على نفس الخادم
+concurrency:
+  group: deploy-hostinger
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -11,105 +18,144 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
 
       - name: Install Dependencies
         run: npm install
 
+      - name: Type Check
+        # نُفشل النشر قبل الرفع لا بعده — أرخص من نشر نسخة مكسورة
+        run: npx tsc --noEmit
+
       - name: Build Project
         run: |
           mkdir -p public
           cp logo.png public/logo.png || true
           npm run build
-          echo "import http from 'http';" > index.js
-          echo "import fs from 'fs';" >> index.js
-          echo "import('./dist/server.js').catch((err) => {" >> index.js
-          echo "  fs.writeFileSync('startup-error.log', String(err.stack || err));" >> index.js
-          echo "  const port = process.env.PORT || 3000;" >> index.js
-          echo "  http.createServer((req, res) => {" >> index.js
-          echo "    res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });" >> index.js
-          echo "    res.end(JSON.stringify({ error: 'Server Startup Failed', details: String(err.message || err) }));" >> index.js
-          echo "  }).listen(port);" >> index.js
-          echo "});" >> index.js
-          echo 'NODE_ENV="production"' > .env
-          echo 'GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}"' >> .env
-          
-      - name: Zip Files
-        run: |
-          mkdir -p tmp
-          touch tmp/restart.txt
 
-          # مفتاح حساب الخدمة غير مُتتبَّع في المستودع (وهذا صحيح أمنياً).
-          # نكتبه من أسرار GitHub متى وُجد، وإلا نتخطّاه بدل أن يفشل الأرشفة.
-          EXTRA=""
+          # مُشغّل احتياطي: لو فشل استيراد الخادم نُظهر السبب بدل صفحة بيضاء
+          cat > index.js <<'EOF'
+          import http from 'http';
+          import fs from 'fs';
+          import('./dist/server.js').catch((err) => {
+            fs.writeFileSync('startup-error.log', String(err.stack || err));
+            const port = process.env.PORT || 3000;
+            http.createServer((req, res) => {
+              res.writeHead(500, {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+              });
+              res.end(JSON.stringify({
+                error: 'Server Startup Failed',
+                details: String(err.message || err),
+              }));
+            }).listen(port);
+          });
+          EOF
+
+          printf 'NODE_ENV="production"\n' > .env
+          printf 'GEMINI_API_KEY="%s"\n' '${{ secrets.GEMINI_API_KEY }}' >> .env
+
+      - name: Prepare Release Folder
+        # نبني نسخة الخادم كما يتوقعها Hostinger:
+        #   الجذر: index.js + package.json + .env + محتوى dist مسطّحاً
+        #   ونُبقي dist/ كاملاً لأن start script يشير إلى dist/server.js
+        run: |
+          set -e
+          rm -rf release
+          mkdir -p release
+
+          cp package.json index.js .env release/
+          cp -r dist release/dist
+
+          # تسطيح محتوى dist في الجذر (نفس ما كان unzip.php يفعله)
+          cp -r dist/. release/
+
+          # مفتاح حساب الخدمة من الأسرار — اختياري
           if [ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" ]; then
-            printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}' > serviceAccountKey.json
-            EXTRA="serviceAccountKey.json"
-            echo "أُضيف مفتاح حساب الخدمة للحزمة."
+            printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}' > release/serviceAccountKey.json
+            echo "أُضيف مفتاح حساب الخدمة."
           else
             echo "تنبيه: لا يوجد سرّ FIREBASE_SERVICE_ACCOUNT_KEY — تُنشر الحزمة بدونه."
           fi
 
-          zip -r -9 deploy.zip dist package.json index.js .env tmp/restart.txt $EXTRA
- 
-      - name: Create Unzip Script
-        run: |
-          cat << 'EOF' > unzip.php
-          <?php
-          $zip = new ZipArchive;
-          if ($zip->open('deploy.zip') === TRUE) {
-              $zip->extractTo('.');
-              $zip->close();
-              
-              if (is_dir('dist')) {
-                  $files = new RecursiveIteratorIterator(
-                      new RecursiveDirectoryIterator('dist', RecursiveDirectoryIterator::SKIP_DOTS),
-                      RecursiveIteratorIterator::SELF_FIRST
-                  );
-                  foreach ($files as $file) {
-                      $target = '.' . DIRECTORY_SEPARATOR . $files->getSubPathName();
-                      if ($file->isDir()) {
-                          if (!is_dir($target)) {
-                              mkdir($target, 0755, true);
-                          }
-                      } else {
-                          copy($file->getPathname(), $target);
-                      }
-                  }
-              }
-              
-              echo "SUCCESS";
-              unlink('deploy.zip');
-              unlink('unzip.php');
-          } else {
-              echo "FAILED";
-          }
-          ?>
-          EOF
+          # مجلد رفع المستخدمين يجب أن يوجد ولا يُمسّ محتواه لاحقاً
+          mkdir -p release/uploads
+
+          echo "--- محتوى النشرة ---"
+          ls -la release | head -25
+          echo "عدد الملفات: $(find release -type f | wc -l)"
+
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
 
       - name: Upload to Hostinger via FTP
         env:
+          FTP_HOST: ftp.lawyr-sa.smartcodix.com
           FTP_USER: ${{ secrets.HOSTINGER_USERNAME }}
           FTP_PASS: ${{ secrets.HOSTINGER_PASSWORD }}
         run: |
-          curl -k --ssl-reqd -T deploy.zip -u "$FTP_USER:$FTP_PASS" ftp://ftp.lawyr-sa.smartcodix.com/deploy.zip
-          curl -k --ssl-reqd -T unzip.php -u "$FTP_USER:$FTP_PASS" ftp://ftp.lawyr-sa.smartcodix.com/unzip.php
+          set -e
+          # لا نستخدم --delete: على الخادم ملفات لا تأتي من المستودع
+          # (مستندات المستخدمين في uploads/) وحذفها يعني فقدانها.
+          lftp -c "
+            set ftp:ssl-allow true;
+            set ssl:verify-certificate no;
+            set net:max-retries 3;
+            set net:timeout 20;
+            open -u '$FTP_USER','$FTP_PASS' '$FTP_HOST';
+            mirror --reverse --parallel=4 --verbose=1 \
+                   --exclude '^uploads/' \
+                   --exclude '^dist/uploads/' \
+                   release/ ./;
+            bye
+          "
 
-
-
-
-      - name: Trigger Extraction and Restart
+      - name: Restart Node App
+        env:
+          FTP_HOST: ftp.lawyr-sa.smartcodix.com
+          FTP_USER: ${{ secrets.HOSTINGER_USERNAME }}
+          FTP_PASS: ${{ secrets.HOSTINGER_PASSWORD }}
         run: |
-          response=$(curl -k -s https://lawyr-sa.smartcodix.com/unzip.php)
-          echo "Server Response: $response"
-          if [ "$response" != "SUCCESS" ]; then
-            echo "Extraction failed!"
-            exit 1
-          fi
-          echo "--- Deployment Finished Successfully! ---"
+          # Hostinger يعيد تشغيل تطبيق Node عند لمس tmp/restart.txt
+          date > restart.txt
+          lftp -c "
+            set ftp:ssl-allow true;
+            set ssl:verify-certificate no;
+            open -u '$FTP_USER','$FTP_PASS' '$FTP_HOST';
+            mkdir -p tmp;
+            put -O tmp restart.txt;
+            bye
+          "
 
+      - name: Verify Deployment
+        # لا نعتمد على تنفيذ PHP عبر HTTP — حماية البوتات على الاستضافة
+        # ترد بصفحة تحدٍّ لطلبات GitHub Actions، وهو ما كان يُفشل النشر سابقاً
+        # رغم نجاح الرفع. نتحقق بدلاً من ذلك من بصمة ملف الدخول.
+        run: |
+          set -e
+          expected=$(grep -oE '/assets/index-[A-Za-z0-9_-]+\.js' dist/index.html | head -1)
+          echo "المتوقع: $expected"
+
+          for i in $(seq 1 10); do
+            live=$(curl -s -A 'Mozilla/5.0 (deploy-check)' \
+                   "https://lawyr-sa.smartcodix.com/?cb=$(date +%s)" \
+                   -H 'Cache-Control: no-cache' --max-time 25 \
+                   | grep -oE '/assets/index-[A-Za-z0-9_-]+\.js' | head -1)
+            echo "[$i] المنشور: ${live:-لا شيء}"
+            if [ "$live" = "$expected" ]; then
+              echo "✅ النشر وصل وتأكّد."
+              exit 0
+            fi
+            sleep 20
+          done
+
+          echo "⚠️ الرفع تم لكن التحقق لم ينجح خلال المهلة."
+          echo "   قد يكون التخزين المؤقت للاستضافة أو حماية البوتات."
+          echo "   افتح الموقع يدوياً للتأكد قبل اعتبارها فشلاً."
+          exit 1
