@@ -61,6 +61,32 @@ export interface GenerationConfig {
   maxOutputTokens?: number;
 }
 
+/** رسالة موحّدة حين لا يوجد خادم يستقبل النداء */
+const NO_SERVER_MESSAGE =
+  "خدمة الذكاء الاصطناعي غير مفعّلة على الخادم. افتح الإعدادات ← الربط والأنظمة " +
+  "وأدخل مفتاح Gemini الخاص بك لتشغيل الميزة فوراً.";
+
+/**
+ * يقرأ رد الخادم كـ JSON، ويكتشف حالة «لا خادم».
+ *
+ * على استضافة تُقدّم الملفات الثابتة فقط، يرد الخادم بصفحة index.html
+ * على أي مسار غير موجود — بما فيها /api/*. لولا هذا الفحص لظهر للمستخدم
+ * خطأ تحليل JSON غامض بدل سبب واضح وحلٍّ يملكه.
+ */
+async function readJsonOrExplain(res: Response): Promise<unknown> {
+  const type = res.headers.get("content-type") ?? "";
+  const text = await res.text();
+
+  if (!type.includes("application/json") || text.trimStart().startsWith("<")) {
+    throw new Error(NO_SERVER_MESSAGE);
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(NO_SERVER_MESSAGE);
+  }
+}
+
 function extractGeminiText(data: unknown): string {
   const d = data as {
     error?: { message?: string };
@@ -119,7 +145,7 @@ export async function callGemini(
     throw new Error(`تعذّر الاتصال بخدمة الذكاء الاصطناعي (${res.status}). ${detail.slice(0, 160)}`);
   }
 
-  return extractGeminiText(await res.json());
+  return extractGeminiText(await readJsonOrExplain(res));
 }
 
 /** نداء Groq — بمفتاح المستخدم مباشرةً، أو عبر الخادم */
@@ -156,7 +182,10 @@ export async function callGroq(
     throw new Error("خدمة الذكاء الاصطناعي غير مُهيّأة على الخادم. أدخل مفتاحك الخاص من الإعدادات.");
   }
   if (!res.ok) throw new Error(`تعذّر الاتصال بالخدمة (${res.status}).`);
-  const data = await res.json();
+  const data = (await readJsonOrExplain(res)) as {
+    error?: { message?: string };
+    choices?: { message?: { content?: string } }[];
+  };
   if (data.error) throw new Error(data.error.message || "خطأ في المعالجة");
   return data.choices?.[0]?.message?.content ?? "";
 }

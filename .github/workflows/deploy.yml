@@ -182,28 +182,32 @@ jobs:
           echo "✓ أُرسلت إشارة إعادة التشغيل"
 
       - name: Verify Deployment
-        # لا نعتمد على تنفيذ PHP عبر HTTP — حماية البوتات على الاستضافة
-        # ترد بصفحة تحدٍّ لطلبات GitHub Actions، وهو ما كان يُفشل النشر سابقاً
-        # رغم نجاح الرفع. نتحقق بدلاً من ذلك من بصمة ملف الدخول.
+        env:
+          FTP_HOST: ftp.lawyr-sa.smartcodix.com
+          FTP_USER: ${{ secrets.HOSTINGER_USERNAME }}
+          FTP_PASS: ${{ secrets.HOSTINGER_PASSWORD }}
+        # التحقق يتم عبر FTP لا HTTPS.
+        #
+        # حماية البوتات على الاستضافة ترد بصفحة تحدّي JavaScript لطلبات
+        # عناوين GitHub Actions، فلا تحوي الاستجابة أي إشارة للملفات ويبدو
+        # النشر فاشلاً رغم نجاحه. أما FTP فقد أثبت عمله من نفس البيئة قبل
+        # سطور — فنقرأ index.html المنشور منه مباشرةً ونقارن البصمة.
         run: |
           set -e
           expected=$(grep -oE '/assets/index-[A-Za-z0-9_-]+\.js' dist/index.html | head -1)
           echo "المتوقع: $expected"
 
-          for i in $(seq 1 10); do
-            live=$(curl -s -A 'Mozilla/5.0 (deploy-check)' \
-                   "https://lawyr-sa.smartcodix.com/?cb=$(date +%s)" \
-                   -H 'Cache-Control: no-cache' --max-time 25 \
-                   | grep -oE '/assets/index-[A-Za-z0-9_-]+\.js' | head -1)
-            echo "[$i] المنشور: ${live:-لا شيء}"
-            if [ "$live" = "$expected" ]; then
-              echo "✅ النشر وصل وتأكّد."
-              exit 0
-            fi
-            sleep 20
-          done
+          curl -sS -k --ssl-reqd --retry 3 --retry-delay 3 --max-time 60 \
+               -u "$FTP_USER:$FTP_PASS" \
+               "ftp://$FTP_HOST/index.html" -o live-index.html
 
-          echo "⚠️ الرفع تم لكن التحقق لم ينجح خلال المهلة."
-          echo "   قد يكون التخزين المؤقت للاستضافة أو حماية البوتات."
-          echo "   افتح الموقع يدوياً للتأكد قبل اعتبارها فشلاً."
+          live=$(grep -oE '/assets/index-[A-Za-z0-9_-]+\.js' live-index.html | head -1)
+          echo "المنشور على الخادم: ${live:-لا شيء}"
+
+          if [ "$live" = "$expected" ]; then
+            echo "✅ النشر وصل وتأكّد — index.html على الخادم يطابق البناء."
+            exit 0
+          fi
+
+          echo "❌ عدم تطابق: الخادم يحمل '${live:-لا شيء}' والمتوقع '$expected'"
           exit 1
