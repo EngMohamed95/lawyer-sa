@@ -3,7 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import admin from "firebase-admin";
 import fs from "fs";
 import path from "path";
-import { requireAuth, requireRole, requireUserAdmin } from "./middleware/auth.js";
+import { authGate, requireAuth, requireRole, requireUserAdmin } from "./middleware/auth.js";
 
 function initializeFirestore() {
   if (admin.apps.length) {
@@ -38,6 +38,20 @@ function initializeFirestore() {
 const db = initializeFirestore();
 const router = express.Router();
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+
+/**
+ * بوابة المصادقة — أول ما يُسجَّل، فتسبق أي حارس آخر (الثغرة V3).
+ *
+ * المسار العام الوحيد:
+ *   /subscribe — طلب اشتراك يُقدَّم قبل وجود حساب أصلاً
+ *
+ * ملاحظة: /ai/generate يبقى محمياً رغم أنه لا يمسّ بيانات المكتب — فتحه
+ * يعني أن أي شخص يستنزف رصيد مفتاح المكتب. نقلُ المفتاح للخادم يمنع سرقته،
+ * ولا يمنع إساءة استخدامه ما لم يُصادَق على الطلب.
+ *
+ * ما عدا ذلك محمي بالافتراض؛ أي مسار جديد يبقى مغلقاً ما لم يُستثنَ صراحةً.
+ */
+router.use(authGate(["/subscribe"]));
 
 /* ────────────────────────── تحديد المعدل (الثغرة V9) ────────────────────────── */
 

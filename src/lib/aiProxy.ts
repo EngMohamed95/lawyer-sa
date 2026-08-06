@@ -11,7 +11,25 @@
  * وقراره، ولا معنى لتمريره عبر خادمنا.
  */
 
+import { auth } from "./firebase";
+
 export type AiProvider = "GEMINI" | "GROQ";
+
+/**
+ * ترويسة المصادقة لنداءات الخادم.
+ * مسار الخادم محمي: نقلُ المفتاح إليه يمنع سرقته، لكنه لا يمنع
+ * استنزاف الرصيد ما لم يكن الطلب مصادَقاً عليه.
+ */
+async function authHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  try {
+    const token = await auth.currentUser?.getIdToken();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  } catch {
+    // بلا توكن سيرد الخادم 401 برسالة واضحة — لا نُخفي السبب هنا
+  }
+  return headers;
+}
 
 export interface AiSettings {
   provider: AiProvider;
@@ -80,10 +98,13 @@ export async function callGemini(
   // مسار مفتاح المكتب — على الخادم
   const res = await fetch("/api/ai/generate", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: await authHeaders(),
     body: JSON.stringify({ provider: "GEMINI", model: settings.model, ...body }),
   });
 
+  if (res.status === 401) {
+    throw new Error("انتهت جلستك. سجّل الدخول من جديد ثم أعد المحاولة.");
+  }
   if (res.status === 501) {
     throw new Error(
       "خدمة الذكاء الاصطناعي غير مُهيّأة على الخادم. أدخل مفتاحك الخاص من شاشة الإعدادات، " +
@@ -125,9 +146,12 @@ export async function callGroq(
 
   const res = await fetch("/api/ai/generate", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: await authHeaders(),
     body: JSON.stringify({ provider: "GROQ", ...payload }),
   });
+  if (res.status === 401) {
+    throw new Error("انتهت جلستك. سجّل الدخول من جديد ثم أعد المحاولة.");
+  }
   if (res.status === 501) {
     throw new Error("خدمة الذكاء الاصطناعي غير مُهيّأة على الخادم. أدخل مفتاحك الخاص من الإعدادات.");
   }

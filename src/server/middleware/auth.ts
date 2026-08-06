@@ -124,6 +124,9 @@ function bearer(req: Request): string | null {
 
 /** يرفض بلا توكن صالح — 401 */
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
+  // تحقّق مسبق من بوابة عامة — لا نُعيد فحص التوقيع مرتين
+  if (req.user) return next();
+
   const token = bearer(req);
   if (!token) {
     return res.status(401).json({ error: "مطلوب تسجيل الدخول." });
@@ -135,6 +138,23 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     const detail = err instanceof Error ? err.message : "توكن غير صالح";
     return res.status(401).json({ error: `جلسة غير صالحة: ${detail}` });
   }
+}
+
+/**
+ * بوابة عامة على كل المسارات عدا المعلنة عامة صراحةً.
+ *
+ * تُسجَّل قبل أي حارس آخر، حتى لا يسبق خطأُ تهيئةٍ (مثل غياب حساب الخدمة)
+ * فحصَ المصادقة فيتحوّل الرفض المتوقَّع 401 إلى 500 مُضلِّل.
+ * قائمة الاستثناء صريحة: ما لم يُذكر هنا فهو محمي — الافتراضي هو المنع.
+ */
+export function authGate(publicPaths: string[]) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const p = req.path;
+    if (publicPaths.some((allowed) => p === allowed || p.startsWith(`${allowed}/`))) {
+      return next();
+    }
+    return requireAuth(req, res, next);
+  };
 }
 
 /**
