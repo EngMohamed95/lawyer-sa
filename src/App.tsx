@@ -146,8 +146,9 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
     { name: "المكتبة القانونية", path: "/app/library", icon: <BookOpen size={20} />, hidden: !perms.can("library.view") },
 
     // ── إدارة النظام ──
-    { name: "سجل التدقيق", path: "/app/audit-log", icon: <ScrollText size={20} />, hidden: !perms.can("audit.view") },
-    { name: "سلة المحذوفات", path: "/app/recycle-bin", icon: <Trash2 size={20} />, hidden: !perms.can("recyclebin.manage") },
+    // سجل التدقيق وسلة المحذوفات انتقلا إلى تبويبين داخل الإعدادات لتخفيف
+    // ازدحام القائمة. مساراهما /app/audit-log و /app/recycle-bin ما زالا
+    // يعملان، فأي رابط محفوظ أو انتقال برمجي لا ينكسر.
   ];
 
   // لو كان عنصر الأب مخفياً وله أبناء ظاهرون، نرفع الأبناء للمستوى الأعلى

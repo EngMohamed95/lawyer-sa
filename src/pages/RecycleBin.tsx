@@ -24,7 +24,8 @@ interface DeletedRow {
   deleteReason?: string | null;
 }
 
-export default function RecycleBin() {
+/** embedded: معروضة داخل تبويب في الإعدادات لا كصفحة مستقلة */
+export default function RecycleBin({ embedded = false }: { embedded?: boolean } = {}) {
   const perms = usePermissions();
   const canManage = perms.can("recyclebin.manage");
 
@@ -134,7 +135,10 @@ export default function RecycleBin() {
     <div className="space-y-6 font-['Tajawal']" dir="rtl">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">سلة المحذوفات</h1>
+          {/* داخل الإعدادات يوجد عنوان الصفحة أصلاً، فلا نكرّره بحجم كامل */}
+          <h1 className={`font-bold text-[#133B2E] tracking-tight ${embedded ? "text-xl" : "text-3xl"}`}>
+            سلة المحذوفات
+          </h1>
           <p className="text-gray-500 mt-1 text-sm">
             السجلات المحذوفة قابلة للاسترجاع — {rows.length} عنصر
           </p>

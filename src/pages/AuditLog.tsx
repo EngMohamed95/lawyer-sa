@@ -32,7 +32,8 @@ interface LogRow {
 
 const PAGE_SIZE = 100;
 
-export default function AuditLog() {
+/** embedded: معروضة داخل تبويب في الإعدادات لا كصفحة مستقلة */
+export default function AuditLog({ embedded = false }: { embedded?: boolean } = {}) {
   const perms = usePermissions();
   const canView = perms.can("audit.view");
 
@@ -123,7 +124,10 @@ export default function AuditLog() {
     <div className="space-y-6 font-['Tajawal']" dir="rtl">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">سجل التدقيق</h1>
+          {/* داخل الإعدادات يوجد عنوان الصفحة أصلاً، فلا نكرّره */}
+          <h1 className={`font-bold text-[#133B2E] tracking-tight ${embedded ? "text-xl" : "text-3xl"}`}>
+            سجل التدقيق
+          </h1>
           <p className="text-gray-500 mt-1 text-sm">
             كل عملية حساسة في مكتبك — من نفّذها ومتى وماذا تغيّر
           </p>

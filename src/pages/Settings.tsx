@@ -1,10 +1,13 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Shield, Bell, User, Lock, Palette, Globe, Settings as SettingsIcon, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, Sparkles, DollarSign, FileEdit, Link, Key, Check } from "lucide-react";
+import { Shield, Bell, User, Lock, Palette, Globe, Settings as SettingsIcon, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, Sparkles, DollarSign, FileEdit, Link, Key, Check, ScrollText, Trash2 } from "lucide-react";
 import { auth } from "../lib/firebase";
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
 import PermissionsTab from "../components/settings/PermissionsTab";
 import NotificationsTab from "../components/settings/NotificationsTab";
+import AuditLog from "./AuditLog";
+import RecycleBin from "./RecycleBin";
+import { usePermissions } from "../lib/usePermissions";
 
 function ChangePasswordForm() {
   const [form, setForm]         = useState({ current: "", newPass: "", confirm: "" });
@@ -169,6 +172,7 @@ function ChangePasswordForm() {
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("security");
+  const perms = usePermissions();
   const userName  = localStorage.getItem("userName") || "المستخدم";
   const userEmail = localStorage.getItem("userEmail") || auth.currentUser?.email || "";
   const userRole  = localStorage.getItem("userRole");
@@ -379,7 +383,10 @@ export default function SettingsPage() {
     { id: "permissions",   name: "الصلاحيات",         icon: <Shield size={20} /> },
     { id: "notifications", name: "التنبيهات",          icon: <Bell size={20} /> },
     { id: "appearance",    name: "المظهر",            icon: <Palette size={20} /> },
-  ];
+    // نُقلا من القائمة الجانبية إلى هنا — مساراهما القديمان ما زالا يعملان
+    { id: "audit",         name: "سجل التدقيق",       icon: <ScrollText size={20} />, hidden: !perms.can("audit.view") },
+    { id: "recyclebin",    name: "سلة المحذوفات",     icon: <Trash2 size={20} />, hidden: !perms.can("recyclebin.manage") },
+  ].filter(t => !(t as { hidden?: boolean }).hidden);
 
   return (
     <div className="space-y-6 font-['Tajawal']" dir="rtl">
@@ -482,6 +489,10 @@ export default function SettingsPage() {
 
               {/* تبويب التنبيهات — كان فارغاً */}
               {activeTab === "notifications" && <NotificationsTab />}
+
+              {/* نُقلا من القائمة الجانبية — نفس المكوّنين بلا تغيير في منطقهما */}
+              {activeTab === "audit" && <AuditLog embedded />}
+              {activeTab === "recyclebin" && <RecycleBin embedded />}
 
               {/* ========== GENERAL TAB ========== */}
               {activeTab === "general" && (

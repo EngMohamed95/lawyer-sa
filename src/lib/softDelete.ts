@@ -116,7 +116,13 @@ export async function purgePermanently(target: SoftDeleteTarget): Promise<boolea
   return true;
 }
 
-/** الكولكشنات التي تدعم الحذف الناعم وتظهر في سلة المحذوفات */
+/**
+ * الكولكشنات التي تدعم الحذف الناعم وتظهر في سلة المحذوفات.
+ *
+ * ⚠️ قاعدة: أي كولكشن يُحذف منه بـ softDelete **يجب** أن يُدرج هنا،
+ *    وإلا اختفى المحذوف من السلة فلا يستطيع أحد استرجاعه — وهو ما حدث
+ *    فعلاً مع العقود والفواتير قبل إضافتهما.
+ */
 export const RECYCLABLE = [
   { collection: "tasks", entity: "task" as AuditEntity, label: "المهام", titleField: "title" },
   { collection: "clients", entity: "client" as AuditEntity, label: "العملاء", titleField: "fullName" },
@@ -124,4 +130,10 @@ export const RECYCLABLE = [
   { collection: "payments", entity: "payment" as AuditEntity, label: "الدفعات", titleField: "notes" },
   { collection: "expenses", entity: "expense" as AuditEntity, label: "المصروفات", titleField: "notes" },
   { collection: "users", entity: "user" as AuditEntity, label: "المستخدمون", titleField: "name" },
+  { collection: "contracts", entity: "contract" as AuditEntity, label: "العقود", titleField: "title" },
+  { collection: "invoices", entity: "invoice" as AuditEntity, label: "الفواتير", titleField: "invoiceNumber" },
+  { collection: "appointments", entity: "appointment" as AuditEntity, label: "المواعيد", titleField: "title" },
+  { collection: "fee_agreements", entity: "invoice" as AuditEntity, label: "اتفاقيات الأتعاب", titleField: "agreementNumber" },
+  { collection: "vouchers", entity: "expense" as AuditEntity, label: "سندات الصرف", titleField: "payeeName" },
+  { collection: "time_entries", entity: "invoice" as AuditEntity, label: "سجلات الساعات", titleField: "description" },
 ] as const;
