@@ -101,20 +101,69 @@ jobs:
           FTP_PASS: ${{ secrets.HOSTINGER_PASSWORD }}
         run: |
           set -e
+
+          # الاستضافة تشترط FTPS صريحاً على قناتَي التحكم والبيانات.
+          # ssl-allow وحده يسمح ولا يفرض، فتبقى قناة البيانات بلا حماية
+          # ويرفضها الخادم — وهذا ما استنفد المحاولات سابقاً.
+          # (curl القديم كان ينجح لأن --ssl-reqd يفرضها.)
+          cat > /tmp/lftprc <<'RC'
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ftp:ssl-protect-list true
+          set ssl:verify-certificate no
+          set ftp:passive-mode true
+          set net:max-retries 5
+          set net:timeout 30
+          set net:reconnect-interval-base 5
+          set xfer:clobber on
+          RC
+
+          # اتصال تشخيصي أولاً: يفصل فشل الاتصال عن فشل النقل
+          lftp -f /dev/stdin <<EOF
+          source /tmp/lftprc
+          open -u "$FTP_USER","$FTP_PASS" "$FTP_HOST"
+          pwd
+          ls
+          bye
+          EOF
+          echo "✓ الاتصال بالـ FTP سليم"
+
+          # نقل متسلسل: الاستضافات المشتركة تحدّ الاتصالات المتزامنة.
           # لا نستخدم --delete: على الخادم ملفات لا تأتي من المستودع
           # (مستندات المستخدمين في uploads/) وحذفها يعني فقدانها.
-          lftp -c "
-            set ftp:ssl-allow true;
-            set ssl:verify-certificate no;
-            set net:max-retries 3;
-            set net:timeout 20;
-            open -u '$FTP_USER','$FTP_PASS' '$FTP_HOST';
-            mirror --reverse --parallel=4 --verbose=1 \
-                   --exclude '^uploads/' \
-                   --exclude '^dist/uploads/' \
-                   release/ ./;
-            bye
-          "
+          if lftp -f /dev/stdin <<EOF
+          source /tmp/lftprc
+          open -u "$FTP_USER","$FTP_PASS" "$FTP_HOST"
+          mirror --reverse --parallel=1 --verbose=1 \
+                 --exclude '^uploads/' \
+                 --exclude '^dist/uploads/' \
+                 release/ ./
+          bye
+          EOF
+          then
+            echo "✓ الرفع تم عبر lftp"
+          else
+            echo "⚠️ فشل lftp — نتحوّل إلى curl (أثبت نجاحه مع هذه الاستضافة)"
+            # نرفع ملفاً ملفاً، وننشئ المجلدات ضمنياً بـ --ftp-create-dirs
+            failed=0
+            while IFS= read -r f; do
+              rel="${f#release/}"
+              case "$rel" in uploads/*|dist/uploads/*) continue ;; esac
+              if ! curl -sS -k --ssl-reqd --ftp-create-dirs \
+                        --retry 3 --retry-delay 3 --max-time 120 \
+                        -T "$f" -u "$FTP_USER:$FTP_PASS" \
+                        "ftp://$FTP_HOST/$rel"; then
+                echo "❌ تعذّر رفع $rel"
+                failed=$((failed + 1))
+              fi
+            done < <(find release -type f)
+
+            if [ "$failed" -gt 0 ]; then
+              echo "فشل رفع $failed ملف"
+              exit 1
+            fi
+            echo "✓ الرفع تم عبر curl"
+          fi
 
       - name: Restart Node App
         env:
@@ -124,14 +173,13 @@ jobs:
         run: |
           # Hostinger يعيد تشغيل تطبيق Node عند لمس tmp/restart.txt
           date > restart.txt
-          lftp -c "
-            set ftp:ssl-allow true;
-            set ssl:verify-certificate no;
-            open -u '$FTP_USER','$FTP_PASS' '$FTP_HOST';
-            mkdir -p tmp;
-            put -O tmp restart.txt;
-            bye
-          "
+          # curl مباشرةً: أبسط وأثبت من lftp لملف واحد، و--ftp-create-dirs
+          # ينشئ tmp/ إن لم يوجد
+          curl -sS -k --ssl-reqd --ftp-create-dirs \
+               --retry 3 --retry-delay 3 --max-time 60 \
+               -T restart.txt -u "$FTP_USER:$FTP_PASS" \
+               "ftp://$FTP_HOST/tmp/restart.txt"
+          echo "✓ أُرسلت إشارة إعادة التشغيل"
 
       - name: Verify Deployment
         # لا نعتمد على تنفيذ PHP عبر HTTP — حماية البوتات على الاستضافة
