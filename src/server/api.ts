@@ -3,6 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import admin from "firebase-admin";
 import fs from "fs";
 import path from "path";
+import { requireAuth, requireRole, requireUserAdmin } from "./middleware/auth.js";
 
 function initializeFirestore() {
   if (admin.apps.length) {
@@ -38,7 +39,105 @@ const db = initializeFirestore();
 const router = express.Router();
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
-router.post("/extract-text", async (req, res) => {
+/* ────────────────────────── تحديد المعدل (الثغرة V9) ────────────────────────── */
+
+/**
+ * عدّاد بسيط في الذاكرة لكل عنوان.
+ * كافٍ لعملية واحدة على الاستضافة الحالية؛ عند التوسّع لعدة عمليات
+ * يُستبدل بمخزن مشترك (Redis) — الواجهة نفسها لا تتغيّر.
+ */
+const hits = new Map<string, { count: number; resetAt: number }>();
+
+function rateLimit(maxPerMinute: number) {
+  const windowMs = 60_000;
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const key = `${req.ip ?? "unknown"}|${req.path}`;
+    const now = Date.now();
+    const entry = hits.get(key);
+
+    if (!entry || now > entry.resetAt) {
+      hits.set(key, { count: 1, resetAt: now + windowMs });
+      // تنظيف كسول يمنع تضخّم الخريطة بلا حدود
+      if (hits.size > 5000) {
+        for (const [k, v] of hits) if (now > v.resetAt) hits.delete(k);
+      }
+      return next();
+    }
+
+    entry.count++;
+    if (entry.count > maxPerMinute) {
+      const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
+      res.setHeader("Retry-After", String(retryAfter));
+      return res.status(429).json({
+        error: "تجاوزت حد الطلبات المسموح. حاول بعد قليل.",
+        retryAfter,
+      });
+    }
+    return next();
+  };
+}
+
+/* ────────────────────────── وسيط الذكاء الاصطناعي (الثغرة V4) ────────────────────────── */
+
+/**
+ * ينفّذ نداء النموذج بمفتاح المكتب المخزَّن على الخادم،
+ * فلا يُشحن أي مفتاح داخل حزمة الواجهة.
+ * مفتاح المستخدم الخاص يبقى يعمل من المتصفح ولا يمرّ من هنا.
+ */
+router.post("/ai/generate", rateLimit(20), async (req, res) => {
+  try {
+    const { provider = "GEMINI", model, contents, generationConfig, messages, temperature } = req.body ?? {};
+
+    if (provider === "GEMINI") {
+      const key = process.env.GEMINI_API_KEY;
+      if (!key) {
+        return res.status(501).json({ error: "مفتاح الذكاء الاصطناعي غير مضبوط على الخادم." });
+      }
+      if (!Array.isArray(contents) || contents.length === 0) {
+        return res.status(400).json({ error: "محتوى الطلب مفقود." });
+      }
+
+      const modelName = typeof model === "string" && model ? model : "gemini-flash-latest";
+      const url =
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}` +
+        `:generateContent?key=${encodeURIComponent(key)}`;
+
+      const upstream = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents,
+          generationConfig: generationConfig ?? { temperature: 0.7, maxOutputTokens: 2048 },
+        }),
+      });
+
+      const data = await upstream.json();
+      // نمرّر الرد كما هو لتبقى معالجة الأخطاء في الواجهة كما كانت
+      return res.status(upstream.ok ? 200 : upstream.status).json(data);
+    }
+
+    if (provider === "GROQ") {
+      const key = process.env.GROQ_API_KEY;
+      if (!key) {
+        return res.status(501).json({ error: "مفتاح Groq غير مضبوط على الخادم." });
+      }
+      const upstream = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+        body: JSON.stringify({ model, messages, temperature: temperature ?? 0.7 }),
+      });
+      const data = await upstream.json();
+      return res.status(upstream.ok ? 200 : upstream.status).json(data);
+    }
+
+    return res.status(400).json({ error: "مزوّد غير مدعوم." });
+  } catch (error: unknown) {
+    console.error("AI proxy error:", error);
+    return res.status(500).json({ error: "تعذّر تنفيذ طلب الذكاء الاصطناعي." });
+  }
+});
+
+router.post("/extract-text", requireAuth, async (req, res) => {
   try {
     const { imageBase64, mimeType } = req.body;
     if (!imageBase64) return res.status(400).json({ error: "No image provided" });
@@ -78,7 +177,7 @@ router.use((req, res, next) => {
   next();
 });
 
-router.get("/dashboard", async (req, res) => {
+router.get("/dashboard", requireAuth, async (req, res) => {
   try {
     const casesSnap = await db.collection("cases").get();
     const clientsSnap = await db.collection("clients").get();
@@ -126,7 +225,7 @@ router.get("/dashboard", async (req, res) => {
 });
 
 // Clients API
-router.get("/clients", async (req, res) => {
+router.get("/clients", requireAuth, async (req, res) => {
   try {
     const snap = await db.collection("clients").orderBy("createdAt", "desc").get();
     const clients = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -136,7 +235,7 @@ router.get("/clients", async (req, res) => {
   }
 });
 
-router.post("/clients", async (req, res) => {
+router.post("/clients", requireAuth, async (req, res) => {
   try {
     const data = { 
       ...req.body, 
@@ -151,7 +250,7 @@ router.post("/clients", async (req, res) => {
   }
 });
 
-router.put("/clients/:id", async (req, res) => {
+router.put("/clients/:id", requireAuth, async (req, res) => {
   try {
     const data = { ...req.body, updatedAt: new Date().toISOString() };
     await db.collection("clients").doc(req.params.id).update(data);
@@ -162,7 +261,7 @@ router.put("/clients/:id", async (req, res) => {
 });
 
 // Cases API
-router.get("/cases", async (req, res) => {
+router.get("/cases", requireAuth, async (req, res) => {
   try {
     const casesSnap = await db.collection("cases").orderBy("createdAt", "desc").get();
     const clientsSnap = await db.collection("clients").get();
@@ -181,7 +280,7 @@ router.get("/cases", async (req, res) => {
   }
 });
 
-router.get("/cases/:id", async (req, res) => {
+router.get("/cases/:id", requireAuth, async (req, res) => {
   try {
     const caseDoc = await db.collection("cases").doc(req.params.id).get();
     if (!caseDoc.exists) return res.status(404).json({ error: "Case not found" });
@@ -206,7 +305,7 @@ router.get("/cases/:id", async (req, res) => {
   }
 });
 
-router.post("/cases", async (req, res) => {
+router.post("/cases", requireAuth, async (req, res) => {
   try {
     const data = { 
       ...req.body, 
@@ -222,7 +321,7 @@ router.post("/cases", async (req, res) => {
 });
 
 // Tasks API
-router.get("/tasks", async (req, res) => {
+router.get("/tasks", requireAuth, async (req, res) => {
   try {
     const snap = await db.collection("tasks").orderBy("createdAt", "desc").get();
     const tasks = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -232,7 +331,7 @@ router.get("/tasks", async (req, res) => {
   }
 });
 
-router.post("/tasks", async (req, res) => {
+router.post("/tasks", requireAuth, async (req, res) => {
   try {
     const data = { 
       ...req.body, 
@@ -247,7 +346,7 @@ router.post("/tasks", async (req, res) => {
   }
 });
 
-router.put("/tasks/:id", async (req, res) => {
+router.put("/tasks/:id", requireAuth, async (req, res) => {
   try {
     const data = { ...req.body, updatedAt: new Date().toISOString() };
     await db.collection("tasks").doc(req.params.id).update(data);
@@ -257,7 +356,7 @@ router.put("/tasks/:id", async (req, res) => {
   }
 });
 
-router.delete("/tasks/:id", async (req, res) => {
+router.delete("/tasks/:id", requireAuth, async (req, res) => {
   try {
     await db.collection("tasks").doc(req.params.id).delete();
     res.json({ success: true });
@@ -268,7 +367,7 @@ router.delete("/tasks/:id", async (req, res) => {
 
 // ===================== User Management (Admin) =====================
 
-router.put("/users/:uid/password", async (req, res) => {
+router.put("/users/:uid/password", requireAuth, requireUserAdmin, async (req, res) => {
   try {
     const { password } = req.body;
     if (!password || password.length < 6) return res.status(400).json({ error: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" });
@@ -279,7 +378,7 @@ router.put("/users/:uid/password", async (req, res) => {
   }
 });
 
-router.put("/users/:uid/email", async (req, res) => {
+router.put("/users/:uid/email", requireAuth, requireUserAdmin, async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: "البريد الإلكتروني مطلوب" });
@@ -344,7 +443,7 @@ router.post("/subscribe", async (req, res) => {
   }
 });
 
-router.get("/subscriptions", async (req, res) => {
+router.get("/subscriptions", requireAuth, requireRole("SUPER_ADMIN"), async (req, res) => {
   try {
     const snap = await db
       .collection("subscriptionRequests")
@@ -357,7 +456,7 @@ router.get("/subscriptions", async (req, res) => {
   }
 });
 
-router.put("/subscriptions/:id/approve", async (req, res) => {
+router.put("/subscriptions/:id/approve", requireAuth, requireRole("SUPER_ADMIN"), async (req, res) => {
   try {
     const { email, durationMonths } = req.body;
     const reqDoc = await db.collection("subscriptionRequests").doc(req.params.id).get();
@@ -393,7 +492,7 @@ router.put("/subscriptions/:id/approve", async (req, res) => {
   }
 });
 
-router.put("/subscriptions/:id/reject", async (req, res) => {
+router.put("/subscriptions/:id/reject", requireAuth, requireRole("SUPER_ADMIN"), async (req, res) => {
   try {
     await db.collection("subscriptionRequests").doc(req.params.id).update({
       status: "rejected",

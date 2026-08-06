@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Loader2, Sparkles, FileText, CheckCircle2, ChevronRight, File } from "lucide-react";
+import { callGemini, callGroq } from "../lib/aiProxy";
 
 interface AiMemoDrafterModalProps {
   isOpen: boolean;
@@ -39,10 +40,8 @@ export function AiMemoDrafterModal({ isOpen, onClose, caseData, onDraftCompleted
       const aiApiKey = localStorage.getItem("sys_aiApiKey") || "";
       const aiModel = localStorage.getItem("sys_aiModel") || (aiProvider === "GEMINI" ? "gemini-flash-latest" : "llama-3.3-70b-versatile");
 
-      const apiKeyToUse = aiApiKey || import.meta.env.VITE_GEMINI_API_KEY || "";
-      if (!apiKeyToUse && aiProvider === "GEMINI") {
-        throw new Error("لم يتم تكوين مفتاح Gemini API Key. الرجاء إدخاله في شاشة الإعدادات.");
-      }
+      // مفتاح المكتب انتقل للخادم (الثغرة V4)؛ مفتاح المستخدم يبقى خياراً
+      const apiKeyToUse = aiApiKey;
 
       setStatusMessage("جاري تحليل ملف القضية والمرفقات المحددة...");
       
@@ -105,29 +104,11 @@ ${selectedDocsContext}
       let responseText = "";
 
       if (aiProvider === "GEMINI") {
-        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${aiModel}:generateContent?key=${apiKeyToUse}`;
-        const response = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [
-              {
-                role: "user",
-                parts: [{ text: systemPrompt }]
-              }
-            ],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 3000
-            }
-          })
-        });
-
-        const dataJson = await response.json();
-        if (dataJson.error) {
-          throw new Error(dataJson.error.message || "خطأ في معالجة طلب Gemini");
-        }
-        responseText = dataJson.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        responseText = await callGemini(
+          [{ role: "user", parts: [{ text: systemPrompt }] }],
+          { temperature: 0.7, maxOutputTokens: 3000 },
+          { provider: "GEMINI", model: aiModel, userKey: apiKeyToUse },
+        );
       } else {
         // Groq API
         const API_URL = "https://api.groq.com/openai/v1/chat/completions";

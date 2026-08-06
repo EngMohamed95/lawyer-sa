@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { collection, getDocs, collectionGroup, query, where } from "firebase/firestore";
 import { db } from "../lib/firebase";
+import { callGemini, callGroq, type GeminiContent } from "../lib/aiProxy";
 
 export function AiAssistant() {
   const [isOpen, setIsOpen] = useState(false);
@@ -329,13 +330,8 @@ ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionIns
       let responseText = "";
 
       if (aiProvider === "GEMINI") {
-        const apiKeyToUse = aiApiKey || import.meta.env.VITE_GEMINI_API_KEY || "";
-        if (!apiKeyToUse) {
-          throw new Error("يرجى إدخال مفتاح Gemini API Key في شاشة الإعدادات للتمكن من الاتصال بالخدمة.");
-        }
-
         // Map history to Gemini content structure (roles must be: user / model)
-        const geminiContents = [
+        const geminiContents: GeminiContent[] = [
           {
             role: "user",
             parts: [{ text: systemPrompt }]
@@ -354,57 +350,22 @@ ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionIns
           parts: [{ text: userMsg }]
         });
 
-        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${aiModel}:generateContent?key=${apiKeyToUse}`;
-        const response = await fetch(API_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            contents: geminiContents,
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 2048
-            }
-          })
-        });
-
-        const data = await response.json();
-        if (data.error) {
-          throw new Error(data.error.message || "خطأ في معالجة طلب Gemini");
-        }
-        responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || "عذراً، لم أتمكن من الحصول على رد من Gemini.";
+        // مفتاح المستخدم مباشرةً، وبدونه عبر الخادم (الثغرة V4)
+        responseText = (await callGemini(
+          geminiContents,
+          { temperature: 0.7, maxOutputTokens: 2048 },
+          { provider: "GEMINI", model: aiModel, userKey: aiApiKey },
+        )) || "عذراً، لم أتمكن من الحصول على رد من Gemini.";
       } else {
-        // Groq API
-        const apiKeyToUse = aiApiKey || import.meta.env.VITE_GROQ_API_KEY || "";
-        const API_URL = "https://api.groq.com/openai/v1/chat/completions";
-
-        const response = await fetch(API_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKeyToUse}`
-          },
-          body: JSON.stringify({
-            model: aiModel,
-            messages: [
-              {
-                role: "system",
-                content: systemPrompt
-              },
-              ...history,
-              { role: "user", content: userMsg }
-            ],
-            temperature: 0.7,
-            max_tokens: 1536
-          })
-        });
-
-        const data = await response.json();
-        if (data.error) {
-          throw new Error(data.error.message || "خطأ في معالجة طلب Groq");
-        }
-        responseText = data.choices?.[0]?.message?.content || "لم يتم استلام رد من خادم الذكاء الاصطناعي.";
+        // Groq — نفس المبدأ
+        responseText = (await callGroq(
+          [
+            { role: "system", content: systemPrompt },
+            ...history,
+            { role: "user", content: userMsg }
+          ],
+          { provider: "GROQ", model: aiModel, userKey: aiApiKey },
+        )) || "لم يتم استلام رد من خادم الذكاء الاصطناعي.";
       }
 
       setMessages(prev => [...prev, { role: 'assistant', content: responseText }]);

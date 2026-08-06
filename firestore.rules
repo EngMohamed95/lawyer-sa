@@ -1,0 +1,354 @@
+rules_version = '2';
+
+/**
+ * قواعد حماية Firestore — الميزة 001، الثغرة V1.
+ *
+ * ما كان قائماً:  allow read, write: if request.auth != null;
+ * أثره: أي مستخدم مسجَّل في المشروع يقرأ ويعدّل ويحذف بيانات **كل المكاتب**.
+ *
+ * المبدأ: العزل بحقل lawyerId القائم — بلا هجرة بيانات وبلا حقل جديد.
+ * (فُحص فعلياً: 100% من سجلات clients/cases/tasks/payments/expenses/contracts/
+ *  invoices/appointments/auditLogs/notifications تحمل lawyerId)
+ *
+ * ⚠️ ملاحظة تشغيلية حاسمة:
+ *    مستند مالك المكتب في users/ لا يحمل lawyerId — الاتفاق القائم أن
+ *    lawyerId = uid. لذلك myTenant() ترجع uid عند غياب الحقل. بدون هذا
+ *    يُقفل المالك خارج نظامه بالكامل.
+ *
+ * ⚠️ النشر على مرحلتين (AD-5): انشرها على مشروع اختبار أولاً، أو راقب
+ *    رفض الطلبات في Firebase Console > Firestore > Usage قبل الاعتماد.
+ */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ────────────────────────── دوال مساعدة ────────────────────────── */
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
+    function userExists() {
+      return signedIn() && exists(userPath());
+    }
+
+    function userData() {
+      return get(userPath()).data;
+    }
+
+    function myRole() {
+      return userExists() ? userData().get('role', 'TRAINEE') : 'NONE';
+    }
+
+    // مالك المكتب لا يحمل lawyerId في مستنده — الاتفاق أن lawyerId = uid
+    function myTenant() {
+      return userExists()
+        ? userData().get('lawyerId', request.auth.uid)
+        : request.auth.uid;
+    }
+
+    function notSuspended() {
+      return userExists() && userData().get('status', 'ACTIVE') != 'SUSPENDED';
+    }
+
+    function isSuperAdmin() {
+      return signedIn() && myRole() == 'SUPER_ADMIN';
+    }
+
+    function isOfficeOwner() {
+      return signedIn() && myRole() == 'LAWYER';
+    }
+
+    function member() {
+      return signedIn() && notSuspended();
+    }
+
+    /** السجل الموجود يخص مكتبي */
+    function ownsExisting() {
+      return resource != null && resource.data.get('lawyerId', '') == myTenant();
+    }
+
+    /** السجل القادم يخص مكتبي — يمنع كتابة بيانات باسم مكتب آخر */
+    function ownsIncoming() {
+      return request.resource.data.get('lawyerId', '') == myTenant();
+    }
+
+    function canRead() {
+      return member() && (isSuperAdmin() || ownsExisting());
+    }
+
+    function canCreate() {
+      return member() && (isSuperAdmin() || ownsIncoming());
+    }
+
+    /** التعديل يفحص القادم والموجود معاً، ويمنع نقل السجل لمكتب آخر */
+    function canUpdate() {
+      return member() && (
+        isSuperAdmin() ||
+        (
+          ownsExisting() &&
+          ownsIncoming() &&
+          request.resource.data.get('lawyerId', '') == resource.data.get('lawyerId', '')
+        )
+      );
+    }
+
+    function canDelete() {
+      return member() && (isSuperAdmin() || ownsExisting());
+    }
+
+    /** الحذف النهائي داخل المكتب — لمدير المكتب وحده */
+    function canHardDelete() {
+      return member() && (isSuperAdmin() || (ownsExisting() && isOfficeOwner()));
+    }
+
+    /* ────────────────────────── المستخدمون ────────────────────────── */
+
+    match /users/{userId} {
+      // كل مستخدم يقرأ مستنده دائماً — بدونه تفشل كل الدوال أعلاه
+      allow get: if signedIn() && (
+        request.auth.uid == userId ||
+        isSuperAdmin() ||
+        resource.data.get('lawyerId', userId) == myTenant()
+      );
+
+      allow list: if signedIn() && (isSuperAdmin() || isOfficeOwner());
+
+      allow create: if member() && (
+        isSuperAdmin() ||
+        (isOfficeOwner() && request.resource.data.get('lawyerId', '') == myTenant())
+      );
+
+      /**
+       * الترقية الذاتية ممنوعة (الثغرتان V5 و V7).
+       * المستخدم العادي يعدّل بياناته الشخصية فقط؛ الحقول الحسّاسة
+       * (role · lawyerId · plan · status) تبقى كما هي حرفياً.
+       */
+      allow update: if member() && (
+        isSuperAdmin()
+        ||
+        (
+          isOfficeOwner() &&
+          resource.data.get('lawyerId', userId) == myTenant()
+        )
+        ||
+        (
+          request.auth.uid == userId &&
+          request.resource.data.get('role', '')     == resource.data.get('role', '') &&
+          request.resource.data.get('lawyerId', '') == resource.data.get('lawyerId', '') &&
+          request.resource.data.get('plan', '')     == resource.data.get('plan', '') &&
+          request.resource.data.get('status', '')   == resource.data.get('status', '')
+        )
+      );
+
+      allow delete: if isSuperAdmin();
+    }
+
+    /* ────────────────────────── طلبات الاشتراك ────────────────────────── */
+
+    // تُنشأ قبل وجود حساب — الإنشاء مفتوح، وما عداه للسوبر أدمن
+    match /subscriptionRequests/{docId} {
+      allow create: if true;
+      allow read, update, delete: if isSuperAdmin();
+    }
+
+    /* ────────────────────────── القضايا والعملاء ────────────────────────── */
+
+    match /cases/{caseId} {
+      allow get, list: if canRead();
+      allow create: if canCreate();
+      allow update: if canUpdate();
+      allow delete: if canHardDelete();
+
+      // الجلسات والمستندات والمذكرات ترث حدود القضية الأم
+      match /{document=**} {
+        allow read, write: if member() && (
+          isSuperAdmin() ||
+          get(/databases/$(database)/documents/cases/$(caseId)).data.get('lawyerId', '') == myTenant()
+        );
+      }
+    }
+
+    match /clients/{clientId} {
+      allow get, list: if canRead();
+      allow create: if canCreate();
+      allow update: if canUpdate();
+      allow delete: if canHardDelete();
+
+      match /{document=**} {
+        allow read, write: if member() && (
+          isSuperAdmin() ||
+          get(/databases/$(database)/documents/clients/$(clientId)).data.get('lawyerId', '') == myTenant()
+        );
+      }
+    }
+
+    /* ────────────────────────── المجموعات المعزولة بـ lawyerId ──────────────────────────
+     * قواعد Firestore لا تدعم شرطاً على اسم المجموعة، فتُذكر كل مجموعة صراحةً.
+     * إضافة مجموعة جديدة للتطبيق تتطلب إضافتها هنا — وهذا مقصود لا سهو.
+     */
+
+    match /tasks/{id} {
+      allow get, list: if canRead();
+      allow create: if canCreate();
+      allow update: if canUpdate();
+      allow delete: if canDelete();
+    }
+
+    match /payments/{id} {
+      allow get, list: if canRead();
+      allow create: if canCreate();
+      allow update: if canUpdate();
+      allow delete: if canDelete();
+    }
+
+    match /expenses/{id} {
+      allow get, list: if canRead();
+      allow create: if canCreate();
+      allow update: if canUpdate();
+      allow delete: if canDelete();
+    }
+
+    match /contracts/{id} {
+      allow get, list: if canRead();
+      allow create: if canCreate();
+      allow update: if canUpdate();
+      allow delete: if canDelete();
+    }
+
+    match /invoices/{id} {
+      allow get, list: if canRead();
+      allow create: if canCreate();
+      allow update: if canUpdate();
+      allow delete: if canDelete();
+    }
+
+    match /receipts/{id} {
+      allow get, list: if canRead();
+      allow create: if canCreate();
+      allow update: if canUpdate();
+      allow delete: if canDelete();
+    }
+
+    match /vouchers/{id} {
+      allow get, list: if canRead();
+      allow create: if canCreate();
+      allow update: if canUpdate();
+      allow delete: if canDelete();
+    }
+
+    match /fee_agreements/{id} {
+      allow get, list: if canRead();
+      allow create: if canCreate();
+      allow update: if canUpdate();
+      allow delete: if canDelete();
+    }
+
+    match /time_entries/{id} {
+      allow get, list: if canRead();
+      allow create: if canCreate();
+      allow update: if canUpdate();
+      allow delete: if canDelete();
+    }
+
+    match /appointments/{id} {
+      allow get, list: if canRead();
+      allow create: if canCreate();
+      allow update: if canUpdate();
+      allow delete: if canDelete();
+    }
+
+    match /notifications/{id} {
+      allow get, list: if canRead();
+      allow create: if canCreate();
+      allow update: if canUpdate();
+      allow delete: if canDelete();
+    }
+
+    match /notification_preferences/{id} {
+      allow get, list: if canRead();
+      allow create: if canCreate();
+      allow update: if canUpdate();
+      allow delete: if canDelete();
+    }
+
+    match /office_settings/{id} {
+      allow get, list: if canRead();
+      // إعدادات المكتب: التعديل لمدير المكتب وحده
+      allow create, update: if member() && (
+        isSuperAdmin() || (isOfficeOwner() && ownsIncoming())
+      );
+      allow delete: if isSuperAdmin();
+    }
+
+    match /counters/{id} {
+      // عدّادات الترقيم التسلسلي — تُقرأ وتُكتب داخل معاملة من التطبيق
+      allow get: if canRead();
+      allow create, update: if canCreate();
+      allow list, delete: if isSuperAdmin();
+    }
+
+    match /client_portal_accounts/{id} {
+      allow get, list: if canRead();
+      // حسابات البوابة: إنشاؤها وتعديلها لمدير المكتب وحده
+      allow create, update: if member() && (
+        isSuperAdmin() || (isOfficeOwner() && ownsIncoming())
+      );
+      allow delete: if canHardDelete();
+    }
+
+    match /client_messages/{id} {
+      allow get, list: if canRead();
+      allow create: if canCreate();
+      allow update: if canUpdate();
+      allow delete: if canDelete();
+    }
+
+    match /client_requests/{id} {
+      allow get, list: if canRead();
+      allow create: if canCreate();
+      allow update: if canUpdate();
+      allow delete: if canDelete();
+    }
+
+    match /template_folders/{id} {
+      allow get, list: if canRead();
+      allow create: if canCreate();
+      allow update: if canUpdate();
+      allow delete: if canDelete();
+    }
+
+    match /custom_templates/{id} {
+      allow get, list: if canRead();
+      allow create: if canCreate();
+      allow update: if canUpdate();
+      allow delete: if canDelete();
+    }
+
+    /* ────────────────────────── السجلات غير القابلة للتعديل ────────────────────────── */
+
+    // سجل التدقيق لا يُعدَّل ولا يُحذف — وإلا فقد قيمته كدليل (الوثيقة §خامساً)
+    match /auditLogs/{id} {
+      allow get, list: if canRead();
+      allow create: if member() && ownsIncoming();
+      allow update, delete: if false;
+    }
+
+    // سجل الوصول للمستندات السرية — نفس المنطق
+    match /documents_access_log/{id} {
+      allow get, list: if canRead();
+      allow create: if member() && ownsIncoming();
+      allow update, delete: if false;
+    }
+
+    /* ────────────────────────── الافتراضي: الرفض ────────────────────────── */
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

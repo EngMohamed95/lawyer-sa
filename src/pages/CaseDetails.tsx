@@ -19,6 +19,7 @@ import RichTextEditor from "../components/RichTextEditor";
 import { Input } from "../components/ui/input";
 import { doc, getDoc, collection, getDocs, addDoc, updateDoc, query, where, deleteField } from "firebase/firestore";
 import { db } from "../lib/firebase";
+import { callGemini, callGroq } from "../lib/aiProxy";
 import Documents from "./Documents";
 
 
@@ -237,11 +238,8 @@ export default function CaseDetails() {
       const aiProvider = localStorage.getItem("sys_aiProvider") || "GEMINI";
       const aiApiKey = localStorage.getItem("sys_aiApiKey") || "";
       const aiModel = localStorage.getItem("sys_aiModel") || (aiProvider === "GEMINI" ? "gemini-flash-latest" : "llama-3.3-70b-versatile");
-      const apiKeyToUse = aiApiKey || import.meta.env.VITE_GEMINI_API_KEY || "";
-
-      if (!apiKeyToUse && aiProvider === "GEMINI") {
-        throw new Error("لم يتم تكوين مفتاح Gemini API Key. يرجى تهيئته في شاشة الإعدادات.");
-      }
+      // مفتاح المكتب انتقل للخادم (الثغرة V4)؛ مفتاح المستخدم يبقى خياراً
+      const apiKeyToUse = aiApiKey;
 
       const clientName = customData.client?.fullName || '..........';
       const opponentName = customData.opponentName || '..........';
@@ -294,39 +292,16 @@ export default function CaseDetails() {
 
       let responseText = "";
       if (aiProvider === "GEMINI") {
-        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${aiModel}:generateContent?key=${apiKeyToUse}`;
-        const response = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.7, maxOutputTokens: 3000 }
-          })
-        });
-
-        const dataJson = await response.json();
-        if (dataJson.error) {
-          throw new Error(dataJson.error.message || "خطأ في معالجة طلب Gemini");
-        }
-        responseText = dataJson.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        responseText = await callGemini(
+          [{ role: "user", parts: [{ text: prompt }] }],
+          { temperature: 0.7, maxOutputTokens: 3000 },
+          { provider: "GEMINI", model: aiModel, userKey: apiKeyToUse },
+        );
       } else {
-        // Groq API fallback
-        const API_URL = "https://api.groq.com/openai/v1/chat/completions";
-        const response = await fetch(API_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKeyToUse}`
-          },
-          body: JSON.stringify({
-            model: aiModel,
-            messages: [{ role: "user", content: prompt }],
-            temperature: 0.7,
-            max_tokens: 2500
-          })
-        });
-        const dataJson = await response.json();
-        responseText = dataJson.choices?.[0]?.message?.content || "";
+        responseText = await callGroq(
+          [{ role: "user", content: prompt }],
+          { provider: "GROQ", model: aiModel, userKey: apiKeyToUse },
+        );
       }
 
       // Cleanup responseText if it contains markdown code blocks
