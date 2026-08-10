@@ -29,7 +29,7 @@ export function AiSummarizerModal({ isOpen, onClose, target, type }: { isOpen: b
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]" dir="rtl">
+      <DialogContent className="sm:max-w-[650px]" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-purple-700">
             <Sparkles size={20} />

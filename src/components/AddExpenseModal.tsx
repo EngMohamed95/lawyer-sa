@@ -3,8 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Loader2 } from "lucide-react";
+import { useOfficeLookups } from "../lib/officeLookups";
 
 export function AddExpenseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClose: () => void; onSuccess: () => void; }) {
+  const { expenseCategories } = useOfficeLookups();
   const [loading, setLoading] = useState(false);
   const [cases, setCases] = useState<any[]>([]);
   const [formData, setFormData] = useState({
@@ -67,7 +69,7 @@ export function AddExpenseModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]" dir="rtl">
+      <DialogContent className="sm:max-w-[750px]" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-[#133B2E]">تسجيل مصروف جديد</DialogTitle>
         </DialogHeader>
@@ -98,10 +100,9 @@ export function AddExpenseModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
                   value={formData.type}
                   onChange={e => setFormData({ ...formData, type: e.target.value })}
                 >
-                  <option value="COURT">رسوم قضائية</option>
-                  <option value="TRANSPORTATION">انتقالات ومواصلات</option>
-                  <option value="DOCUMENT">أوراق ومستندات</option>
-                  <option value="OTHER">أخرى</option>
+                  {expenseCategories.map(c => (
+                    <option key={c.value} value={c.value}>{c.label}</option>
+                  ))}
                 </select>
               </div>
 

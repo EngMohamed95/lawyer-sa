@@ -21,6 +21,8 @@ import {
   filterReadable, isArchived, logDocumentAccess, matchesSearch, onlyLatest, versionChain, versionOf as docVersion,
   type VaultDocument,
 } from "../lib/documentAcl";
+import { useOfficeLookups } from "../lib/officeLookups";
+import { downloadWordDoc } from "../lib/wordExport";
 
 type ViewMode = 'CLIENTS' | 'CASES' | 'DOCS';
 type HubTab = 'ARCHIVE' | 'WORD_GENERATOR' | 'EXCEL_IMPORTER';
@@ -305,9 +307,10 @@ export default function Documents({
   embeddedCaseId, 
   embeddedClientId 
 }: { 
-  embeddedCaseId?: string; 
-  embeddedClientId?: string; 
+  embeddedCaseId?: string;
+  embeddedClientId?: string;
 }) {
+  const { documentTypes } = useOfficeLookups();
   const [loading, setLoading] = useState(true);
   const [activeAiDoc, setActiveAiDoc] = useState<any>(null);
   const [editingDoc, setEditingDoc] = useState<any>(null);
@@ -889,46 +892,6 @@ export default function Documents({
     else if (navigation.mode === 'CASES') setNavigation({ mode: 'CLIENTS', clientId: null, caseId: null });
   };
 
-  // Download Word Document Template Substitutes Client-side
-  const downloadWordDoc = (htmlBodyContent: string, customDocTitle: string) => {
-    // MS Word HTML/XML schema container with right-to-left configurations
-    const content = `
-      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-      <head>
-        <title>${customDocTitle}</title>
-        <xml>
-          <w:WordDocument>
-            <w:View>Print</w:View>
-            <w:Zoom>100</w:Zoom>
-            <w:DoNotOptimizeForBrowser/>
-          </w:WordDocument>
-        </xml>
-        <style>
-          body { font-family: 'Arial', 'Tajawal', sans-serif; direction: rtl; text-align: right; padding: 1.5in 1.0in 1.0in 1.0in; }
-          h2 { text-align: center; color: #133B2E; font-size: 18pt; margin-bottom: 25px; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
-          p { font-size: 12pt; line-height: 1.8; text-align: justify; margin-bottom: 12px; }
-          ol, ul { margin-bottom: 15px; }
-          li { font-size: 12pt; line-height: 1.8; margin-bottom: 8px; }
-          table { width: 100%; border-collapse: collapse; margin: 15px 0; }
-          td { padding: 6px; }
-          .bold { font-weight: bold; }
-        </style>
-      </head>
-      <body>
-        ${htmlBodyContent}
-      </body>
-      </html>
-    `;
-    
-    const blob = new Blob(['\ufeff' + content], { type: 'application/msword;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = window.document.createElement("a");
-    link.href = url;
-    link.download = `${customDocTitle}.doc`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
   const handleFreeWordExport = () => {
     downloadWordDoc(freeEditorContent, freeDocTitle);
   };
@@ -1276,10 +1239,9 @@ export default function Documents({
               <div className="space-y-2">
                 <label className="text-sm font-bold">النوع</label>
                 <select className="w-full p-2 border rounded-md" value={editingDoc.type} onChange={e => setEditingDoc({...editingDoc, type: e.target.value})}>
-                  <option value="POWER_OF_ATTORNEY">توكيل</option>
-                  <option value="CONTRACT">عقد</option>
-                  <option value="EVIDENCE">دليل إثبات</option>
-                  <option value="OTHER">أخرى</option>
+                  {documentTypes.map(t => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
                 </select>
               </div>
               <Button type="submit" className="w-full bg-[#D4AF37] text-white py-6 rounded-2xl mt-4 font-bold">حفظ التعديلات</Button>

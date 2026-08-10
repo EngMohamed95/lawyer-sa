@@ -421,7 +421,7 @@ function AddTimeEntryModal({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl" onClick={onClose}>
-      <div className="bg-white rounded-3xl w-full max-w-lg max-h-[92vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="p-6 border-b bg-[#133B2E] text-white flex justify-between items-center sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center text-[#133B2E]">
@@ -432,7 +432,7 @@ function AddTimeEntryModal({
               <p className="text-xs text-[#D4AF37]">تُضاف للفاتورة عند الفوترة</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
+          <button onClick={onClose} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full"><X size={20} /></button>
         </div>
 
         <form onSubmit={submit} className="p-6 space-y-4">

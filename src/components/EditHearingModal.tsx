@@ -140,7 +140,7 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto" dir="rtl">
+      <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader className="flex flex-row justify-between items-center">
           <DialogTitle className="text-xl font-bold text-[#133B2E]">تعديل بيانات الجلسة</DialogTitle>
           {hearingData && (

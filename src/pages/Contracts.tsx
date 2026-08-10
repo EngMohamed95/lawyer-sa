@@ -391,7 +391,7 @@ export default function Contracts() {
                 <p className="font-mono text-xs text-[#D4AF37]" dir="ltr">{preview.contractNumber}</p>
                 <h2 className="text-xl font-bold">{preview.title}</h2>
               </div>
-              <button onClick={() => setPreview(null)} className="p-2 hover:bg-white/10 rounded-full">✕</button>
+              <button onClick={() => setPreview(null)} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full">✕</button>
             </div>
             <div className="p-6 space-y-4 text-sm">
               <div className="grid grid-cols-2 gap-3">

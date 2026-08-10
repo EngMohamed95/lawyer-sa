@@ -13,14 +13,39 @@ import { db } from "../lib/firebase";
 import { Pagination } from "../components/ui/Pagination";
 import { Link } from "react-router";
 
-const getStatusBadge = (status: string) => {
-  switch (status) {
-    case 'OPEN': return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">مفتوحة</Badge>;
-    case 'CLOSED': return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200">مغلقة</Badge>;
-    case 'ARCHIVED': return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">مؤرشفة</Badge>;
-    default: return <Badge>{status}</Badge>;
-  }
+const STATUS_LABELS_AR: Record<string, string> = {
+  // القيم الحالية التي يكتبها النظام
+  OPEN: "مفتوحة",
+  CLOSED: "مغلقة",
+  ARCHIVED: "مؤرشفة",
+  // قيم قديمة موروثة من بيانات سابقة — تُعرض بالعربي بدل الإنجليزي الخام
+  ACTIVE: "مفتوحة",
+  PENDING: "معلّقة",
+  INACTIVE: "موقوفة",
+  SUSPENDED: "موقوفة",
+  DONE: "مكتملة",
+  COMPLETED: "مكتملة",
 };
+
+const STATUS_COLORS: Record<string, string> = {
+  OPEN: "bg-green-100 text-green-800 hover:bg-green-200",
+  CLOSED: "bg-gray-100 text-gray-800 hover:bg-gray-200",
+  ARCHIVED: "bg-blue-100 text-blue-800 hover:bg-blue-200",
+  ACTIVE: "bg-green-100 text-green-800 hover:bg-green-200",
+  PENDING: "bg-amber-100 text-amber-800 hover:bg-amber-200",
+  INACTIVE: "bg-gray-100 text-gray-800 hover:bg-gray-200",
+  SUSPENDED: "bg-gray-100 text-gray-800 hover:bg-gray-200",
+  DONE: "bg-blue-100 text-blue-800 hover:bg-blue-200",
+  COMPLETED: "bg-blue-100 text-blue-800 hover:bg-blue-200",
+};
+
+const getStatusLabel = (status: string) => STATUS_LABELS_AR[status] || "مفتوحة";
+
+const getStatusBadge = (status: string) => (
+  <Badge className={STATUS_COLORS[status] || "bg-gray-100 text-gray-800 hover:bg-gray-200"}>
+    {getStatusLabel(status)}
+  </Badge>
+);
 
 export default function Cases() {
   const [cases, setCases] = useState<any[]>([]);
@@ -105,7 +130,9 @@ export default function Cases() {
         "محامي الخصم": c.opponentLawyer || "",
         "المحكمة": c.courtName || "",
         "تاريخ البداية": c.startDate || "",
-        "الحالة": c.status === "OPEN" ? "مفتوحة" : c.status === "CLOSED" ? "مغلقة" : "مؤرشفة"
+        "الحالة": getStatusLabel(c.status || "OPEN"),
+        "المستشار": c.assignedConsultantName || "",
+        "المتدربون": (c.traineeNames || []).join("، ")
       }));
 
       const worksheet = XLSX.utils.json_to_sheet(rows);
@@ -197,30 +224,38 @@ export default function Cases() {
                 <TableHead className="text-right font-bold text-[#133B2E]">الحالة</TableHead>
                 {(userRole === "LAWYER" || userRole === "OFFICE_LAWYER") && <TableHead className="text-right font-bold text-[#133B2E] hidden lg:table-cell">المحامي المسؤول</TableHead>}
                 {userRole === "SUPER_ADMIN" && <TableHead className="text-right font-bold text-purple-600 hidden lg:table-cell">المحامي</TableHead>}
+                <TableHead className="text-right font-bold text-[#133B2E] hidden lg:table-cell">المستشار</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E] hidden lg:table-cell">المتدربون</TableHead>
                 <TableHead className="text-center font-bold text-[#133B2E]">عرض</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={userRole === "SUPER_ADMIN" ? 7 : 6} className="text-center py-10 text-gray-500">جاري التحميل...</TableCell>
+                  <TableCell colSpan={userRole === "SUPER_ADMIN" ? 9 : 8} className="text-center py-10 text-gray-500">جاري التحميل...</TableCell>
                 </TableRow>
               ) : filteredCases.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={userRole === "SUPER_ADMIN" ? 7 : 6} className="text-center py-10 text-gray-500">لا يوجد قضايا مطابقة للبحث</TableCell>
+                  <TableCell colSpan={userRole === "SUPER_ADMIN" ? 9 : 8} className="text-center py-10 text-gray-500">لا يوجد قضايا مطابقة للبحث</TableCell>
                 </TableRow>
               ) : (
                 pagedCases.map((c) => {
                   try {
                     return (
                       <TableRow key={c.id} className="hover:bg-gray-50/50">
-                        <TableCell className="font-mono text-sm">{c.caseNumber || "-"}</TableCell>
+                        <TableCell className="font-mono text-sm">
+                          <Link to={`/app/cases/${c.id}`} className="text-[#133B2E] hover:underline decoration-[#D4AF37] decoration-2 underline-offset-4">
+                            {c.caseNumber || "-"}
+                          </Link>
+                        </TableCell>
                         <TableCell className="font-medium text-[#133B2E]">{c.title || "بدون عنوان"}</TableCell>
                         <TableCell className="hidden sm:table-cell">{c.client?.fullName || "-"}</TableCell>
                         <TableCell className="hidden md:table-cell">{c.opponentName || "-"}</TableCell>
                         <TableCell>{getStatusBadge(c.status || "OPEN")}</TableCell>
                         {(userRole === "LAWYER" || userRole === "OFFICE_LAWYER") && <TableCell className="hidden lg:table-cell text-sm">{c.assignedLawyerName || "المدير"}</TableCell>}
                         {userRole === "SUPER_ADMIN" && <TableCell className="text-xs text-purple-600 hidden lg:table-cell">{c.lawyerId || "غير محدد"}</TableCell>}
+                        <TableCell className="hidden lg:table-cell text-sm">{c.assignedConsultantName || "-"}</TableCell>
+                        <TableCell className="hidden lg:table-cell text-sm">{(c.traineeNames && c.traineeNames.length > 0) ? c.traineeNames.join("، ") : "-"}</TableCell>
                         <TableCell className="text-center">
                           <div className="flex items-center justify-center">
                             <Link to={`/app/cases/${c.id}`}>

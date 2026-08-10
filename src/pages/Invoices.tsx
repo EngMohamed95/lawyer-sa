@@ -402,7 +402,7 @@ export default function Invoices() {
                 <p className="font-mono text-xs text-[#D4AF37]" dir="ltr">{preview.invoiceNumber}</p>
                 <h2 className="text-xl font-bold">{preview.clientName || "—"}</h2>
               </div>
-              <button onClick={() => setPreview(null)} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
+              <button onClick={() => setPreview(null)} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full"><X size={20} /></button>
             </div>
             <div className="p-6 space-y-4 text-sm">
               <div className="grid grid-cols-2 gap-3">
@@ -574,7 +574,7 @@ function RecordPaymentModal({
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl" onClick={onClose}>
-      <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="p-6 border-b bg-[#133B2E] text-white flex justify-between items-center">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center text-[#133B2E]">
@@ -587,7 +587,7 @@ function RecordPaymentModal({
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
+          <button onClick={onClose} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full"><X size={20} /></button>
         </div>
 
         <form onSubmit={submit} className="p-6 space-y-4">

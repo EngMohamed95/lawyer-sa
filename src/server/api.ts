@@ -3,7 +3,10 @@ import { GoogleGenAI } from "@google/genai";
 import admin from "firebase-admin";
 import fs from "fs";
 import path from "path";
+import mammoth from "mammoth";
 import { authGate, requireAuth, requireRole, requireUserAdmin } from "./middleware/auth.js";
+
+const DOCX_MIME_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
 function initializeFirestore() {
   if (admin.apps.length) {
@@ -157,6 +160,14 @@ router.post("/extract-text", requireAuth, async (req, res) => {
     if (!imageBase64) return res.status(400).json({ error: "No image provided" });
 
     const type = mimeType || 'image/jpeg';
+
+    // ملفات Word: Gemini لا يفهم .docx عبر inlineData — نستخرج النص مباشرة بـ mammoth بلا أي نداء للذكاء الاصطناعي
+    if (type === DOCX_MIME_TYPE) {
+      const buffer = Buffer.from(imageBase64, "base64");
+      const { value } = await mammoth.extractRawText({ buffer });
+      return res.json({ text: value });
+    }
+
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: [

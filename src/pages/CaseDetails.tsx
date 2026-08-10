@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router";
-import { ChevronRight, Calendar, FileText, CheckSquare, Plus, Download, Edit, Save, Trash2, File, Scale, FileSignature, Sparkles, RefreshCw, UploadCloud, Chrome, Info, CheckCircle2, Loader2, ChevronDown, ChevronUp, AlertTriangle, Gavel, Database } from "lucide-react";
+import { ChevronRight, Calendar, FileText, CheckSquare, Plus, Download, Edit, Save, Trash2, File, Scale, FileSignature, Sparkles, RefreshCw, UploadCloud, Chrome, Info, CheckCircle2, Loader2, ChevronDown, ChevronUp, AlertTriangle, Gavel, Database, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -1628,17 +1628,30 @@ export default function CaseDetails() {
                             </div>
                           </TableCell>
                           <TableCell className="text-center">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-8 w-8 text-[#133B2E] hover:bg-gray-100"
-                              onClick={() => {
-                                setSelectedHearing(h);
-                                setIsEditHearingOpen(true);
-                              }}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center justify-center gap-1">
+                              <Link to={`/app/hearings/${id}/${h.id}`}>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-[#133B2E] hover:bg-gray-100"
+                                  title="تفاصيل الجلسة"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </Link>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-[#133B2E] hover:bg-gray-100"
+                                title="تعديل الجلسة"
+                                onClick={() => {
+                                  setSelectedHearing(h);
+                                  setIsEditHearingOpen(true);
+                                }}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );

@@ -57,7 +57,7 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: { isOpen: boolean
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]" dir="rtl">
+      <DialogContent className="sm:max-w-[650px]" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-[#133B2E]">إضافة عميل جديد</DialogTitle>
         </DialogHeader>

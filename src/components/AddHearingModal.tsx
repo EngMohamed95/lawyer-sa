@@ -189,6 +189,12 @@ export function AddHearingModal({
         caseTitle: caseData.title || "بدون عنوان",
         caseNumber: caseData.caseNumber || "---",
         lawyerId,
+        assignedLawyerId: caseData.assignedLawyerId || "",
+        assignedLawyerName: caseData.assignedLawyerName || "",
+        assignedConsultantId: caseData.assignedConsultantId || "",
+        assignedConsultantName: caseData.assignedConsultantName || "",
+        traineeIds: caseData.traineeIds || [],
+        traineeNames: caseData.traineeNames || [],
         minutesText: formData.minutesText,
         minutesFileUrl,
         minutesFileName,
@@ -231,7 +237,7 @@ export function AddHearingModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto" dir="rtl">
+      <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-[#133B2E]">إضافة جلسة جديدة</DialogTitle>
         </DialogHeader>

@@ -176,7 +176,7 @@ export default function AddContractModal({
               <p className="text-xs text-[#D4AF37]">يُنشأ كمسودة ثم يمرّ بدورة المراجعة والاعتماد</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full"><X size={20} /></button>
+          <button onClick={onClose} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full"><X size={20} /></button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-5">

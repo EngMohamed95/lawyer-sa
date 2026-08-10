@@ -76,7 +76,7 @@ export function AddPaymentModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]" dir="rtl">
+      <DialogContent className="sm:max-w-[750px]" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-[#133B2E]">تسجيل دفعة جديدة</DialogTitle>
         </DialogHeader>

@@ -4,13 +4,17 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Loader2 } from "lucide-react";
 import { AddClientModal } from "./AddClientModal";
+import { useOfficeLookups } from "../lib/officeLookups";
 
 export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, onClose: () => void, onSuccess: () => void }) {
+  const { caseTypes } = useOfficeLookups();
   const [loading, setLoading] = useState(false);
   const [clients, setClients] = useState<any[]>([]);
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
   const [clientRole, setClientRole] = useState("PLAINTIFF");
   const [officeLawyers, setOfficeLawyers] = useState<any[]>([]);
+  const [consultants, setConsultants] = useState<any[]>([]);
+  const [trainees, setTrainees] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     title: "",
     caseNumber: "",
@@ -26,6 +30,10 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
     startDate: new Date().toISOString().split('T')[0],
     assignedLawyerId: localStorage.getItem("userId") || "",
     assignedLawyerName: localStorage.getItem("userName") || "",
+    assignedConsultantId: "",
+    assignedConsultantName: "",
+    traineeIds: [] as string[],
+    traineeNames: [] as string[],
   });
 
   const fetchClients = async () => {
@@ -73,10 +81,48 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
     }
   };
 
+  const fetchConsultants = async () => {
+    try {
+      const { collection, getDocs, query, where } = await import("firebase/firestore");
+      const { db } = await import("../lib/firebase");
+      const lawyerId = localStorage.getItem("lawyerId");
+
+      const q = query(
+        collection(db, "users"),
+        where("lawyerId", "==", lawyerId),
+        where("role", "==", "CONSULTANT")
+      );
+      const snap = await getDocs(q);
+      setConsultants(snap.docs.map(doc => ({ id: doc.id, name: doc.data().name })));
+    } catch (e) {
+      console.error("Error fetching consultants for assignment:", e);
+    }
+  };
+
+  const fetchTrainees = async () => {
+    try {
+      const { collection, getDocs, query, where } = await import("firebase/firestore");
+      const { db } = await import("../lib/firebase");
+      const lawyerId = localStorage.getItem("lawyerId");
+
+      const q = query(
+        collection(db, "users"),
+        where("lawyerId", "==", lawyerId),
+        where("role", "==", "TRAINEE")
+      );
+      const snap = await getDocs(q);
+      setTrainees(snap.docs.map(doc => ({ id: doc.id, name: doc.data().name })));
+    } catch (e) {
+      console.error("Error fetching trainees for assignment:", e);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       fetchClients();
       fetchOfficeLawyers();
+      fetchConsultants();
+      fetchTrainees();
     }
   }, [isOpen]);
 
@@ -121,6 +167,10 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
         startDate: new Date().toISOString().split('T')[0],
         assignedLawyerId: localStorage.getItem("userId") || "",
         assignedLawyerName: localStorage.getItem("userName") || "",
+        assignedConsultantId: "",
+        assignedConsultantName: "",
+        traineeIds: [],
+        traineeNames: [],
       });
       setClientRole("PLAINTIFF");
     } catch (error: any) {
@@ -133,7 +183,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto" dir="rtl">
+      <DialogContent className="sm:max-w-[820px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-[#133B2E]">إضافة قضية جديدة</DialogTitle>
         </DialogHeader>
@@ -190,13 +240,9 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
                 value={formData.type}
                 onChange={e => setFormData({...formData, type: e.target.value})}
               >
-                <option value="مدني">مدني</option>
-                <option value="جنائي">جنائي</option>
-                <option value="تجاري">تجاري</option>
-                <option value="عمالي">عمالي</option>
-                <option value="أسرة">أسرة</option>
-                <option value="إداري">إداري</option>
-                <option value="تنفيذ">تنفيذ</option>
+                {caseTypes.map(t => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
               </select>
             </div>
 
@@ -317,6 +363,62 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
                     <option key={l.id} value={l.id}>{l.name}</option>
                   ))}
                 </select>
+              </div>
+            )}
+
+            {(localStorage.getItem("userRole") === "LAWYER" || localStorage.getItem("userRole") === "SUPER_ADMIN") && (
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-[#133B2E] block mr-1">المستشار</label>
+                <select
+                  value={formData.assignedConsultantId}
+                  onChange={e => {
+                    const selected = consultants.find(c => c.id === e.target.value);
+                    setFormData({
+                      ...formData,
+                      assignedConsultantId: e.target.value,
+                      assignedConsultantName: selected ? selected.name : ""
+                    });
+                  }}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/10 focus:border-[#133B2E] transition-all text-sm h-10"
+                >
+                  <option value="">بلا مستشار</option>
+                  {consultants.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {(localStorage.getItem("userRole") === "LAWYER" || localStorage.getItem("userRole") === "SUPER_ADMIN") && trainees.length > 0 && (
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-bold text-[#133B2E] block mr-1">المتدربون</label>
+                <div className="flex flex-wrap gap-2 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+                  {trainees.map(t => {
+                    const checked = formData.traineeIds.includes(t.id);
+                    return (
+                      <label
+                        key={t.id}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm cursor-pointer border transition-all ${
+                          checked ? "bg-[#133B2E] text-white border-[#133B2E]" : "bg-white text-gray-600 border-gray-200"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          className="hidden"
+                          checked={checked}
+                          onChange={() => {
+                            const nextIds = checked
+                              ? formData.traineeIds.filter(id => id !== t.id)
+                              : [...formData.traineeIds, t.id];
+                            const nextNames = nextIds.map(id => trainees.find(tr => tr.id === id)?.name || "");
+                            setFormData({ ...formData, traineeIds: nextIds, traineeNames: nextNames });
+                          }}
+                        />
+                        {t.name}
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>

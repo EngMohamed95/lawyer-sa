@@ -7,6 +7,7 @@ import { usePermissions } from "./lib/usePermissions";
 import { generateNotifications, loadPreferences, shouldAutoScan } from "./lib/notifications";
 import { clearLocalSession, useAuthSession } from "./lib/useAuthSession";
 import { loadOfficeSettings } from "./lib/officeSettings";
+import { loadOfficeLookups } from "./lib/officeLookups";
 import { roleLabel } from "./lib/roles";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -35,6 +36,7 @@ const Clients = lazy(() => import("./pages/Clients"));
 const Cases = lazy(() => import("./pages/Cases"));
 const CaseDetails = lazy(() => import("./pages/CaseDetails"));
 const Hearings = lazy(() => import("./pages/Hearings"));
+const HearingDetails = lazy(() => import("./pages/HearingDetails"));
 const Tasks = lazy(() => import("./pages/Tasks"));
 const Documents = lazy(() => import("./pages/Documents"));
 const Accounting = lazy(() => import("./pages/Accounting"));
@@ -46,6 +48,7 @@ const SubscriptionRequests = lazy(() => import("./pages/SubscriptionRequests"));
 const SubscribePage = lazy(() => import("./pages/SubscribePage"));
 const LegalLibrary = lazy(() => import("./pages/LegalLibrary"));
 const OfficeLawyers = lazy(() => import("./pages/OfficeLawyers"));
+const Consultants = lazy(() => import("./pages/Consultants"));
 const Team = lazy(() => import("./pages/Team"));
 const AuditLog = lazy(() => import("./pages/AuditLog"));
 const RecycleBin = lazy(() => import("./pages/RecycleBin"));
@@ -137,6 +140,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
       children: [
         { name: "المتدربين", path: "/app/trainees", icon: <GraduationCap size={18} />, hidden: !perms.can("trainee.manage") || isBasic },
         { name: "محامو المكتب", path: "/app/office-lawyers", icon: <Shield size={18} />, hidden: !perms.can("officelawyer.manage") || isBasic },
+        { name: "المستشارون", path: "/app/consultants", icon: <Shield size={18} />, hidden: !perms.can("consultant.manage") || isBasic },
       ],
     },
 
@@ -747,6 +751,7 @@ function Layout() {
   // تجاوزات الصلاحيات محفوظة في Firestore على مستوى المكتب — تُحمّل مرة واحدة
   useEffect(() => {
     void loadOfficeSettings(lawyerId);
+    void loadOfficeLookups(lawyerId);
   }, [lawyerId]);
 
   if (!isAuthenticated) {
@@ -804,11 +809,13 @@ export default function App() {
             <Route path="cases" element={<Cases />} />
             <Route path="cases/:id" element={<CaseDetails />} />
             <Route path="hearings" element={<Hearings />} />
+            <Route path="hearings/:caseId/:hearingId" element={<HearingDetails />} />
             <Route path="tasks" element={<Tasks />} />
             <Route path="documents" element={<Documents />} />
             <Route path="accounting" element={<Accounting />} />
             <Route path="trainees" element={<Trainees />} />
             <Route path="office-lawyers" element={<OfficeLawyers />} />
+            <Route path="consultants" element={<Consultants />} />
             <Route path="team" element={<Team />} />
             <Route path="audit-log" element={<AuditLog />} />
             <Route path="recycle-bin" element={<RecycleBin />} />

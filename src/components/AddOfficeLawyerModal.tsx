@@ -63,7 +63,7 @@ export default function AddOfficeLawyerModal({ isOpen, onClose, onSuccess }: Add
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
-      <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+      <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-[#133B2E] text-white">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center text-[#133B2E]">
@@ -74,7 +74,7 @@ export default function AddOfficeLawyerModal({ isOpen, onClose, onSuccess }: Add
               <p className="text-xs text-[#D4AF37]">إنشاء حساب بصلاحيات محامي مكتب</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+          <button onClick={onClose} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full transition-colors">
             <X size={20} />
           </button>
         </div>

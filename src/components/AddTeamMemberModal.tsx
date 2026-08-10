@@ -157,7 +157,7 @@ export default function AddTeamMemberModal({
               <p className="text-xs text-[#D4AF37]">إنشاء حساب دخول وتحديد الدور والصلاحيات</p>
             </div>
           </div>
-          <button onClick={closeAndReset} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+          <button onClick={closeAndReset} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full transition-colors">
             <X size={20} />
           </button>
         </div>

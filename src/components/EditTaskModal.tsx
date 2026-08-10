@@ -102,7 +102,7 @@ export function EditTaskModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[520px]" dir="rtl">
+      <DialogContent className="sm:max-w-[680px]" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-[#133B2E]">تعديل المهمة</DialogTitle>
         </DialogHeader>

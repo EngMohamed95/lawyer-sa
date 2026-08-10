@@ -171,7 +171,7 @@ export function DocumentViewerModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[850px] max-h-[92vh] flex flex-col overflow-hidden" dir="rtl">
+      <DialogContent className="sm:max-w-[950px] max-h-[92vh] flex flex-col overflow-hidden" dir="rtl">
         <DialogHeader className="shrink-0 border-b pb-3">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <DialogTitle className="text-xl font-bold text-[#133B2E] flex items-center gap-2">

@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Shield, Bell, User, Lock, Palette, Globe, Settings as SettingsIcon, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, Sparkles, DollarSign, FileEdit, Link, Key, Check, ScrollText, Trash2 } from "lucide-react";
+import { Shield, Bell, User, Lock, Palette, Globe, Settings as SettingsIcon, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, Sparkles, DollarSign, FileEdit, Link, Key, Check, ScrollText, Trash2, ListChecks } from "lucide-react";
 import { auth } from "../lib/firebase";
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
 import PermissionsTab from "../components/settings/PermissionsTab";
+import ListsTab from "../components/settings/ListsTab";
 import NotificationsTab from "../components/settings/NotificationsTab";
 import AuditLog from "./AuditLog";
 import RecycleBin from "./RecycleBin";
@@ -381,6 +382,7 @@ export default function SettingsPage() {
     { id: "security",      name: "الأمان",            icon: <Lock size={20} /> },
     { id: "integrations",  name: "الربط والأنظمة",     icon: <SettingsIcon size={20} /> },
     { id: "permissions",   name: "الصلاحيات",         icon: <Shield size={20} /> },
+    { id: "lists",         name: "القوائم والتصنيفات", icon: <ListChecks size={20} /> },
     { id: "notifications", name: "التنبيهات",          icon: <Bell size={20} /> },
     { id: "appearance",    name: "المظهر",            icon: <Palette size={20} /> },
     // نُقلا من القائمة الجانبية إلى هنا — مساراهما القديمان ما زالا يعملان
@@ -486,6 +488,9 @@ export default function SettingsPage() {
 
               {/* ========== PERMISSIONS TAB ========== */}
               {activeTab === "permissions" && <PermissionsTab />}
+
+              {/* ========== LISTS TAB ========== */}
+              {activeTab === "lists" && <ListsTab />}
 
               {/* تبويب التنبيهات — كان فارغاً */}
               {activeTab === "notifications" && <NotificationsTab />}
@@ -801,7 +806,7 @@ export default function SettingsPage() {
               )}
 
               {/* ========== OTHER TABS ========== */}
-              {!["security", "profile", "permissions", "general", "integrations"].includes(activeTab) && (
+              {!["security", "profile", "permissions", "lists", "general", "integrations"].includes(activeTab) && (
                 <div className="flex flex-col items-center justify-center py-12 text-gray-400">
                   <SettingsIcon size={48} className="mb-4 opacity-20" />
                   <p className="font-bold">قيد التطوير في النسخة القادمة</p>

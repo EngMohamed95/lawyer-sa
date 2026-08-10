@@ -511,7 +511,7 @@ function EventDetails({
               <p className="text-xs text-[#D4AF37] font-bold">{SOURCE_LABELS_AR[ev.source]}</p>
               <h2 className="text-xl font-bold mt-0.5">{ev.title}</h2>
             </div>
-            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full shrink-0">
+            <button onClick={onClose} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full shrink-0">
               <XCircle size={20} />
             </button>
           </div>

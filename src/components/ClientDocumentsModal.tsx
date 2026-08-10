@@ -80,7 +80,7 @@ export function ClientDocumentsModal({ isOpen, onClose, client }: Props) {
       />
 
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="sm:max-w-[850px] max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-[#133B2E] flex items-center gap-2">
               <FolderOpen className="h-5 w-5 text-[#D4AF37]" />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, Filter, Download } from "lucide-react";
+import { Plus, Search, Filter, Download, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader } from "../components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Button } from "../components/ui/button";
@@ -9,6 +9,7 @@ import { AddHearingModal } from "../components/AddHearingModal";
 import { Pagination } from "../components/ui/Pagination";
 import { collection, getDocs, query, where, collectionGroup, limit } from "firebase/firestore";
 import { db } from "../lib/firebase";
+import { Link } from "react-router";
 
 const PAGE_SIZE = 20;
 
@@ -145,21 +146,25 @@ export default function Hearings() {
                 <TableHead className="text-right font-bold text-[#133B2E] hidden sm:table-cell">المحكمة</TableHead>
                 <TableHead className="text-right font-bold text-[#133B2E] hidden md:table-cell">طلبات الجلسة</TableHead>
                 <TableHead className="text-right font-bold text-[#133B2E]">الحالة</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E] hidden lg:table-cell">المحامي المسؤول</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E] hidden lg:table-cell">المستشار</TableHead>
+                <TableHead className="text-right font-bold text-[#133B2E] hidden lg:table-cell">المتدرب</TableHead>
                 {userRole === "SUPER_ADMIN" && (
-                  <TableHead className="text-right font-bold text-purple-600 hidden lg:table-cell">المحامي</TableHead>
+                  <TableHead className="text-right font-bold text-purple-600 hidden lg:table-cell">المكتب</TableHead>
                 )}
+                <TableHead className="text-center font-bold text-[#133B2E]">التفاصيل</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={userRole === "SUPER_ADMIN" ? 6 : 5} className="text-center py-10">
+                  <TableCell colSpan={userRole === "SUPER_ADMIN" ? 10 : 9} className="text-center py-10">
                     جاري التحميل...
                   </TableCell>
                 </TableRow>
               ) : filteredHearings.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={userRole === "SUPER_ADMIN" ? 6 : 5} className="text-center py-10 text-gray-500">
+                  <TableCell colSpan={userRole === "SUPER_ADMIN" ? 10 : 9} className="text-center py-10 text-gray-500">
                     لا توجد جلسات مسجلة
                   </TableCell>
                 </TableRow>
@@ -194,11 +199,27 @@ export default function Hearings() {
                         {isToday(h.hearingDate) ? "اليوم" : isPast(h.hearingDate) ? "منتهية" : "قادمة"}
                       </Badge>
                     </TableCell>
+                    <TableCell className="hidden lg:table-cell text-sm">{h.assignedLawyerName || "-"}</TableCell>
+                    <TableCell className="hidden lg:table-cell text-sm">{h.assignedConsultantName || "-"}</TableCell>
+                    <TableCell className="hidden lg:table-cell text-sm">
+                      {(h.traineeNames && h.traineeNames.length > 0) ? h.traineeNames.join("، ") : "-"}
+                    </TableCell>
                     {userRole === "SUPER_ADMIN" && (
                       <TableCell className="text-xs text-purple-600 hidden lg:table-cell">
                         {h.lawyerId || "غير محدد"}
                       </TableCell>
                     )}
+                    <TableCell className="text-center">
+                      <Link to={`/app/hearings/${h.caseId}/${h.id}`}>
+                        <Button
+                          variant="outline"
+                          className="border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#B8962E] flex items-center gap-2 px-3 py-1.5 h-auto text-xs font-bold rounded-xl transition-all"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          <span>تفاصيل الجلسة</span>
+                        </Button>
+                      </Link>
+                    </TableCell>
                   </TableRow>
                 ))
               )}

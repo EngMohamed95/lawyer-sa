@@ -93,6 +93,7 @@ export type Permission =
   | "finance.manage"
   | "trainee.manage"
   | "officelawyer.manage"
+  | "consultant.manage"
   | "library.view"
   | "ai.use"
   | "audit.view"
@@ -184,6 +185,11 @@ export const PERMISSION_MATRIX: Matrix = {
     SUPER_ADMIN: "NONE",
   },
   "officelawyer.manage": {
+    LAWYER: "FULL", PARTNER: "VIEW", OFFICE_LAWYER: "NONE", CONSULTANT: "NONE",
+    SECRETARY: "NONE", ACCOUNTANT: "NONE", CLIENT: "NONE", TRAINEE: "NONE",
+    SUPER_ADMIN: "NONE",
+  },
+  "consultant.manage": {
     LAWYER: "FULL", PARTNER: "VIEW", OFFICE_LAWYER: "NONE", CONSULTANT: "NONE",
     SECRETARY: "NONE", ACCOUNTANT: "NONE", CLIENT: "NONE", TRAINEE: "NONE",
     SUPER_ADMIN: "NONE",
@@ -364,6 +370,7 @@ export const PERMISSION_LABELS_AR: Record<Permission, string> = {
   "finance.manage": "الحسابات والمالية",
   "trainee.manage": "إدارة المتدربين",
   "officelawyer.manage": "إدارة محامي المكتب",
+  "consultant.manage": "إدارة المستشارين",
   "library.view": "المكتبة القانونية",
   "ai.use": "المساعد الذكي",
   "audit.view": "سجل التدقيق",

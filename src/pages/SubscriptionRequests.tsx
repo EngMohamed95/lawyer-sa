@@ -228,10 +228,10 @@ export default function SubscriptionRequests() {
         {approveModal && (
           <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl">
+              className="bg-white rounded-3xl p-8 w-full max-w-xl shadow-2xl">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-black text-[#133B2E]">تفعيل الاشتراك</h2>
-                <button onClick={() => setApproveModal(null)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+                <button onClick={() => setApproveModal(null)} className="text-red-500 hover:text-red-700"><X size={20} /></button>
               </div>
               <div className="bg-gray-50 rounded-2xl p-4 mb-6 space-y-2 text-sm">
                 <p className="flex items-center gap-2"><User size={14} className="text-[#D4AF37]" /><strong>{approveModal.name}</strong></p>

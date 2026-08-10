@@ -7,6 +7,7 @@ import { Loader2, Sparkles, Upload, AlertCircle, FileSignature } from "lucide-re
 import { auth } from "../lib/firebase";
 import { createContractFromDocument } from "../lib/contractFromDocument";
 import { usePermissions } from "../lib/usePermissions";
+import { useOfficeLookups } from "../lib/officeLookups";
 import {
   CONFIDENTIALITY_LABELS_AR, assignableConfidentialities, fileChecksum,
   type Confidentiality,
@@ -30,6 +31,7 @@ interface Props {
 }
 
 export function AddDocumentModal({ isOpen, onClose, onSuccess, caseId, clientId, newVersionOf = null }: Props) {
+  const { documentTypes } = useOfficeLookups();
   const perms = usePermissions();
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
@@ -233,7 +235,7 @@ export function AddDocumentModal({ isOpen, onClose, onSuccess, caseId, clientId,
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto" dir="rtl">
+      <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold text-[#133B2E]">رفع مستند جديد</DialogTitle>
         </DialogHeader>
@@ -257,12 +259,9 @@ export function AddDocumentModal({ isOpen, onClose, onSuccess, caseId, clientId,
                 value={formData.type}
                 onChange={e => setFormData({ ...formData, type: e.target.value })}
               >
-                <option value="POWER_OF_ATTORNEY">توكيل</option>
-                <option value="CONTRACT">عقد</option>
-                <option value="EVIDENCE">دليل إثبات</option>
-                <option value="JUDGMENT">حكم</option>
-                <option value="RECEIPT">إيصال / حافظة</option>
-                <option value="OTHER">أخرى</option>
+                {documentTypes.map(t => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
               </select>
             </div>
 

@@ -169,7 +169,7 @@ ${selectedDocsContext}
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto" dir="rtl">
+      <DialogContent className="sm:max-w-[850px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-purple-700 text-xl font-bold">
             <Sparkles className="w-5 h-5 text-purple-600 animate-pulse" />

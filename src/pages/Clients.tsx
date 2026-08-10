@@ -164,7 +164,7 @@ export default function Clients() {
                   <p className="text-xs text-[#D4AF37]">القضايا والعقود والدفعات المرتبطة بهذا العميل</p>
                 </div>
               </div>
-              <button onClick={() => setLinkedClient(null)} className="p-2 hover:bg-white/10 rounded-full">
+              <button onClick={() => setLinkedClient(null)} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full">
                 <X size={20} />
               </button>
             </div>
