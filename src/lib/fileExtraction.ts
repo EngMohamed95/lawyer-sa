@@ -5,6 +5,7 @@
  */
 
 import { auth } from "./firebase";
+import { apiUrl } from "./apiBase";
 
 const NO_SERVER_MESSAGE =
   "خدمة استخراج النصوص غير مفعّلة على الخادم حالياً.";
@@ -35,7 +36,7 @@ export function fileToBase64(file: File): Promise<string> {
 
 /** يستخرج النص من ملف (صورة/PDF/Word) عبر الخادم */
 export async function extractTextFromFile(base64: string, mimeType: string): Promise<string> {
-  const res = await fetch("/api/extract-text", {
+  const res = await fetch(apiUrl("/api/extract-text"), {
     method: "POST",
     headers: await authHeaders(),
     body: JSON.stringify({ imageBase64: base64, mimeType }),

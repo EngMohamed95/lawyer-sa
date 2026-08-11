@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { CheckCircle2, ArrowRight, Phone, Mail, User, CreditCard, X, Loader2 } from "lucide-react";
 import { db } from "../lib/firebase";
 import { collection, addDoc } from "firebase/firestore";
+import { apiUrl } from "../lib/apiBase";
 
 const PLANS = [
   {
@@ -80,7 +81,7 @@ export default function SubscribePage() {
       });
 
       // Best-effort WhatsApp notification via backend (won't block on failure)
-      fetch("/api/subscribe", {
+      fetch(apiUrl("/api/subscribe"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, plan: selectedPlan, planName: PLAN_NAMES[selectedPlan], billing, amount }),

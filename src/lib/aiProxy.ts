@@ -12,6 +12,7 @@
  */
 
 import { auth } from "./firebase";
+import { apiUrl } from "./apiBase";
 
 export type AiProvider = "GEMINI" | "GROQ";
 
@@ -122,7 +123,7 @@ export async function callGemini(
   }
 
   // مسار مفتاح المكتب — على الخادم
-  const res = await fetch("/api/ai/generate", {
+  const res = await fetch(apiUrl("/api/ai/generate"), {
     method: "POST",
     headers: await authHeaders(),
     body: JSON.stringify({ provider: "GEMINI", model: settings.model, ...body }),
@@ -170,7 +171,7 @@ export async function callGroq(
     return data.choices?.[0]?.message?.content ?? "";
   }
 
-  const res = await fetch("/api/ai/generate", {
+  const res = await fetch(apiUrl("/api/ai/generate"), {
     method: "POST",
     headers: await authHeaders(),
     body: JSON.stringify({ provider: "GROQ", ...payload }),

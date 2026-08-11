@@ -33,6 +33,11 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Build Project
+        env:
+          # عنوان تطبيق Web App (Node) المنفصل الذي يستضيف /api/* — عام وليس سرّاً،
+          # الموقع الثابت الحالي لا يشغّل Node فانتقل الخادم لنطاق فرعي مستقل.
+          # يُضبط من Settings → Secrets and variables → Actions → Variables
+          VITE_API_BASE_URL: ${{ vars.API_BASE_URL }}
         run: |
           mkdir -p public
           cp logo.png public/logo.png || true

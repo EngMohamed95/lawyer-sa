@@ -9,6 +9,7 @@ import { collection, getDocs, query, where, doc, setDoc, updateDoc, deleteDoc } 
 import { db, firebaseConfig } from "../lib/firebase";
 import { initializeApp, deleteApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import { apiUrl } from "../lib/apiBase";
 
 const PLANS = [
   { id: "BASIC",        name: "الأساسية",     price: "200 ج.م",  color: "bg-gray-100 text-gray-700" },
@@ -188,7 +189,7 @@ export default function Lawyers() {
     const errors: string[] = [];
     try {
       if (credForm.password) {
-        const res = await fetch(`/api/users/${credLawyer.id}/password`, {
+        const res = await fetch(apiUrl(`/api/users/${credLawyer.id}/password`), {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ password: credForm.password }),
@@ -199,7 +200,7 @@ export default function Lawyers() {
         }
       }
       if (credForm.email) {
-        const res = await fetch(`/api/users/${credLawyer.id}/email`, {
+        const res = await fetch(apiUrl(`/api/users/${credLawyer.id}/email`), {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: credForm.email }),
