@@ -5,13 +5,14 @@
  */
 
 import { useEffect, useState } from "react";
-import { AlertCircle, Check, ListChecks, Plus, Save, Trash2 } from "lucide-react";
+import { AlertCircle, Check, Clock, ListChecks, Plus, Save, Trash2 } from "lucide-react";
 import {
   DEFAULT_LOOKUPS,
   saveOfficeLookups,
   useOfficeLookups,
   type LookupOption,
   type OfficeLookups,
+  type ProcedureDuration,
 } from "../../lib/officeLookups";
 import { usePermissions } from "../../lib/usePermissions";
 
@@ -169,6 +170,93 @@ function OptionListEditor({
   );
 }
 
+function DurationListEditor({
+  title,
+  description,
+  items,
+  onChange,
+  disabled,
+}: {
+  title: string;
+  description: string;
+  items: ProcedureDuration[];
+  onChange: (next: ProcedureDuration[]) => void;
+  disabled: boolean;
+}) {
+  const [draftLabel, setDraftLabel] = useState("");
+  const [draftDays, setDraftDays] = useState("");
+
+  const addDuration = () => {
+    const label = draftLabel.trim();
+    const days = Number(draftDays);
+    if (!label || !Number.isFinite(days) || days <= 0) return;
+    const id = label.replace(/\s+/g, "_") + "_" + Date.now().toString(36).slice(-4);
+    onChange([...items, { id, label, days }]);
+    setDraftLabel("");
+    setDraftDays("");
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <h3 className="text-base font-black text-[#133B2E] flex items-center gap-2">
+          <Clock size={16} className="text-[#D4AF37]" /> {title}
+        </h3>
+        <p className="text-xs text-gray-500 mt-1">{description}</p>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {items.map((item, i) => (
+          <span
+            key={`${item.id}-${i}`}
+            className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-gray-50 border border-gray-200 text-sm text-[#133B2E]"
+          >
+            {item.label}
+            <span className="text-xs font-bold text-[#D4AF37]">{item.days} يوم</span>
+            {!disabled && (
+              <button
+                type="button"
+                onClick={() => onChange(items.filter((_, idx) => idx !== i))}
+                className="text-gray-400 hover:text-red-600"
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
+          </span>
+        ))}
+        {items.length === 0 && <span className="text-xs text-gray-400">لا توجد مدد مسجّلة بعد</span>}
+      </div>
+
+      {!disabled && (
+        <div className="flex items-center gap-2">
+          <input
+            value={draftLabel}
+            onChange={(e) => setDraftLabel(e.target.value)}
+            placeholder="اسم الإجراء (مثال: الاعتراض على الحكم)..."
+            className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-[#133B2E] bg-white"
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addDuration(); } }}
+          />
+          <input
+            value={draftDays}
+            onChange={(e) => setDraftDays(e.target.value.replace(/[^\d]/g, ""))}
+            placeholder="عدد الأيام"
+            inputMode="numeric"
+            className="w-28 px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-[#133B2E] bg-white"
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addDuration(); } }}
+          />
+          <button
+            type="button"
+            onClick={addDuration}
+            className="px-3 py-2 rounded-xl bg-[#133B2E] text-[#D4AF37] text-sm font-bold flex items-center gap-1"
+          >
+            <Plus size={14} /> إضافة
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ListsTab() {
   const perms = usePermissions();
   const stored = useOfficeLookups();
@@ -247,6 +335,14 @@ export default function ListsTab() {
         description="تظهر عند تسجيل مصروف جديد على قضية"
         items={draftLookups.expenseCategories}
         onChange={(expenseCategories) => setDraftLookups((d) => ({ ...d, expenseCategories }))}
+        disabled={!canManage}
+      />
+
+      <DurationListEditor
+        title="المدد النظامية للإجراءات"
+        description="مدة كل إجراء بالأيام — لضبط مواعيد الردود والطعون وتذكيرها. عدّلها بما يناسب لوائح مكتبك."
+        items={draftLookups.procedureDurations}
+        onChange={(procedureDurations) => setDraftLookups((d) => ({ ...d, procedureDurations }))}
         disabled={!canManage}
       />
 

@@ -88,6 +88,7 @@ export type Permission =
   | "report.view"
   | "settings.manage"
   // ===== صلاحيات تشغيلية يحتاجها النظام القائم =====
+  | "memo.manage"
   | "client.manage"
   | "task.manage"
   | "finance.manage"
@@ -163,6 +164,15 @@ export const PERMISSION_MATRIX: Matrix = {
   },
 
   // ── صلاحيات تشغيلية (مشتقة من روح الوثيقة) ──────────────────────────
+  // المذكرات والصحف (لائحة الادعاء/الرد): محامي المكتب "كامل" افتراضياً
+  // (رفع مباشر)، وقابل للتحويل إلى "إنشاء" عبر إعدادات المكتب بحيث تمر
+  // مذكراته بمراجعة المستشار واعتماد الشريك/المكتب قبل رفعها — راجع
+  // officeSettings.ts (OVERRIDABLE: officelawyer-memo-approval).
+  "memo.manage": {
+    LAWYER: "FULL", PARTNER: "APPROVE", OFFICE_LAWYER: "FULL", CONSULTANT: "REVIEW",
+    SECRETARY: "NONE", ACCOUNTANT: "NONE", CLIENT: "VIEW", TRAINEE: "DRAFT",
+    SUPER_ADMIN: "NONE",
+  },
   "client.manage": {
     LAWYER: "FULL", PARTNER: "FULL", OFFICE_LAWYER: "ASSIGNED", CONSULTANT: "ASSIGNED",
     SECRETARY: "YES", ACCOUNTANT: "VIEW", CLIENT: "NONE", TRAINEE: "ASSIGNED",
@@ -365,6 +375,7 @@ export const PERMISSION_LABELS_AR: Record<Permission, string> = {
   "invoice.manage": "الفواتير",
   "report.view": "التقارير",
   "settings.manage": "الإعدادات",
+  "memo.manage": "المذكرات واللوائح",
   "client.manage": "إدارة العملاء",
   "task.manage": "إدارة المهام",
   "finance.manage": "الحسابات والمالية",

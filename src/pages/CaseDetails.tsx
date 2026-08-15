@@ -21,6 +21,13 @@ import { doc, getDoc, collection, getDocs, addDoc, updateDoc, query, where, dele
 import { db } from "../lib/firebase";
 import { callGemini, callGroq } from "../lib/aiProxy";
 import Documents from "./Documents";
+import { usePermissions } from "../lib/usePermissions";
+import { useOfficeSettings } from "../lib/officeSettings";
+import { writeAudit } from "../lib/audit";
+import {
+  MEMO_STATUS_COLORS, MEMO_STATUS_LABELS_AR, memoActions, statusOf,
+  type MemoStatus,
+} from "../lib/memoWorkflow";
 
 
 const enforcementStepsList = [
@@ -113,8 +120,11 @@ const getStatusBadge = (status: string) => {
 
 export default function CaseDetails() {
   const { id } = useParams();
+  const perms = usePermissions();
+  const office = useOfficeSettings();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [memoBusyId, setMemoBusyId] = useState<string | null>(null);
   const [activeAiTarget, setActiveAiTarget] = useState<{ target: any, type: 'case' | 'document' | 'memo' } | null>(null);
 
   // New Memo State
@@ -335,6 +345,10 @@ export default function CaseDetails() {
 
   const handleAdoptMemoToHearing = async (hearingId: string) => {
     if (!selectedMemoForHearing || !id) return;
+    if (!memoActions(perms.role, statusOf(selectedMemoForHearing)).canFile) {
+      alert("هذه المذكرة لم تكتمل دورة الاعتماد بعد — لا يمكن رفعها للجلسة قبل اعتمادها.");
+      return;
+    }
     setIsAdoptingMemoLoading(true);
     try {
       // 1. Ensure html2pdf is loaded
@@ -350,14 +364,19 @@ export default function CaseDetails() {
       }
 
       // 2. Generate PDF Blob
+      // الختم يُطبع لأن الوصول لهنا مشروط أصلاً بـ canFile (المذكرة معتمدة نهائياً)
+      const stampHtml = office.officialStampUrl
+        ? `<img src="${office.officialStampUrl}" alt="ختم المكتب" style="position:absolute; bottom:30px; left:40px; width:110px; opacity:0.92;" />`
+        : "";
       const element = document.createElement("div");
       element.innerHTML = `
-        <div style="font-family: 'Tajawal', sans-serif; padding: 40px; line-height: 1.8; direction: rtl; text-align: right;">
+        <div style="position: relative; font-family: 'Tajawal', sans-serif; padding: 40px; line-height: 1.8; direction: rtl; text-align: right; min-height: 100%;">
           <h1 style="text-align: center; color: #133B2E; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; font-size: 22pt;">${selectedMemoForHearing.title}</h1>
           <div style="color: #666; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 10pt;">
             قضية رقم: ${data.caseNumber || '---'} | تاريخ الاعتماد: ${new Date().toLocaleDateString('ar-EG')}
           </div>
           <div style="font-size: 14pt; text-align: justify;">${selectedMemoForHearing.content}</div>
+          ${stampHtml}
         </div>
       `;
       document.body.appendChild(element);
@@ -403,6 +422,18 @@ export default function CaseDetails() {
         memoFileUrl: fileUrl,
         memoFileName: `${selectedMemoForHearing.title}.pdf`,
         updatedAt: new Date().toISOString()
+      });
+
+      // 4.b تعليم المذكرة نفسها كمرفوعة للجلسة — تمنع رفعها مجدداً بلا سبب
+      await updateDoc(doc(db, "cases", id, "memos", selectedMemoForHearing.id), {
+        status: "FILED",
+        filedBy: { uid: perms.userId ?? "", name: localStorage.getItem("userName") ?? "", at: new Date().toISOString() },
+        updatedAt: new Date().toISOString(),
+      });
+      await writeAudit({
+        action: "UPDATE", entity: "memo", entityId: selectedMemoForHearing.id,
+        entityLabel: selectedMemoForHearing.title,
+        after: { الحالة: MEMO_STATUS_LABELS_AR.FILED },
       });
 
       // 5. Reload case details
@@ -646,8 +677,12 @@ export default function CaseDetails() {
         title: memoTitle,
         content: memoContent,
         type: memoType,
+        status: "DRAFT" as MemoStatus,
+        sharedWithClient: false,
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        createdBy: perms.userId ?? null,
+        createdByName: localStorage.getItem("userName") ?? null,
       });
       setIsWritingMemo(false);
       setMemoTitle("");
@@ -655,6 +690,59 @@ export default function CaseDetails() {
       fetchCaseData();
     } catch(err) {
       console.error(err);
+    }
+  };
+
+  /** ينقل المذكرة لحالة جديدة في دورة الاعتماد بعد التحقق من آلة الحالات ومن صلاحية الدور */
+  const moveMemo = async (memo: any, to: MemoStatus, extra: Record<string, unknown> = {}) => {
+    setMemoBusyId(memo.id);
+    try {
+      const me = { uid: perms.userId ?? "", name: localStorage.getItem("userName") ?? "", at: new Date().toISOString() };
+      const patch: Record<string, unknown> = { status: to, updatedAt: me.at, ...extra };
+      if (to === "PENDING_APPROVAL" && statusOf(memo) === "UNDER_REVIEW") patch.reviewedBy = me;
+      if (to === "APPROVED") patch.approvedBy = me;
+
+      await updateDoc(doc(db, "cases", id!, "memos", memo.id), patch);
+      await writeAudit({
+        action: to === "APPROVED" ? "APPROVE" : to === "REJECTED" ? "REJECT" : "UPDATE",
+        entity: "memo", entityId: memo.id,
+        entityLabel: memo.title,
+        before: { الحالة: MEMO_STATUS_LABELS_AR[statusOf(memo)] },
+        after: { الحالة: MEMO_STATUS_LABELS_AR[to] },
+      });
+      await fetchCaseData();
+    } catch (err) {
+      console.error(err);
+      alert("تعذّر تحديث حالة المذكرة.");
+    } finally {
+      setMemoBusyId(null);
+    }
+  };
+
+  const handleRejectMemo = async (memo: any) => {
+    const reason = prompt("سبب الرفض (يُسجَّل في سجل التدقيق):");
+    if (reason === null) return;
+    await moveMemo(memo, "REJECTED", { rejectionReason: reason || null });
+  };
+
+  const toggleShareMemo = async (memo: any) => {
+    setMemoBusyId(memo.id);
+    try {
+      await updateDoc(doc(db, "cases", id!, "memos", memo.id), {
+        sharedWithClient: !memo.sharedWithClient,
+        updatedAt: new Date().toISOString(),
+      });
+      await writeAudit({
+        action: "UPDATE", entity: "memo", entityId: memo.id,
+        entityLabel: memo.title,
+        after: { "مشاركة مع العميل": !memo.sharedWithClient ? "مفعّلة" : "ملغاة" },
+      });
+      await fetchCaseData();
+    } catch (err) {
+      console.error(err);
+      alert("تعذّر تغيير المشاركة.");
+    } finally {
+      setMemoBusyId(null);
     }
   };
 
@@ -837,7 +925,7 @@ export default function CaseDetails() {
               }`}
             >
               <div>
-                <span className={`text-xs font-semibold block mb-1 ${activeTab === "hearings" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>الجلسات</span>
+                <span className={`text-xs font-semibold block mb-1 ${activeTab === "hearings" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>جلسات القضية</span>
                 <span className={`text-2xl font-bold block ${activeTab === "hearings" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.hearings.length}</span>
               </div>
               <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "hearings" ? "!bg-white/20 !text-amber-300" : "bg-cyan-100/70 text-cyan-600"}`}>
@@ -1666,26 +1754,40 @@ export default function CaseDetails() {
         <TabsContent value="memos" className="mt-8 outline-none space-y-6">
           {!isWritingMemo ? (
             <div className="space-y-4">
-              <div className="flex justify-end">
-                <Button onClick={() => {
-                  setIsWritingMemo(true);
-                  handleMemoTypeChange("LAWSUIT", true);
-                }} className="bg-[#D4AF37] hover:bg-[#B8962E] text-white">
-                  <FileSignature className="ml-2 h-4 w-4" /> كتابة مذكرة / صحيفة جديدة
-                </Button>
-              </div>
+              {perms.canCreate("memo.manage") && (
+                <div className="flex justify-end">
+                  <Button onClick={() => {
+                    setIsWritingMemo(true);
+                    handleMemoTypeChange("LAWSUIT", true);
+                  }} className="bg-[#D4AF37] hover:bg-[#B8962E] text-white">
+                    <FileSignature className="ml-2 h-4 w-4" /> كتابة مذكرة / صحيفة جديدة
+                  </Button>
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {(data.memos || []).length === 0 ? (
                   <div className="col-span-full text-center py-12 text-gray-500 bg-white rounded-lg border border-dashed border-gray-300">
                     لا يوجد مذكرات مسجلة لهذه القضية بعد. يمكنك كتابة صحيفة الدعوى أو مذكرة المرافعة وتنسيقها هنا.
                   </div>
                 ) : (
-                  data.memos.map((memo: any) => (
+                  data.memos.map((memo: any) => {
+                    const memoStatus = statusOf(memo);
+                    const a = memoActions(perms.role, memoStatus);
+                    const memoBusy = memoBusyId === memo.id;
+                    return (
                     <Card key={memo.id} className="shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
                       <CardHeader className="pb-3 border-b border-gray-100">
                         <div className="flex justify-between items-start">
                           <CardTitle className="text-lg text-[#133B2E] line-clamp-1" title={memo.title}>{memo.title}</CardTitle>
                           <Badge variant="outline" className="bg-gray-50 text-[10px]">{memo.type === 'LAWSUIT' ? 'صحيفة دعوى' : memo.type === 'PLEADING' ? 'مرافعة' : 'مذكرة'}</Badge>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap mt-2">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${MEMO_STATUS_COLORS[memoStatus]}`}>
+                            {MEMO_STATUS_LABELS_AR[memoStatus]}
+                          </span>
+                          {memo.sharedWithClient && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">مشارَكة مع العميل</span>
+                          )}
                         </div>
                         <CardDescription dir="ltr" className="text-right text-xs mt-2">
                           آخر تعديل: {new Date(memo.updatedAt).toLocaleDateString('ar-EG', { year: '2-digit', month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit' })}
@@ -1705,22 +1807,25 @@ export default function CaseDetails() {
                             className="text-[#133B2E] hover:bg-white bg-white shadow-sm border border-gray-200"
                             onClick={() => {
                               const printWindow = window.open('', '_blank');
+                              const stamped = office.officialStampUrl && (memoStatus === "APPROVED" || memoStatus === "FILED");
                               if (printWindow) {
                                 printWindow.document.write(`
                                   <html dir="rtl">
                                     <head>
                                       <title>${memo.title}</title>
                                       <style>
-                                        body { font-family: 'Tajawal', serif; padding: 50px; line-height: 1.8; }
+                                        body { font-family: 'Tajawal', serif; padding: 50px; line-height: 1.8; position: relative; }
                                         h1 { text-align: center; color: #133B2E; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
                                         .meta { color: #666; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
                                         .content { font-size: 14pt; text-align: justify; }
+                                        .stamp { width: 110px; opacity: 0.92; margin-top: 40px; }
                                       </style>
                                     </head>
                                     <body>
                                       <h1>${memo.title}</h1>
                                       <div class="meta">قضية رقم: ${data.caseNumber} | تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</div>
                                       <div class="content">${memo.content}</div>
+                                      ${stamped ? `<img class="stamp" src="${office.officialStampUrl}" alt="ختم المكتب" />` : ""}
                                       <script>window.onload = function() { window.print(); window.close(); }</script>
                                     </body>
                                   </html>
@@ -1731,28 +1836,63 @@ export default function CaseDetails() {
                           >
                             طباعة
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="text-green-700 hover:text-green-800 hover:bg-green-50 bg-white shadow-sm border border-gray-200"
-                            title="اعتماد المذكرة كـ PDF وإرفاقها بالجلسة"
-                            onClick={() => {
-                              setSelectedMemoForHearing(memo);
-                              setIsHearingSelectOpen(true);
-                            }}
-                          >
-                            اعتماد وإرسال للجلسة
-                          </Button>
+                          {a.canSubmitForReview && (
+                            <Button variant="outline" size="sm" disabled={memoBusy} onClick={() => moveMemo(memo, "UNDER_REVIEW")}
+                              className="rounded-xl border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-xs">
+                              إرسال للمراجعة
+                            </Button>
+                          )}
+                          {a.canReview && (
+                            <Button variant="outline" size="sm" disabled={memoBusy} onClick={() => moveMemo(memo, "PENDING_APPROVAL")}
+                              className="rounded-xl border-amber-200 text-amber-700 hover:bg-amber-50 text-xs">
+                              تمت المراجعة
+                            </Button>
+                          )}
+                          {a.canApprove && (
+                            <Button variant="outline" size="sm" disabled={memoBusy} onClick={() => moveMemo(memo, "APPROVED")}
+                              className="rounded-xl border-green-200 text-green-700 hover:bg-green-50 text-xs">
+                              <CheckCircle2 className="ml-1 h-3.5 w-3.5" /> اعتماد
+                            </Button>
+                          )}
+                          {a.canReject && (
+                            <Button variant="ghost" size="sm" disabled={memoBusy} onClick={() => handleRejectMemo(memo)}
+                              className="rounded-xl text-orange-600 hover:bg-orange-50 text-xs">
+                              رفض
+                            </Button>
+                          )}
+                          {a.canFile && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-green-700 hover:text-green-800 hover:bg-green-50 bg-white shadow-sm border border-gray-200"
+                              title="تحويلها لـ PDF وإرفاقها بالجلسة"
+                              onClick={() => {
+                                setSelectedMemoForHearing(memo);
+                                setIsHearingSelectOpen(true);
+                              }}
+                            >
+                              رفع للجلسة
+                            </Button>
+                          )}
+                          {a.canShare && (
+                            <Button variant="ghost" size="sm" disabled={memoBusy} onClick={() => toggleShareMemo(memo)}
+                              className="rounded-xl text-blue-600 hover:bg-blue-50 text-xs">
+                              {memo.sharedWithClient ? "إلغاء المشاركة" : "مشاركة مع العميل"}
+                            </Button>
+                          )}
                           <Button variant="ghost" size="sm" className="text-purple-600 hover:text-purple-800 hover:bg-purple-100" title="استخراج أهم النقاط القانونية بالذكاء الاصطناعي" onClick={() => setActiveAiTarget({ target: memo, type: 'memo' })}>
                             <Sparkles className="w-4 h-4" />
                           </Button>
                         </div>
-                        <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        {a.canDelete && (
+                          <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700 hover:bg-red-50">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </Card>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>

@@ -18,10 +18,18 @@ export interface LookupOption {
   label: string;
 }
 
+/** مدة نظامية لإجراء معيّن — تُستخدم لضبط مواعيد الردود والطعون وغيرها */
+export interface ProcedureDuration {
+  id: string;
+  label: string;
+  days: number;
+}
+
 export interface OfficeLookups {
   caseTypes: string[];
   documentTypes: LookupOption[];
   expenseCategories: LookupOption[];
+  procedureDurations: ProcedureDuration[];
 }
 
 export const DEFAULT_LOOKUPS: OfficeLookups = {
@@ -39,6 +47,12 @@ export const DEFAULT_LOOKUPS: OfficeLookups = {
     { value: "TRANSPORTATION", label: "انتقالات ومواصلات" },
     { value: "DOCUMENT", label: "أوراق ومستندات" },
     { value: "OTHER", label: "أخرى" },
+  ],
+  // مدد استرشادية قابلة للتعديل بالكامل — راجعها كل مكتب حسب نوع قضاياه ولوائحه
+  procedureDurations: [
+    { id: "response", label: "الرد على لائحة الدعوى", days: 15 },
+    { id: "appeal", label: "الاستئناف", days: 30 },
+    { id: "cassation", label: "التمييز", days: 30 },
   ],
 };
 
@@ -59,7 +73,19 @@ function sanitize(raw: unknown): OfficeLookups {
     ? src.expenseCategories
     : DEFAULT_LOOKUPS.expenseCategories;
 
-  return { caseTypes, documentTypes, expenseCategories };
+  const isDurationArray = (v: unknown): v is ProcedureDuration[] =>
+    Array.isArray(v) && v.every((o) =>
+      o && typeof o === "object" &&
+      typeof (o as any).id === "string" &&
+      typeof (o as any).label === "string" &&
+      typeof (o as any).days === "number" && Number.isFinite((o as any).days) && (o as any).days > 0,
+    );
+
+  const procedureDurations = isDurationArray(src.procedureDurations) && src.procedureDurations.length > 0
+    ? src.procedureDurations
+    : DEFAULT_LOOKUPS.procedureDurations;
+
+  return { caseTypes, documentTypes, expenseCategories, procedureDurations };
 }
 
 let state: OfficeLookups = DEFAULT_LOOKUPS;

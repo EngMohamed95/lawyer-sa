@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Outlet, Link, useLocation, Navigate, useNavigate } from "react-router";
-import { LayoutDashboard, Users, Briefcase, Calendar, CheckSquare, FileText, Settings, Bell, Search, Menu, Calculator, GraduationCap, BarChart, LogOut, Shield, CreditCard, Loader2, BookOpen, Sparkles, ChevronDown, ScrollText, Trash2, FileSignature, ReceiptText, Handshake, Timer, CalendarDays, Globe } from "lucide-react";
+import { LayoutDashboard, Users, Briefcase, Calendar, CheckSquare, FileText, Settings, Bell, Search, Menu, Calculator, GraduationCap, BarChart, LogOut, Shield, CreditCard, Loader2, BookOpen, Sparkles, ChevronDown, ScrollText, Trash2, FileSignature, ReceiptText, Handshake, Timer, CalendarDays, Globe, Gavel } from "lucide-react";
 import { useState, lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
 import { collection, getDocs, query, where, collectionGroup, limit } from "firebase/firestore";
 import { db } from "./lib/firebase";
@@ -104,7 +104,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
     // ولو أُخفي الأب وظهر أبناؤه (العميل مثلاً يرى الجلسات ولا يرى القضايا)
     // يرفعهم visibleNavItems للمستوى الأعلى فلا يفقد أحد وصولاً كان يملكه.
     {
-      name: "القضايا",
+      name: "القضاء",
       path: "/app/cases",
       icon: <Briefcase size={20} />,
       hidden: !perms.can("case.update"),
@@ -115,6 +115,10 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
         { name: "المستندات", path: "/app/documents", icon: <FileText size={18} />, hidden: !perms.can("document.manage") || paidRoleOnBasic },
       ],
     },
+
+    // التنفيذ: مظلة منفصلة في القائمة، لكنها تبقى قضايا عادية (type: "تنفيذ")
+    // حتى تُبنى وحدة تنفيذ مستقلة عن القضايا لاحقاً.
+    { name: "التنفيذ", path: "/app/cases?type=تنفيذ", icon: <Gavel size={20} />, hidden: !perms.can("case.update") },
 
     { name: "العقود", path: "/app/contracts", icon: <FileSignature size={20} />, hidden: !perms.can("contract.manage") },
 
@@ -204,7 +208,10 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
           <ul className="space-y-1">
             {visibleNavItems.map((item) => {
               const kids = (item.children ?? []).filter(c => !c.hidden);
-              const isActive = location.pathname === item.path;
+              // بعض العناصر (مثل "التنفيذ") تحمل معامل بحث ضمن مسارها؛ المقارنة
+              // بالمسار الكامل (pathname + search) تُبقي التمييز صحيحاً للجميع.
+              const fullPath = location.pathname + location.search;
+              const isActive = fullPath === item.path;
 
               // لا قائمة فرعية ← عنصر عادي كما كان تماماً
               if (kids.length === 0) {

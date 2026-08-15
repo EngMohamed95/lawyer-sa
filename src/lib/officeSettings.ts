@@ -18,6 +18,8 @@ export type PermissionOverrides = Partial<Record<Role, Partial<Record<Permission
 
 export interface OfficeSettings {
   permissionOverrides: PermissionOverrides;
+  /** رابط صورة ختم المكتب الرسمي — يُطبع على المذكرات بعد اعتمادها نهائياً */
+  officialStampUrl: string | null;
 }
 
 /** تجاوز واحد مسموح — يُعرض كمفتاح في شاشة الإعدادات */
@@ -90,11 +92,21 @@ export const OVERRIDABLE: OverridableToggle[] = [
     offScope: "NONE",
     defaultOn: false,
   },
+  {
+    id: "officelawyer-memo-approval",
+    role: "OFFICE_LAWYER",
+    permission: "memo.manage",
+    label: "إلزام محامي المكتب بدورة اعتماد قبل رفع المذكرات",
+    description: "عند التفعيل، يجب أن تمر مذكرات/لوائح محامي المكتب بمراجعة المستشار ثم اعتماد الشريك أو صاحب المكتب قبل رفعها للجلسة. عند الإطفاء (الافتراضي) يرفعها المحامي مباشرة بلا مراجعة.",
+    onScope: "CREATE",
+    offScope: "FULL",
+    defaultOn: false,
+  },
 ];
 
 // ===== مخزن بسيط قابل للاشتراك (بلا Context Provider) =====
 
-let state: OfficeSettings = { permissionOverrides: {} };
+let state: OfficeSettings = { permissionOverrides: {}, officialStampUrl: null };
 let loadedFor: string | null = null;
 const listeners = new Set<() => void>();
 
@@ -157,6 +169,11 @@ function sanitize(raw: unknown): PermissionOverrides {
   return out;
 }
 
+/** ينقّي رابط ختم المكتب — نص غير فارغ فقط، وإلا يُهمَل */
+function sanitizeStampUrl(raw: unknown): string | null {
+  return typeof raw === "string" && raw.trim() ? raw : null;
+}
+
 /** يحمّل إعدادات المكتب مرة واحدة لكل مكتب */
 export async function loadOfficeSettings(lawyerId: string | null): Promise<void> {
   if (!lawyerId || lawyerId === "ALL" || loadedFor === lawyerId) return;
@@ -165,6 +182,7 @@ export async function loadOfficeSettings(lawyerId: string | null): Promise<void>
     const snap = await getDoc(doc(db, "office_settings", lawyerId));
     state = {
       permissionOverrides: snap.exists() ? sanitize(snap.data()?.permissionOverrides) : {},
+      officialStampUrl: snap.exists() ? sanitizeStampUrl(snap.data()?.officialStampUrl) : null,
     };
     emit();
   } catch (err) {
@@ -191,7 +209,27 @@ export async function savePermissionOverrides(
     },
     { merge: true },
   );
-  state = { permissionOverrides: clean };
+  state = { ...state, permissionOverrides: clean };
+  emit();
+}
+
+/** يحفظ رابط ختم المكتب الرسمي ويحدّث المخزن فوراً */
+export async function saveOfficialStamp(
+  lawyerId: string,
+  stampUrl: string | null,
+  userId: string | null,
+): Promise<void> {
+  await setDoc(
+    doc(db, "office_settings", lawyerId),
+    {
+      lawyerId,
+      officialStampUrl: stampUrl,
+      updatedAt: new Date().toISOString(),
+      updatedBy: userId ?? null,
+    },
+    { merge: true },
+  );
+  state = { ...state, officialStampUrl: stampUrl };
   emit();
 }
 

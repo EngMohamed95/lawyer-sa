@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, Filter, Eye, FileSpreadsheet } from "lucide-react";
+import { Plus, Search, Filter, Eye, FileSpreadsheet, Gavel, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Button } from "../components/ui/button";
@@ -11,7 +11,7 @@ import { collection, getDocs, query, where, limit } from "firebase/firestore";
 import type { Query, DocumentData } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { Pagination } from "../components/ui/Pagination";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 
 const STATUS_LABELS_AR: Record<string, string> = {
   // القيم الحالية التي يكتبها النظام
@@ -55,6 +55,12 @@ export default function Cases() {
   const [isAddCaseOpen, setIsAddCaseOpen] = useState(false);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
+
+  // ?type= يأتي من "التنفيذ" في القائمة الجانبية — يفتح الصفحة مُرشَّحة على
+  // قضايا التنفيذ فقط. قضايا التنفيذ لا تزال قضايا عادية (type: "تنفيذ")
+  // إلى أن تُبنى وحدة تنفيذ مستقلة.
+  const [params, setParams] = useSearchParams();
+  const typeFilter = params.get("type");
 
   const userRole = localStorage.getItem("userRole");
   const lawyerId = localStorage.getItem("lawyerId");
@@ -151,6 +157,7 @@ export default function Cases() {
   };
 
   const filteredCases = Array.isArray(cases) ? cases.filter(c => {
+    if (typeFilter && c.type !== typeFilter) return false;
     const s = (search || "").toLowerCase();
     return (
       String(c.title || "").toLowerCase().includes(s) ||
@@ -179,7 +186,9 @@ export default function Cases() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">إدارة القضايا</h1>
+          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">
+            {typeFilter === "تنفيذ" ? "قضايا التنفيذ" : "إدارة القضايا"}
+          </h1>
           <p className="text-gray-500 mt-1">سجل القضايا والعملاء</p>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
@@ -195,6 +204,19 @@ export default function Cases() {
           </Button>
         </div>
       </div>
+
+      {typeFilter && (
+        <div className="flex items-center gap-2 p-3 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-sm">
+          <Gavel size={16} className="shrink-0" />
+          <span>معروض فقط قضايا: <strong>{typeFilter}</strong></span>
+          <button
+            onClick={() => { params.delete("type"); setParams(params, { replace: true }); }}
+            className="mr-auto flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg hover:bg-indigo-100 transition"
+          >
+            <X size={13} /> إلغاء الترشيح
+          </button>
+        </div>
+      )}
 
       <Card className="shadow-sm border-gray-200">
         <CardHeader className="border-b bg-gray-50/50 pb-4">

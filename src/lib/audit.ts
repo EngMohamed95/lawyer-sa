@@ -27,7 +27,7 @@ export type AuditEntity =
   | "case" | "client" | "hearing" | "document" | "task"
   | "payment" | "expense" | "user" | "settings" | "permissions"
   | "report" | "session" | "tenant"
-  | "contract" | "invoice" | "appointment";
+  | "contract" | "invoice" | "appointment" | "memo";
 
 export interface AuditEntry {
   action: AuditAction;
@@ -75,6 +75,7 @@ export const AUDIT_ENTITY_LABELS_AR: Record<AuditEntity, string> = {
   contract: "عقد",
   invoice: "فاتورة",
   appointment: "موعد",
+  memo: "مذكرة",
 };
 
 /** ألوان الشارات حسب خطورة الإجراء */

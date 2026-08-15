@@ -6,6 +6,7 @@ import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 
 import PermissionsTab from "../components/settings/PermissionsTab";
 import ListsTab from "../components/settings/ListsTab";
 import NotificationsTab from "../components/settings/NotificationsTab";
+import OfficeStampCard from "../components/settings/OfficeStampCard";
 import AuditLog from "./AuditLog";
 import RecycleBin from "./RecycleBin";
 import { usePermissions } from "../lib/usePermissions";
@@ -510,6 +511,10 @@ export default function SettingsPage() {
                   <button className="px-6 py-3 bg-[#133B2E] text-[#D4AF37] font-bold rounded-2xl text-sm hover:bg-[#133B2E]/90 transition">
                     حفظ التغييرات
                   </button>
+
+                  <div className="pt-4 border-t border-gray-100">
+                    <OfficeStampCard />
+                  </div>
                 </div>
               )}
 
