@@ -389,10 +389,13 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
               </div>
             )}
 
-            {(localStorage.getItem("userRole") === "LAWYER" || localStorage.getItem("userRole") === "SUPER_ADMIN") && trainees.length > 0 && (
+            {(localStorage.getItem("userRole") === "LAWYER" || localStorage.getItem("userRole") === "SUPER_ADMIN") && (
               <div className="space-y-2 md:col-span-2">
                 <label className="text-sm font-bold text-[#133B2E] block mr-1">المتدربون</label>
-                <div className="flex flex-wrap gap-2 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+                <div className="flex flex-wrap gap-2 p-3 bg-gray-50 border border-gray-200 rounded-xl min-h-10">
+                  {trainees.length === 0 && (
+                    <span className="text-xs text-gray-400">لا يوجد متدربون مسجلون في المكتب — أضفهم من "فريق المكتب"</span>
+                  )}
                   {trainees.map(t => {
                     const checked = formData.traineeIds.includes(t.id);
                     return (

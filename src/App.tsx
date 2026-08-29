@@ -8,6 +8,7 @@ import { generateNotifications, loadPreferences, shouldAutoScan } from "./lib/no
 import { clearLocalSession, useAuthSession } from "./lib/useAuthSession";
 import { loadOfficeSettings } from "./lib/officeSettings";
 import { loadOfficeLookups } from "./lib/officeLookups";
+import { loadPlatformAiSettings } from "./lib/platformSettings";
 import { roleLabel } from "./lib/roles";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -759,6 +760,8 @@ function Layout() {
   useEffect(() => {
     void loadOfficeSettings(lawyerId);
     void loadOfficeLookups(lawyerId);
+    // إعدادات الذكاء الاصطناعي على مستوى المنصة كلها — مشتركة بين كل المكاتب
+    void loadPlatformAiSettings();
   }, [lawyerId]);
 
   if (!isAuthenticated) {

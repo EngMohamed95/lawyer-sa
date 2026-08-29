@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Users, Plus, Search, Phone as PhoneIcon, Mail, ShieldAlert } from "lucide-react";
+import { Users, Plus, Search, Phone as PhoneIcon, Mail, ShieldAlert, Pencil, Trash2 } from "lucide-react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import type { Query, DocumentData } from "firebase/firestore";
 import { db } from "../lib/firebase";
@@ -14,8 +14,10 @@ import { Card, CardContent, CardHeader } from "../components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Button } from "../components/ui/button";
 import AddTeamMemberModal from "../components/AddTeamMemberModal";
+import EditTeamMemberModal from "../components/EditTeamMemberModal";
 import RoleBadge from "../components/RoleBadge";
 import { usePermissions } from "../lib/usePermissions";
+import { softDelete } from "../lib/softDelete";
 import { ROLES_CREATABLE_BY_OFFICE, ROLE_LABELS_AR, normalizeRole, type Role } from "../lib/roles";
 
 interface TeamMember {
@@ -35,6 +37,8 @@ export default function Team() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState<Role | "ALL">("ALL");
   const [search, setSearch] = useState("");
 
@@ -74,6 +78,20 @@ export default function Team() {
     else setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [perms.lawyerId, canManage]);
+
+  const handleDelete = async (m: TeamMember) => {
+    if (!confirm(`سينتقل الحساب «${m.name || m.email}» إلى سلة المحذوفات، وسيفقد القدرة على الدخول للنظام. متابعة؟`)) return;
+    setDeletingId(m.id);
+    try {
+      await softDelete({ path: ["users", m.id], entity: "user", label: m.name || m.email || null });
+      await fetchTeam();
+    } catch (err) {
+      console.error(err);
+      setError("تعذّر حذف العضو.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const counts = useMemo(() => {
     const map = new Map<string, number>();
@@ -115,6 +133,13 @@ export default function Team() {
         isOpen={isAddOpen}
         onClose={() => setIsAddOpen(false)}
         onSuccess={fetchTeam}
+      />
+
+      <EditTeamMemberModal
+        isOpen={!!editingMember}
+        onClose={() => setEditingMember(null)}
+        onSuccess={fetchTeam}
+        member={editingMember}
       />
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -192,14 +217,15 @@ export default function Team() {
                   <TableHead className="text-right font-bold text-[#133B2E] hidden md:table-cell">البريد الإلكتروني</TableHead>
                   <TableHead className="text-right font-bold text-[#133B2E] hidden sm:table-cell">الهاتف</TableHead>
                   <TableHead className="text-right font-bold text-[#133B2E] hidden lg:table-cell">تاريخ الإضافة</TableHead>
+                  <TableHead className="text-center font-bold text-[#133B2E]">إجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={5} className="text-center py-10 text-gray-500">جاري التحميل...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center py-10 text-gray-500">جاري التحميل...</TableCell></TableRow>
                 ) : filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-12">
+                    <TableCell colSpan={6} className="text-center py-12">
                       <div className="flex flex-col items-center gap-2 text-gray-400">
                         <Users size={32} className="text-gray-300" />
                         <p className="font-medium text-gray-500">
@@ -234,6 +260,31 @@ export default function Team() {
                       </TableCell>
                       <TableCell dir="ltr" className="text-right text-gray-500 text-sm hidden lg:table-cell">
                         {m.createdAt ? new Date(m.createdAt).toLocaleDateString("ar-EG") : "—"}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {normalizeRole(m.role) === "LAWYER" ? (
+                          <span className="text-xs text-gray-300">—</span>
+                        ) : (
+                          <div className="flex items-center justify-center gap-1">
+                            <Button
+                              variant="ghost" size="sm"
+                              onClick={() => setEditingMember(m)}
+                              className="text-[#133B2E] hover:bg-gray-100 h-8 w-8 p-0 rounded-lg"
+                              title="تعديل بيانات العضو"
+                            >
+                              <Pencil size={14} />
+                            </Button>
+                            <Button
+                              variant="ghost" size="sm"
+                              disabled={deletingId === m.id}
+                              onClick={() => handleDelete(m)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0 rounded-lg"
+                              title="حذف العضو"
+                            >
+                              <Trash2 size={14} />
+                            </Button>
+                          </div>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))

@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { collection, getDocs, collectionGroup, query, where } from "firebase/firestore";
 import { db } from "../lib/firebase";
-import { callGemini, callGroq, type GeminiContent } from "../lib/aiProxy";
+import { callGemini, callGroq, readAiSettings, type GeminiContent } from "../lib/aiProxy";
 
 export function AiAssistant() {
   const [isOpen, setIsOpen] = useState(false);
@@ -322,10 +322,8 @@ ${detailedDocsContext ? `\nخامساً: تفاصيل المستندات ذات 
 4. عندما تقتبس معلومات من مستند معين، اذكر اسم المستند بوضوح.
 ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionInstruction}` : ""}`;
 
-      // AI Provider settings
-      const aiProvider = localStorage.getItem("sys_aiProvider") || "GEMINI";
-      const aiApiKey = localStorage.getItem("sys_aiApiKey") || "";
-      const aiModel = localStorage.getItem("sys_aiModel") || (aiProvider === "GEMINI" ? "gemini-flash-latest" : "llama-3.3-70b-versatile");
+      // AI Provider settings — مركزية على مستوى المنصة كلها
+      const { provider: aiProvider, model: aiModel } = readAiSettings();
 
       let responseText = "";
 
@@ -350,21 +348,19 @@ ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionIns
           parts: [{ text: userMsg }]
         });
 
-        // مفتاح المستخدم مباشرةً، وبدونه عبر الخادم (الثغرة V4)
         responseText = (await callGemini(
           geminiContents,
           { temperature: 0.7, maxOutputTokens: 2048 },
-          { provider: "GEMINI", model: aiModel, userKey: aiApiKey },
+          { provider: "GEMINI", model: aiModel },
         )) || "عذراً، لم أتمكن من الحصول على رد من Gemini.";
       } else {
-        // Groq — نفس المبدأ
         responseText = (await callGroq(
           [
             { role: "system", content: systemPrompt },
             ...history,
             { role: "user", content: userMsg }
           ],
-          { provider: "GROQ", model: aiModel, userKey: aiApiKey },
+          { provider: "GROQ", model: aiModel },
         )) || "لم يتم استلام رد من خادم الذكاء الاصطناعي.";
       }
 
@@ -399,8 +395,8 @@ ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionIns
                   <h3 className="text-sm font-bold">المساعد القانوني الذكي</h3>
                   {!isMinimized && (
                     <span className="text-[10px] text-green-400">
-                      {isDataLoaded 
-                        ? `متصل (${localStorage.getItem("sys_aiProvider") || "GEMINI"}) | الملفات: ${documents.length}` 
+                      {isDataLoaded
+                        ? `متصل (${readAiSettings().provider}) | الملفات: ${documents.length}`
                         : "جاري الاتصال بالأرشيف..."}
                     </span>
                   )}

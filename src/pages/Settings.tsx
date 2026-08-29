@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Shield, Bell, User, Lock, Palette, Globe, Settings as SettingsIcon, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, Sparkles, DollarSign, FileEdit, Link, Key, Check, ScrollText, Trash2, ListChecks } from "lucide-react";
+import { Shield, Bell, User, Lock, Palette, Globe, Settings as SettingsIcon, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, Sparkles, DollarSign, FileEdit, Link, Check, ScrollText, Trash2, ListChecks } from "lucide-react";
 import { auth } from "../lib/firebase";
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
 import PermissionsTab from "../components/settings/PermissionsTab";
 import ListsTab from "../components/settings/ListsTab";
 import NotificationsTab from "../components/settings/NotificationsTab";
 import OfficeStampCard from "../components/settings/OfficeStampCard";
+import OfficeProfileCard from "../components/settings/OfficeProfileCard";
+import PlatformAiSettingsTab from "../components/settings/PlatformAiSettingsTab";
 import AuditLog from "./AuditLog";
 import RecycleBin from "./RecycleBin";
 import { usePermissions } from "../lib/usePermissions";
@@ -181,21 +183,12 @@ export default function SettingsPage() {
 
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [showAiKey, setShowAiKey] = useState(false);
-
   // System settings state loaded from localStorage
   const [sysSettings, setSysSettings] = useState({
     najizMode: localStorage.getItem("sys_najizMode") || "CHROME_EXTENSION",
     najizApiKey: localStorage.getItem("sys_najizApiKey") || "",
     najizClientId: localStorage.getItem("sys_najizClientId") || "",
     najizSyncFreq: localStorage.getItem("sys_najizSyncFreq") || "DAILY",
-
-    aiProvider: localStorage.getItem("sys_aiProvider") || "GEMINI",
-    aiApiKey: localStorage.getItem("sys_aiApiKey") || "",
-    aiModel: localStorage.getItem("sys_aiModel") || "gemini-flash-latest",
-    aiAnalysisEnabled: localStorage.getItem("sys_aiAnalysisEnabled") !== "false",
-    aiDraftingEnabled: localStorage.getItem("sys_aiDraftingEnabled") !== "false",
-    aiRisksEnabled: localStorage.getItem("sys_aiRisksEnabled") !== "false",
 
     currency: localStorage.getItem("sys_currency") || "SAR",
     vatRate: Number(localStorage.getItem("sys_vatRate") || "15"),
@@ -211,13 +204,6 @@ export default function SettingsPage() {
       localStorage.setItem("sys_najizApiKey", sysSettings.najizApiKey);
       localStorage.setItem("sys_najizClientId", sysSettings.najizClientId);
       localStorage.setItem("sys_najizSyncFreq", sysSettings.najizSyncFreq);
-
-      localStorage.setItem("sys_aiProvider", sysSettings.aiProvider);
-      localStorage.setItem("sys_aiApiKey", sysSettings.aiApiKey);
-      localStorage.setItem("sys_aiModel", sysSettings.aiModel);
-      localStorage.setItem("sys_aiAnalysisEnabled", String(sysSettings.aiAnalysisEnabled));
-      localStorage.setItem("sys_aiDraftingEnabled", String(sysSettings.aiDraftingEnabled));
-      localStorage.setItem("sys_aiRisksEnabled", String(sysSettings.aiRisksEnabled));
 
       localStorage.setItem("sys_currency", sysSettings.currency);
       localStorage.setItem("sys_vatRate", String(sysSettings.vatRate));
@@ -389,6 +375,8 @@ export default function SettingsPage() {
     // نُقلا من القائمة الجانبية إلى هنا — مساراهما القديمان ما زالا يعملان
     { id: "audit",         name: "سجل التدقيق",       icon: <ScrollText size={20} />, hidden: !perms.can("audit.view") },
     { id: "recyclebin",    name: "سلة المحذوفات",     icon: <Trash2 size={20} />, hidden: !perms.can("recyclebin.manage") },
+    // إعدادات الذكاء الاصطناعي على مستوى المنصة كلها — لمدير المنصة فقط، لا تظهر لأي مكتب
+    { id: "ai-platform",   name: "الذكاء الاصطناعي",  icon: <Sparkles size={20} />, hidden: perms.role !== "SUPER_ADMIN" },
   ].filter(t => !(t as { hidden?: boolean }).hidden);
 
   return (
@@ -502,21 +490,16 @@ export default function SettingsPage() {
 
               {/* ========== GENERAL TAB ========== */}
               {activeTab === "general" && (
-                <div className="space-y-4 max-w-md">
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-gray-700">اسم المكتب</label>
-                    <input type="text" defaultValue="مكتب المحامي"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#133B2E] text-sm" />
-                  </div>
-                  <button className="px-6 py-3 bg-[#133B2E] text-[#D4AF37] font-bold rounded-2xl text-sm hover:bg-[#133B2E]/90 transition">
-                    حفظ التغييرات
-                  </button>
-
+                <div className="space-y-6">
+                  <OfficeProfileCard />
                   <div className="pt-4 border-t border-gray-100">
                     <OfficeStampCard />
                   </div>
                 </div>
               )}
+
+              {/* ========== PLATFORM AI TAB (SUPER_ADMIN فقط) ========== */}
+              {activeTab === "ai-platform" && <PlatformAiSettingsTab />}
 
               {/* ========== INTEGRATIONS TAB ========== */}
               {activeTab === "integrations" && (
@@ -591,112 +574,6 @@ export default function SettingsPage() {
                             </select>
                           </div>
                         )}
-                      </CardContent>
-                    </Card>
-
-                    {/* AI Section */}
-                    <Card className="shadow-sm border border-gray-100">
-                      <CardHeader className="pb-3 bg-gray-50/50">
-                        <CardTitle className="text-base font-bold text-[#133B2E] flex items-center gap-2">
-                          <Sparkles size={18} className="text-[#D4AF37]" /> محرك الذكاء الاصطناعي القانوني
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-4 space-y-4">
-                        <div className="space-y-2">
-                          <label className="text-xs font-bold text-gray-700">مزود خدمة الذكاء الاصطناعي</label>
-                          <select
-                            value={sysSettings.aiProvider}
-                            onChange={e => {
-                              const provider = e.target.value;
-                              let defModel = "gemini-flash-latest";
-                              if (provider === "GROQ") defModel = "llama-3.3-70b-versatile";
-                              setSysSettings({ ...sysSettings, aiProvider: provider, aiModel: defModel });
-                            }}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#133B2E]"
-                          >
-                            <option value="GEMINI">Google Gemini API (مستحسن للأبحاث والملفات الضخمة)</option>
-                            <option value="GROQ">Groq API (أداء فائق السرعة)</option>
-                            <option value="CUSTOM">خادم ذكاء اصطناعي محلي / مخصص</option>
-                          </select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="text-xs font-bold text-gray-700">مفتاح API Key الخاص بالمزود</label>
-                          <div className="relative">
-                            <input
-                              type={showAiKey ? "text" : "password"}
-                              value={sysSettings.aiApiKey}
-                              onChange={e => setSysSettings({ ...sysSettings, aiApiKey: e.target.value })}
-                              placeholder={sysSettings.aiProvider === "GEMINI" ? "أدخل مفتاح Gemini API هنا..." : "أدخل مفتاح Groq API هنا..."}
-                              className="w-full pr-3 pl-10 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#133B2E]"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowAiKey(!showAiKey)}
-                              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                            >
-                              {showAiKey ? <EyeOff size={16} /> : <Eye size={16} />}
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="text-xs font-bold text-gray-700">النموذج النشط (Active Model)</label>
-                          <select
-                            value={sysSettings.aiModel}
-                            onChange={e => setSysSettings({ ...sysSettings, aiModel: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#133B2E]"
-                          >
-                            {sysSettings.aiProvider === "GEMINI" ? (
-                              <>
-                                <option value="gemini-flash-latest">Gemini Flash (الافتراضي السريع والمجاني - مستحسن)</option>
-                                <option value="gemini-pro-latest">Gemini Pro (التحليل الذكي والعميق)</option>
-                                <option value="gemini-3.5-flash">Gemini 3.5 Flash (إصدار حديث وسريع)</option>
-                                <option value="gemini-3.6-flash">Gemini 3.6 Flash (آخر إصدار مستقر)</option>
-                              </>
-                            ) : sysSettings.aiProvider === "GROQ" ? (
-                              <>
-                                <option value="llama-3.3-70b-versatile">Llama 3.3 70B Versatile</option>
-                                <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
-                              </>
-                            ) : (
-                              <option value="custom-model">نموذج مخصص مدمج</option>
-                            )}
-                          </select>
-                        </div>
-
-                        <div className="space-y-2 pt-2">
-                          <label className="text-xs font-bold text-gray-700 block mb-1">الميزات الذكية المفعلة</label>
-                          <div className="space-y-2">
-                            <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={sysSettings.aiAnalysisEnabled}
-                                onChange={e => setSysSettings({ ...sysSettings, aiAnalysisEnabled: e.target.checked })}
-                                className="rounded text-[#D4AF37] focus:ring-[#D4AF37]"
-                              />
-                              تحليل قضايا واستخراج الوقائع والطلبات
-                            </label>
-                            <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={sysSettings.aiDraftingEnabled}
-                                onChange={e => setSysSettings({ ...sysSettings, aiDraftingEnabled: e.target.checked })}
-                                className="rounded text-[#D4AF37] focus:ring-[#D4AF37]"
-                              />
-                              إنشاء وصياغة المذكرات واللوائح القانونية
-                            </label>
-                            <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
-                              <input
-                                type="checkbox"
-                                checked={sysSettings.aiRisksEnabled}
-                                onChange={e => setSysSettings({ ...sysSettings, aiRisksEnabled: e.target.checked })}
-                                className="rounded text-[#D4AF37] focus:ring-[#D4AF37]"
-                              />
-                              تحليل العقود واكتشاف المخاطر والبنود المفقودة
-                            </label>
-                          </div>
-                        </div>
                       </CardContent>
                     </Card>
 
@@ -811,7 +688,7 @@ export default function SettingsPage() {
               )}
 
               {/* ========== OTHER TABS ========== */}
-              {!["security", "profile", "permissions", "lists", "general", "integrations"].includes(activeTab) && (
+              {!["security", "profile", "permissions", "lists", "general", "integrations", "ai-platform"].includes(activeTab) && (
                 <div className="flex flex-col items-center justify-center py-12 text-gray-400">
                   <SettingsIcon size={48} className="mb-4 opacity-20" />
                   <p className="font-bold">قيد التطوير في النسخة القادمة</p>

@@ -16,10 +16,25 @@ import { setOverrideResolver, type Permission, type Scope } from "./permissions"
 
 export type PermissionOverrides = Partial<Record<Role, Partial<Record<Permission, Scope>>>>;
 
+/** مطبوعات المكتب — تُستخدم كترويسة على التقارير والمستندات الرسمية المطبوعة */
+export interface OfficeProfile {
+  name: string;
+  address: string;
+  phone: string;
+  crNumber: string;
+  logoUrl: string | null;
+}
+
+export const EMPTY_OFFICE_PROFILE: OfficeProfile = {
+  name: "", address: "", phone: "", crNumber: "", logoUrl: null,
+};
+
 export interface OfficeSettings {
   permissionOverrides: PermissionOverrides;
   /** رابط صورة ختم المكتب الرسمي — يُطبع على المذكرات بعد اعتمادها نهائياً */
   officialStampUrl: string | null;
+  /** بيانات ترويسة المكتب (الشعار والاسم والعنوان...) */
+  officeProfile: OfficeProfile;
 }
 
 /** تجاوز واحد مسموح — يُعرض كمفتاح في شاشة الإعدادات */
@@ -106,7 +121,7 @@ export const OVERRIDABLE: OverridableToggle[] = [
 
 // ===== مخزن بسيط قابل للاشتراك (بلا Context Provider) =====
 
-let state: OfficeSettings = { permissionOverrides: {}, officialStampUrl: null };
+let state: OfficeSettings = { permissionOverrides: {}, officialStampUrl: null, officeProfile: EMPTY_OFFICE_PROFILE };
 let loadedFor: string | null = null;
 const listeners = new Set<() => void>();
 
@@ -174,6 +189,22 @@ function sanitizeStampUrl(raw: unknown): string | null {
   return typeof raw === "string" && raw.trim() ? raw : null;
 }
 
+/** ينقّي حقل نصي — سلسلة دائماً، فلا تنكسر الواجهة على بيانات ناقصة */
+function str(raw: unknown): string {
+  return typeof raw === "string" ? raw : "";
+}
+
+function sanitizeOfficeProfile(raw: unknown): OfficeProfile {
+  const src = (raw && typeof raw === "object") ? (raw as Partial<OfficeProfile>) : {};
+  return {
+    name: str(src.name),
+    address: str(src.address),
+    phone: str(src.phone),
+    crNumber: str(src.crNumber),
+    logoUrl: sanitizeStampUrl(src.logoUrl),
+  };
+}
+
 /** يحمّل إعدادات المكتب مرة واحدة لكل مكتب */
 export async function loadOfficeSettings(lawyerId: string | null): Promise<void> {
   if (!lawyerId || lawyerId === "ALL" || loadedFor === lawyerId) return;
@@ -183,6 +214,7 @@ export async function loadOfficeSettings(lawyerId: string | null): Promise<void>
     state = {
       permissionOverrides: snap.exists() ? sanitize(snap.data()?.permissionOverrides) : {},
       officialStampUrl: snap.exists() ? sanitizeStampUrl(snap.data()?.officialStampUrl) : null,
+      officeProfile: snap.exists() ? sanitizeOfficeProfile(snap.data()?.officeProfile) : EMPTY_OFFICE_PROFILE,
     };
     emit();
   } catch (err) {
@@ -230,6 +262,27 @@ export async function saveOfficialStamp(
     { merge: true },
   );
   state = { ...state, officialStampUrl: stampUrl };
+  emit();
+}
+
+/** يحفظ بيانات ترويسة المكتب ويحدّث المخزن فوراً */
+export async function saveOfficeProfile(
+  lawyerId: string,
+  profile: OfficeProfile,
+  userId: string | null,
+): Promise<void> {
+  const clean = sanitizeOfficeProfile(profile);
+  await setDoc(
+    doc(db, "office_settings", lawyerId),
+    {
+      lawyerId,
+      officeProfile: clean,
+      updatedAt: new Date().toISOString(),
+      updatedBy: userId ?? null,
+    },
+    { merge: true },
+  );
+  state = { ...state, officeProfile: clean };
   emit();
 }
 

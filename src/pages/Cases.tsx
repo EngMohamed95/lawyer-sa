@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, Filter, Eye, FileSpreadsheet, Gavel, X } from "lucide-react";
+import { Plus, Search, Filter, Eye, FileSpreadsheet, Gavel, X, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Button } from "../components/ui/button";
@@ -46,6 +46,25 @@ const getStatusBadge = (status: string) => (
     {getStatusLabel(status)}
   </Badge>
 );
+
+// نفس مفاتيح سبب الإغلاق المحفوظة من تبويب "تنفيذ الأحكام" في CaseDetails.tsx
+const ENFORCEMENT_CLOSURE_LABELS_AR: Record<string, string> = {
+  PAYMENT: "الوفاء الكامل بالحق",
+  SETTLEMENT: "الصلح بين الطرفين",
+  WAIVER: "تنازل طالب التنفيذ",
+  OTHER: "سبب آخر",
+};
+
+const enforcementProgressOf = (c: any): number => {
+  const steps = c.enforcementSteps || {};
+  const done = Object.values(steps).filter(Boolean).length;
+  return Math.round((done / 22) * 100);
+};
+
+const isEnforcementOverdue = (c: any): boolean =>
+  !!c.enforcementNoticeDeadline &&
+  !c.enforcementClosureReason &&
+  new Date(c.enforcementNoticeDeadline).getTime() < Date.now();
 
 export default function Cases() {
   const [cases, setCases] = useState<any[]>([]);
@@ -138,7 +157,15 @@ export default function Cases() {
         "تاريخ البداية": c.startDate || "",
         "الحالة": getStatusLabel(c.status || "OPEN"),
         "المستشار": c.assignedConsultantName || "",
-        "المتدربون": (c.traineeNames || []).join("، ")
+        "المتدربون": (c.traineeNames || []).join("، "),
+        ...(isExecutionView ? {
+          "نسبة إنجاز التنفيذ": `${enforcementProgressOf(c)}%`,
+          "مهلة التنفيذ": c.enforcementNoticeDeadline || "",
+          "حالة ملف التنفيذ": c.enforcementClosureReason
+            ? `مغلق — ${ENFORCEMENT_CLOSURE_LABELS_AR[c.enforcementClosureReason] || c.enforcementClosureReason}`
+            : (isEnforcementOverdue(c) ? "متأخر" : "قيد التنفيذ"),
+          "الآيبان": c.enforcementIban || "",
+        } : {}),
       }));
 
       const worksheet = XLSX.utils.json_to_sheet(rows);
@@ -168,6 +195,7 @@ export default function Cases() {
   }) : [];
 
   const pagedCases = filteredCases.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const isExecutionView = typeFilter === "تنفيذ";
 
   return (
     <div className="space-y-6 font-['Tajawal']" dir="rtl">
@@ -236,6 +264,92 @@ export default function Cases() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
+          {isExecutionView ? (
+            <Table>
+              <TableHeader className="bg-gray-50">
+                <TableRow>
+                  <TableHead className="text-right font-bold text-[#133B2E]">رقم القضية</TableHead>
+                  <TableHead className="text-right font-bold text-[#133B2E] hidden sm:table-cell">طالب التنفيذ</TableHead>
+                  <TableHead className="text-right font-bold text-[#133B2E] hidden md:table-cell">المنفذ ضده</TableHead>
+                  <TableHead className="text-right font-bold text-[#133B2E]">نسبة الإنجاز</TableHead>
+                  <TableHead className="text-right font-bold text-[#133B2E] hidden lg:table-cell">مهلة التنفيذ</TableHead>
+                  <TableHead className="text-right font-bold text-[#133B2E]">حالة الملف</TableHead>
+                  <TableHead className="text-center font-bold text-[#133B2E]">عرض</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-10 text-gray-500">جاري التحميل...</TableCell>
+                  </TableRow>
+                ) : filteredCases.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-10 text-gray-500">لا يوجد قضايا تنفيذ مطابقة للبحث</TableCell>
+                  </TableRow>
+                ) : (
+                  pagedCases.map((c) => {
+                    try {
+                      const progress = enforcementProgressOf(c);
+                      const overdue = isEnforcementOverdue(c);
+                      return (
+                        <TableRow key={c.id} className="hover:bg-gray-50/50">
+                          <TableCell className="font-mono text-sm">
+                            <Link to={`/app/cases/${c.id}?tab=enforcement`} className="text-[#133B2E] hover:underline decoration-[#D4AF37] decoration-2 underline-offset-4">
+                              {c.caseNumber || "-"}
+                            </Link>
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell">{c.client?.fullName || "-"}</TableCell>
+                          <TableCell className="hidden md:table-cell">{c.opponentName || "-"}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2 w-32">
+                              <div className="flex-1 bg-gray-100 h-2 rounded-full overflow-hidden">
+                                <div className="bg-[#D4AF37] h-full rounded-full" style={{ width: `${progress}%` }} />
+                              </div>
+                              <span className="text-xs font-bold text-gray-500 shrink-0">{progress}%</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="hidden lg:table-cell text-sm">
+                            {c.enforcementNoticeDeadline ? (
+                              <span className={`inline-flex items-center gap-1 ${overdue ? "text-red-600 font-bold" : "text-gray-600"}`}>
+                                {overdue && <AlertTriangle size={12} />}
+                                {new Date(c.enforcementNoticeDeadline).toLocaleDateString('ar-EG')}
+                              </span>
+                            ) : "-"}
+                          </TableCell>
+                          <TableCell>
+                            {c.enforcementClosureReason ? (
+                              <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+                                مغلق — {ENFORCEMENT_CLOSURE_LABELS_AR[c.enforcementClosureReason] || c.enforcementClosureReason}
+                              </Badge>
+                            ) : (
+                              <Badge className={overdue ? "bg-red-100 text-red-800 hover:bg-red-200" : "bg-amber-100 text-amber-800 hover:bg-amber-200"}>
+                                {overdue ? "متأخر" : "قيد التنفيذ"}
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex items-center justify-center">
+                              <Link to={`/app/cases/${c.id}?tab=enforcement`}>
+                                <Button
+                                  variant="outline"
+                                  className="border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#B8962E] flex items-center gap-2 px-3 py-1.5 h-auto text-xs font-bold rounded-xl transition-all"
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                  <span>مسار التنفيذ</span>
+                                </Button>
+                              </Link>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    } catch (e) {
+                      return null;
+                    }
+                  })
+                )}
+              </TableBody>
+            </Table>
+          ) : (
           <Table>
             <TableHeader className="bg-gray-50">
               <TableRow>
@@ -281,8 +395,8 @@ export default function Cases() {
                         <TableCell className="text-center">
                           <div className="flex items-center justify-center">
                             <Link to={`/app/cases/${c.id}`}>
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 className="border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#B8962E] flex items-center gap-2 px-3 py-1.5 h-auto text-xs font-bold rounded-xl transition-all"
                               >
                                 <Eye className="h-3.5 w-3.5" />
@@ -300,6 +414,7 @@ export default function Cases() {
               )}
             </TableBody>
           </Table>
+          )}
           <Pagination
             currentPage={page}
             totalItems={filteredCases.length}

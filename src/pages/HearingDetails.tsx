@@ -25,12 +25,16 @@ function ArchiveBlock({
   text,
   fileUrl,
   fileName,
+  secondFileUrl,
+  secondFileLabel,
 }: {
   dotColor: string;
   title: string;
   text?: string;
   fileUrl?: string;
   fileName?: string;
+  secondFileUrl?: string;
+  secondFileLabel?: string;
 }) {
   if (!text && !fileUrl) return null;
   return (
@@ -40,13 +44,25 @@ function ArchiveBlock({
         <span className="text-sm font-bold text-[#133B2E]">{title}</span>
       </div>
       {text && <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{text}</p>}
-      {fileUrl && (
-        <a href={fileUrl} target="_blank" rel="noreferrer" download>
-          <Button variant="outline" size="sm" className="border-gray-200 text-gray-700 hover:bg-gray-100">
-            <FileText className="ml-2 h-3.5 w-3.5" />
-            تحميل الملف{fileName ? `: ${fileName}` : ""}
-          </Button>
-        </a>
+      {(fileUrl || secondFileUrl) && (
+        <div className="flex flex-wrap gap-2">
+          {fileUrl && (
+            <a href={fileUrl} target="_blank" rel="noreferrer" download>
+              <Button variant="outline" size="sm" className="border-gray-200 text-gray-700 hover:bg-gray-100">
+                <FileText className="ml-2 h-3.5 w-3.5" />
+                تحميل الملف{fileName ? `: ${fileName}` : ""}
+              </Button>
+            </a>
+          )}
+          {secondFileUrl && (
+            <a href={secondFileUrl} target="_blank" rel="noreferrer" download>
+              <Button variant="outline" size="sm" className="border-blue-200 text-blue-700 hover:bg-blue-50">
+                <FileText className="ml-2 h-3.5 w-3.5" />
+                {secondFileLabel || "تحميل الملف"}
+              </Button>
+            </a>
+          )}
+        </div>
       )}
     </div>
   );
@@ -215,6 +231,8 @@ export default function HearingDetails() {
             title="المذكرة المعتمدة"
             fileUrl={hearing.memoFileUrl}
             fileName={hearing.memoFileName}
+            secondFileUrl={hearing.memoWordFileUrl}
+            secondFileLabel="تحميل Word"
           />
           {!(hearing.judgmentText || hearing.judgmentFileUrl || hearing.memoFileUrl) && (
             <div className="flex items-center gap-3 text-gray-400 text-sm">

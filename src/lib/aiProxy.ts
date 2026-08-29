@@ -3,16 +3,18 @@
  *
  * المشكلة: `VITE_GEMINI_API_KEY` أي متغيّر ببادئة VITE_ يُدمج داخل حزمة
  * الواجهة المنشورة. أي شخص يفتح الموقع ويقرأ ملف الجافاسكربت يستخرج
- * المفتاح ويستهلك حساب المكتب.
+ * المفتاح ويستهلك حساب المنصة.
  *
- * الحل (القرار AD-4): مفتاح المكتب ينتقل للخادم، والنداء يمرّ عبر
- * `POST /api/ai/generate`. أما مفتاح المستخدم الخاص الذي يُدخله بنفسه في
- * الإعدادات (`sys_aiApiKey`) فيبقى يعمل من المتصفح مباشرةً — هو مفتاحه
- * وقراره، ولا معنى لتمريره عبر خادمنا.
+ * الحل (القرار AD-4): المفتاح الفعلي (GEMINI_API_KEY/GROQ_API_KEY) يبقى
+ * متغيّر بيئة على الخادم فقط، والنداء يمرّ دائماً عبر `POST /api/ai/generate`.
+ * لا يوجد مفتاح شخصي يُدخله المستخدم من المتصفح — مفتاح واحد على مستوى
+ * المنصة كلها يخدم كل المكاتب، فلا يُشحن أي مفتاح داخل حزمة الواجهة إطلاقاً.
+ * المزوّد والنموذج فقط (لا السر) يُضبطان مركزياً — راجع src/lib/platformSettings.ts.
  */
 
 import { auth } from "./firebase";
 import { apiUrl } from "./apiBase";
+import { getPlatformAiSettingsSnapshot } from "./platformSettings";
 
 export type AiProvider = "GEMINI" | "GROQ";
 
@@ -35,20 +37,12 @@ async function authHeaders(): Promise<Record<string, string>> {
 export interface AiSettings {
   provider: AiProvider;
   model: string;
-  /** مفتاح المستخدم الخاص إن أدخله — يُستخدم مباشرة من المتصفح */
-  userKey: string;
 }
 
+/** يقرأ المزوّد والنموذج من إعدادات المنصة المشتركة — لا مفتاح هنا إطلاقاً */
 export function readAiSettings(): AiSettings {
-  const provider = (localStorage.getItem("sys_aiProvider") || "GEMINI") as AiProvider;
-  const model =
-    localStorage.getItem("sys_aiModel") ||
-    (provider === "GEMINI" ? "gemini-flash-latest" : "llama-3.3-70b-versatile");
-  return {
-    provider,
-    model,
-    userKey: localStorage.getItem("sys_aiApiKey") || "",
-  };
+  const platform = getPlatformAiSettingsSnapshot();
+  return { provider: platform.provider, model: platform.model };
 }
 
 /** جزء من محادثة بصيغة Gemini */
@@ -98,9 +92,8 @@ function extractGeminiText(data: unknown): string {
 }
 
 /**
- * ينادي Gemini ويرجع النص.
- * - بمفتاح المستخدم: نداء مباشر من المتصفح.
- * - بدونه: عبر الخادم، فلا يُشحن أي مفتاح في الحزمة.
+ * ينادي Gemini ويرجع النص، دائماً عبر مسار الخادم — فلا يُشحن أي مفتاح
+ * داخل حزمة الواجهة إطلاقاً.
  */
 export async function callGemini(
   contents: GeminiContent[],
@@ -109,20 +102,6 @@ export async function callGemini(
 ): Promise<string> {
   const body = { contents, generationConfig };
 
-  // مسار مفتاح المستخدم الخاص — يبقى كما كان
-  if (settings.userKey) {
-    const url =
-      `https://generativelanguage.googleapis.com/v1beta/models/${settings.model}:generateContent` +
-      `?key=${encodeURIComponent(settings.userKey)}`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    return extractGeminiText(await res.json());
-  }
-
-  // مسار مفتاح المكتب — على الخادم
   const res = await fetch(apiUrl("/api/ai/generate"), {
     method: "POST",
     headers: await authHeaders(),
@@ -133,10 +112,7 @@ export async function callGemini(
     throw new Error("انتهت جلستك. سجّل الدخول من جديد ثم أعد المحاولة.");
   }
   if (res.status === 501) {
-    throw new Error(
-      "خدمة الذكاء الاصطناعي غير مُهيّأة على الخادم. أدخل مفتاحك الخاص من شاشة الإعدادات، " +
-      "أو اطلب من مدير النظام ضبط مفتاح المكتب.",
-    );
+    throw new Error("خدمة الذكاء الاصطناعي غير مُهيّأة على الخادم. تواصل مع مدير المنصة.");
   }
   if (res.status === 429) {
     throw new Error("تجاوزت حد الطلبات المسموح. انتظر قليلاً ثم أعد المحاولة.");
@@ -149,27 +125,13 @@ export async function callGemini(
   return extractGeminiText(await readJsonOrExplain(res));
 }
 
-/** نداء Groq — بمفتاح المستخدم مباشرةً، أو عبر الخادم */
+/** نداء Groq — دائماً عبر مسار الخادم */
 export async function callGroq(
   messages: { role: string; content: string }[],
   settings: AiSettings = readAiSettings(),
   temperature = 0.7,
 ): Promise<string> {
   const payload = { model: settings.model, messages, temperature };
-
-  if (settings.userKey) {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${settings.userKey}`,
-      },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message || "خطأ في معالجة طلب Groq");
-    return data.choices?.[0]?.message?.content ?? "";
-  }
 
   const res = await fetch(apiUrl("/api/ai/generate"), {
     method: "POST",
@@ -180,7 +142,7 @@ export async function callGroq(
     throw new Error("انتهت جلستك. سجّل الدخول من جديد ثم أعد المحاولة.");
   }
   if (res.status === 501) {
-    throw new Error("خدمة الذكاء الاصطناعي غير مُهيّأة على الخادم. أدخل مفتاحك الخاص من الإعدادات.");
+    throw new Error("خدمة الذكاء الاصطناعي غير مُهيّأة على الخادم. تواصل مع مدير المنصة.");
   }
   if (!res.ok) throw new Error(`تعذّر الاتصال بالخدمة (${res.status}).`);
   const data = (await readJsonOrExplain(res)) as {
@@ -190,7 +152,3 @@ export async function callGroq(
   if (data.error) throw new Error(data.error.message || "خطأ في المعالجة");
   return data.choices?.[0]?.message?.content ?? "";
 }
-
-/** رسالة موحّدة حين لا يوجد أي مفتاح متاح */
-export const NO_AI_KEY_MESSAGE =
-  "خدمة الذكاء الاصطناعي غير متاحة حالياً. أدخل مفتاحك الخاص من شاشة الإعدادات.";

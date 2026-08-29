@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Loader2, Sparkles, FileText, CheckCircle2, ChevronRight, File } from "lucide-react";
-import { callGemini, callGroq } from "../lib/aiProxy";
+import { callGemini, callGroq, readAiSettings } from "../lib/aiProxy";
 
 interface AiMemoDrafterModalProps {
   isOpen: boolean;
@@ -36,12 +36,7 @@ export function AiMemoDrafterModal({ isOpen, onClose, caseData, onDraftCompleted
     setStatusMessage("جاري إعداد محركات الذكاء الاصطناعي...");
 
     try {
-      const aiProvider = localStorage.getItem("sys_aiProvider") || "GEMINI";
-      const aiApiKey = localStorage.getItem("sys_aiApiKey") || "";
-      const aiModel = localStorage.getItem("sys_aiModel") || (aiProvider === "GEMINI" ? "gemini-flash-latest" : "llama-3.3-70b-versatile");
-
-      // مفتاح المكتب انتقل للخادم (الثغرة V4)؛ مفتاح المستخدم يبقى خياراً
-      const apiKeyToUse = aiApiKey;
+      const { provider: aiProvider, model: aiModel } = readAiSettings();
 
       setStatusMessage("جاري تحليل ملف القضية والمرفقات المحددة...");
       
@@ -107,33 +102,16 @@ ${selectedDocsContext}
         responseText = await callGemini(
           [{ role: "user", parts: [{ text: systemPrompt }] }],
           { temperature: 0.7, maxOutputTokens: 3000 },
-          { provider: "GEMINI", model: aiModel, userKey: apiKeyToUse },
+          { provider: "GEMINI", model: aiModel },
         );
       } else {
-        // Groq API
-        const API_URL = "https://api.groq.com/openai/v1/chat/completions";
-        const response = await fetch(API_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKeyToUse}`
-          },
-          body: JSON.stringify({
-            model: aiModel,
-            messages: [
-              { role: "system", content: "أنت خبير صياغة قانونية وبلاغة قضائية." },
-              { role: "user", content: systemPrompt }
-            ],
-            temperature: 0.7,
-            max_tokens: 2500
-          })
-        });
-
-        const dataJson = await response.json();
-        if (dataJson.error) {
-          throw new Error(dataJson.error.message || "خطأ في معالجة طلب Groq");
-        }
-        responseText = dataJson.choices?.[0]?.message?.content || "";
+        responseText = await callGroq(
+          [
+            { role: "system", content: "أنت خبير صياغة قانونية وبلاغة قضائية." },
+            { role: "user", content: systemPrompt },
+          ],
+          { provider: "GROQ", model: aiModel },
+        );
       }
 
       if (!responseText) {

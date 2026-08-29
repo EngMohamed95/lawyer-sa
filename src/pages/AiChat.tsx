@@ -6,7 +6,7 @@ import { Input } from "../components/ui/input";
 import { Card, CardContent } from "../components/ui/card";
 import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, query, where, orderBy, collectionGroup, limit, getDoc, addDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
-import { callGemini, callGroq, type GeminiContent } from "../lib/aiProxy";
+import { callGemini, callGroq, readAiSettings, type GeminiContent } from "../lib/aiProxy";
 
 interface Message {
   role: 'assistant' | 'user';
@@ -342,10 +342,8 @@ ${detailedDocsContext || "لا يوجد مستندات مرفوعة ذات صل�
 3. عندما تقتبس معلومات من مستند معين، اذكر اسم المستند بوضوح.
 ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionInstruction}` : ""}`;
 
-      // AI Provider settings
-      const aiProvider = localStorage.getItem("sys_aiProvider") || "GEMINI";
-      const aiApiKey = localStorage.getItem("sys_aiApiKey") || "";
-      const aiModel = localStorage.getItem("sys_aiModel") || (aiProvider === "GEMINI" ? "gemini-flash-latest" : "llama-3.3-70b-versatile");
+      // AI Provider settings — مركزية على مستوى المنصة كلها
+      const { provider: aiProvider, model: aiModel } = readAiSettings();
 
       let responseText = "";
 
@@ -367,22 +365,19 @@ ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionIns
           parts: [{ text: userMsg }]
         });
 
-        // مفتاح المستخدم يمرّ مباشرة؛ وبدونه يمرّ الطلب عبر الخادم
-        // فلا يُشحن مفتاح المكتب داخل حزمة الواجهة (الثغرة V4)
         responseText = (await callGemini(
           geminiContents,
           { temperature: 0.7, maxOutputTokens: 2048 },
-          { provider: "GEMINI", model: aiModel, userKey: aiApiKey },
+          { provider: "GEMINI", model: aiModel },
         )) || "عذراً، لم أتمكن من الحصول على رد من Gemini.";
       } else {
-        // Groq — نفس المبدأ: مفتاح المستخدم مباشرةً، وإلا عبر الخادم
         responseText = (await callGroq(
           [
             { role: "system", content: systemPrompt },
             ...messages.map(m => ({ role: m.role, content: m.content })),
             { role: "user", content: userMsg }
           ],
-          { provider: "GROQ", model: aiModel, userKey: aiApiKey },
+          { provider: "GROQ", model: aiModel },
         )) || "لم يتم استلام رد من خادم الذكاء الاصطناعي.";
       }
 
