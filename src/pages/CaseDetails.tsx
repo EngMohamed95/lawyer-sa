@@ -118,6 +118,27 @@ const getStatusBadge = (status: string) => {
   }
 };
 
+/**
+ * hook لخيار html2canvas: html2pdf.js يستنسخ العنصر المصدر ويُلحق النسخة
+ * بـ document.body الرئيسي دائمًا (بصرف النظر عن مصدر العنصر)، فترث النسخة
+ * تنسيقات Tailwind v4 العامة (*, ::before, ::after) التي تستخدم oklch() —
+ * وhtml2canvas لا تدعم oklch() فتفشل. نزيل كل الأنماط من نسخة المستند التي
+ * يبنيها html2canvas للرسم، ونعيد فقط خط Tajawal (محتوى التقرير كله inline
+ * styles أصلًا، فلا حاجة لأي CSS آخر).
+ */
+async function stripUnsupportedColorsOnClone(clonedDoc: Document) {
+  clonedDoc.querySelectorAll('link[rel="stylesheet"], style').forEach((el) => el.remove());
+  const fontLink = clonedDoc.createElement("link");
+  fontLink.rel = "stylesheet";
+  fontLink.href = "https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap";
+  clonedDoc.head.appendChild(fontLink);
+  try {
+    await (clonedDoc as any).fonts?.ready;
+  } catch {
+    // خط بديل كافٍ إن تعذّر تحميل Tajawal — لا داعي لإفشال توليد PDF بسببه
+  }
+}
+
 /** يحوّل رقم هاتف محلي (05xxxxxxxx أو بصيغة دولية) إلى صيغة wa.me بلا رموز أو مسافات */
 function toWhatsAppNumber(raw: string | undefined | null): string | null {
   if (!raw) return null;
@@ -392,7 +413,7 @@ export default function CaseDetails() {
         margin:       15,
         filename:     `${selectedMemoForHearing.title}.pdf`,
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true },
+        html2canvas:  { scale: 2, useCORS: true, onclone: stripUnsupportedColorsOnClone },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
@@ -2620,7 +2641,7 @@ export default function CaseDetails() {
               margin: 0,
               filename: `تقرير حالة القضية - ${data.caseNumber || data.title}.pdf`,
               image: { type: 'jpeg', quality: 0.98 },
-              html2canvas: { scale: 2, useCORS: true },
+              html2canvas: { scale: 2, useCORS: true, onclone: stripUnsupportedColorsOnClone },
               jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
             };
 
@@ -2635,7 +2656,7 @@ export default function CaseDetails() {
                 document.body.removeChild(element);
               } catch (err) {
                 console.error(err);
-                alert("تعذّر توليد ملف PDF.");
+                alert("تعذّر توليد ملف PDF: " + (err instanceof Error ? err.message : String(err)));
               } finally {
                 setIsGeneratingReportPdf(false);
               }
@@ -2667,7 +2688,7 @@ export default function CaseDetails() {
                 window.open(`https://wa.me/${clientPhone}?text=${encodeURIComponent(message)}`, "_blank");
               } catch (err) {
                 console.error(err);
-                alert("تعذّر تجهيز التقرير لإرساله عبر واتساب.");
+                alert("تعذّر تجهيز التقرير لإرساله عبر واتساب: " + (err instanceof Error ? err.message : String(err)));
               } finally {
                 setIsSendingReportWhatsApp(false);
               }
