@@ -13,6 +13,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "./firebase";
 import { excludeDeleted } from "./softDelete";
 import { CONTRACT_STATUS_COLORS, CONTRACT_STATUS_LABELS_AR, type ContractStatus } from "./contracts";
+import { visibleCasesQuery } from "./caseAccess";
 
 export type LinkKind =
   | "case" | "client" | "contract" | "task"
@@ -65,9 +66,12 @@ async function fetchWhere(
 ): Promise<Row[]> {
   if (!lawyerId) return [];
   try {
-    const base = [where("lawyerId", "==", lawyerId)];
-    if (field && value) base.push(where(field, "==", value));
-    const snap = await getDocs(query(collection(db, col), ...base));
+    const extra = field && value ? [where(field, "==", value)] : [];
+    // القضايا تمر عبر حدود الرؤية — المحامي يرى المكلَّف بها فقط
+    const q = col === "cases"
+      ? visibleCasesQuery(lawyerId, ...extra)
+      : query(collection(db, col), where("lawyerId", "==", lawyerId), ...extra);
+    const snap = await getDocs(q);
     return excludeDeleted(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Row));
   } catch (err) {
     console.warn(`تعذّر قراءة العلاقات من ${col}:`, err);

@@ -1,15 +1,13 @@
 import { useEffect, useState } from "react";
-import { Plus, Search, Filter, Download, Eye } from "lucide-react";
+import { Plus, Search, Filter, Download } from "lucide-react";
 import { Card, CardContent, CardHeader } from "../components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { Badge } from "../components/ui/badge";
 import { AddHearingModal } from "../components/AddHearingModal";
 import { Pagination } from "../components/ui/Pagination";
 import { collection, getDocs, query, where, collectionGroup, limit } from "firebase/firestore";
 import { db } from "../lib/firebase";
-import { Link } from "react-router";
+import HearingCard from "../components/HearingCard";
 
 const PAGE_SIZE = 20;
 
@@ -78,14 +76,11 @@ export default function Hearings() {
     fetchHearings();
   }, [lawyerId, userRole]);
 
-  const today = new Date().toISOString().split("T")[0];
-  const isToday = (d: string) => d === today;
-  const isPast = (d: string) => d < today;
-
   const filteredHearings = hearings.filter(
     h =>
       h.court?.toLowerCase().includes(search.toLowerCase()) ||
-      h.caseTitle?.toLowerCase().includes(search.toLowerCase())
+      h.caseTitle?.toLowerCase().includes(search.toLowerCase()) ||
+      String(h.caseNumber || "").toLowerCase().includes(search.toLowerCase())
   );
 
   const pagedHearings = filteredHearings.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -138,93 +133,15 @@ export default function Hearings() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader className="bg-gray-50">
-              <TableRow>
-                <TableHead className="text-right font-bold text-[#133B2E]">تاريخ الجلسة</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E]">القضية</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E] hidden sm:table-cell">المحكمة</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E] hidden md:table-cell">طلبات الجلسة</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E]">الحالة</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E] hidden lg:table-cell">المحامي المسؤول</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E] hidden lg:table-cell">المستشار</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E] hidden lg:table-cell">المتدرب</TableHead>
-                {userRole === "SUPER_ADMIN" && (
-                  <TableHead className="text-right font-bold text-purple-600 hidden lg:table-cell">المكتب</TableHead>
-                )}
-                <TableHead className="text-center font-bold text-[#133B2E]">التفاصيل</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={userRole === "SUPER_ADMIN" ? 10 : 9} className="text-center py-10">
-                    جاري التحميل...
-                  </TableCell>
-                </TableRow>
-              ) : filteredHearings.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={userRole === "SUPER_ADMIN" ? 10 : 9} className="text-center py-10 text-gray-500">
-                    لا توجد جلسات مسجلة
-                  </TableCell>
-                </TableRow>
-              ) : (
-                pagedHearings.map(h => (
-                  <TableRow
-                    key={h.id}
-                    className={isToday(h.hearingDate) ? "bg-amber-50" : isPast(h.hearingDate) ? "opacity-60" : ""}
-                  >
-                    <TableCell className="font-bold">
-                      <div className="flex items-center gap-2">
-                        {new Date(h.hearingDate).toLocaleDateString("ar-EG", {
-                          day: "numeric", month: "long", year: "numeric",
-                        })}
-                        {isToday(h.hearingDate) && <Badge className="bg-amber-500 text-white">اليوم</Badge>}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-blue-600 font-medium">{h.caseTitle || "—"}</TableCell>
-                    <TableCell className="hidden sm:table-cell">{h.court || "—"}</TableCell>
-                    <TableCell className="text-sm text-gray-600 max-w-xs truncate hidden md:table-cell">
-                      {h.requiredActions || "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={
-                          isToday(h.hearingDate) ? "border-amber-500 text-amber-700"
-                          : isPast(h.hearingDate) ? "border-gray-300 text-gray-500"
-                          : "text-green-600 border-green-200"
-                        }
-                      >
-                        {isToday(h.hearingDate) ? "اليوم" : isPast(h.hearingDate) ? "منتهية" : "قادمة"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell text-sm">{h.assignedLawyerName || "-"}</TableCell>
-                    <TableCell className="hidden lg:table-cell text-sm">{h.assignedConsultantName || "-"}</TableCell>
-                    <TableCell className="hidden lg:table-cell text-sm">
-                      {(h.traineeNames && h.traineeNames.length > 0) ? h.traineeNames.join("، ") : "-"}
-                    </TableCell>
-                    {userRole === "SUPER_ADMIN" && (
-                      <TableCell className="text-xs text-purple-600 hidden lg:table-cell">
-                        {h.lawyerId || "غير محدد"}
-                      </TableCell>
-                    )}
-                    <TableCell className="text-center">
-                      <Link to={`/app/hearings/${h.caseId}/${h.id}`}>
-                        <Button
-                          variant="outline"
-                          className="border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#B8962E] flex items-center gap-2 px-3 py-1.5 h-auto text-xs font-bold rounded-xl transition-all"
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                          <span>تفاصيل الجلسة</span>
-                        </Button>
-                      </Link>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+          {loading ? (
+            <div className="text-center py-10">جاري التحميل...</div>
+          ) : filteredHearings.length === 0 ? (
+            <div className="text-center py-10 text-gray-500">لا توجد جلسات مسجلة</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-4">
+              {pagedHearings.map(h => <HearingCard key={`${h.caseId}_${h.id}`} h={h} caseId={h.caseId} />)}
+            </div>
+          )}
           <Pagination
             currentPage={page}
             totalItems={filteredHearings.length}

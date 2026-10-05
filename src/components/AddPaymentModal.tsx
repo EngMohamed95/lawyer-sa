@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Loader2 } from "lucide-react";
+import { visibleCasesQuery } from "../lib/caseAccess";
 
 export function AddPaymentModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClose: () => void; onSuccess: () => void; }) {
   const [loading, setLoading] = useState(false);
@@ -31,7 +32,7 @@ export function AddPaymentModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
 
           if (userRole !== "SUPER_ADMIN") {
             clientsQ = query(collection(db, "clients"), where("lawyerId", "==", lawyerId));
-            casesQ = query(collection(db, "cases"), where("lawyerId", "==", lawyerId));
+            casesQ = visibleCasesQuery(lawyerId || "");
           }
 
           const clientsSnap = await getDocs(clientsQ);

@@ -120,7 +120,8 @@ service cloud.firestore {
 
       allow create: if member() && (
         isSuperAdmin() ||
-        (isOfficeOwner() && request.resource.data.get('lawyerId', '') == myTenant())
+        (isOfficeOwner() && request.resource.data.get('lawyerId', '') == myTenant()
+          && request.resource.data.get('role', '') in ['PARTNER', 'OFFICE_LAWYER', 'CONSULTANT', 'SECRETARY', 'ACCOUNTANT', 'TRAINEE', 'CLIENT'])
       );
 
       /**
@@ -133,7 +134,11 @@ service cloud.firestore {
         ||
         (
           isOfficeOwner() &&
-          resource.data.get('lawyerId', userId) == myTenant()
+          resource.data.get('lawyerId', userId) == myTenant() &&
+          request.resource.data.get('lawyerId', userId) == resource.data.get('lawyerId', userId) &&
+          (request.resource.data.get('role', '') == resource.data.get('role', '') ||
+            (userId != request.auth.uid && resource.data.get('role', '') != 'SUPER_ADMIN' &&
+              request.resource.data.get('role', '') in ['PARTNER', 'OFFICE_LAWYER', 'CONSULTANT', 'SECRETARY', 'ACCOUNTANT', 'TRAINEE', 'CLIENT']))
         )
         ||
         (
@@ -158,17 +163,24 @@ service cloud.firestore {
 
     /* ────────────────────────── القضايا والعملاء ────────────────────────── */
 
+    /** المحامي (OFFICE_LAWYER) يصل للقضايا المكلَّف بها فقط؛ باقي الأدوار بلا قيد إضافي */
+    function caseAssignedToMe(caseData) {
+      return myRole() != 'OFFICE_LAWYER' || caseData.get('assignedLawyerId', '') == request.auth.uid;
+    }
+
     match /cases/{caseId} {
-      allow get, list: if canRead();
+      allow get, list: if canRead() && caseAssignedToMe(resource.data);
       allow create: if canCreate();
-      allow update: if canUpdate();
+      allow update: if canUpdate() && caseAssignedToMe(resource.data);
       allow delete: if canHardDelete();
 
-      // الجلسات والمستندات والمذكرات ترث حدود القضية الأم
+      // الجلسات والمستندات والمذكرات والطلبات ترث حدود القضية الأم — ومنها التكليف
       match /{document=**} {
         allow read, write: if member() && (
-          isSuperAdmin() ||
-          get(/databases/$(database)/documents/cases/$(caseId)).data.get('lawyerId', '') == myTenant()
+          isSuperAdmin() || (
+            get(/databases/$(database)/documents/cases/$(caseId)).data.get('lawyerId', '') == myTenant() &&
+            caseAssignedToMe(get(/databases/$(database)/documents/cases/$(caseId)).data)
+          )
         );
       }
     }
@@ -343,6 +355,120 @@ service cloud.firestore {
       allow get, list: if canRead();
       allow create: if member() && ownsIncoming();
       allow update, delete: if false;
+    }
+
+    // المقترحات يراها مقدمها ومدير المنصة فقط. المستخدم ينشئ، والإدارة تراجع وترد.
+    match /productSuggestions/{suggestionId} {
+      function suggestionParticipant() {
+        return member() && (isSuperAdmin() || resource.data.createdBy == request.auth.uid);
+      }
+      allow read: if suggestionParticipant();
+      allow create: if member() && !isSuperAdmin()
+        && request.resource.data.keys().hasOnly(['title', 'details', 'category', 'status', 'createdBy', 'requesterName', 'lawyerId', 'adminResponse', 'createdAt', 'updatedAt', 'respondedAt'])
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.lawyerId == myTenant()
+        && request.resource.data.requesterName is string && request.resource.data.requesterName.size() <= 200
+        && request.resource.data.title is string && request.resource.data.title.size() >= 3 && request.resource.data.title.size() <= 200
+        && request.resource.data.details is string && request.resource.data.details.size() >= 10 && request.resource.data.details.size() <= 4000
+        && request.resource.data.category in ['واجهة وتجربة المستخدم', 'إدارة القضايا والجلسات', 'الحسابات والتقارير', 'المستندات والعقود', 'الذكاء الاصطناعي', 'ميزة جديدة أخرى']
+        && request.resource.data.status == 'RECEIVED'
+        && request.resource.data.adminResponse == ''
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.respondedAt == null;
+      allow update: if isSuperAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'adminResponse', 'updatedAt', 'respondedAt'])
+        && request.resource.data.status in ['RECEIVED', 'UNDER_REVIEW', 'PLANNED', 'IMPLEMENTED', 'DECLINED']
+        && request.resource.data.adminResponse is string && request.resource.data.adminResponse.size() <= 4000
+        && request.resource.data.updatedAt == request.time
+        && ((request.resource.data.adminResponse == '' && request.resource.data.respondedAt == null)
+          || (request.resource.data.adminResponse.size() > 0 && request.resource.data.respondedAt == request.time));
+      allow delete: if false;
+    }
+
+    // الدعم بين مقدم الطلب وإدارة المنصة فقط، وليس بقية أعضاء المكتب.
+    match /supportTickets/{ticketId} {
+      function attachment(a) {
+        return a.keys().hasOnly(['name', 'path', 'size', 'type'])
+          && a.name is string && a.name.size() > 0 && a.name.size() <= 200
+          && a.path is string && a.path.matches('supportAttachments/' + ticketId + '/' + request.auth.uid + '/[^/]+')
+          && a.size is int && a.size > 0 && a.size <= 5242880
+          && a.type in ['image/png', 'image/jpeg', 'image/webp', 'application/pdf'];
+      }
+      function attachments(data) {
+        let a = data.attachments;
+        return a is list && a.size() <= 4
+          && (a.size() < 1 || attachment(a[0])) && (a.size() < 2 || attachment(a[1]))
+          && (a.size() < 3 || attachment(a[2])) && (a.size() < 4 || attachment(a[3]));
+      }
+      function participant() {
+        return member() && (isSuperAdmin() || resource.data.createdBy == request.auth.uid);
+      }
+      function validStatus() {
+        return request.resource.data.status in ['OPEN', 'IN_PROGRESS', 'WAITING', 'RESOLVED', 'CLOSED'];
+      }
+      function newReply() {
+        let messageId = request.resource.data.lastMessageId;
+        let path = /databases/$(database)/documents/supportTickets/$(ticketId)/messages/$(messageId);
+        return messageId is string && messageId.size() > 0
+          && messageId != resource.data.lastMessageId
+          && !exists(path)
+          && getAfter(path).data.senderId == request.auth.uid
+          && getAfter(path).data.createdAt == request.time
+          && request.resource.data.messageCount == resource.data.messageCount + 1
+          && !(resource.data.status in ['CLOSED', 'RESOLVED'])
+          && request.resource.data.status == (isSuperAdmin() ? 'WAITING' : 'OPEN')
+          && request.resource.data.lastReplyBy == (isSuperAdmin() ? 'ADMIN' : 'USER');
+      }
+      allow read: if participant();
+      allow create: if member() && !isSuperAdmin()
+        && request.resource.data.keys().hasOnly(['subject', 'description', 'category', 'priority', 'status', 'createdBy', 'requesterName', 'lawyerId', 'createdAt', 'updatedAt', 'lastMessageId', 'lastReplyBy', 'messageCount', 'attachments'])
+        && attachments(request.resource.data)
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.lawyerId == myTenant()
+        && request.resource.data.requesterName is string
+        && request.resource.data.requesterName.size() <= 200
+        && request.resource.data.subject is string
+        && request.resource.data.subject.size() >= 3 && request.resource.data.subject.size() <= 200
+        && request.resource.data.description is string
+        && request.resource.data.description.size() >= 10 && request.resource.data.description.size() <= 3000
+        && request.resource.data.category in ['مشكلة تقنية أو عطل في النظام', 'الحساب والصلاحيات', 'الاشتراكات والفواتير والمدفوعات', 'اقتراح وتطوير', 'استفسار عام أو مساعدة']
+        && request.resource.data.priority in ['LOW', 'NORMAL', 'HIGH', 'URGENT']
+        && request.resource.data.status == 'OPEN'
+        && request.resource.data.createdAt == request.time && request.resource.data.updatedAt == request.time
+        && request.resource.data.lastMessageId == '' && request.resource.data.lastReplyBy == ''
+        && request.resource.data.messageCount == 1;
+      allow update: if participant() && validStatus()
+        && request.resource.data.updatedAt == request.time
+        && (
+          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt'])
+            && (isSuperAdmin() || (resource.data.status in ['RESOLVED', 'CLOSED'] && request.resource.data.status == 'OPEN') || request.resource.data.status == 'CLOSED'))
+          || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'lastMessageId', 'lastReplyBy', 'messageCount']) && newReply())
+        );
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        function ticket() {
+          return get(/databases/$(database)/documents/supportTickets/$(ticketId)).data;
+        }
+        function ticketAfter() {
+          return getAfter(/databases/$(database)/documents/supportTickets/$(ticketId)).data;
+        }
+        allow read: if member() && (isSuperAdmin() || ticket().createdBy == request.auth.uid);
+        allow create: if member() && (isSuperAdmin() || ticket().createdBy == request.auth.uid)
+          && !(ticket().status in ['CLOSED', 'RESOLVED'])
+          && request.resource.data.keys().hasOnly(['body', 'senderId', 'senderName', 'isAdmin', 'createdAt', 'attachments'])
+          && attachments(request.resource.data)
+          && request.resource.data.senderId == request.auth.uid
+          && request.resource.data.senderName is string && request.resource.data.senderName.size() <= 200
+          && request.resource.data.isAdmin == isSuperAdmin()
+          && request.resource.data.body is string && request.resource.data.body.size() <= 10000
+          && (request.resource.data.body.size() > 0 || request.resource.data.attachments.size() > 0)
+          && request.resource.data.createdAt == request.time
+          && ticketAfter().lastMessageId == messageId && ticketAfter().updatedAt == request.time
+          && ticketAfter().messageCount == ticket().messageCount + 1;
+        allow update, delete: if false;
+      }
     }
 
     /* ────────────────────────── الافتراضي: الرفض ────────────────────────── */

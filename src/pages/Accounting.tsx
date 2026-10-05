@@ -12,6 +12,7 @@ import { AddExpenseModal } from "../components/AddExpenseModal";
 import { ReceiptsTab, VouchersTab } from "../components/VouchersTab";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../lib/firebase";
+import { visibleCasesQuery } from "../lib/caseAccess";
 
 export default function Accounting() {
   const [data, setData] = useState<any>({ payments: [], expenses: [], summary: { totalPaid: 0, totalOwed: 0, totalExpenses: 0 } });
@@ -37,7 +38,7 @@ export default function Accounting() {
       if (userRole !== "SUPER_ADMIN") {
         paymentsQ = query(collection(db, "payments"), where("lawyerId", "==", lawyerId));
         clientsQ = query(collection(db, "clients"), where("lawyerId", "==", lawyerId));
-        casesQ = query(collection(db, "cases"), where("lawyerId", "==", lawyerId));
+        casesQ = visibleCasesQuery(lawyerId || "");
         expensesQ = query(collection(db, "expenses"), where("lawyerId", "==", lawyerId));
       }
 

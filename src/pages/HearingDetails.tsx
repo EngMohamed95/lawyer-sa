@@ -209,6 +209,7 @@ export default function HearingDetails() {
         </CardHeader>
         <CardContent className="p-6 space-y-4">
           <InfoField label="الالتمسات / ما تم فيها" value={hearing.requiredActions} />
+          <InfoField label="طلبات القاضي" value={hearing.judgeRequests} />
           <InfoField label="قرار الجلسة (النتيجة)" value={hearing.result} />
         </CardContent>
       </Card>

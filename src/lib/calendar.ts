@@ -4,6 +4,7 @@
  * التقويم يجمع أربعة مصادر في نموذج حدث واحد:
  *   1. appointments — المواعيد الجديدة (تُنشأ من هنا)
  *   2. الجلسات داخل «cases/{id}/hearings» — قراءة فقط بلا مساس ببنيتها
+ *      والطلبات داخل «cases/{id}/requests» (تاريخ الطلب وموعد متابعته)
  *   3. tasks.dueDate — مواعيد تسليم المهام
  *   4. contracts.endDate و invoices.dueDate — استحقاقات تعاقدية ومالية
  *
@@ -13,10 +14,12 @@
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "./firebase";
 import { excludeDeleted } from "./softDelete";
+import { visibleCasesQuery } from "./caseAccess";
+import { REQUEST_STATUS_LABELS_AR, type RequestStatus } from "./caseRequests";
 
 /* ────────────────────────── الأنواع ────────────────────────── */
 
-export type EventSource = "appointment" | "hearing" | "task" | "contract" | "invoice";
+export type EventSource = "appointment" | "hearing" | "request" | "task" | "contract" | "invoice";
 
 export type AppointmentType =
   | "CLIENT_MEETING" | "INTERNAL_MEETING" | "CONSULTATION"
@@ -115,6 +118,7 @@ export const APPOINTMENT_STATUS_COLORS: Record<AppointmentStatus, string> = {
 export const SOURCE_LABELS_AR: Record<EventSource, string> = {
   appointment: "موعد",
   hearing: "جلسة",
+  request: "طلب",
   task: "مهمة",
   contract: "عقد",
   invoice: "فاتورة",
@@ -124,6 +128,7 @@ export const SOURCE_LABELS_AR: Record<EventSource, string> = {
 export const SOURCE_COLORS: Record<EventSource, string> = {
   appointment: "bg-[#133B2E] text-white border-[#133B2E]",
   hearing: "bg-cyan-100 text-cyan-900 border-cyan-200",
+  request: "bg-lime-100 text-lime-900 border-lime-200",
   task: "bg-purple-100 text-purple-900 border-purple-200",
   contract: "bg-amber-100 text-amber-900 border-amber-200",
   invoice: "bg-emerald-100 text-emerald-900 border-emerald-200",
@@ -132,6 +137,7 @@ export const SOURCE_COLORS: Record<EventSource, string> = {
 export const SOURCE_DOT: Record<EventSource, string> = {
   appointment: "bg-[#133B2E]",
   hearing: "bg-cyan-500",
+  request: "bg-lime-500",
   task: "bg-purple-500",
   contract: "bg-amber-500",
   invoice: "bg-emerald-500",
@@ -282,14 +288,94 @@ function appointmentToEvent(a: Appointment): CalendarEvent {
   };
 }
 
+/* ────────────────────────── الجلسة القادمة وطلبات القاضي ────────────────────────── */
+
+/**
+ * «تاريخ الجلسة القادمة» يُسجَّل داخل الجلسة الحالية، و«طلبات القاضي» فيها
+ * هي المطلوب تنفيذه قبل ذلك الموعد. هذه الدوال تحوّلها إلى مواعيد قابلة
+ * للتذكير والعرض — يستخدمها التقويم ومحرك التنبيهات معاً.
+ */
+export interface NextHearing {
+  /** معرّف ثابت مشتق من الجلسة المصدر — يصلح مفتاحاً لمنع تكرار التنبيه */
+  id: string;
+  caseId: string;
+  /** YYYY-MM-DD */
+  date: string;
+  court: string;
+  judgeRequests: string;
+}
+
+const dateOnly = (v: unknown): string => str(v).slice(0, 10);
+const caseDateKey = (caseId: string, date: string) => `${caseId}|${date}`;
+
+/** طلبات القاضي المستحقة في كل (قضية، تاريخ) — من الجلسات التي حدّدت ذلك التاريخ موعداً قادماً */
+export function judgeRequestsByDate(hearings: (Record<string, unknown> & { caseId: string })[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const h of hearings) {
+    const date = dateOnly(h.nextHearingDate);
+    const req = str(h.judgeRequests).trim();
+    if (!date || !req) continue;
+    const key = caseDateKey(h.caseId, date);
+    map.set(key, map.has(key) ? `${map.get(key)}\n${req}` : req);
+  }
+  return map;
+}
+
+export function judgeRequestsFor(map: Map<string, string>, caseId: string, date: unknown): string {
+  return map.get(caseDateKey(caseId, dateOnly(date))) ?? "";
+}
+
+/** مواعيد «الجلسة القادمة» التي لم تُنشأ لها جلسة فعلية بعد في القضية نفسها وبالتاريخ نفسه */
+export function pendingNextHearings(hearings: (Record<string, unknown> & { id: string; caseId: string })[]): NextHearing[] {
+  const existing = new Set(hearings.map((h) => caseDateKey(h.caseId, dateOnly(h.hearingDate))));
+  const requests = judgeRequestsByDate(hearings);
+  const seen = new Set<string>();
+  const out: NextHearing[] = [];
+  for (const h of hearings) {
+    const date = dateOnly(h.nextHearingDate);
+    if (!date) continue;
+    const key = caseDateKey(h.caseId, date);
+    if (existing.has(key) || seen.has(key)) continue;
+    seen.add(key);
+    out.push({
+      id: `${h.id}_next`,
+      caseId: h.caseId,
+      date,
+      court: str(h.court),
+      judgeRequests: requests.get(key) ?? "",
+    });
+  }
+  return out;
+}
+
+function nextHearingToEvent(n: NextHearing, caseTitle: string): CalendarEvent {
+  return {
+    id: `hn_${n.id}`,
+    source: "hearing",
+    title: `الجلسة القادمة — ${caseTitle}`,
+    subtitle: [n.court || null, n.judgeRequests ? `طلبات القاضي: ${n.judgeRequests}` : null].filter(Boolean).join(" · ") || null,
+    start: `${n.date}T09:00:00`,
+    end: `${n.date}T10:00:00`,
+    allDay: true,
+    href: `/app/cases/${n.caseId}`,
+    caseId: n.caseId,
+    clientName: null,
+    status: "قادمة",
+  };
+}
+
 /** الجلسة لا تحمل وقتاً في البنية القائمة — تُعرض كحدث يوم كامل */
-function hearingToEvent(h: Record<string, unknown> & { id: string }, caseTitle: string): CalendarEvent {
+function hearingToEvent(h: Record<string, unknown> & { id: string }, caseTitle: string, judgeRequests = ""): CalendarEvent {
   const date = str(h.hearingDate);
   return {
     id: `h_${h.id}`,
     source: "hearing",
     title: `جلسة — ${caseTitle}`,
-    subtitle: [str(h.court) || null, str(h.requiredActions) || null].filter(Boolean).join(" · ") || null,
+    subtitle: [
+      str(h.court) || null,
+      str(h.requiredActions) || null,
+      judgeRequests ? `طلبات القاضي: ${judgeRequests}` : null,
+    ].filter(Boolean).join(" · ") || null,
     start: date ? `${date}T09:00:00` : "",
     end: date ? `${date}T10:00:00` : "",
     allDay: true,
@@ -298,6 +384,43 @@ function hearingToEvent(h: Record<string, unknown> & { id: string }, caseTitle: 
     clientName: null,
     status: str(h.result) ? "منتهية" : "قادمة",
   };
+}
+
+/**
+ * الطلب يظهر يوم تقديمه، ويظهر «موعد المتابعة» أيضاً ما دام الطلب
+ * مقدَّماً أو قيد الدراسة — بعد البتّ فيه لا داعي لتذكير بمتابعته.
+ */
+function requestToEvents(r: Row, caseTitle: string): CalendarEvent[] {
+  const type = str(r.type) || "طلب";
+  const status = str(r.status);
+  const statusLabel = REQUEST_STATUS_LABELS_AR[status as RequestStatus] || null;
+  const open = status === "SUBMITTED" || status === "UNDER_REVIEW";
+  const caseId = str(r.caseId);
+  const base = {
+    source: "request" as const,
+    allDay: true,
+    href: caseId ? `/app/cases/${caseId}?tab=requests` : null,
+    caseId: caseId || null,
+    clientName: null,
+    status: statusLabel,
+  };
+  const at = (date: string) => ({ start: `${date.slice(0, 10)}T09:00:00`, end: `${date.slice(0, 10)}T10:00:00` });
+  const out: CalendarEvent[] = [];
+  const requestDate = str(r.requestDate);
+  if (requestDate) out.push({
+    ...base, ...at(requestDate),
+    id: `rq_${r.id}`,
+    title: `${type} — ${caseTitle}`,
+    subtitle: [str(r.requestNumber) ? `رقم ${str(r.requestNumber)}` : null, statusLabel, str(r.court) || null].filter(Boolean).join(" · ") || null,
+  });
+  const followUp = str(r.followUpDate);
+  if (followUp && open) out.push({
+    ...base, ...at(followUp),
+    id: `rqf_${r.id}`,
+    title: `متابعة: ${type} — ${caseTitle}`,
+    subtitle: [str(r.requestNumber) ? `رقم ${str(r.requestNumber)}` : null, statusLabel].filter(Boolean).join(" · ") || null,
+  });
+  return out;
 }
 
 function taskToEvent(t: Record<string, unknown> & { id: string }): CalendarEvent {
@@ -358,7 +481,10 @@ type Row = Record<string, unknown> & { id: string };
 
 async function readAll(col: string, lawyerId: string): Promise<Row[]> {
   try {
-    const snap = await getDocs(query(collection(db, col), where("lawyerId", "==", lawyerId)));
+    const snap = await getDocs(
+      // القضايا تمر عبر حدود الرؤية — المحامي يرى المكلَّف بها فقط
+      col === "cases" ? visibleCasesQuery(lawyerId) : query(collection(db, col), where("lawyerId", "==", lawyerId)),
+    );
     return excludeDeleted(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Row));
   } catch (err) {
     console.warn(`تعذّر قراءة ${col} للتقويم:`, err);
@@ -387,7 +513,7 @@ export async function aggregateCalendar(
 
   const [appointments, cases, tasks, contracts, invoices] = await Promise.all([
     want("appointment") ? readAll("appointments", lawyerId) : Promise.resolve([]),
-    want("hearing") ? readAll("cases", lawyerId) : Promise.resolve([]),
+    want("hearing") || want("request") ? readAll("cases", lawyerId) : Promise.resolve([]),
     want("task") ? readAll("tasks", lawyerId) : Promise.resolve([]),
     want("contract") ? readAll("contracts", lawyerId) : Promise.resolve([]),
     want("invoice") ? readAll("invoices", lawyerId) : Promise.resolve([]),
@@ -407,10 +533,28 @@ export async function aggregateCalendar(
       try {
         const snap = await getDocs(collection(db, "cases", c.id, "hearings"));
         const title = str(c.title) || str(c.caseNumber) || "قضية";
-        return snap.docs
-          .map((d) => ({ id: d.id, caseId: c.id, ...d.data() }) as Row)
-          .filter((h) => str(h.hearingDate))
-          .map((h) => hearingToEvent(h, title));
+        const hearings = snap.docs.map((d) => ({ id: d.id, caseId: c.id, ...d.data() }) as Row & { caseId: string });
+        const requests = judgeRequestsByDate(hearings);
+        return [
+          ...hearings
+            .filter((h) => str(h.hearingDate))
+            .map((h) => hearingToEvent(h, title, judgeRequestsFor(requests, c.id, h.hearingDate))),
+          ...pendingNextHearings(hearings).map((n) => nextHearingToEvent(n, title)),
+        ];
+      } catch {
+        return [];
+      }
+    }));
+    events.push(...perCase.flat());
+  }
+
+  // طلبات القضايا — مجموعة فرعية «cases/{id}/requests»
+  if (want("request") && cases.length > 0) {
+    const perCase = await Promise.all(cases.map(async (c) => {
+      try {
+        const snap = await getDocs(collection(db, "cases", c.id, "requests"));
+        const title = str(c.title) || str(c.caseNumber) || "قضية";
+        return snap.docs.flatMap((d) => requestToEvents({ id: d.id, caseId: c.id, ...d.data() } as Row, title));
       } catch {
         return [];
       }
@@ -560,4 +704,23 @@ export function downloadIcs(events: CalendarEvent[], filename = "lawyeros-calend
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/* ────────────────────────── التاريخ الهجري ────────────────────────── */
+
+/** التاريخ بالهجري (أم القرى) كما يظهر في ناجز، مثل ١٤٤٧/١٠/١٦ */
+export function formatHijri(value?: string | null): string {
+  if (!value) return "-";
+  // تاريخ بلا وقت يُقرأ محلياً ظهراً حتى لا يزيحه فرق التوقيت ليوم سابق
+  const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value);
+  if (Number.isNaN(d.getTime())) return value;
+  try {
+    const parts = new Intl.DateTimeFormat("ar-SA-u-ca-islamic-umalqura-nu-arab", {
+      year: "numeric", month: "2-digit", day: "2-digit",
+    }).formatToParts(d);
+    const get = (t: string) => parts.find((p) => p.type === t)?.value || "";
+    return `${get("year")}/${get("month")}/${get("day")}`;
+  } catch {
+    return d.toLocaleDateString("ar-SA");
+  }
 }

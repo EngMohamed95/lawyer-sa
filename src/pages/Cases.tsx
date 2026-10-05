@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
-import { Plus, Search, Filter, Eye, FileSpreadsheet, Gavel, X, AlertTriangle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
+import { useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import { Plus, Search, Filter, Eye, FileSpreadsheet, Gavel, X, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Card, CardContent, CardHeader } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { Badge } from "../components/ui/badge";
 import { AiSummarizerModal } from "../components/AiSummarizerModal";
 import { AddCaseModal } from "../components/AddCaseModal";
 import { collection, getDocs, query, where, limit } from "firebase/firestore";
@@ -12,6 +11,8 @@ import type { Query, DocumentData } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { Pagination } from "../components/ui/Pagination";
 import { Link, useSearchParams } from "react-router";
+import { formatHijri } from "../lib/calendar";
+import ExecutionOverview, { matchesExecution, type ExecutionCapacity, type ExecutionFilter } from "../components/ExecutionOverview";
 
 const STATUS_LABELS_AR: Record<string, string> = {
   // القيم الحالية التي يكتبها النظام
@@ -27,25 +28,7 @@ const STATUS_LABELS_AR: Record<string, string> = {
   COMPLETED: "مكتملة",
 };
 
-const STATUS_COLORS: Record<string, string> = {
-  OPEN: "bg-green-100 text-green-800 hover:bg-green-200",
-  CLOSED: "bg-gray-100 text-gray-800 hover:bg-gray-200",
-  ARCHIVED: "bg-blue-100 text-blue-800 hover:bg-blue-200",
-  ACTIVE: "bg-green-100 text-green-800 hover:bg-green-200",
-  PENDING: "bg-amber-100 text-amber-800 hover:bg-amber-200",
-  INACTIVE: "bg-gray-100 text-gray-800 hover:bg-gray-200",
-  SUSPENDED: "bg-gray-100 text-gray-800 hover:bg-gray-200",
-  DONE: "bg-blue-100 text-blue-800 hover:bg-blue-200",
-  COMPLETED: "bg-blue-100 text-blue-800 hover:bg-blue-200",
-};
-
 const getStatusLabel = (status: string) => STATUS_LABELS_AR[status] || "مفتوحة";
-
-const getStatusBadge = (status: string) => (
-  <Badge className={STATUS_COLORS[status] || "bg-gray-100 text-gray-800 hover:bg-gray-200"}>
-    {getStatusLabel(status)}
-  </Badge>
-);
 
 // نفس مفاتيح سبب الإغلاق المحفوظة من تبويب "تنفيذ الأحكام" في CaseDetails.tsx
 const ENFORCEMENT_CLOSURE_LABELS_AR: Record<string, string> = {
@@ -66,6 +49,194 @@ const isEnforcementOverdue = (c: any): boolean =>
   !c.enforcementClosureReason &&
   new Date(c.enforcementNoticeDeadline).getTime() < Date.now();
 
+// أنواع قديمة محفوظة بالإنجليزي في بعض البيانات
+const CASE_TYPE_LABELS_AR: Record<string, string> = {
+  CIVIL: "مدني",
+  COMMERCIAL: "تجاري",
+  CRIMINAL: "جزائي",
+  LABOR: "عمالي",
+  EXECUTION: "تنفيذ",
+};
+
+const CLIENT_ROLE_LABELS_AR: Record<string, string> = {
+  PLAINTIFF: "وكيل المدعي",
+  DEFENDANT: "وكيل المدعى عليه",
+};
+
+const CaseField = ({ label, children, className = "" }: { label: string; children: ReactNode; className?: string }) => (
+  <div className={`flex flex-col gap-0.5 min-w-0 ${className}`}>
+    <span className="text-xs text-gray-500">{label}</span>
+    <span className="text-sm font-medium text-gray-900 leading-tight truncate">{children}</span>
+  </div>
+);
+
+// حاوية تمرير أفقي بأزرار أسهم على الجانبين (مثل ناجز) تظهر فقط عند وجود محتوى مخفي
+function CaseRowsScroller({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(false);
+
+  const update = () => {
+    const el = ref.current;
+    if (!el) return;
+    // في RTL تكون scrollLeft صفرًا في البداية وسالبة عند التمرير لليسار
+    const max = el.scrollWidth - el.clientWidth;
+    const pos = Math.abs(el.scrollLeft);
+    setCanPrev(pos > 2);
+    setCanNext(pos < max - 2);
+  };
+
+  useEffect(() => {
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [children]);
+
+  const scrollBy = (dir: 1 | -1) => ref.current?.scrollBy({ left: dir * 320, behavior: "smooth" });
+
+  const arrow = "absolute top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-gray-800/90 text-white flex items-center justify-center shadow-md hover:bg-gray-900 transition";
+
+  return (
+    <div className="relative">
+      {canPrev && (
+        <button aria-label="السابق" onClick={() => scrollBy(1)} className={`${arrow} right-3`}>
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      )}
+      {canNext && (
+        <button aria-label="التالي" onClick={() => scrollBy(-1)} className={`${arrow} left-3`}>
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+      )}
+      <div ref={ref} onScroll={update} className="overflow-x-auto">
+        <div className="min-w-[900px] divide-y divide-gray-200 bg-gray-50/60">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function CaseRow({ c, expanded, onToggle, userRole }: { c: any; expanded: boolean; onToggle: () => void; userRole: string | null }) {
+  const plaintiff = c.plaintiffName || (c.clientRole === "DEFENDANT" ? c.opponentName : c.client?.fullName) || "-";
+  const defendant = c.defendantName || (c.clientRole === "DEFENDANT" ? c.client?.fullName : c.opponentName) || "-";
+
+  return (
+    <div>
+      <div className="flex items-stretch gap-4 py-1.5 pl-4">
+        <button
+          onClick={onToggle}
+          aria-expanded={expanded}
+          aria-label={expanded ? "إخفاء التفاصيل" : "عرض التفاصيل"}
+          className="w-8 shrink-0 self-center h-8 bg-[#22B04B] hover:bg-[#1c9a41] text-white flex items-center justify-center transition-colors rounded-md"
+        >
+          <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`} />
+        </button>
+        <div className="flex-1 grid grid-cols-[1.2fr_0.9fr_1fr_1fr_1.4fr_1.4fr_0.8fr] gap-4 items-center">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs text-gray-500">رقم القضية</span>
+            <Link to={`/app/cases/${c.id}`} className="text-lg font-bold text-gray-900 leading-tight hover:text-[#22B04B] transition-colors" dir="ltr" style={{ textAlign: "right" }}>
+              {c.caseNumber || "-"}
+            </Link>
+          </div>
+          <CaseField label="تاريخ القضية">{formatHijri(c.startDate || c.createdAt)}</CaseField>
+          <CaseField label="نوع القضية">{CASE_TYPE_LABELS_AR[c.type] || c.type || "-"}</CaseField>
+          <CaseField label="الصفة">{CLIENT_ROLE_LABELS_AR[c.clientRole] || "وكيل"}</CaseField>
+          <CaseField label="المدعي">{plaintiff}</CaseField>
+          <CaseField label="المدعى عليه">{defendant}</CaseField>
+          <CaseField label="الحالة">{getStatusLabel(c.status || "OPEN")}</CaseField>
+        </div>
+      </div>
+
+      {expanded && (
+        <div className="bg-white border-t border-gray-100 px-4 py-3 mr-8">
+          <div className="grid grid-cols-4 gap-x-6 gap-y-3">
+            <CaseField label="عنوان القضية">{c.title || "بدون عنوان"}</CaseField>
+            <CaseField label="المحكمة">{[c.courtName, c.courtCircle].filter(Boolean).join(" — ") || "-"}</CaseField>
+            <CaseField label="العميل">{c.client?.fullName || "-"}</CaseField>
+            <CaseField label="محامي الخصم">{c.opponentLawyer || "-"}</CaseField>
+            {(userRole === "LAWYER" || userRole === "OFFICE_LAWYER") && (
+              <CaseField label="المحامي المسؤول">{c.assignedLawyerName || "المدير"}</CaseField>
+            )}
+            {userRole === "SUPER_ADMIN" && <CaseField label="المحامي">{c.lawyerId || "غير محدد"}</CaseField>}
+            <CaseField label="المستشار">{c.assignedConsultantName || "-"}</CaseField>
+            <CaseField label="المتدربون">{c.traineeNames?.length ? c.traineeNames.join("، ") : "-"}</CaseField>
+          </div>
+          <div className="mt-3 flex justify-end">
+            <Link to={`/app/cases/${c.id}`}>
+              <Button className="bg-[#22B04B] hover:bg-[#1c9a41] text-white gap-2 rounded-xl font-bold">
+                <Eye className="h-4 w-4" /> تفاصيل القضية
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ────────────────────────── قائمة ملفات التنفيذ (بتصميم ناجز) ────────────────────────── */
+
+const EXECUTION_COLS = "grid grid-cols-[1.3fr_0.9fr_1.4fr_1fr_1.5fr_1.2fr_0.9fr_5rem] gap-4 items-center";
+
+const executionStatusOf = (c: any): { label: string; dot: string; text: string } => {
+  if (c.enforcementClosureReason) return { label: "منتهي", dot: "bg-gray-400", text: "text-gray-500" };
+  if (isEnforcementOverdue(c)) return { label: "متأخر", dot: "bg-red-500", text: "text-red-600" };
+  return { label: "قيد التنفيذ", dot: "bg-blue-600", text: "text-gray-600" };
+};
+
+/** أسماء المنفذ ضدهم — من أطراف الدعوى إن وُجدت، وإلا من الحقول القديمة */
+const debtorNamesOf = (c: any): string[] => {
+  if (Array.isArray(c.parties)) {
+    const names = c.parties.filter((p: any) => p.role === "DEFENDANT").map((p: any) => p.name).filter(Boolean);
+    if (names.length) return names;
+  }
+  const fallback = c.defendantName || (c.clientRole === "DEFENDANT" ? c.client?.fullName : c.opponentName) || "";
+  return fallback ? String(fallback).split("، ") : [];
+};
+
+function ExecutionRows({ cases }: { cases: any[] }) {
+  return (
+    <div className="p-3 space-y-2 bg-gray-50/60">
+      <div className={`${EXECUTION_COLS} px-4 py-2 text-sm font-bold text-gray-700`}>
+        <span>رقم الطلب</span>
+        <span>نوع الطلب</span>
+        <span>نوع السند</span>
+        <span>تاريخ تقديم الطلب</span>
+        <span>اسم المنفذ ضده</span>
+        <span>اسم المحكمة</span>
+        <span>حالة الطلب</span>
+        <span />
+      </div>
+      {cases.map((c) => {
+        const status = executionStatusOf(c);
+        const debtors = debtorNamesOf(c);
+        return (
+          <div key={c.id} className={`${EXECUTION_COLS} px-4 py-3 rounded-lg bg-white border border-gray-100 shadow-xs hover:shadow-sm transition`}>
+            <Link to={`/app/cases/${c.id}?tab=enforcement`} dir="ltr" style={{ textAlign: "right" }}
+              className="text-base font-bold text-gray-900 hover:text-[#1a9a45] truncate">
+              {c.caseNumber || "-"}
+            </Link>
+            <span className="text-sm text-gray-800 truncate">{c.enforcementRequestType || "-"}</span>
+            <span className="text-sm text-gray-800 leading-snug line-clamp-2">{c.enforcementDeedType || "-"}</span>
+            <span className="text-sm text-gray-800">{formatHijri(c.startDate || c.createdAt)} هـ</span>
+            <span className="text-sm text-gray-800 leading-snug min-w-0">
+              {debtors.length ? debtors.slice(0, 2).map((n) => <span key={n} className="block truncate">{n}</span>) : "-"}
+              {debtors.length > 2 && <span className="block text-xs text-gray-400">+{debtors.length - 2} آخرين</span>}
+            </span>
+            <span className="text-sm text-gray-800 truncate">{c.courtName || "-"}</span>
+            <span className={`flex items-center gap-1.5 text-xs ${status.text}`}>
+              <span className={`w-2 h-2 rounded-full shrink-0 ${status.dot}`} /> {status.label}
+            </span>
+            <Link to={`/app/cases/${c.id}?tab=enforcement`}
+              className="justify-self-end px-3 py-1.5 rounded-md border border-gray-300 text-sm font-bold text-gray-800 hover:bg-gray-50 transition">
+              تفاصيل
+            </Link>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function Cases() {
   const [cases, setCases] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +244,10 @@ export default function Cases() {
   const [search, setSearch] = useState("");
   const [isAddCaseOpen, setIsAddCaseOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [execFilter, setExecFilter] = useState<ExecutionFilter>("ALL");
+  const [execCapacity, setExecCapacity] = useState<ExecutionCapacity>("ANY");
+  const listRef = useRef<HTMLDivElement>(null);
   const PAGE_SIZE = 20;
 
   // ?type= يأتي من "التنفيذ" في القائمة الجانبية — يفتح الصفحة مُرشَّحة على
@@ -159,6 +334,8 @@ export default function Cases() {
         "المستشار": c.assignedConsultantName || "",
         "المتدربون": (c.traineeNames || []).join("، "),
         ...(isExecutionView ? {
+          "نوع الطلب": c.enforcementRequestType || "",
+          "نوع السند": c.enforcementDeedType || "",
           "نسبة إنجاز التنفيذ": `${enforcementProgressOf(c)}%`,
           "مهلة التنفيذ": c.enforcementNoticeDeadline || "",
           "حالة ملف التنفيذ": c.enforcementClosureReason
@@ -183,8 +360,12 @@ export default function Cases() {
     }
   };
 
+  const isExecutionView = typeFilter === "تنفيذ";
+  const executionCases = isExecutionView ? cases.filter(c => c.type === "تنفيذ") : [];
+
   const filteredCases = Array.isArray(cases) ? cases.filter(c => {
     if (typeFilter && c.type !== typeFilter) return false;
+    if (isExecutionView && !matchesExecution(c, execFilter, execCapacity)) return false;
     const s = (search || "").toLowerCase();
     return (
       String(c.title || "").toLowerCase().includes(s) ||
@@ -195,7 +376,6 @@ export default function Cases() {
   }) : [];
 
   const pagedCases = filteredCases.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const isExecutionView = typeFilter === "تنفيذ";
 
   return (
     <div className="space-y-6 font-['Tajawal']" dir="rtl">
@@ -209,13 +389,22 @@ export default function Cases() {
       <AddCaseModal 
         isOpen={isAddCaseOpen} 
         onClose={() => setIsAddCaseOpen(false)} 
-        onSuccess={fetchCases} 
+        onSuccess={fetchCases}
+        defaultType={typeFilter || undefined}
       />
 
+      {isExecutionView ? (
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">التنفيذ</h1>
+          <Button className="bg-[#1a9a45] hover:bg-[#15803a] text-white px-5 py-5 rounded-lg font-bold" onClick={() => setIsAddCaseOpen(true)}>
+            <Plus className="ml-2 h-4 w-4" /> طلب تنفيذ جديد
+          </Button>
+        </div>
+      ) : (
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">
-            {typeFilter === "تنفيذ" ? "قضايا التنفيذ" : "إدارة القضايا"}
+            {typeFilter ? `قضايا ${typeFilter}` : "إدارة القضايا"}
           </h1>
           <p className="text-gray-500 mt-1">سجل القضايا والعملاء</p>
         </div>
@@ -232,8 +421,21 @@ export default function Cases() {
           </Button>
         </div>
       </div>
+      )}
 
-      {typeFilter && (
+      {isExecutionView && (
+        <ExecutionOverview
+          cases={executionCases}
+          filter={execFilter}
+          capacity={execCapacity}
+          onFilter={(f) => { setExecFilter(f); setPage(1); }}
+          onCapacity={(c) => { setExecCapacity(c); setPage(1); }}
+          onShowDetails={() => listRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          onExport={exportToExcel}
+        />
+      )}
+
+      {typeFilter && !isExecutionView && (
         <div className="flex items-center gap-2 p-3 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-sm">
           <Gavel size={16} className="shrink-0" />
           <span>معروض فقط قضايا: <strong>{typeFilter}</strong></span>
@@ -246,7 +448,7 @@ export default function Cases() {
         </div>
       )}
 
-      <Card className="shadow-sm border-gray-200">
+      <Card ref={listRef} className="shadow-sm border-gray-200 scroll-mt-4">
         <CardHeader className="border-b bg-gray-50/50 pb-4">
           <div className="flex flex-col sm:flex-row items-center gap-4">
             <div className="relative w-full sm:w-96">
@@ -265,155 +467,33 @@ export default function Cases() {
         </CardHeader>
         <CardContent className="p-0">
           {isExecutionView ? (
-            <Table>
-              <TableHeader className="bg-gray-50">
-                <TableRow>
-                  <TableHead className="text-right font-bold text-[#133B2E]">رقم القضية</TableHead>
-                  <TableHead className="text-right font-bold text-[#133B2E] hidden sm:table-cell">طالب التنفيذ</TableHead>
-                  <TableHead className="text-right font-bold text-[#133B2E] hidden md:table-cell">المنفذ ضده</TableHead>
-                  <TableHead className="text-right font-bold text-[#133B2E]">نسبة الإنجاز</TableHead>
-                  <TableHead className="text-right font-bold text-[#133B2E] hidden lg:table-cell">مهلة التنفيذ</TableHead>
-                  <TableHead className="text-right font-bold text-[#133B2E]">حالة الملف</TableHead>
-                  <TableHead className="text-center font-bold text-[#133B2E]">عرض</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-10 text-gray-500">جاري التحميل...</TableCell>
-                  </TableRow>
-                ) : filteredCases.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-10 text-gray-500">لا يوجد قضايا تنفيذ مطابقة للبحث</TableCell>
-                  </TableRow>
-                ) : (
-                  pagedCases.map((c) => {
-                    try {
-                      const progress = enforcementProgressOf(c);
-                      const overdue = isEnforcementOverdue(c);
-                      return (
-                        <TableRow key={c.id} className="hover:bg-gray-50/50">
-                          <TableCell className="font-mono text-sm">
-                            <Link to={`/app/cases/${c.id}?tab=enforcement`} className="text-[#133B2E] hover:underline decoration-[#D4AF37] decoration-2 underline-offset-4">
-                              {c.caseNumber || "-"}
-                            </Link>
-                          </TableCell>
-                          <TableCell className="hidden sm:table-cell">{c.client?.fullName || "-"}</TableCell>
-                          <TableCell className="hidden md:table-cell">{c.opponentName || "-"}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2 w-32">
-                              <div className="flex-1 bg-gray-100 h-2 rounded-full overflow-hidden">
-                                <div className="bg-[#D4AF37] h-full rounded-full" style={{ width: `${progress}%` }} />
-                              </div>
-                              <span className="text-xs font-bold text-gray-500 shrink-0">{progress}%</span>
-                            </div>
-                          </TableCell>
-                          <TableCell className="hidden lg:table-cell text-sm">
-                            {c.enforcementNoticeDeadline ? (
-                              <span className={`inline-flex items-center gap-1 ${overdue ? "text-red-600 font-bold" : "text-gray-600"}`}>
-                                {overdue && <AlertTriangle size={12} />}
-                                {new Date(c.enforcementNoticeDeadline).toLocaleDateString('ar-EG')}
-                              </span>
-                            ) : "-"}
-                          </TableCell>
-                          <TableCell>
-                            {c.enforcementClosureReason ? (
-                              <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
-                                مغلق — {ENFORCEMENT_CLOSURE_LABELS_AR[c.enforcementClosureReason] || c.enforcementClosureReason}
-                              </Badge>
-                            ) : (
-                              <Badge className={overdue ? "bg-red-100 text-red-800 hover:bg-red-200" : "bg-amber-100 text-amber-800 hover:bg-amber-200"}>
-                                {overdue ? "متأخر" : "قيد التنفيذ"}
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <div className="flex items-center justify-center">
-                              <Link to={`/app/cases/${c.id}?tab=enforcement`}>
-                                <Button
-                                  variant="outline"
-                                  className="border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#B8962E] flex items-center gap-2 px-3 py-1.5 h-auto text-xs font-bold rounded-xl transition-all"
-                                >
-                                  <Eye className="h-3.5 w-3.5" />
-                                  <span>مسار التنفيذ</span>
-                                </Button>
-                              </Link>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    } catch (e) {
-                      return null;
-                    }
-                  })
-                )}
-              </TableBody>
-            </Table>
+            loading ? (
+              <div className="text-center py-10 text-gray-500">جاري التحميل...</div>
+            ) : filteredCases.length === 0 ? (
+              <div className="text-center py-10 text-gray-500">لا يوجد ملفات تنفيذ مطابقة</div>
+            ) : (
+              <CaseRowsScroller>
+                <ExecutionRows cases={pagedCases} />
+              </CaseRowsScroller>
+            )
           ) : (
-          <Table>
-            <TableHeader className="bg-gray-50">
-              <TableRow>
-                <TableHead className="text-right font-bold text-[#133B2E]">رقم القضية</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E]">عنوان القضية</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E] hidden sm:table-cell">العميل</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E] hidden md:table-cell">الخصم</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E]">الحالة</TableHead>
-                {(userRole === "LAWYER" || userRole === "OFFICE_LAWYER") && <TableHead className="text-right font-bold text-[#133B2E] hidden lg:table-cell">المحامي المسؤول</TableHead>}
-                {userRole === "SUPER_ADMIN" && <TableHead className="text-right font-bold text-purple-600 hidden lg:table-cell">المحامي</TableHead>}
-                <TableHead className="text-right font-bold text-[#133B2E] hidden lg:table-cell">المستشار</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E] hidden lg:table-cell">المتدربون</TableHead>
-                <TableHead className="text-center font-bold text-[#133B2E]">عرض</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={userRole === "SUPER_ADMIN" ? 9 : 8} className="text-center py-10 text-gray-500">جاري التحميل...</TableCell>
-                </TableRow>
-              ) : filteredCases.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={userRole === "SUPER_ADMIN" ? 9 : 8} className="text-center py-10 text-gray-500">لا يوجد قضايا مطابقة للبحث</TableCell>
-                </TableRow>
-              ) : (
-                pagedCases.map((c) => {
-                  try {
-                    return (
-                      <TableRow key={c.id} className="hover:bg-gray-50/50">
-                        <TableCell className="font-mono text-sm">
-                          <Link to={`/app/cases/${c.id}`} className="text-[#133B2E] hover:underline decoration-[#D4AF37] decoration-2 underline-offset-4">
-                            {c.caseNumber || "-"}
-                          </Link>
-                        </TableCell>
-                        <TableCell className="font-medium text-[#133B2E]">{c.title || "بدون عنوان"}</TableCell>
-                        <TableCell className="hidden sm:table-cell">{c.client?.fullName || "-"}</TableCell>
-                        <TableCell className="hidden md:table-cell">{c.opponentName || "-"}</TableCell>
-                        <TableCell>{getStatusBadge(c.status || "OPEN")}</TableCell>
-                        {(userRole === "LAWYER" || userRole === "OFFICE_LAWYER") && <TableCell className="hidden lg:table-cell text-sm">{c.assignedLawyerName || "المدير"}</TableCell>}
-                        {userRole === "SUPER_ADMIN" && <TableCell className="text-xs text-purple-600 hidden lg:table-cell">{c.lawyerId || "غير محدد"}</TableCell>}
-                        <TableCell className="hidden lg:table-cell text-sm">{c.assignedConsultantName || "-"}</TableCell>
-                        <TableCell className="hidden lg:table-cell text-sm">{(c.traineeNames && c.traineeNames.length > 0) ? c.traineeNames.join("، ") : "-"}</TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex items-center justify-center">
-                            <Link to={`/app/cases/${c.id}`}>
-                              <Button
-                                variant="outline"
-                                className="border-[#D4AF37] text-[#D4AF37] hover:bg-[#D4AF37]/10 hover:text-[#B8962E] flex items-center gap-2 px-3 py-1.5 h-auto text-xs font-bold rounded-xl transition-all"
-                              >
-                                <Eye className="h-3.5 w-3.5" />
-                                <span>تفاصيل القضية</span>
-                              </Button>
-                            </Link>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  } catch (e) {
-                    return null;
-                  }
-                })
-              )}
-            </TableBody>
-          </Table>
+          loading ? (
+            <div className="text-center py-10 text-gray-500">جاري التحميل...</div>
+          ) : filteredCases.length === 0 ? (
+            <div className="text-center py-10 text-gray-500">لا يوجد قضايا مطابقة للبحث</div>
+          ) : (
+            <CaseRowsScroller>
+              {pagedCases.map((c) => (
+                <CaseRow
+                  key={c.id}
+                  c={c}
+                  expanded={expandedId === c.id}
+                  onToggle={() => setExpandedId(expandedId === c.id ? null : c.id)}
+                  userRole={userRole}
+                />
+              ))}
+            </CaseRowsScroller>
+          )
           )}
           <Pagination
             currentPage={page}

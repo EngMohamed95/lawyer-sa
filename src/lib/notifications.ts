@@ -16,7 +16,9 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { excludeDeleted } from "./softDelete";
+import { visibleCasesQuery } from "./caseAccess";
 import { displayStatus, isOverdue } from "./billing";
+import { judgeRequestsByDate, judgeRequestsFor, pendingNextHearings } from "./calendar";
 
 /* ────────────────────────── الأنواع ────────────────────────── */
 
@@ -201,7 +203,10 @@ function daysUntil(dateStr: string): number | null {
 
 async function readAll(col: string, lawyerId: string) {
   try {
-    const snap = await getDocs(query(collection(db, col), where("lawyerId", "==", lawyerId)));
+    const snap = await getDocs(
+      // القضايا تمر عبر حدود الرؤية — المحامي يرى المكلَّف بها فقط
+      col === "cases" ? visibleCasesQuery(lawyerId) : query(collection(db, col), where("lawyerId", "==", lawyerId)),
+    );
     return excludeDeleted(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Record<string, unknown> & { id: string }));
   } catch (err) {
     console.warn(`تعذّر قراءة ${col} للتنبيهات:`, err);
@@ -239,19 +244,33 @@ export async function collectCandidates(lawyerId: string, userId: string): Promi
       return snap.docs.map((d) => ({ id: d.id, caseId: c.id, caseTitle: str(c.title) || str(c.caseNumber), ...d.data() }));
     } catch { return []; }
   }));
-  for (const h of hearingArrays.flat() as (Record<string, unknown> & { id: string; caseId: string; caseTitle: string })[]) {
+  const allHearings = hearingArrays.flat() as (Record<string, unknown> & { id: string; caseId: string; caseTitle: string })[];
+  const requests = judgeRequestsByDate(allHearings);
+  const titleOf = new Map(allHearings.map((h) => [h.caseId, h.caseTitle]));
+
+  const hearingReminder = (diff: number, judgeRequests: string) => ({
+    title: (diff === 0 ? "جلسة اليوم" : `جلسة بعد ${diff} ${diff === 1 ? "يوم" : "أيام"}`)
+      + (judgeRequests ? " — مطلوب تنفيذ طلبات القاضي" : ""),
+    priority: (diff === 0 ? "URGENT" : diff === 1 || judgeRequests ? "HIGH" : "NORMAL") as Priority,
+  });
+  // طلبات القاضي تحتاج وقتاً للتحضير — تذكير إضافي قبل أسبوع
+  const hearingOffsets = (judgeRequests: string): number[] =>
+    judgeRequests ? [7, ...OFFSETS.HEARING] : [...OFFSETS.HEARING];
+
+  for (const h of allHearings) {
     const date = str(h.hearingDate);
     const diff = daysUntil(date);
     if (diff === null) continue;
 
-    if (OFFSETS.HEARING.includes(diff as 0 | 1 | 3)) {
+    const judgeRequests = judgeRequestsFor(requests, h.caseId, date);
+    if (hearingOffsets(judgeRequests).includes(diff)) {
       out.push({
         event: "HEARING_REMINDER",
-        title: diff === 0 ? "جلسة اليوم" : `جلسة بعد ${diff} ${diff === 1 ? "يوم" : "أيام"}`,
-        body: `${h.caseTitle} — ${str(h.court) || "المحكمة"}${str(h.requiredActions) ? ` · ${str(h.requiredActions)}` : ""}`,
+        ...hearingReminder(diff, judgeRequests),
+        body: `${h.caseTitle} — ${str(h.court) || "المحكمة"}${str(h.requiredActions) ? ` · ${str(h.requiredActions)}` : ""}`
+          + (judgeRequests ? ` · طلبات القاضي: ${judgeRequests}` : ""),
         link: `/app/cases/${h.caseId}`,
         entity: "hearing", entityId: h.id,
-        priority: diff === 0 ? "URGENT" : diff === 1 ? "HIGH" : "NORMAL",
         offset: diff,
       });
     }
@@ -266,6 +285,21 @@ export async function collectCandidates(lawyerId: string, userId: string): Promi
         priority: "HIGH", offset: -1,
       });
     }
+  }
+
+  // ── الجلسة القادمة: موعد مسجَّل في «تاريخ الجلسة القادمة» ولم تُنشأ له جلسة بعد
+  for (const n of pendingNextHearings(allHearings)) {
+    const diff = daysUntil(n.date);
+    if (diff === null || !hearingOffsets(n.judgeRequests).includes(diff)) continue;
+    out.push({
+      event: "HEARING_REMINDER",
+      ...hearingReminder(diff, n.judgeRequests),
+      body: `${titleOf.get(n.caseId) || "قضية"} — ${n.court || "المحكمة"}`
+        + (n.judgeRequests ? ` · طلبات القاضي: ${n.judgeRequests}` : ""),
+      link: `/app/cases/${n.caseId}`,
+      entity: "hearing", entityId: n.id,
+      offset: diff,
+    });
   }
 
   // ── المهام: يوم قبل · يوم الاستحقاق · متأخرة

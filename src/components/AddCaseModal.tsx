@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { AddClientModal } from "./AddClientModal";
 import { useOfficeLookups } from "../lib/officeLookups";
 
-export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, onClose: () => void, onSuccess: () => void }) {
+export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOpen: boolean, onClose: () => void, onSuccess: () => void, defaultType?: string }) {
   const { caseTypes } = useOfficeLookups();
   const [loading, setLoading] = useState(false);
   const [clients, setClients] = useState<any[]>([]);
@@ -119,12 +119,13 @@ export function AddCaseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean, 
 
   useEffect(() => {
     if (isOpen) {
+      if (defaultType) setFormData((f) => ({ ...f, type: defaultType }));
       fetchClients();
       fetchOfficeLawyers();
       fetchConsultants();
       fetchTrainees();
     }
-  }, [isOpen]);
+  }, [isOpen, defaultType]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

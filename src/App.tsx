@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Outlet, Link, useLocation, Navigate, useNavigate } from "react-router";
-import { LayoutDashboard, Users, Briefcase, Calendar, CheckSquare, FileText, Settings, Bell, Search, Menu, Calculator, GraduationCap, BarChart, LogOut, Shield, CreditCard, Loader2, BookOpen, Sparkles, ChevronDown, ScrollText, Trash2, FileSignature, ReceiptText, Handshake, Timer, CalendarDays, Globe, Gavel } from "lucide-react";
+import { LayoutDashboard, Users, Briefcase, Calendar, CheckSquare, FileText, Settings, Bell, Search, Menu, Calculator, GraduationCap, BarChart, LogOut, Shield, CreditCard, Loader2, BookOpen, Sparkles, ChevronDown, ScrollText, Trash2, FileSignature, ReceiptText, Handshake, Timer, CalendarDays, Gavel, Headset, Lightbulb } from "lucide-react";
 import { useState, lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
 import { collection, getDocs, query, where, collectionGroup, limit } from "firebase/firestore";
 import { db } from "./lib/firebase";
@@ -58,9 +58,10 @@ const Invoices = lazy(() => import("./pages/Invoices"));
 const FeeAgreements = lazy(() => import("./pages/FeeAgreements"));
 const CalendarPage = lazy(() => import("./pages/Calendar"));
 const NotificationsPage = lazy(() => import("./pages/Notifications"));
-const ClientPortalAdmin = lazy(() => import("./pages/ClientPortalAdmin"));
 const TimeEntries = lazy(() => import("./pages/TimeEntries"));
 const AiChat = lazy(() => import("./pages/AiChat"));
+const SupportTickets = lazy(() => import("./pages/SupportTickets"));
+const Suggestions = lazy(() => import("./pages/Suggestions"));
 
 function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const location = useLocation();
@@ -89,15 +90,12 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
     { name: "المحامين", path: "/app/lawyers", icon: <Shield size={20} />, hidden: !perms.can("platform.manage") },
     { name: "الاشتراكات", path: "/app/subscriptions", icon: <CreditCard size={20} />, hidden: !perms.can("platform.manage") },
 
-    // العملاء تضم بوابة العملاء كقائمة فرعية
+    // العملاء
     {
       name: "العملاء",
       path: "/app/clients",
       icon: <Users size={20} />,
       hidden: !perms.can("client.manage"),
-      children: [
-        { name: "بوابة العملاء", path: "/app/client-portal", icon: <Globe size={18} />, hidden: !perms.can("client.manage") },
-      ],
     },
 
     // ── العمل القضائي: القضية هي الجذر، وتحتها ما يتفرّع عنها ──
@@ -153,6 +151,8 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
     { name: "التقارير", path: "/app/reports", icon: <BarChart size={20} />, hidden: !canSeeFullReports || !isPremium },
     { name: "المساعد الذكي", path: "/app/ai-chat", icon: <Sparkles size={20} />, hidden: !perms.can("ai.use") || !isPremium },
     { name: "المكتبة القانونية", path: "/app/library", icon: <BookOpen size={20} />, hidden: !perms.can("library.view") },
+    { name: "المقترحات وتطوير النظام", path: "/app/suggestions", icon: <Lightbulb size={20} /> },
+    { name: "الدعم الفني والمساعدة", path: "/app/support/tickets", icon: <Headset size={20} /> },
 
     // ── إدارة النظام ──
     // سجل التدقيق وسلة المحذوفات انتقلا إلى تبويبين داخل الإعدادات لتخفيف
@@ -212,7 +212,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
               // بعض العناصر (مثل "التنفيذ") تحمل معامل بحث ضمن مسارها؛ المقارنة
               // بالمسار الكامل (pathname + search) تُبقي التمييز صحيحاً للجميع.
               const fullPath = location.pathname + location.search;
-              const isActive = fullPath === item.path;
+              const isActive = fullPath === item.path || (item.path === "/app/support/tickets" && location.pathname.startsWith("/app/support/tickets/"));
 
               // لا قائمة فرعية ← عنصر عادي كما كان تماماً
               if (kids.length === 0) {
@@ -807,6 +807,7 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/subscribe" element={<SubscribePage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/support/tickets" element={<Navigate to="/app/support/tickets" replace />} />
           <Route
             path="/create-admin"
             element={CREATE_ADMIN_ENABLED ? <CreateAdmin /> : <Navigate to="/login" replace />}
@@ -814,6 +815,9 @@ export default function App() {
           <Route path="/app" element={<Layout />}>
             <Route index element={<Navigate to="/app/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
+            <Route path="support/tickets" element={<SupportTickets />} />
+            <Route path="support/tickets/:ticketId" element={<SupportTickets />} />
+            <Route path="suggestions" element={<Suggestions />} />
             <Route path="lawyers" element={<Lawyers />} />
             <Route path="clients" element={<Clients />} />
             <Route path="cases" element={<Cases />} />
@@ -833,7 +837,6 @@ export default function App() {
             <Route path="invoices" element={<Invoices />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="notifications" element={<NotificationsPage />} />
-            <Route path="client-portal" element={<ClientPortalAdmin />} />
             <Route path="fee-agreements" element={<FeeAgreements />} />
             <Route path="time-entries" element={<TimeEntries />} />
             <Route path="ai-chat" element={<AiChat />} />

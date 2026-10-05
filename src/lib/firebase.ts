@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
-import { getStorage } from "firebase/storage";
+import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
+import { connectAuthEmulator, getAuth } from "firebase/auth";
+import { connectStorageEmulator, getStorage } from "firebase/storage";
 
 export const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDsWX_Lp3FSQVx1zpYSrdlFvKX0AC8gc7U",
@@ -14,9 +14,19 @@ export const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Explicit development-only switch. A demo project can never touch production data.
+const useEmulators = import.meta.env.DEV && import.meta.env.VITE_USE_FIREBASE_EMULATORS === "true";
+const app = initializeApp(useEmulators ? {
+  apiKey: "demo-key", projectId: "demo-lawyer-support", authDomain: "demo-lawyer-support.firebaseapp.com",
+  storageBucket: "demo-lawyer-support.appspot.com", appId: "demo-support",
+} : firebaseConfig);
 
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
+if (useEmulators) {
+  connectFirestoreEmulator(db, "127.0.0.1", 8088);
+  connectAuthEmulator(auth, "http://127.0.0.1:9098", { disableWarnings: true });
+  connectStorageEmulator(storage, "127.0.0.1", 9198);
+}
 export default app;

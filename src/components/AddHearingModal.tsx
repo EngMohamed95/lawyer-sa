@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
 import { Loader2 } from "lucide-react";
+import { visibleCasesQuery } from "../lib/caseAccess";
 
 export function AddHearingModal({ 
   isOpen, 
@@ -24,6 +26,7 @@ export function AddHearingModal({
     court: "",
     circuit: "",
     requiredActions: "",
+    judgeRequests: "",
     result: "",
     nextHearingDate: "",
     selectedCaseId: caseId || "",
@@ -91,7 +94,7 @@ export function AddHearingModal({
           const userRole = localStorage.getItem("userRole");
           const snap = await getDocs(
             userRole !== "SUPER_ADMIN"
-              ? query(collection(db, "cases"), where("lawyerId", "==", lawyerId), limit(100))
+              ? visibleCasesQuery(lawyerId || "", limit(100))
               : query(collection(db, "cases"), limit(100))
           );
           setCases(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -122,6 +125,7 @@ export function AddHearingModal({
         court: initialCaseData?.courtName || initialCaseData?.court || "",
         circuit: initialCaseData?.courtCircle || initialCaseData?.circuit || "",
         requiredActions: "",
+        judgeRequests: "",
         result: "",
         nextHearingDate: "",
         selectedCaseId: caseId || "",
@@ -184,6 +188,7 @@ export function AddHearingModal({
         court: formData.court,
         circuit: formData.circuit,
         requiredActions: formData.requiredActions,
+        judgeRequests: formData.judgeRequests,
         result: formData.result,
         nextHearingDate: formData.nextHearingDate || null,
         caseTitle: caseData.title || "بدون عنوان",
@@ -215,6 +220,7 @@ export function AddHearingModal({
         court: "", 
         circuit: "", 
         requiredActions: "", 
+        judgeRequests: "",
         result: "",
         nextHearingDate: "",
         selectedCaseId: caseId || "",
@@ -334,6 +340,17 @@ export function AddHearingModal({
                onChange={e => setFormData({...formData, requiredActions: e.target.value})}
                placeholder="المطلوب في الجلسة أو ما قدمته..." 
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-[#133B2E]">طلبات القاضي (المطلوب قبل الجلسة القادمة)</label>
+            <Textarea
+               rows={3}
+               value={formData.judgeRequests}
+               onChange={e => setFormData({...formData, judgeRequests: e.target.value})}
+               placeholder="مثال: تقديم أصل العقد، إحضار الشهود، الرد على مذكرة الخصم..."
+            />
+            <p className="text-xs text-gray-500">يصل المحامي تذكير بها مع موعد الجلسة القادمة، وتظهر في التقويم.</p>
           </div>
 
           <div className="space-y-2">

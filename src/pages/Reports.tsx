@@ -7,6 +7,7 @@ import { Badge } from "../components/ui/badge";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import AgingReport from "../components/AgingReport";
+import { visibleCasesQuery } from "../lib/caseAccess";
 
 export default function Reports() {
   const [data, setData] = useState<any>(null);
@@ -30,7 +31,7 @@ export default function Reports() {
 
       if (userRole !== "SUPER_ADMIN") {
         const { query, where } = await import("firebase/firestore");
-        casesQ = query(collection(db, "cases"), where("lawyerId", "==", lawyerId));
+        casesQ = visibleCasesQuery(lawyerId || "");
         paymentsQ = query(collection(db, "payments"), where("lawyerId", "==", lawyerId));
         tasksQ = query(collection(db, "tasks"), where("lawyerId", "==", lawyerId));
         clientsQ = query(collection(db, "clients"), where("lawyerId", "==", lawyerId));

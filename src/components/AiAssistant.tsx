@@ -6,6 +6,7 @@ import { Input } from "./ui/input";
 import { collection, getDocs, collectionGroup, query, where } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { callGemini, callGroq, readAiSettings, type GeminiContent } from "../lib/aiProxy";
+import { visibleCasesQuery } from "../lib/caseAccess";
 
 export function AiAssistant() {
   const [isOpen, setIsOpen] = useState(false);
@@ -36,7 +37,7 @@ export function AiAssistant() {
       const docsQ = collectionGroup(db, "documents");
       const casesQ = userRole === "SUPER_ADMIN"
         ? collection(db, "cases")
-        : query(collection(db, "cases"), where("lawyerId", "==", storedLawyerId));
+        : visibleCasesQuery(storedLawyerId);
       const clientsQ = userRole === "SUPER_ADMIN"
         ? collection(db, "clients")
         : query(collection(db, "clients"), where("lawyerId", "==", storedLawyerId));

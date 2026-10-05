@@ -10,7 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
   CalendarDays, Plus, ShieldAlert, RefreshCw, AlertTriangle,
-  ChevronRight, ChevronLeft, Download, Trash2, CheckCircle2, XCircle,
+  ChevronRight, ChevronLeft, Download, Trash2, CheckCircle2, XCircle, Gavel,
 } from "lucide-react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
@@ -34,7 +34,7 @@ const VIEW_LABELS: Record<ViewMode, string> = {
   month: "شهري", week: "أسبوعي", day: "يومي", agenda: "أجندة",
 };
 
-const ALL_SOURCES: EventSource[] = ["appointment", "hearing", "task", "contract", "invoice"];
+const ALL_SOURCES: EventSource[] = ["appointment", "hearing", "request", "task", "contract", "invoice"];
 
 export default function Calendar() {
   const perms = usePermissions();
@@ -42,6 +42,7 @@ export default function Calendar() {
   const canCreate = ["FULL", "ASSIGNED"].includes(perms.scopeOf("appointment.manage"));
 
   const [anchor, setAnchor] = useState(() => startOfDay(new Date()));
+  const [selectedKey, setSelectedKey] = useState(() => dayKey(new Date()));
   const [view, setView] = useState<ViewMode>("month");
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -195,7 +196,7 @@ export default function Calendar() {
           <Button variant="outline" size="sm" onClick={() => step(1)} className="rounded-xl border-gray-200" title="التالي">
             <ChevronLeft size={16} />
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setAnchor(startOfDay(new Date()))}
+          <Button variant="outline" size="sm" onClick={() => { setAnchor(startOfDay(new Date())); setSelectedKey(dayKey(new Date())); }}
             className="rounded-xl border-gray-200 text-xs font-bold">
             اليوم
           </Button>
@@ -245,7 +246,8 @@ export default function Calendar() {
           {loading ? (
             <div className="p-12 text-center text-gray-500 text-sm">جاري بناء التقويم...</div>
           ) : view === "month" ? (
-            <MonthView anchor={anchor} byDay={byDay} todayKey={todayKey}
+            <MonthView anchor={anchor} byDay={byDay} events={visible} todayKey={todayKey}
+              selectedKey={selectedKey} onSelect={setSelectedKey} canCreate={canCreate}
               onPick={(k) => canCreate && openAdd(k)} onOpen={setSelected} />
           ) : view === "week" ? (
             <WeekView anchor={anchor} byDay={byDay} todayKey={todayKey}
@@ -286,57 +288,132 @@ function Chip({ ev, onOpen }: { ev: CalendarEvent; onOpen: (e: CalendarEvent) =>
 
 /* ────────────────────────── العرض الشهري ────────────────────────── */
 
+/**
+ * شبكة الشهر مع لوحة جانبية لأحداث اليوم المختار — نفس فكرة تقويم لوحة التحكم.
+ * الخلية تعرض مؤشرات فقط (مطرقة للجلسات ونقاط لباقي المصادر) فتبقى الشبكة مقروءة.
+ */
 function MonthView({
-  anchor, byDay, todayKey, onPick, onOpen,
+  anchor, byDay, events, todayKey, selectedKey, onSelect, onPick, onOpen, canCreate,
 }: {
   anchor: Date;
   byDay: Map<string, CalendarEvent[]>;
+  events: CalendarEvent[];
   todayKey: string;
+  selectedKey: string;
+  onSelect: (k: string) => void;
   onPick: (k: string) => void;
   onOpen: (e: CalendarEvent) => void;
+  canCreate: boolean;
 }) {
   const days = monthGrid(anchor);
   const month = anchor.getMonth();
+  const selected = byDay.get(selectedKey) ?? [];
+
+  // حين يخلو اليوم المختار: أقرب الأحداث القادمة حتى لا تبقى اللوحة فارغة
+  const upcoming = useMemo(() => {
+    const from = startOfDay(new Date()).getTime();
+    return events.filter((e) => new Date(e.start).getTime() >= from).slice(0, 6);
+  }, [events]);
 
   return (
-    <div>
-      <div className="grid grid-cols-7 bg-gray-50 border-b">
-        {WEEKDAYS_AR.map((d) => (
-          <div key={d} className="px-2 py-2 text-center text-xs font-bold text-gray-600">{d}</div>
-        ))}
-      </div>
-      <div className="grid grid-cols-7">
-        {days.map((d) => {
-          const key = dayKey(d);
-          const list = byDay.get(key) ?? [];
-          const inMonth = d.getMonth() === month;
-          const isToday = key === todayKey;
-          return (
-            <div key={key}
-              className={`min-h-[104px] border-b border-l border-gray-100 p-1.5 space-y-1 transition ${
-                inMonth ? "bg-white" : "bg-gray-50/60"
-              } ${isToday ? "ring-2 ring-inset ring-[#D4AF37]" : ""}`}>
-              <div className="flex items-center justify-between">
-                <span className={`text-xs font-bold ${
-                  isToday ? "bg-[#133B2E] text-[#D4AF37] rounded-full w-6 h-6 flex items-center justify-center"
+    <div className="grid grid-cols-1 lg:grid-cols-3">
+      <div className="lg:col-span-2 border-b lg:border-b-0 lg:border-l border-gray-100">
+        <div className="grid grid-cols-7 bg-gray-50 border-b">
+          {WEEKDAYS_AR.map((d) => (
+            <div key={d} className="px-2 py-2 text-center text-xs font-bold text-gray-600">{d}</div>
+          ))}
+        </div>
+        <div className="grid grid-cols-7">
+          {days.map((d) => {
+            const key = dayKey(d);
+            const list = byDay.get(key) ?? [];
+            const inMonth = d.getMonth() === month;
+            const isToday = key === todayKey;
+            const isSelected = key === selectedKey;
+            const hasHearing = list.some((e) => e.source === "hearing");
+            return (
+              <button key={key} onClick={() => onSelect(key)}
+                className={`h-20 border-b border-l border-gray-100 p-1.5 flex flex-col items-center gap-1.5 transition ${
+                  isSelected ? "bg-[#133B2E]/5 ring-2 ring-inset ring-[#133B2E]"
+                  : inMonth ? "bg-white hover:bg-gray-50" : "bg-gray-50/60 hover:bg-gray-100/60"
+                }`}>
+                <span className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full ${
+                  isToday ? "bg-[#133B2E] text-[#D4AF37]"
                   : inMonth ? "text-gray-700" : "text-gray-300"
                 }`}>
                   {d.getDate()}
                 </span>
-                <button onClick={() => onPick(key)}
-                  className="text-gray-300 hover:text-[#133B2E] transition text-xs" title="إضافة موعد في هذا اليوم">
-                  <Plus size={13} />
-                </button>
-              </div>
-              {list.slice(0, 3).map((e) => <Chip key={e.id} ev={e} onOpen={onOpen} />)}
-              {list.length > 3 && (
-                <p className="text-[10px] text-gray-400 px-1">+{list.length - 3} أخرى</p>
-              )}
-            </div>
-          );
-        })}
+                {list.length > 0 && (
+                  <span className="flex items-center gap-1">
+                    {hasHearing && <Gavel size={13} className="text-cyan-600" />}
+                    {[...new Set(list.map((e) => e.source))].filter((s) => s !== "hearing").map((s) => (
+                      <span key={s} className={`w-2 h-2 rounded-full ${SOURCE_DOT[s]}`} />
+                    ))}
+                    {list.length > 1 && <span className="text-[10px] text-gray-400 mr-0.5">{list.length}</span>}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="flex flex-col min-h-[320px]">
+        <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between gap-2">
+          <p className="text-sm font-bold text-[#133B2E]">
+            {selectedKey === todayKey ? "اليوم — " : ""}
+            {new Date(`${selectedKey}T12:00:00`).toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" })}
+          </p>
+          {canCreate && (
+            <button onClick={() => onPick(selectedKey)}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-gray-200 text-xs font-bold text-[#133B2E] hover:bg-gray-50">
+              <Plus size={13} /> موعد
+            </button>
+          )}
+        </div>
+        {selected.length > 0 ? (
+          <DayEventList events={selected} onOpen={onOpen} />
+        ) : (
+          <div>
+            <p className="px-4 pt-4 pb-2 text-sm text-gray-400">لا أحداث في هذا اليوم</p>
+            {upcoming.length > 0 && (
+              <>
+                <p className="px-4 pt-2 text-xs font-bold text-gray-500">القادم</p>
+                <DayEventList events={upcoming} onOpen={onOpen} showDate />
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+function DayEventList({ events, onOpen, showDate = false }: {
+  events: CalendarEvent[];
+  onOpen: (e: CalendarEvent) => void;
+  showDate?: boolean;
+}) {
+  return (
+    <ul className="divide-y divide-gray-100 overflow-y-auto max-h-[480px]">
+      {events.map((e) => (
+        <li key={e.id}>
+          <button onClick={() => onOpen(e)}
+            className="w-full text-right flex items-start gap-2.5 px-4 py-2.5 hover:bg-gray-50/70 transition">
+            <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${SOURCE_DOT[e.source]}`} />
+            <span className="flex-1 min-w-0">
+              <span className="block text-sm font-bold text-[#133B2E] truncate">{e.title}</span>
+              {e.subtitle && <span className="block text-xs text-gray-500 line-clamp-2 whitespace-pre-line">{e.subtitle}</span>}
+              <span className="block text-[11px] text-gray-400 mt-0.5">
+                {SOURCE_LABELS_AR[e.source]}
+                {showDate && ` · ${new Date(e.start).toLocaleDateString("ar-EG", { day: "numeric", month: "short" })}`}
+                {!e.allDay && ` · ${timeLabel(e.start)}`}
+              </span>
+            </span>
+          </button>
+        </li>
+      ))}
+    </ul>
   );
 }
 

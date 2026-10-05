@@ -10,7 +10,9 @@ import {
   Users,
 } from "lucide-react";
 import { Link } from "react-router";
-import TodayAgenda from "../components/TodayAgenda";
+import DashboardCalendar from "../components/DashboardCalendar";
+import SupportDashboardCard from "../components/SupportDashboardCard";
+import SuggestionsDashboardCard from "../components/SuggestionsDashboardCard";
 import {
   collection,
   collectionGroup,
@@ -223,6 +225,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
+      {userRole === "SUPER_ADMIN" && <div className="grid gap-4 lg:grid-cols-2"><SuggestionsDashboardCard /><SupportDashboardCard /></div>}
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-[#133B2E]">أهلا بك، {userName}</h1>
@@ -264,8 +267,8 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* بطاقة جديدة: أجندة اليوم — البطاقات القائمة لم تتغيّر */}
-      <TodayAgenda />
+      {/* التقويم: شبكة الشهر وأحداث اليوم المختار — بدل بطاقة «أجندة اليوم» */}
+      <DashboardCalendar />
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Recent Cases */}

@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Loader2 } from "lucide-react";
 import { useOfficeLookups } from "../lib/officeLookups";
+import { visibleCasesQuery } from "../lib/caseAccess";
 
 export function AddExpenseModal({ isOpen, onClose, onSuccess }: { isOpen: boolean; onClose: () => void; onSuccess: () => void; }) {
   const { expenseCategories } = useOfficeLookups();
@@ -28,7 +29,7 @@ export function AddExpenseModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
 
           let casesQ: any = collection(db, "cases");
           if (userRole !== "SUPER_ADMIN") {
-            casesQ = query(collection(db, "cases"), where("lawyerId", "==", lawyerId));
+            casesQ = visibleCasesQuery(lawyerId || "");
           }
 
           const casesSnap = await getDocs(casesQ);

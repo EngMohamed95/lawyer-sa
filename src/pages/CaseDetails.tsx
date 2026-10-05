@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams } from "react-router";
-import { ChevronRight, Calendar, FileText, CheckSquare, Plus, Download, Edit, Save, Trash2, File, Scale, FileSignature, Sparkles, RefreshCw, UploadCloud, Chrome, Info, CheckCircle2, Loader2, ChevronDown, ChevronUp, AlertTriangle, Gavel, Database, Eye, Landmark, Banknote, FileBarChart, Printer, MessageCircle } from "lucide-react";
+import { ChevronRight, UsersRound, Archive, Calendar, FileText, CheckSquare, Plus, Download, Edit, Save, Trash2, File, Scale, FileSignature, Sparkles, RefreshCw, UploadCloud, Chrome, Info, CheckCircle2, Loader2, ChevronDown, ChevronUp, AlertTriangle, Gavel, Eye, Landmark, Banknote, FileBarChart, Printer, MessageCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -12,6 +12,12 @@ import { AddTaskModal } from "../components/AddTaskModal";
 import { EditCaseModal } from "../components/EditCaseModal";
 import { DocumentViewerModal } from "../components/DocumentViewerModal";
 import { EditHearingModal } from "../components/EditHearingModal";
+import HearingCard from "../components/HearingCard";
+import CaseParties, { partiesOf, type CaseParty } from "../components/CaseParties";
+import CaseRequests from "../components/CaseRequests";
+import MemoAiPanel from "../components/MemoAiPanel";
+import CaseJudgments, { judgmentsOf, legacyFinalJudgment, type CaseJudgment } from "../components/CaseJudgments";
+import { EXECUTION_DEED_TYPES, EXECUTION_REQUEST_TYPES } from "../lib/execution";
 import { AiMemoDrafterModal } from "../components/AiMemoDrafterModal";
 import { HearingSelectModal } from "../components/HearingSelectModal";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
@@ -19,10 +25,13 @@ import RichTextEditor from "../components/RichTextEditor";
 import { Input } from "../components/ui/input";
 import { doc, getDoc, collection, getDocs, addDoc, updateDoc, query, where, deleteField } from "firebase/firestore";
 import { db } from "../lib/firebase";
-import { callGemini, callGroq, readAiSettings } from "../lib/aiProxy";
 import Documents from "./Documents";
 import { usePermissions } from "../lib/usePermissions";
 import { useOfficeSettings } from "../lib/officeSettings";
+import {
+  renderLetterheadHeader, renderLetterheadFooter,
+  renderLetterheadHeaderWordSafe, renderLetterheadFooterWordSafe,
+} from "../lib/letterhead";
 import { writeAudit } from "../lib/audit";
 import {
   MEMO_STATUS_COLORS, MEMO_STATUS_LABELS_AR, memoActions, statusOf,
@@ -163,7 +172,6 @@ export default function CaseDetails() {
   const [memoTitle, setMemoTitle] = useState("");
   const [memoContent, setMemoContent] = useState("");
   const [memoType, setMemoType] = useState("LAWSUIT");
-  const [isDraftingWithAi, setIsDraftingWithAi] = useState(false);
   // معرّف المذكرة قيد التعديل — null يعني إنشاء مذكرة جديدة
   const [editingMemoId, setEditingMemoId] = useState<string | null>(null);
 
@@ -261,33 +269,16 @@ export default function CaseDetails() {
     }
   };
 
-  const draftWithAi = async (type: string, customData = data) => {
-    if (!customData) return;
-    setIsDraftingWithAi(true);
-    setMemoType(type);
-    
-    // Auto-update title if it's empty or matches standard prefixes
-    const prefixes = ["صحيفة دعوى", "مذكرة رد / دفاع", "مذكرة مرافعة"];
-    const isStandardTitle = !memoTitle || memoTitle === "" || prefixes.some(p => memoTitle.startsWith(p));
-    
-    const newPrefix = type === "LAWSUIT" ? "صحيفة دعوى" : type === "MEMO" ? "مذكرة رد / دفاع" : "مذكرة مرافعة";
-    if (isStandardTitle) {
-      setMemoTitle(`${newPrefix} - ${customData.title || ""}`);
-    }
+  /** برومبت صياغة المسودة الكاملة حسب نوع المذكرة — تستخدمه لوحة الذكاء الاصطناعي */
+  const buildMemoPrompt = (type: string, customData: any = data): string => {
+    const clientName = customData.client?.fullName || '..........';
+    const opponentName = customData.opponentName || '..........';
+    const courtName = customData.courtName || '..........';
+    const courtCircle = customData.courtCircle || '..........';
+    const caseSubject = customData.caseSubject || 'نزاع قضائي';
+    const caseSummary = customData.summary || 'نزاع قضائي بين الطرفين';
 
-    setMemoContent("<p style='text-align: center; color: #666;'>جاري صياغة المسودة الأولى بالذكاء الاصطناعي بناءً على بيانات القضية... الرجاء الانتظار...</p>");
-
-    try {
-      const { provider: aiProvider, model: aiModel } = readAiSettings();
-
-      const clientName = customData.client?.fullName || '..........';
-      const opponentName = customData.opponentName || '..........';
-      const courtName = customData.courtName || '..........';
-      const courtCircle = customData.courtCircle || '..........';
-      const caseSubject = customData.caseSubject || 'نزاع قضائي';
-      const caseSummary = customData.summary || 'نزاع قضائي بين الطرفين';
-
-      let prompt = `أنت مستشار قانوني ومحامٍ خبير في الأنظمة واللوائح القضائية السعودية والعربية.
+    let prompt = `أنت مستشار قانوني ومحامٍ خبير في الأنظمة واللوائح القضائية السعودية والعربية.
 وظيفتك هي صياغة مسودة قانونية بأسلوب احترافي ورصين.
 بيانات القضية الحالية:
 - عنوان القضية: ${customData.title}
@@ -299,8 +290,8 @@ export default function CaseDetails() {
 - موضوع القضية العام: ${caseSubject}
 - ملخص القضية: ${caseSummary}`;
 
-      if (type === "LAWSUIT") {
-        prompt += `\nالمطلوب: صياغة "صحيفة دعوى" (مذكرة ادعاء) مفصلة واحترافية.
+    if (type === "LAWSUIT") {
+      prompt += `\nالمطلوب: صياغة "صحيفة دعوى" (مذكرة ادعاء) مفصلة واحترافية.
 توجيهات الصياغة لصحيفة الدعوى:
 1. ابدأ بالبسملة والتحية والتوجه إلى فضيلة رئيس وأعضاء الدائرة القضائية الموقرين.
 2. اذكر أطراف الدعوى بوضوح (المدعي والمدعى عليه وصفاتهم).
@@ -309,8 +300,8 @@ export default function CaseDetails() {
 5. لخص الطلبات النهائية للمدعي بوضوح ودقة (مثل إلزام المدعى عليه بدفع المبالغ المستحقة، إلخ).
 6. اختم بعبارة "والله يحفظكم ويرعاكم، مقدمه لفضيلتكم..."
 7. صِغ المذكرة بلغة عربية فصحى قانونية بليغة وبصيغة HTML منسقة (مثل استخدام فقرات <p>، وعناوين <h3>، وقوائم <ul> <li>، ونصوص عريضة <strong>) بدون كود هيكلي كامل <html> أو <body>، فقط المحتوى الداخلي المنسق.`;
-      } else if (type === "MEMO") {
-        prompt += `\nالمطلوب: صياغة "مذكرة رد ودفاع" مفصلة واحترافية.
+    } else if (type === "MEMO") {
+      prompt += `\nالمطلوب: صياغة "مذكرة رد ودفاع" مفصلة واحترافية.
 توجيهات الصياغة لمذكرة الرد:
 1. ابدأ بالبسملة والتوجه إلى فضيلة رئيس وأعضاء الدائرة القضائية الموقرين.
 2. اذكر أطراف الدعوى وعلاقتهم بموضوع الرد.
@@ -320,52 +311,28 @@ export default function CaseDetails() {
 6. حدد الطلبات الختامية بوضوح (مثل: رد الدعوى، إلزام المدعي بالتعويض أو المصاريف القضائية، إلخ).
 7. اختم بعبارة مناسبة ومقدمه.
 8. صِغ المذكرة بلغة عربية فصحى قانونية بليغة وبصيغة HTML منسقة (مثل استخدام فقرات <p>، وعناوين <h3>، وقوائم <ul> <li>، ونصوص عريضة <strong>) بدون كود هيكلي كامل <html> أو <body>، فقط المحتوى الداخلي المنسق.`;
-      } else {
-        prompt += `\nالمطلوب: صياغة "مذكرة مرافعة ختامية" مفصلة واحترافية.
+    } else {
+      prompt += `\nالمطلوب: صياغة "مذكرة مرافعة ختامية" مفصلة واحترافية.
 توجيهات الصياغة لمذكرة المرافعة:
 1. ابدأ بالبسملة والتحية والتوجه للمحكمة الموقرة.
 2. لخص أسباب المرافعة والأسانيد القانونية المؤيدة لموكلنا.
 3. حدد الطلبات الختامية بوضوح.
 4. صِغ المذكرة بلغة عربية فصحى قانونية بليغة وبصيغة HTML منسقة (مثل استخدام فقرات <p>، وعناوين <h3>، وقوائم <ul> <li>، ونصوص عريضة <strong>) بدون كود هيكلي كامل <html> أو <body>، فقط المحتوى الداخلي المنسق.`;
-      }
-
-      let responseText = "";
-      if (aiProvider === "GEMINI") {
-        responseText = await callGemini(
-          [{ role: "user", parts: [{ text: prompt }] }],
-          { temperature: 0.7, maxOutputTokens: 3000 },
-          { provider: "GEMINI", model: aiModel },
-        );
-      } else {
-        responseText = await callGroq(
-          [{ role: "user", content: prompt }],
-          { provider: "GROQ", model: aiModel },
-        );
-      }
-
-      // Cleanup responseText if it contains markdown code blocks
-      let cleanedHtml = responseText.trim();
-      if (cleanedHtml.startsWith("```html")) {
-        cleanedHtml = cleanedHtml.replace(/^```html/, "").replace(/```$/, "");
-      } else if (cleanedHtml.startsWith("```")) {
-        cleanedHtml = cleanedHtml.replace(/^```/, "").replace(/```$/, "");
-      }
-
-      setMemoContent(cleanedHtml);
-    } catch (err: any) {
-      console.error(err);
-      // Fallback to static template
-      handleMemoTypeChange(type, true, customData);
-    } finally {
-      setIsDraftingWithAi(false);
     }
+    return prompt;
+  };
+
+  const MEMO_TYPE_LABELS: Record<string, string> = { LAWSUIT: "صحيفة دعوى", MEMO: "مذكرة رد / دفاع", PLEADING: "مذكرة مرافعة" };
+
+  /** عنوان افتراضي حين يُدرج نص من المساعد والعنوان فارغ */
+  const ensureMemoTitle = () => {
+    if (!memoTitle.trim()) setMemoTitle(`${MEMO_TYPE_LABELS[memoType] || "مذكرة"} - ${data?.title || ""}`);
   };
 
   // New Case Modals & AI States
   const [isEditHearingOpen, setIsEditHearingOpen] = useState(false);
   const [selectedHearing, setSelectedHearing] = useState<any | null>(null);
   const [isAiMemoDrafterOpen, setIsAiMemoDrafterOpen] = useState(false);
-  const [isSaveJudgmentLoading, setIsSaveJudgmentLoading] = useState(false);
 
   // Hearing Attachment States
   const [isHearingSelectOpen, setIsHearingSelectOpen] = useState(false);
@@ -394,18 +361,18 @@ export default function CaseDetails() {
 
       // 2. Generate PDF Blob
       // الختم يُطبع لأن الوصول لهنا مشروط أصلاً بـ canFile (المذكرة معتمدة نهائياً)
-      const stampHtml = office.officialStampUrl
-        ? `<img src="${office.officialStampUrl}" alt="ختم المكتب" style="position:absolute; bottom:30px; left:40px; width:110px; opacity:0.92;" />`
-        : "";
       const element = document.createElement("div");
       element.innerHTML = `
-        <div style="position: relative; font-family: 'Tajawal', sans-serif; padding: 40px; line-height: 1.8; direction: rtl; text-align: right; min-height: 100%;">
-          <h1 style="text-align: center; color: #133B2E; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; font-size: 22pt;">${selectedMemoForHearing.title}</h1>
-          <div style="color: #666; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 10pt;">
-            قضية رقم: ${data.caseNumber || '---'} | تاريخ الاعتماد: ${new Date().toLocaleDateString('ar-EG')}
+        <div style="font-family: 'Tajawal', sans-serif; line-height: 1.8; direction: rtl; text-align: right; min-height: 100%; background:#fff;">
+          ${renderLetterheadHeader(office.officeProfile)}
+          <div style="padding: 30px 40px;">
+            <h1 style="text-align: center; color: #133B2E; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; font-size: 22pt;">${selectedMemoForHearing.title}</h1>
+            <div style="color: #666; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 10pt;">
+              قضية رقم: ${data.caseNumber || '---'} | تاريخ الاعتماد: ${new Date().toLocaleDateString('ar-EG')}
+            </div>
+            <div style="font-size: 14pt; text-align: justify;">${selectedMemoForHearing.content}</div>
           </div>
-          <div style="font-size: 14pt; text-align: justify;">${selectedMemoForHearing.content}</div>
-          ${stampHtml}
+          ${renderLetterheadFooter(office.officeProfile, { stampUrl: office.officialStampUrl })}
         </div>
       `;
       document.body.appendChild(element);
@@ -445,13 +412,16 @@ export default function CaseDetails() {
       // 3.b توليد نسخة Word — مستند HTML بترويسة Word فتفتحه Microsoft Word مباشرة بلا مكتبات إضافية
       const wordHtml = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
         <head><meta charset="utf-8"><title>${selectedMemoForHearing.title}</title></head>
-        <body dir="rtl" style="font-family: 'Traditional Arabic', 'Tajawal', sans-serif; padding: 40px; line-height: 1.8; text-align: right;">
-          <h1 style="text-align: center; color: #133B2E; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; font-size: 22pt;">${selectedMemoForHearing.title}</h1>
-          <div style="color: #666; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 10pt;">
-            قضية رقم: ${data.caseNumber || '---'} | تاريخ الاعتماد: ${new Date().toLocaleDateString('ar-EG')}
+        <body dir="rtl" style="font-family: 'Traditional Arabic', 'Tajawal', sans-serif; padding: 0; line-height: 1.8; text-align: right;">
+          ${renderLetterheadHeaderWordSafe(office.officeProfile)}
+          <div style="padding: 40px;">
+            <h1 style="text-align: center; color: #133B2E; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; font-size: 22pt;">${selectedMemoForHearing.title}</h1>
+            <div style="color: #666; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 10pt;">
+              قضية رقم: ${data.caseNumber || '---'} | تاريخ الاعتماد: ${new Date().toLocaleDateString('ar-EG')}
+            </div>
+            <div style="font-size: 14pt; text-align: justify;">${selectedMemoForHearing.content}</div>
+            ${renderLetterheadFooterWordSafe(office.officeProfile, { stampUrl: office.officialStampUrl })}
           </div>
-          <div style="font-size: 14pt; text-align: justify;">${selectedMemoForHearing.content}</div>
-          ${stampHtml}
         </body>
       </html>`;
       const wordBlob = new Blob(['﻿', wordHtml], { type: 'application/msword' });
@@ -581,6 +551,47 @@ export default function CaseDetails() {
     }
   };
 
+  // أطراف الدعوى — ونُحدّث plaintiffName/defendantName لأن المذكرات والجلسات تقرأ منها
+  const handleSaveParties = async (parties: CaseParty[]) => {
+    if (!data) return;
+    const namesOf = (role: CaseParty["role"]) => parties.filter((p) => p.role === role).map((p) => p.name).join("، ");
+    const patch = {
+      parties,
+      plaintiffName: namesOf("PLAINTIFF"),
+      defendantName: namesOf("DEFENDANT"),
+      updatedAt: new Date().toISOString(),
+    };
+    try {
+      await updateDoc(doc(db, "cases", data.id), patch);
+      setData((prev: any) => ({ ...prev, ...patch }));
+    } catch (err) {
+      console.error("Error saving case parties:", err);
+      alert("حدث خطأ أثناء حفظ أطراف الدعوى");
+    }
+  };
+
+  // الأحكام — ونُزامن finalJudgment (آخر حكم نهائي) لأن تبويب التنفيذ وتقرير الحالة يقرآن منه
+  const handleSaveJudgments = async (judgments: CaseJudgment[]) => {
+    if (!data) return;
+    const final = legacyFinalJudgment(judgments);
+    try {
+      await updateDoc(doc(db, "cases", data.id), {
+        judgments,
+        finalJudgment: final ?? deleteField(),
+        updatedAt: new Date().toISOString(),
+      });
+      setData((prev: any) => {
+        const next = { ...prev, judgments };
+        if (final) next.finalJudgment = final; else delete next.finalJudgment;
+        return next;
+      });
+    } catch (err) {
+      console.error("Error saving judgments:", err);
+      alert("حدث خطأ أثناء حفظ الأحكام");
+      throw err;
+    }
+  };
+
   const handleToggleLitigationStep = async (stepId: number) => {
     if (!data) return;
     const currentSteps = data.litigationSteps || {};
@@ -704,6 +715,10 @@ export default function CaseDetails() {
       const memosSnap = await getDocs(collection(doc(db, "cases", id), "memos"));
       const memos = memosSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
+      // Fetch requests (الطلبات)
+      const requestsSnap = await getDocs(collection(doc(db, "cases", id), "requests"));
+      const requests = requestsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
       // Fetch client documents (shared across all cases of this client)
       let clientDocuments: any[] = [];
       if (caseData.clientId) {
@@ -729,7 +744,8 @@ export default function CaseDetails() {
         documents,
         clientDocuments,
         tasks,
-        memos
+        memos,
+        requests
       });
     } catch (error) {
       console.error("Error fetching case data:", error);
@@ -969,145 +985,162 @@ export default function CaseDetails() {
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as string)} className="w-full">
         <div 
-          style={{ position: "sticky", top: 0, zIndex: 40 }} 
+          style={{ position: "sticky", top: 0, zIndex: 20 }} 
           className="bg-[#F3F4F6]/95 backdrop-blur-md py-3 -mx-4 px-4 mb-6 border-b border-gray-200/50"
         >
-          <TabsList className={`grid grid-cols-2 sm:grid-cols-3 ${isExecutionCase ? "lg:grid-cols-8" : "lg:grid-cols-7"} gap-4 border-none p-0 w-full h-auto bg-transparent`}>
+          <TabsList className={`grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-2 border-none p-0 w-full h-auto bg-transparent`}>
             <TabsTrigger 
               value="info" 
-              className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
+              className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
                 activeTab === "info"
-                  ? "!bg-[#133B2E] !text-white shadow-xl shadow-[#133B2E]/35 border-2 border-[#133B2E]"
+                  ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
                   : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
-              <div>
-                <span className={`text-xs font-semibold block mb-1 ${activeTab === "info" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>التفاصيل العامة</span>
-                <span className={`text-xl font-bold block ${activeTab === "info" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>الملف الرئيسي</span>
+              <div className="min-w-0">
+                <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "info" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>التفاصيل العامة</span>
+                <span className={`text-sm leading-tight font-bold block truncate ${activeTab === "info" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>الملف الرئيسي</span>
               </div>
-              <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "info" ? "!bg-white/20 !text-amber-300" : "bg-indigo-100/70 text-indigo-600"}`}>
-                <Scale size={22} />
+              <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "info" ? "!bg-white/20 !text-amber-300" : "bg-indigo-100/70 text-indigo-600"}`}>
+                <Scale size={16} />
+              </div>
+            </TabsTrigger>
+
+            <TabsTrigger 
+              value="parties" 
+              className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
+                activeTab === "parties"
+                  ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
+                  : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
+              }`}
+            >
+              <div className="min-w-0">
+                <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "parties" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>أطراف الدعوى</span>
+                <span className={`text-lg leading-tight font-bold block ${activeTab === "parties" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{partiesOf(data).length}</span>
+              </div>
+              <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "parties" ? "!bg-white/20 !text-amber-300" : "bg-emerald-100/70 text-emerald-600"}`}>
+                <UsersRound size={16} />
+              </div>
+            </TabsTrigger>
+
+            <TabsTrigger 
+              value="requests" 
+              className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
+                activeTab === "requests"
+                  ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
+                  : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
+              }`}
+            >
+              <div className="min-w-0">
+                <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "requests" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>الطلبات</span>
+                <span className={`text-lg leading-tight font-bold block ${activeTab === "requests" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.requests?.length || 0}</span>
+              </div>
+              <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "requests" ? "!bg-white/20 !text-amber-300" : "bg-lime-100/70 text-lime-700"}`}>
+                <Archive size={16} />
               </div>
             </TabsTrigger>
 
             <TabsTrigger 
               value="memos" 
-              className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
+              className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
                 activeTab === "memos"
-                  ? "!bg-[#133B2E] !text-white shadow-xl shadow-[#133B2E]/35 border-2 border-[#133B2E]"
+                  ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
                   : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
-              <div>
-                <span className={`text-xs font-semibold block mb-1 ${activeTab === "memos" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>المذكرات والصحف</span>
-                <span className={`text-2xl font-bold block ${activeTab === "memos" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.memos?.length || 0}</span>
+              <div className="min-w-0">
+                <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "memos" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>المذكرات والصحف</span>
+                <span className={`text-lg leading-tight font-bold block ${activeTab === "memos" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.memos?.length || 0}</span>
               </div>
-              <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "memos" ? "!bg-white/20 !text-amber-300" : "bg-amber-100/70 text-amber-600"}`}>
-                <FileSignature size={22} />
+              <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "memos" ? "!bg-white/20 !text-amber-300" : "bg-amber-100/70 text-amber-600"}`}>
+                <FileSignature size={16} />
               </div>
             </TabsTrigger>
 
             <TabsTrigger 
               value="hearings" 
-              className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
+              className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
                 activeTab === "hearings"
-                  ? "!bg-[#133B2E] !text-white shadow-xl shadow-[#133B2E]/35 border-2 border-[#133B2E]"
+                  ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
                   : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
-              <div>
-                <span className={`text-xs font-semibold block mb-1 ${activeTab === "hearings" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>جلسات القضية</span>
-                <span className={`text-2xl font-bold block ${activeTab === "hearings" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.hearings.length}</span>
+              <div className="min-w-0">
+                <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "hearings" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>جلسات القضية</span>
+                <span className={`text-lg leading-tight font-bold block ${activeTab === "hearings" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.hearings.length}</span>
               </div>
-              <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "hearings" ? "!bg-white/20 !text-amber-300" : "bg-cyan-100/70 text-cyan-600"}`}>
-                <Calendar size={22} />
+              <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "hearings" ? "!bg-white/20 !text-amber-300" : "bg-cyan-100/70 text-cyan-600"}`}>
+                <Calendar size={16} />
               </div>
             </TabsTrigger>
 
             <TabsTrigger 
               value="docs" 
-              className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
+              className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
                 activeTab === "docs"
-                  ? "!bg-[#133B2E] !text-white shadow-xl shadow-[#133B2E]/35 border-2 border-[#133B2E]"
+                  ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
                   : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
-              <div>
-                <span className={`text-xs font-semibold block mb-1 ${activeTab === "docs" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>المستندات</span>
-                <span className={`text-2xl font-bold block ${activeTab === "docs" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.documents.length}</span>
+              <div className="min-w-0">
+                <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "docs" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>المستندات</span>
+                <span className={`text-lg leading-tight font-bold block ${activeTab === "docs" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.documents.length}</span>
               </div>
-              <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "docs" ? "!bg-white/20 !text-amber-300" : "bg-rose-100/70 text-rose-600"}`}>
-                <FileText size={22} />
-              </div>
-            </TabsTrigger>
-
-            <TabsTrigger 
-              value="tasks" 
-              className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
-                activeTab === "tasks"
-                  ? "!bg-[#133B2E] !text-white shadow-xl shadow-[#133B2E]/35 border-2 border-[#133B2E]"
-                  : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
-              }`}
-            >
-              <div>
-                <span className={`text-xs font-semibold block mb-1 ${activeTab === "tasks" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>المهام</span>
-                <span className={`text-2xl font-bold block ${activeTab === "tasks" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.tasks.length}</span>
-              </div>
-              <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "tasks" ? "!bg-white/20 !text-amber-300" : "bg-purple-100/70 text-purple-600"}`}>
-                <CheckSquare size={22} />
+              <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "docs" ? "!bg-white/20 !text-amber-300" : "bg-rose-100/70 text-rose-600"}`}>
+                <FileText size={16} />
               </div>
             </TabsTrigger>
 
             <TabsTrigger 
               value="judgment" 
-              className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
+              className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
                 activeTab === "judgment"
-                  ? "!bg-[#133B2E] !text-white shadow-xl shadow-[#133B2E]/35 border-2 border-[#133B2E]"
+                  ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
                   : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
-              <div>
-                <span className={`text-xs font-semibold block mb-1 ${activeTab === "judgment" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>الحكم القضائي</span>
-                <span className={`text-lg font-bold block ${activeTab === "judgment" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.finalJudgment ? "صادر" : "معلق"}</span>
+              <div className="min-w-0">
+                <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "judgment" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>الأحكام</span>
+                <span className={`text-lg leading-tight font-bold block ${activeTab === "judgment" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{judgmentsOf(data).length}</span>
               </div>
-              <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "judgment" ? "!bg-white/20 !text-amber-300" : "bg-emerald-100/70 text-emerald-600"}`}>
-                <Gavel size={22} />
+              <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "judgment" ? "!bg-white/20 !text-amber-300" : "bg-emerald-100/70 text-emerald-600"}`}>
+                <Gavel size={16} />
               </div>
             </TabsTrigger>
 
             {isExecutionCase && (
               <TabsTrigger
                 value="enforcement"
-                className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
+                className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
                   activeTab === "enforcement"
-                    ? "!bg-[#133B2E] !text-white shadow-xl shadow-[#133B2E]/35 border-2 border-[#133B2E]"
+                    ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
                     : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
                 }`}
               >
-                <div>
-                  <span className={`text-xs font-semibold block mb-1 ${activeTab === "enforcement" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>تنفيذ الأحكام</span>
-                  <span className={`text-lg font-bold block ${activeTab === "enforcement" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{enforcementProgress}%</span>
+                <div className="min-w-0">
+                  <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "enforcement" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>تنفيذ الأحكام</span>
+                  <span className={`text-sm leading-tight font-bold block truncate ${activeTab === "enforcement" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{enforcementProgress}%</span>
                 </div>
-                <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "enforcement" ? "!bg-white/20 !text-amber-300" : "bg-amber-100/70 text-amber-700"}`}>
-                  <Landmark size={22} />
+                <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "enforcement" ? "!bg-white/20 !text-amber-300" : "bg-amber-100/70 text-amber-700"}`}>
+                  <Landmark size={16} />
                 </div>
               </TabsTrigger>
             )}
 
             <TabsTrigger
               value="reports"
-              className={`transition-all rounded-2xl p-4 cursor-pointer text-right w-full flex items-center justify-between gap-3 ${
+              className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
                 activeTab === "reports"
-                  ? "!bg-[#133B2E] !text-white shadow-xl shadow-[#133B2E]/35 border-2 border-[#133B2E]"
+                  ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
                   : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
-              <div>
-                <span className={`text-xs font-semibold block mb-1 ${activeTab === "reports" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>التقارير</span>
-                <span className={`text-lg font-bold block ${activeTab === "reports" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>تقرير الحالة</span>
+              <div className="min-w-0">
+                <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "reports" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>التقارير</span>
+                <span className={`text-sm leading-tight font-bold block truncate ${activeTab === "reports" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>تقرير الحالة</span>
               </div>
-              <div className={`p-3 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "reports" ? "!bg-white/20 !text-amber-300" : "bg-teal-100/70 text-teal-700"}`}>
-                <FileBarChart size={22} />
+              <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "reports" ? "!bg-white/20 !text-amber-300" : "bg-teal-100/70 text-teal-700"}`}>
+                <FileBarChart size={16} />
               </div>
             </TabsTrigger>
 
@@ -1533,6 +1566,14 @@ export default function CaseDetails() {
           </div>
         </TabsContent>
 
+        <TabsContent value="parties" className="mt-8 outline-none space-y-6">
+          <CaseParties caseData={data} onSave={handleSaveParties} />
+        </TabsContent>
+
+        <TabsContent value="requests" className="mt-8 outline-none space-y-6">
+          <CaseRequests caseId={id!} caseData={data} requests={data.requests || []} onChanged={fetchCaseData} />
+        </TabsContent>
+
         <TabsContent value="hearings" className="mt-8 outline-none space-y-6">
           <Card className="shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
@@ -1544,172 +1585,29 @@ export default function CaseDetails() {
                 <Plus className="ml-2 h-4 w-4" /> اضافة جلسة جديدة
               </Button>
             </CardHeader>
-            <CardContent className="p-0 overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gray-50">
-                    <TableHead className="text-right font-bold w-32 whitespace-nowrap">التاريخ</TableHead>
-                    <TableHead className="text-right font-bold w-32 whitespace-nowrap">الرول/الدائرة</TableHead>
-                    <TableHead className="text-right font-bold min-w-[200px]">الالتمسات / ما تم فيها</TableHead>
-                    <TableHead className="text-right font-bold w-48 whitespace-nowrap">القرار اللاحق</TableHead>
-                    <TableHead className="text-right font-bold min-w-[180px] whitespace-nowrap">أرشيف الجلسة (محاضر/أحكام)</TableHead>
-                    <TableHead className="text-center font-bold w-24 whitespace-nowrap">تعديل</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.hearings.length === 0 ? (
-                    <TableRow><TableCell colSpan={6} className="text-center py-8 text-gray-500">لا يوجد جلسات مسجلة</TableCell></TableRow>
-                  ) : (
-                    data.hearings.map((h: any, index: number) => {
-                      const isPast = new Date(h.hearingDate) < new Date();
-                      return (
-                        <TableRow key={h.id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50/50"}>
-                          <TableCell className="font-semibold text-[#133B2E]">
-                            <div className="flex flex-col gap-1">
-                              <span dir="ltr" className="text-right">{new Date(h.hearingDate).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
-                              {!isPast && <Badge className="bg-green-100 text-green-800 w-fit text-[10px] px-1 py-0 hover:bg-green-200">قادمة</Badge>}
-                            </div>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            <div className="flex flex-col">
-                              <span className="font-medium text-sm">{h.court || "-"}</span>
-                              <span className="text-[10px] text-gray-500 mt-1">{h.circuit ? `دائرة: ${h.circuit}` : ""}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {h.requiredActions ? (
-                              <p className="text-gray-800 text-sm leading-relaxed">{h.requiredActions}</p>
-                            ) : <span className="text-gray-400">-</span>}
-                          </TableCell>
-                          <TableCell className="min-w-[150px]">
-                            {h.result ? (
-                              <p className="text-red-700 font-medium text-sm bg-red-50 p-2 rounded-md inline-block w-full">{h.result}</p>
-                            ) : <span className="text-gray-400">-</span>}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col gap-2">
-                              {/* Minutes archiving */}
-                              {(h.minutesText || h.minutesFileUrl) ? (
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                                    <span className="text-[10px] font-bold text-gray-700">محضر الضبط:</span>
-                                  </div>
-                                  <div className="flex gap-1.5">
-                                    {h.minutesText && (
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        className="h-7 px-2 text-[10px] border-blue-200 text-blue-700 hover:bg-blue-50"
-                                        onClick={() => {
-                                          alert(`نص محضر الضبط:\n\n${h.minutesText}`);
-                                        }}
-                                      >
-                                        عرض النص
-                                      </Button>
-                                    )}
-                                    {h.minutesFileUrl && (
-                                      <a href={h.minutesFileUrl} target="_blank" rel="noreferrer" download>
-                                        <Button variant="outline" size="sm" className="h-7 px-2 text-[10px] border-gray-200 text-gray-700 hover:bg-gray-100">
-                                          تحميل
-                                        </Button>
-                                      </a>
-                                    )}
-                                  </div>
-                                </div>
-                              ) : null}
-
-                              {/* Judgment archiving */}
-                              {(h.judgmentText || h.judgmentFileUrl) ? (
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
-                                    <span className="text-[10px] font-bold text-gray-700">الحكم/القرار:</span>
-                                  </div>
-                                  <div className="flex gap-1.5">
-                                    {h.judgmentText && (
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        className="h-7 px-2 text-[10px] border-purple-200 text-purple-700 hover:bg-purple-50"
-                                        onClick={() => {
-                                          alert(`نص القرار/الحكم الصادر:\n\n${h.judgmentText}`);
-                                        }}
-                                      >
-                                        عرض النص
-                                      </Button>
-                                    )}
-                                    {h.judgmentFileUrl && (
-                                      <a href={h.judgmentFileUrl} target="_blank" rel="noreferrer" download>
-                                        <Button variant="outline" size="sm" className="h-7 px-2 text-[10px] border-gray-200 text-gray-700 hover:bg-gray-100">
-                                          تحميل
-                                        </Button>
-                                      </a>
-                                    )}
-                                  </div>
-                                </div>
-                              ) : null}
-
-                              {h.memoFileUrl ? (
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                                    <span className="text-[10px] font-bold text-gray-700">المذكرة المعتمدة:</span>
-                                  </div>
-                                  <div className="flex gap-1.5">
-                                    <a href={h.memoFileUrl} target="_blank" rel="noreferrer" download>
-                                      <Button variant="outline" size="sm" className="h-7 px-2 text-[10px] border-green-200 text-green-700 hover:bg-green-50 font-bold">
-                                        تحميل PDF
-                                      </Button>
-                                    </a>
-                                    {h.memoWordFileUrl && (
-                                      <a href={h.memoWordFileUrl} target="_blank" rel="noreferrer" download>
-                                        <Button variant="outline" size="sm" className="h-7 px-2 text-[10px] border-blue-200 text-blue-700 hover:bg-blue-50 font-bold">
-                                          تحميل Word
-                                        </Button>
-                                      </a>
-                                    )}
-                                  </div>
-                                </div>
-                              ) : null}
-
-                              {!(h.minutesText || h.minutesFileUrl || h.judgmentText || h.judgmentFileUrl || h.memoFileUrl) && (
-                                <span className="text-xs text-gray-400">لا يوجد أرشيف</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <div className="flex items-center justify-center gap-1">
-                              <Link to={`/app/hearings/${id}/${h.id}`}>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-[#133B2E] hover:bg-gray-100"
-                                  title="تفاصيل الجلسة"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </Link>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-[#133B2E] hover:bg-gray-100"
-                                title="تعديل الجلسة"
-                                onClick={() => {
-                                  setSelectedHearing(h);
-                                  setIsEditHearingOpen(true);
-                                }}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
+            <CardContent className="p-4">
+              {data.hearings.length === 0 ? (
+                <p className="text-center py-8 text-gray-500">لا يوجد جلسات مسجلة</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {data.hearings.map((h: any) => (
+                    <HearingCard
+                      key={h.id}
+                      h={h}
+                      caseId={id!}
+                      showCase={false}
+                      actions={
+                        <button
+                          onClick={() => { setSelectedHearing(h); setIsEditHearingOpen(true); }}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-gray-200 text-sm font-bold text-[#133B2E] hover:bg-gray-50 transition"
+                        >
+                          <Edit className="h-3.5 w-3.5" /> تعديل
+                        </button>
+                      }
+                    />
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -1722,7 +1620,10 @@ export default function CaseDetails() {
                   <Button onClick={() => {
                     setEditingMemoId(null);
                     setIsWritingMemo(true);
-                    handleMemoTypeChange("LAWSUIT", true);
+                    // صفحة بيضاء — التعبئة والصياغة من لوحة المساعد الذكي
+                    setMemoType("LAWSUIT");
+                    setMemoTitle("");
+                    setMemoContent("");
                   }} className="bg-[#D4AF37] hover:bg-[#B8962E] text-white">
                     <FileSignature className="ml-2 h-4 w-4" /> كتابة مذكرة / صحيفة جديدة
                   </Button>
@@ -1778,18 +1679,20 @@ export default function CaseDetails() {
                                     <head>
                                       <title>${memo.title}</title>
                                       <style>
-                                        body { font-family: 'Tajawal', serif; padding: 50px; line-height: 1.8; position: relative; }
+                                        body { font-family: 'Tajawal', serif; padding: 0; margin: 0; line-height: 1.8; }
                                         h1 { text-align: center; color: #133B2E; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
                                         .meta { color: #666; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
                                         .content { font-size: 14pt; text-align: justify; }
-                                        .stamp { width: 110px; opacity: 0.92; margin-top: 40px; }
                                       </style>
                                     </head>
                                     <body>
-                                      <h1>${memo.title}</h1>
-                                      <div class="meta">قضية رقم: ${data.caseNumber} | تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</div>
-                                      <div class="content">${memo.content}</div>
-                                      ${stamped ? `<img class="stamp" src="${office.officialStampUrl}" alt="ختم المكتب" />` : ""}
+                                      ${renderLetterheadHeader(office.officeProfile)}
+                                      <div style="padding: 40px 50px;">
+                                        <h1>${memo.title}</h1>
+                                        <div class="meta">قضية رقم: ${data.caseNumber} | تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</div>
+                                        <div class="content">${memo.content}</div>
+                                      </div>
+                                      ${renderLetterheadFooter(office.officeProfile, { stampUrl: stamped ? office.officialStampUrl : null })}
                                       <script>window.onload = function() { window.print(); window.close(); }</script>
                                     </body>
                                   </html>
@@ -1901,8 +1804,7 @@ export default function CaseDetails() {
                     <select 
                       className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       value={memoType}
-                      disabled={isDraftingWithAi}
-                      onChange={e => draftWithAi(e.target.value)}
+                      onChange={e => setMemoType(e.target.value)}
                     >
                       <option value="LAWSUIT">صحيفة دعوى</option>
                       <option value="MEMO">مذكرة رد / دفاع</option>
@@ -1911,43 +1813,33 @@ export default function CaseDetails() {
                   </div>
                 </div>
                 
-                <div className="space-y-2 relative">
-                  <label className="text-sm font-bold text-[#133B2E] flex items-center gap-2">
-                    المحتوى
-                    {isDraftingWithAi && <Loader2 className="h-4 w-4 animate-spin text-purple-600" />}
-                  </label>
-                  <div className="absolute left-0 top-0 flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="text-blue-600 border-blue-200 hover:bg-blue-50" 
-                      title="سحب وتعبئة بيانات القضية الحالية تلقائياً"
-                      disabled={isDraftingWithAi}
-                      onClick={() => {
-                        if (confirm("هل تريد تعبئة محتوى المحرر بنموذج ذكي يسحب بيانات هذه القضية؟ سيؤدي ذلك لاستبدال المحتوى الحالي.")) {
-                          handleMemoTypeChange(memoType, true);
-                        }
-                      }}
-                    >
-                      <Database className="ml-1.5 h-3.5 w-3.5" /> سحب البيانات
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="text-purple-600 border-purple-200 hover:bg-purple-50" 
-                      title="اكتب المحتوى باستخدام الذكاء الاصطناعي"
-                      disabled={isDraftingWithAi}
-                      onClick={() => draftWithAi(memoType)}
-                    >
-                      <Sparkles className="ml-2 h-3 w-3" /> صياغة بالـ AI
-                    </Button>
+                {/* يمين: صفحة المحرر بنظام الوورد — يسار: المساعد الذكي */}
+                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_22rem] gap-5 items-start">
+                  <div className="rounded-2xl bg-gray-100 border border-gray-200 p-3 sm:p-6">
+                    <div className="mx-auto max-w-[850px] bg-white shadow-md">
+                      <RichTextEditor
+                        value={memoContent}
+                        onChange={(val) => setMemoContent(val)}
+                        placeholder="ابدأ الكتابة هنا..."
+                      />
+                    </div>
                   </div>
-                  <RichTextEditor 
-                    value={memoContent}
-                    onChange={(val) => setMemoContent(val)}
-                    placeholder="اكتب تفاصيل المذكرة هنا..." 
+                  <MemoAiPanel
+                    caseData={data}
+                    memoTypeLabel={MEMO_TYPE_LABELS[memoType] || "مذكرة"}
+                    editorHtml={memoContent}
+                    buildDraftPrompt={() => buildMemoPrompt(memoType)}
+                    onInsert={(html) => { ensureMemoTitle(); setMemoContent((prev) => (prev ? `${prev}\n${html}` : html)); }}
+                    onReplace={(html) => {
+                      if (memoContent && !confirm("سيُستبدل محتوى المحرر بالكامل بهذا النص. متابعة؟")) return;
+                      ensureMemoTitle();
+                      setMemoContent(html);
+                    }}
+                    onFillTemplate={() => {
+                      if (memoContent && !confirm("سيُستبدل محتوى المحرر بنموذج جاهز يسحب بيانات القضية. متابعة؟")) return;
+                      handleMemoTypeChange(memoType, true);
+                    }}
                   />
-                  <p className="text-xs text-gray-400">يمكنك استخدام المحرر لكتابة الصيغة القانونية بالكامل وسيتم حفظها كمسودة قابلة للتعديل والطباعة.</p>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
@@ -2004,236 +1896,18 @@ export default function CaseDetails() {
           />
         </TabsContent>
 
-        <TabsContent value="tasks" className="mt-8 outline-none space-y-6">
-           <Card className="shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
-              <CardTitle className="text-lg">المهام المتعلقة بالقضية</CardTitle>
-              <Button size="sm" variant="outline" className="border-[#133B2E] text-[#133B2E]" onClick={() => setIsAddTaskOpen(true)}>
-                <Plus className="ml-2 h-4 w-4" /> اضافة مهمة
-              </Button>
-            </CardHeader>
-            <CardContent className="p-0 overflow-x-auto">
-               <Table>
-                <TableBody>
-                  {data.tasks.length === 0 ? (
-                    <TableRow><TableCell className="text-center py-8 text-gray-500">لا يوجد مهام</TableCell></TableRow>
-                  ) : (
-                    data.tasks.map((t: any) => (
-                      <TableRow key={t.id} className="hover:bg-gray-50/50">
-                         <TableCell>
-                           <div className="flex items-center gap-3">
-                             <div className={`w-3 h-3 rounded-full ${t.priority === 'HIGH' || t.priority === 'URGENT' ? 'bg-red-500' : 'bg-blue-500'}`} />
-                             <span className="font-medium text-[#133B2E]">{t.title}</span>
-                           </div>
-                         </TableCell>
-                         <TableCell className="text-gray-500">{t.assigneeName || "-"}</TableCell>
-                         <TableCell className="text-left w-32">
-                           <Badge variant="secondary" className="font-normal">{t.status === 'COMPLETED' ? 'مكتملة' : t.status === 'NEW' ? 'جديدة' : 'قيد التنفيذ'}</Badge>
-                         </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-               </Table>
-            </CardContent>
-           </Card>
-         </TabsContent>
-
         <TabsContent value="judgment" className="mt-8 outline-none space-y-6">
-          {data.finalJudgment ? (
-            <div className="space-y-6">
-              <Card className="shadow-sm border-green-200 bg-green-50/10">
-                <CardHeader className="pb-4 border-b border-green-100 flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg text-green-900 flex items-center gap-2">
-                      <Scale className="text-green-600 w-5 h-5" /> الحكم القضائي الصادر من المحكمة المختصة
-                    </CardTitle>
-                    <CardDescription className="text-gray-500">تم تسجيل صك الحكم النهائي وتاريخه</CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="border-green-300 text-green-800 hover:bg-green-100"
-                      onClick={() => {
-                        setActiveAiTarget({
-                          target: {
-                            title: "الحكم الصادر في قضية " + data.title,
-                            content: `تاريخ الحكم: ${data.finalJudgment.judgmentDate}\n\nمنطوق الحكم:\n${data.finalJudgment.judgmentRuling}\n\nأسباب وتفاصيل الحكم:\n${data.finalJudgment.judgmentDetails}`
-                          },
-                          type: 'memo'
-                        });
-                      }}
-                    >
-                      <Sparkles className="ml-1 h-3.5 w-3.5 text-green-600" /> تحليل بالـ AI
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="border-red-200 text-red-600 hover:bg-red-50"
-                      onClick={async () => {
-                        if (!window.confirm("هل أنت متأكد من حذف بيانات الحكم النهائي؟")) return;
-                        try {
-                          const { doc, updateDoc, deleteField } = await import("firebase/firestore");
-                          const { db } = await import("../lib/firebase");
-                          await updateDoc(doc(db, "cases", data.id), {
-                            finalJudgment: deleteField()
-                          });
-                          fetchCaseData();
-                        } catch (err) {
-                          console.error(err);
-                          alert("فشل حذف الحكم");
-                        }
-                      }}
-                    >
-                      حذف
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-6 space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-1">
-                      <span className="text-sm font-bold text-gray-500">تاريخ صدور الحكم</span>
-                      <p className="text-base font-semibold text-[#133B2E]" dir="ltr">
-                        {new Date(data.finalJudgment.judgmentDate).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
-                      </p>
-                    </div>
-                    {data.finalJudgment.fileName && (
-                      <div className="space-y-1">
-                        <span className="text-sm font-bold text-gray-500">مرفق صك الحكم الرسمي</span>
-                        <div className="flex items-center gap-2 mt-1">
-                          <File className="h-4 w-4 text-green-600" />
-                          <a href={data.finalJudgment.fileUrl} target="_blank" rel="noreferrer" className="text-sm text-blue-600 underline font-semibold truncate hover:text-blue-800" download>
-                            {data.finalJudgment.fileName}
-                          </a>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="border-t border-gray-100 pt-4 space-y-2">
-                    <span className="text-sm font-bold text-gray-500">منطوق الحكم النهائي</span>
-                    <p className="text-base text-gray-900 bg-white p-4 rounded-lg border border-gray-100 whitespace-pre-wrap leading-relaxed font-serif">
-                      {data.finalJudgment.judgmentRuling}
-                    </p>
-                  </div>
-
-                  {data.finalJudgment.judgmentDetails && (
-                    <div className="border-t border-gray-100 pt-4 space-y-2">
-                      <span className="text-sm font-bold text-gray-500">تفاصيل وأسباب الحكم</span>
-                      <p className="text-sm text-gray-700 bg-white p-4 rounded-lg border border-gray-100 whitespace-pre-wrap leading-relaxed">
-                        {data.finalJudgment.judgmentDetails}
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          ) : (
-            <Card className="shadow-sm">
-              <CardHeader className="pb-4 border-b">
-                <CardTitle className="text-lg text-[#133B2E]">تسجيل الحكم النهائي الصادر من المحكمة</CardTitle>
-                <CardDescription>أدخل بيانات صك الحكم النهائي الصادر لهذه القضية وأرشفة نسخته الرسمية</CardDescription>
-              </CardHeader>
-              <CardContent className="p-6">
-                <form 
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    const target = e.target as any;
-                    const date = target.elements.judgmentDate.value;
-                    const ruling = target.elements.judgmentRuling.value;
-                    const details = target.elements.judgmentDetails.value;
-                    const fileInput = target.elements.judgmentFile;
-                    
-                    if (!date || !ruling) {
-                      alert("الرجاء تعبئة الحقول الأساسية");
-                      return;
-                    }
-
-                    setIsSaveJudgmentLoading(true);
-                    try {
-                      let fileUrl = "";
-                      let fileName = "";
-                      if (fileInput.files && fileInput.files[0]) {
-                        const file = fileInput.files[0];
-                        const fd = new FormData();
-                        fd.append("file", file);
-                        const uploadRes = await fetch("/upload.php", { method: "POST", body: fd });
-                        if (!uploadRes.ok) throw new Error("فشل رفع صك الحكم");
-                        const uploadJson = await uploadRes.json();
-                        if (uploadJson.error) throw new Error(uploadJson.error);
-                        fileUrl = uploadJson.fileUrl;
-                        fileName = file.name;
-                      }
-
-                      const { doc, updateDoc } = await import("firebase/firestore");
-                      const { db } = await import("../lib/firebase");
-
-                      await updateDoc(doc(db, "cases", data.id), {
-                        finalJudgment: {
-                          judgmentDate: date,
-                          judgmentRuling: ruling,
-                          judgmentDetails: details,
-                          fileUrl,
-                          fileName,
-                          updatedAt: new Date().toISOString()
-                        }
-                      });
-
-                      fetchCaseData();
-                    } catch (error: any) {
-                      console.error(error);
-                      alert("حدث خطأ أثناء حفظ الحكم: " + error.message);
-                    } finally {
-                      setIsSaveJudgmentLoading(false);
-                    }
-                  }}
-                  className="space-y-4"
-                >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-[#133B2E]">تاريخ صدور الحكم *</label>
-                      <Input type="date" required name="judgmentDate" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-bold text-[#133B2E]">ملف صك الحكم الرسمي (PDF / صورة)</label>
-                      <Input type="file" name="judgmentFile" className="bg-white" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-[#133B2E]">منطوق الحكم النهائي *</label>
-                    <textarea 
-                      required
-                      name="judgmentRuling"
-                      placeholder="اكتب منطوق الحكم الصادر كما ورد في صك الحكم..." 
-                      className="flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring font-serif leading-relaxed"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-[#133B2E]">أسباب وتفاصيل الحكم (اختياري)</label>
-                    <textarea 
-                      name="judgmentDetails"
-                      placeholder="اكتب تفاصيل إضافية أو الحيثيات والأسباب التي بني عليها الحكم..." 
-                      className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring leading-relaxed"
-                    />
-                  </div>
-
-                  <div className="flex justify-end gap-3 border-t pt-4">
-                    <Button 
-                      type="submit" 
-                      disabled={isSaveJudgmentLoading} 
-                      className="bg-green-600 hover:bg-green-700 text-white font-bold"
-                    >
-                      {isSaveJudgmentLoading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                      تسجيل وحفظ الحكم النهائي
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          )}
+          <CaseJudgments
+            caseData={data}
+            onSave={handleSaveJudgments}
+            onAnalyze={(j) => setActiveAiTarget({
+              target: {
+                title: "الحكم الصادر في قضية " + data.title,
+                content: `تاريخ الحكم: ${j.judgmentDate}\n\nمنطوق الحكم:\n${j.ruling}\n\nأسباب وتفاصيل الحكم:\n${j.details}`,
+              },
+              type: 'memo',
+            })}
+          />
         </TabsContent>
 
         {isExecutionCase && (
@@ -2255,6 +1929,32 @@ export default function CaseDetails() {
               <CardContent className="p-6 space-y-8">
                 <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
                   <div className="bg-[#D4AF37] h-full transition-all duration-500 ease-out rounded-full" style={{ width: `${enforcementProgress}%` }} />
+                </div>
+
+                {/* تصنيف طلب التنفيذ — يظهر في قائمة ملفات التنفيذ */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-600">نوع الطلب</label>
+                    <select
+                      className="w-full h-9 px-3 rounded-md border border-gray-300 text-sm bg-white"
+                      value={data.enforcementRequestType || ""}
+                      onChange={(e) => handleUpdateEnforcementField("enforcementRequestType", e.target.value)}
+                    >
+                      <option value="">— اختر —</option>
+                      {EXECUTION_REQUEST_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-600">نوع السند التنفيذي</label>
+                    <select
+                      className="w-full h-9 px-3 rounded-md border border-gray-300 text-sm bg-white"
+                      value={data.enforcementDeedType || ""}
+                      onChange={(e) => handleUpdateEnforcementField("enforcementDeedType", e.target.value)}
+                    >
+                      <option value="">— اختر —</option>
+                      {EXECUTION_DEED_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
                 </div>
 
                 {/* المرحلة 1: الحكم النهائي — مرتبطة مباشرة بتبويب "الحكم القضائي" */}
@@ -2561,21 +2261,7 @@ export default function CaseDetails() {
 
             const reportBodyHtml = `
               <div style="font-family: 'Tajawal', sans-serif; direction: rtl; text-align: right; padding: 0; position: relative; min-height: 100%; background:#fff;">
-                <div style="background: linear-gradient(135deg, #133B2E 0%, #1c5741 100%); padding: 28px 40px; color:#fff;">
-                  <div style="display:flex; align-items:center; justify-content:space-between;">
-                    <div style="display:flex; align-items:center; gap:14px;">
-                      ${profile.logoUrl ? `<img src="${profile.logoUrl}" style="width:52px; height:52px; object-fit:contain; background:#fff; border-radius:10px; padding:4px;" />` : ""}
-                      <div>
-                        <div style="font-size:15pt; font-weight:bold;">${profile.name || "مكتب المحاماة"}</div>
-                        <div style="font-size:9pt; color:#D4AF37;">${[profile.address, profile.phone].filter(Boolean).join(" · ")}</div>
-                      </div>
-                    </div>
-                    <div style="text-align:left; font-size:9pt; color:#e5e5e5;">
-                      ${new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}
-                      ${profile.crNumber ? `<div>س.ت: ${profile.crNumber}</div>` : ""}
-                    </div>
-                  </div>
-                </div>
+                ${renderLetterheadHeader(profile)}
 
                 <div style="padding: 30px 40px;">
                   <h1 style="text-align:center; font-size:19pt; color:#133B2E; margin:0 0 4px; letter-spacing:0.5px;">تقرير حالة القضية</h1>
@@ -2619,9 +2305,7 @@ export default function CaseDetails() {
                   </div>
                 </div>
 
-                <div style="padding: 0 40px 30px; display:flex; justify-content:flex-end;">
-                  ${office.officialStampUrl ? `<img src="${office.officialStampUrl}" style="width:100px; opacity:0.92;" />` : ""}
-                </div>
+                ${renderLetterheadFooter(profile, { stampUrl: office.officialStampUrl })}
               </div>
             `;
 

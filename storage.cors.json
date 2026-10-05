@@ -1,0 +1,8 @@
+[
+  {
+    "origin": ["https://lawyr-sa.smartcodix.com"],
+    "method": ["GET", "HEAD"],
+    "responseHeader": ["Content-Type", "Content-Length", "Content-Disposition"],
+    "maxAgeSeconds": 3600
+  }
+]

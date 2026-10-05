@@ -1,0 +1,26 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function user() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    }
+    function member() {
+      return request.auth != null && user().get('status', 'ACTIVE') != 'SUSPENDED';
+    }
+    function admin() { return user().role == 'SUPER_ADMIN'; }
+    match /supportAttachments/{ticketId}/{uploaderId}/{fileId} {
+      function ticketPath() { return /databases/(default)/documents/supportTickets/$(ticketId); }
+      function participant() {
+        return admin() || (firestore.exists(ticketPath()) && firestore.get(ticketPath()).data.createdBy == request.auth.uid);
+      }
+      allow read: if member() && (request.auth.uid == uploaderId || participant());
+      // Uploads are immutable; draft uploads may precede the ticket transaction.
+      allow create: if member() && request.auth.uid == uploaderId
+        && (!firestore.exists(ticketPath()) || (participant() && !(firestore.get(ticketPath()).data.status in ['CLOSED', 'RESOLVED'])))
+        && request.resource.size > 0 && request.resource.size <= 5242880
+        && request.resource.contentType in ['image/png', 'image/jpeg', 'image/webp', 'application/pdf'];
+      allow delete: if member() && request.auth.uid == uploaderId;
+      allow update: if false;
+    }
+  }
+}
