@@ -22,8 +22,9 @@ function withLoginTimeout<T>(promise: Promise<T>, message: string): Promise<T> {
 }
 
 export default function Login() {
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(() => localStorage.getItem("rememberedEmail") || "");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(() => localStorage.getItem("rememberLogin") === "true");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -35,9 +36,19 @@ export default function Login() {
     setError("");
     
     try {
-      const { signInWithEmailAndPassword } = await import("firebase/auth");
+      const {
+        browserLocalPersistence,
+        browserSessionPersistence,
+        setPersistence,
+        signInWithEmailAndPassword,
+      } = await import("firebase/auth");
       const { auth, db } = await import("../lib/firebase");
       const { doc, getDoc } = await import("firebase/firestore");
+
+      await withLoginTimeout(
+        setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence),
+        "تعذر تجهيز جلسة تسجيل الدخول. حدّث الصفحة ثم حاول مرة أخرى.",
+      );
       
       const userCredential = await withLoginTimeout(
         signInWithEmailAndPassword(auth, username, password),
@@ -96,6 +107,14 @@ export default function Login() {
       localStorage.setItem("userEmail", firebaseUser.email || username);
       localStorage.setItem("userId", firebaseUser.uid);
       localStorage.setItem("lawyerId", lawyerId || "");
+
+      if (rememberMe) {
+        localStorage.setItem("rememberLogin", "true");
+        localStorage.setItem("rememberedEmail", firebaseUser.email || username);
+      } else {
+        localStorage.removeItem("rememberLogin");
+        localStorage.removeItem("rememberedEmail");
+      }
 
       navigate("/app");
 
@@ -226,6 +245,8 @@ export default function Login() {
                   <User className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#133B2E] transition-colors" size={20} />
                   <input
                     type="email"
+                    name="email"
+                    autoComplete="email"
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
@@ -241,6 +262,8 @@ export default function Login() {
                   <Lock className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#133B2E] transition-colors" size={20} />
                   <input
                     type={showPassword ? "text" : "password"}
+                    name="password"
+                    autoComplete="current-password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -259,7 +282,12 @@ export default function Login() {
 
               <div className="flex items-center justify-between py-2">
                 <label className="flex items-center gap-2 cursor-pointer group">
-                  <input type="checkbox" className="w-5 h-5 rounded border-gray-300 text-[#133B2E] focus:ring-[#133B2E]" />
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(event) => setRememberMe(event.target.checked)}
+                    className="w-5 h-5 rounded border-gray-300 text-[#133B2E] focus:ring-[#133B2E]"
+                  />
                   <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors">تذكرني</span>
                 </label>
                 <button type="button" className="text-sm font-semibold text-[#133B2E] hover:underline">
