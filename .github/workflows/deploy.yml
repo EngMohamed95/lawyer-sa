@@ -97,7 +97,9 @@ jobs:
           echo "عدد الملفات: $(find release -type f | wc -l)"
 
       - name: Install lftp
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+        continue-on-error: true
+        timeout-minutes: 2
+        run: timeout 90s sudo apt-get install -y -qq lftp
 
       - name: Upload to Hostinger via FTP
         env:
@@ -124,19 +126,23 @@ jobs:
           RC
 
           # اتصال تشخيصي أولاً: يفصل فشل الاتصال عن فشل النقل
-          lftp -f /dev/stdin <<EOF
-          source /tmp/lftprc
-          open -u "$FTP_USER","$FTP_PASS" "$FTP_HOST"
-          pwd
-          ls
-          bye
+          if command -v lftp >/dev/null 2>&1; then
+            lftp -f /dev/stdin <<EOF
+            source /tmp/lftprc
+            open -u "$FTP_USER","$FTP_PASS" "$FTP_HOST"
+            pwd
+            ls
+            bye
           EOF
-          echo "✓ الاتصال بالـ FTP سليم"
+            echo "✓ الاتصال بالـ FTP سليم"
+          else
+            echo "⚠️ lftp غير متاح — سيتم الرفع مباشرة عبر curl"
+          fi
 
           # نقل متسلسل: الاستضافات المشتركة تحدّ الاتصالات المتزامنة.
           # لا نستخدم --delete: على الخادم ملفات لا تأتي من المستودع
           # (مستندات المستخدمين في uploads/) وحذفها يعني فقدانها.
-          if lftp -f /dev/stdin <<EOF
+          if command -v lftp >/dev/null 2>&1 && lftp -f /dev/stdin <<EOF
           source /tmp/lftprc
           open -u "$FTP_USER","$FTP_PASS" "$FTP_HOST"
           mirror --reverse --parallel=1 --verbose=1 \
