@@ -3,6 +3,24 @@ import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Lock, User, Eye, EyeOff, ShieldCheck, Scale, Gavel } from "lucide-react";
 
+const LOGIN_TIMEOUT_MS = 20_000;
+
+function withLoginTimeout<T>(promise: Promise<T>, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error(message)), LOGIN_TIMEOUT_MS);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (reason) => {
+        window.clearTimeout(timer);
+        reject(reason);
+      },
+    );
+  });
+}
+
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -21,11 +39,17 @@ export default function Login() {
       const { auth, db } = await import("../lib/firebase");
       const { doc, getDoc } = await import("firebase/firestore");
       
-      const userCredential = await signInWithEmailAndPassword(auth, username, password);
+      const userCredential = await withLoginTimeout(
+        signInWithEmailAndPassword(auth, username, password),
+        "تعذر الاتصال بخدمة تسجيل الدخول. تحقق من الإنترنت ثم حاول مرة أخرى.",
+      );
       const firebaseUser = userCredential.user;
       
       // Fetch user role and info from Firestore
-      const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+      const userDoc = await withLoginTimeout(
+        getDoc(doc(db, "users", firebaseUser.uid)),
+        "تم التحقق من بيانات الدخول، لكن تعذر تحميل بيانات الحساب. حاول مرة أخرى.",
+      );
       if (!userDoc.exists()) {
           throw new Error("لم يتم العثور على حساب لهذا المستخدم في قاعدة البيانات.");
       }
@@ -41,7 +65,10 @@ export default function Login() {
       } else if (role === "TRAINEE" || role === "OFFICE_LAWYER") {
           lawyerId = userData.lawyerId; 
           // Fetch Lawyer's plan for the Trainee / Office Lawyer
-          const lawyerDoc = await getDoc(doc(db, "users", lawyerId));
+          const lawyerDoc = await withLoginTimeout(
+            getDoc(doc(db, "users", lawyerId)),
+            "تعذر تحميل بيانات المكتب. تحقق من الإنترنت ثم حاول مرة أخرى.",
+          );
           if (lawyerDoc.exists()) {
             plan = lawyerDoc.data().plan || "BASIC";
           }
@@ -56,7 +83,8 @@ export default function Login() {
         if (expiry < new Date()) {
           plan = "BASIC";
           const { updateDoc, doc: firestoreDoc } = await import("firebase/firestore");
-          await updateDoc(firestoreDoc(db, "users", firebaseUser.uid), { plan: "BASIC" });
+          void updateDoc(firestoreDoc(db, "users", firebaseUser.uid), { plan: "BASIC" })
+            .catch((updateError) => console.warn("تعذر تحديث حالة الاشتراك:", updateError));
         }
         localStorage.setItem("subscriptionExpiry", userData.subscriptionExpiry);
       }
@@ -65,17 +93,19 @@ export default function Login() {
       localStorage.setItem("userRole", role);
       localStorage.setItem("userPlan", plan);
       localStorage.setItem("userName", userData?.name || firebaseUser.email?.split('@')[0] || "مستخدم");
+      localStorage.setItem("userEmail", firebaseUser.email || username);
       localStorage.setItem("userId", firebaseUser.uid);
       localStorage.setItem("lawyerId", lawyerId || "");
 
-      // سجل تدقيق للدخول — نمرّر الهوية صراحة لأن الـ hook لم يُحدَّث بعد
-      const { writeAudit } = await import("../lib/audit");
-      await writeAudit(
-        { action: "LOGIN", entity: "session", entityId: firebaseUser.uid, entityLabel: userData?.name || username },
-        { lawyerId, actorId: firebaseUser.uid, actorName: userData?.name || username, actorRole: role },
-      );
-
       navigate("/app");
+
+      // سجل التدقيق عملية مساعدة؛ لا نسمح لاتصال Firestore البطيء أن يحبس المستخدم في شاشة الدخول.
+      void import("../lib/audit")
+        .then(({ writeAudit }) => writeAudit(
+          { action: "LOGIN", entity: "session", entityId: firebaseUser.uid, entityLabel: userData?.name || username },
+          { lawyerId, actorId: firebaseUser.uid, actorName: userData?.name || username, actorRole: role },
+        ))
+        .catch((auditError) => console.warn("تعذر تحميل سجل التدقيق:", auditError));
     } catch (err: any) {
       console.error(err);
       if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
