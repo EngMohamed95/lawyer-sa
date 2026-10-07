@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Lock, User, Eye, EyeOff, ShieldCheck, Scale, Gavel } from "lucide-react";
@@ -24,11 +24,40 @@ function withLoginTimeout<T>(promise: Promise<T>, message: string): Promise<T> {
 export default function Login() {
   const [username, setUsername] = useState(() => localStorage.getItem("rememberedEmail") || "");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(() => localStorage.getItem("rememberLogin") === "true");
+  const [rememberMe, setRememberMe] = useState(() => localStorage.getItem("rememberLogin") !== "false");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const shouldRestore =
+      localStorage.getItem("rememberLogin") === "true" &&
+      localStorage.getItem("isAuthenticated") === "true";
+    if (!shouldRestore) return;
+
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
+
+    void Promise.all([
+      import("../lib/firebase"),
+      import("firebase/auth"),
+    ]).then(([{ auth }, { onAuthStateChanged }]) => {
+      if (cancelled) return;
+      unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+        if (!cancelled && firebaseUser) {
+          navigate("/app", { replace: true });
+        }
+      });
+    }).catch((sessionError) => {
+      console.warn("تعذر استعادة جلسة الدخول المحفوظة:", sessionError);
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
