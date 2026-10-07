@@ -125,7 +125,7 @@ function CaseRow({ c, expanded, onToggle, userRole }: { c: any; expanded: boolea
         <div className="flex-1 grid grid-cols-[1.2fr_0.9fr_1fr_1fr_1.4fr_1.4fr_0.8fr] gap-4 items-center">
           <div className="flex flex-col gap-0.5">
             <span className="text-xs text-gray-500">رقم القضية</span>
-            <Link to={`/app/cases/${c.id}`} className="text-lg font-bold text-gray-900 leading-tight hover:text-[#22B04B] transition-colors" dir="ltr" style={{ textAlign: "right" }}>
+            <Link to={`/app/cases/${c.id}`} className="text-lg font-bold text-blue-600 leading-tight transition-colors hover:text-blue-800" dir="ltr" style={{ textAlign: "right" }}>
               {c.caseNumber || "-"}
             </Link>
           </div>
