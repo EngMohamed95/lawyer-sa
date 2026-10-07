@@ -122,14 +122,6 @@ function CaseRow({ c, expanded, onToggle, userRole }: { c: any; expanded: boolea
   return (
     <div>
       <div className="flex items-stretch gap-4 py-1.5 pl-4">
-        <button
-          onClick={onToggle}
-          aria-expanded={expanded}
-          aria-label={expanded ? "إخفاء التفاصيل" : "عرض التفاصيل"}
-          className="w-8 shrink-0 self-center h-8 bg-[#22B04B] hover:bg-[#1c9a41] text-white flex items-center justify-center transition-colors rounded-md"
-        >
-          <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`} />
-        </button>
         <div className="flex-1 grid grid-cols-[1.2fr_0.9fr_1fr_1fr_1.4fr_1.4fr_0.8fr] gap-4 items-center">
           <div className="flex flex-col gap-0.5">
             <span className="text-xs text-gray-500">رقم القضية</span>
@@ -144,10 +136,18 @@ function CaseRow({ c, expanded, onToggle, userRole }: { c: any; expanded: boolea
           <CaseField label="المدعى عليه">{defendant}</CaseField>
           <CaseField label="الحالة">{getStatusLabel(c.status || "OPEN")}</CaseField>
         </div>
+        <button
+          onClick={onToggle}
+          aria-expanded={expanded}
+          aria-label={expanded ? "إخفاء التفاصيل" : "عرض التفاصيل"}
+          className="h-7 w-7 shrink-0 self-center rounded-md bg-sky-500 text-white transition-colors hover:bg-sky-600"
+        >
+          <ChevronDown className={`mx-auto h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+        </button>
       </div>
 
       {expanded && (
-        <div className="bg-white border-t border-gray-100 px-4 py-3 mr-8">
+        <div className="ml-8 bg-white border-t border-gray-100 px-4 py-3">
           <div className="grid grid-cols-4 gap-x-6 gap-y-3">
             <CaseField label="عنوان القضية">{c.title || "بدون عنوان"}</CaseField>
             <CaseField label="المحكمة">{[c.courtName, c.courtCircle].filter(Boolean).join(" — ") || "-"}</CaseField>

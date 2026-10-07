@@ -238,13 +238,13 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
               return (
                 <li key={item.path}>
                   <div
-                    className={`relative flex items-center transition-all duration-200 ${
+                    className={`flex items-center transition-all duration-200 ${
                       isActive
                         ? "bg-[#D4AF37]/20 text-[#D4AF37] border-r-4 border-[#D4AF37] font-bold"
                         : "hover:bg-white/5 text-gray-300 hover:text-white"
                     }`}
                   >
-                    <Link to={item.path} onClick={onClose} className="flex items-center gap-3 pr-6 pl-12 py-3 flex-1 min-w-0">
+                    <Link to={item.path} onClick={onClose} className="flex items-center gap-3 px-6 py-3 flex-1 min-w-0">
                       {item.icon}
                       <span className="font-medium truncate">{item.name}</span>
                     </Link>
@@ -253,9 +253,9 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
                       onClick={() => toggleGroup(item.path)}
                       aria-expanded={expanded}
                       aria-label={expanded ? `طيّ ${item.name}` : `توسيع ${item.name}`}
-                      className="absolute left-1 top-1/2 -translate-y-1/2 p-2 text-sky-400 hover:text-sky-300 hover:bg-sky-500/10 rounded-full transition-colors"
+                      className="px-4 py-3 text-current opacity-70 hover:opacity-100 shrink-0"
                     >
-                      <ChevronDown size={14} className={`transition-transform ${expanded ? "" : "rotate-90"}`} />
+                      <ChevronDown size={16} className={`transition-transform ${expanded ? "" : "rotate-90"}`} />
                     </button>
                   </div>
 
