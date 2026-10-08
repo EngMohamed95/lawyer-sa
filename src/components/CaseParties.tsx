@@ -7,7 +7,7 @@
  */
 
 import { useState, type ReactNode } from "react";
-import { Pencil, Plus, Trash2, UserRound, X, Check } from "lucide-react";
+import { Briefcase, Pencil, Plus, Trash2, UserRound, X, Check } from "lucide-react";
 
 export type PartyRole = "PLAINTIFF" | "DEFENDANT";
 
@@ -18,9 +18,16 @@ export interface CaseParty {
   nationalId?: string;
   nationality?: string;
   isClient?: boolean;
+  /** ممثل الطرف (محامٍ أو وكيل) — اختياري */
+  representativeName?: string;
+  representativeType?: string;
+  /** رقم رخصة المحاماة أو رقم الوكالة */
+  representativeNumber?: string;
 }
 
 const ROLE_LABEL: Record<PartyRole, string> = { PLAINTIFF: "المدعي", DEFENDANT: "مدعى عليه" };
+
+export const REPRESENTATIVE_TYPES = ["محامٍ", "وكيل شرعي", "ممثل نظامي", "ولي / وصي"];
 
 const newId = () => Math.random().toString(36).slice(2, 10);
 
@@ -42,6 +49,12 @@ export function partiesOf(c: any): CaseParty[] {
     isClient: clientIsDefendant && defendant === clientName,
     nationalId: clientIsDefendant && defendant === clientName ? c?.client?.nationalId || "" : "",
   });
+  // محامي الخصم من الحقل القديم يظهر ممثلاً للطرف الخصم
+  const opponent = out.find((p) => !p.isClient);
+  if (opponent && c?.opponentLawyer) {
+    opponent.representativeName = c.opponentLawyer;
+    opponent.representativeType = "محامٍ";
+  }
   return out;
 }
 
@@ -60,6 +73,9 @@ export default function CaseParties({ caseData, onSave }: {
       await onSave(next.map((p) => ({
         id: p.id, name: p.name, role: p.role,
         nationalId: p.nationalId || "", nationality: p.nationality || "", isClient: !!p.isClient,
+        representativeName: p.representativeName || "",
+        representativeType: p.representativeName ? p.representativeType || REPRESENTATIVE_TYPES[0] : "",
+        representativeNumber: p.representativeName ? p.representativeNumber || "" : "",
       })));
       setEditing(null);
     } finally {
@@ -69,7 +85,10 @@ export default function CaseParties({ caseData, onSave }: {
 
   const submit = (p: CaseParty) => {
     if (!p.name.trim()) return;
-    const clean = { ...p, name: p.name.trim(), nationalId: p.nationalId?.trim(), nationality: p.nationality?.trim() };
+    const clean = {
+      ...p, name: p.name.trim(), nationalId: p.nationalId?.trim(), nationality: p.nationality?.trim(),
+      representativeName: p.representativeName?.trim(), representativeNumber: p.representativeNumber?.trim(),
+    };
     const exists = parties.some((x) => x.id === p.id);
     void persist(exists ? parties.map((x) => (x.id === p.id ? clean : x)) : [...parties, clean]);
   };
@@ -157,6 +176,15 @@ function PartyCard({ p, onEdit, onDelete, disabled }: {
         {p.nationalId && <Chip>الهوية الوطنية: {p.nationalId}</Chip>}
         {p.nationality && <Chip>الجنسية: {p.nationality}</Chip>}
       </div>
+      {p.representativeName && (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-gray-200 pt-2.5 text-sm">
+          <Briefcase size={14} className="shrink-0 text-[#1a9a45]" />
+          <span className="text-gray-500">الممثل:</span>
+          <span className="font-bold text-gray-900">{p.representativeName}</span>
+          {p.representativeType && <Chip>{p.representativeType}</Chip>}
+          {p.representativeNumber && <Chip>رقم الرخصة / الوكالة: {p.representativeNumber}</Chip>}
+        </div>
+      )}
     </div>
   );
 }
@@ -189,6 +217,21 @@ function PartyForm({ value, onChange, onSubmit, onCancel, saving }: {
         <input type="checkbox" checked={!!value.isClient} onChange={(e) => onChange({ ...value, isClient: e.target.checked })} />
         هذا الطرف هو العميل
       </label>
+      <div className="space-y-2 border-t border-gray-100 pt-2.5">
+        <div className="flex items-center gap-2 text-xs font-bold text-[#133B2E]">
+          <Briefcase size={13} /> ممثل {ROLE_LABEL[value.role]} (اختياري)
+        </div>
+        <input placeholder="اسم الممثل" className={input}
+          value={value.representativeName || ""} onChange={(e) => onChange({ ...value, representativeName: e.target.value })} />
+        <div className="grid grid-cols-2 gap-2">
+          <select className={input} value={value.representativeType || REPRESENTATIVE_TYPES[0]}
+            onChange={(e) => onChange({ ...value, representativeType: e.target.value })}>
+            {REPRESENTATIVE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+          </select>
+          <input placeholder="رقم الرخصة / الوكالة" className={input}
+            value={value.representativeNumber || ""} onChange={(e) => onChange({ ...value, representativeNumber: e.target.value })} />
+        </div>
+      </div>
       <div className="flex gap-2 justify-end">
         <button type="button" onClick={onCancel}
           className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50">

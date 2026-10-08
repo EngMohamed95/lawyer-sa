@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { Plus, Search, Filter, Eye, FileSpreadsheet, Gavel, X, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, Filter, Eye, FileSpreadsheet, Gavel, X, ChevronDown, ChevronLeft, ChevronRight, Briefcase, Landmark, UserRound, Scale } from "lucide-react";
 import { Card, CardContent, CardHeader } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -10,8 +10,9 @@ import { collection, getDocs, query, where, limit } from "firebase/firestore";
 import type { Query, DocumentData } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { Pagination } from "../components/ui/Pagination";
-import { Link, useSearchParams } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { formatHijri } from "../lib/calendar";
+import { CLIENT_ROLE_LABELS_AR, clientRoleOf } from "../lib/clientRole";
 import ExecutionOverview, { matchesExecution, type ExecutionCapacity, type ExecutionFilter } from "../components/ExecutionOverview";
 
 const STATUS_LABELS_AR: Record<string, string> = {
@@ -58,10 +59,6 @@ const CASE_TYPE_LABELS_AR: Record<string, string> = {
   EXECUTION: "تنفيذ",
 };
 
-const CLIENT_ROLE_LABELS_AR: Record<string, string> = {
-  PLAINTIFF: "وكيل المدعي",
-  DEFENDANT: "وكيل المدعى عليه",
-};
 
 const CaseField = ({ label, children, className = "" }: { label: string; children: ReactNode; className?: string }) => (
   <div className={`flex flex-col gap-0.5 min-w-0 ${className}`}>
@@ -115,43 +112,95 @@ function CaseRowsScroller({ children }: { children: ReactNode }) {
   );
 }
 
+// لون الحافة الجانبية وشارة الحالة في بطاقة القضية
+const CASE_STATUS_STYLES: Record<string, { bar: string; pill: string }> = {
+  "مفتوحة": { bar: "border-r-[#133B2E]", pill: "bg-[#133B2E] text-white" },
+  "معلّقة": { bar: "border-r-amber-500", pill: "bg-amber-500 text-white" },
+  "موقوفة": { bar: "border-r-red-500", pill: "bg-red-500 text-white" },
+  "مكتملة": { bar: "border-r-green-600", pill: "bg-green-600 text-white" },
+  "مغلقة": { bar: "border-r-gray-400", pill: "bg-gray-500 text-white" },
+  "مؤرشفة": { bar: "border-r-gray-300", pill: "bg-gray-200 text-gray-700" },
+};
+
+const Chip = ({ children }: { children: ReactNode }) => (
+  <span className="rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-[#133B2E]">{children}</span>
+);
+
 function CaseRow({ c, expanded, onToggle, userRole }: { c: any; expanded: boolean; onToggle: () => void; userRole: string | null }) {
+  const navigate = useNavigate();
   const plaintiff = c.plaintiffName || (c.clientRole === "DEFENDANT" ? c.opponentName : c.client?.fullName) || "-";
   const defendant = c.defendantName || (c.clientRole === "DEFENDANT" ? c.client?.fullName : c.opponentName) || "-";
+  const statusLabel = getStatusLabel(c.status || "OPEN");
+  const style = CASE_STATUS_STYLES[statusLabel] || CASE_STATUS_STYLES["مفتوحة"];
+  const court = [c.courtName, c.courtCircle].filter(Boolean).join(" — ");
+
+  // الضغط في أي مكان بالبطاقة يفتح القضية — عدا الأزرار والروابط، وعدا تحديد نص للنسخ
+  const openCase = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("a, button")) return;
+    if (window.getSelection()?.toString()) return;
+    navigate(`/app/cases/${c.id}`);
+  };
 
   return (
-    <div>
-      <div className="flex items-stretch gap-4 py-1.5 pl-4">
-        <div className="flex-1 grid grid-cols-[1.2fr_0.9fr_1fr_1fr_1.4fr_1.4fr_0.8fr] gap-4 items-center">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-xs text-gray-500">رقم القضية</span>
-            <Link to={`/app/cases/${c.id}`} className="text-lg font-bold text-blue-600 leading-tight transition-colors hover:text-blue-800" dir="ltr" style={{ textAlign: "right" }}>
-              {c.caseNumber || "-"}
+    <div onClick={openCase} className={`cursor-pointer rounded-xl border border-gray-200 border-r-[5px] ${style.bar} bg-white shadow-sm transition hover:shadow-md`}>
+      <div className="flex flex-col gap-4 p-4 lg:flex-row lg:items-center">
+        {/* التاريخ */}
+        <div className="w-fit shrink-0 rounded-lg bg-gray-100 px-4 py-2 text-center lg:w-28">
+          <div className="text-sm font-bold text-[#133B2E]">{formatHijri(c.startDate || c.createdAt)}</div>
+          <div className="mt-0.5 text-xs text-gray-500">تاريخ القضية</div>
+        </div>
+
+        {/* رقم القضية ونوعها */}
+        <div className="min-w-0 shrink-0 space-y-1.5 lg:w-72">
+          <Link to={`/app/cases/${c.id}`} className="flex items-center gap-2 text-lg font-bold text-[#133B2E] transition-colors hover:text-blue-700">
+            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#133B2E] text-white">
+              <Briefcase size={14} />
+            </span>
+            <span dir="ltr" className="truncate">{c.caseNumber || "-"}</span>
+          </Link>
+          <div className="flex flex-wrap gap-1.5">
+            <Chip>{CASE_TYPE_LABELS_AR[c.type] || c.type || "-"}</Chip>
+            <Chip>{CLIENT_ROLE_LABELS_AR[clientRoleOf(c)]}</Chip>
+          </div>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+            {court && <span className="flex min-w-0 items-center gap-1"><Landmark size={13} className="shrink-0" /> <span className="truncate">{court}</span></span>}
+            <span className="flex min-w-0 items-center gap-1"><UserRound size={13} className="shrink-0" /> <span className="truncate">{c.client?.fullName || "-"}</span></span>
+          </div>
+        </div>
+
+        {/* العنوان والأطراف */}
+        <div className="min-w-0 flex-1 space-y-1.5 text-sm">
+          <p className="flex items-center gap-1.5 font-medium text-blue-900">
+            <Scale size={14} className="shrink-0" /> <span className="truncate">{c.title || "بدون عنوان"}</span>
+          </p>
+          <p className="truncate text-gray-700"><span className="text-gray-500">المدعي: </span>{plaintiff}</p>
+          <p className="truncate text-gray-700"><span className="text-gray-500">المدعى عليه: </span>{defendant}</p>
+        </div>
+
+        {/* الحالة والإجراءات */}
+        <div className="flex shrink-0 items-center gap-2 lg:flex-col lg:items-end">
+          <span className={`rounded-md px-2.5 py-1 text-xs font-bold ${style.pill}`}>{statusLabel}</span>
+          <div className="flex overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xs">
+            <button
+              onClick={onToggle}
+              aria-expanded={expanded}
+              aria-label={expanded ? "إخفاء التفاصيل" : "عرض التفاصيل"}
+              title={expanded ? "إخفاء التفاصيل" : "عرض التفاصيل"}
+              className="px-3 py-2 text-sky-600 transition-colors hover:bg-sky-50"
+            >
+              <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`} />
+            </button>
+            <Link to={`/app/cases/${c.id}`} aria-label="فتح القضية" title="فتح القضية"
+              className="border-r border-gray-200 px-3 py-2 text-[#133B2E] transition-colors hover:bg-gray-50">
+              <Eye className="h-4 w-4" />
             </Link>
           </div>
-          <CaseField label="تاريخ القضية">{formatHijri(c.startDate || c.createdAt)}</CaseField>
-          <CaseField label="نوع القضية">{CASE_TYPE_LABELS_AR[c.type] || c.type || "-"}</CaseField>
-          <CaseField label="الصفة">{CLIENT_ROLE_LABELS_AR[c.clientRole] || "وكيل"}</CaseField>
-          <CaseField label="المدعي">{plaintiff}</CaseField>
-          <CaseField label="المدعى عليه">{defendant}</CaseField>
-          <CaseField label="الحالة">{getStatusLabel(c.status || "OPEN")}</CaseField>
         </div>
-        <button
-          onClick={onToggle}
-          aria-expanded={expanded}
-          aria-label={expanded ? "إخفاء التفاصيل" : "عرض التفاصيل"}
-          className="h-7 w-7 shrink-0 self-center rounded-md bg-sky-500 text-white transition-colors hover:bg-sky-600"
-        >
-          <ChevronDown className={`mx-auto h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
-        </button>
       </div>
 
       {expanded && (
-        <div className="ml-8 bg-white border-t border-gray-100 px-4 py-3">
-          <div className="grid grid-cols-4 gap-x-6 gap-y-3">
-            <CaseField label="عنوان القضية">{c.title || "بدون عنوان"}</CaseField>
-            <CaseField label="المحكمة">{[c.courtName, c.courtCircle].filter(Boolean).join(" — ") || "-"}</CaseField>
-            <CaseField label="العميل">{c.client?.fullName || "-"}</CaseField>
+        <div className="border-t border-gray-100 px-4 py-3">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-3 md:grid-cols-4">
             <CaseField label="محامي الخصم">{c.opponentLawyer || "-"}</CaseField>
             {(userRole === "LAWYER" || userRole === "OFFICE_LAWYER") && (
               <CaseField label="المحامي المسؤول">{c.assignedLawyerName || "المدير"}</CaseField>
@@ -159,13 +208,6 @@ function CaseRow({ c, expanded, onToggle, userRole }: { c: any; expanded: boolea
             {userRole === "SUPER_ADMIN" && <CaseField label="المحامي">{c.lawyerId || "غير محدد"}</CaseField>}
             <CaseField label="المستشار">{c.assignedConsultantName || "-"}</CaseField>
             <CaseField label="المتدربون">{c.traineeNames?.length ? c.traineeNames.join("، ") : "-"}</CaseField>
-          </div>
-          <div className="mt-3 flex justify-end">
-            <Link to={`/app/cases/${c.id}`}>
-              <Button className="bg-[#22B04B] hover:bg-[#1c9a41] text-white gap-2 rounded-xl font-bold">
-                <Eye className="h-4 w-4" /> تفاصيل القضية
-              </Button>
-            </Link>
           </div>
         </div>
       )}
@@ -211,7 +253,7 @@ function ExecutionRows({ cases }: { cases: any[] }) {
         const debtors = debtorNamesOf(c);
         return (
           <div key={c.id} className={`${EXECUTION_COLS} px-4 py-3 rounded-lg bg-white border border-gray-100 shadow-xs hover:shadow-sm transition`}>
-            <Link to={`/app/cases/${c.id}?tab=enforcement`} dir="ltr" style={{ textAlign: "right" }}
+            <Link to={`/app/cases/${c.id}`} dir="ltr" style={{ textAlign: "right" }}
               className="text-base font-bold text-gray-900 hover:text-[#1a9a45] truncate">
               {c.caseNumber || "-"}
             </Link>
@@ -226,7 +268,7 @@ function ExecutionRows({ cases }: { cases: any[] }) {
             <span className={`flex items-center gap-1.5 text-xs ${status.text}`}>
               <span className={`w-2 h-2 rounded-full shrink-0 ${status.dot}`} /> {status.label}
             </span>
-            <Link to={`/app/cases/${c.id}?tab=enforcement`}
+            <Link to={`/app/cases/${c.id}`}
               className="justify-self-end px-3 py-1.5 rounded-md border border-gray-300 text-sm font-bold text-gray-800 hover:bg-gray-50 transition">
               تفاصيل
             </Link>
@@ -482,7 +524,7 @@ export default function Cases() {
           ) : filteredCases.length === 0 ? (
             <div className="text-center py-10 text-gray-500">لا يوجد قضايا مطابقة للبحث</div>
           ) : (
-            <CaseRowsScroller>
+            <div className="space-y-3 bg-gray-50/60 p-3">
               {pagedCases.map((c) => (
                 <CaseRow
                   key={c.id}
@@ -492,7 +534,7 @@ export default function Cases() {
                   userRole={userRole}
                 />
               ))}
-            </CaseRowsScroller>
+            </div>
           )
           )}
           <Pagination

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams } from "react-router";
-import { ChevronRight, UsersRound, Archive, Calendar, FileText, CheckSquare, Plus, Download, Edit, Save, Trash2, File, Scale, FileSignature, Sparkles, RefreshCw, UploadCloud, Chrome, Info, CheckCircle2, Loader2, ChevronDown, ChevronUp, AlertTriangle, Gavel, Eye, Landmark, Banknote, FileBarChart, Printer, MessageCircle } from "lucide-react";
+import { ChevronRight, UsersRound, Archive, Calendar, FileText, CheckSquare, Plus, Download, Edit, Save, Trash2, File, Scale, FileSignature, Sparkles, RefreshCw, UploadCloud, Chrome, Info, CheckCircle2, Loader2, ChevronDown, ChevronUp, AlertTriangle, Gavel, Eye, Landmark, Banknote, FileBarChart, Printer, MessageCircle, ScrollText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -16,6 +16,9 @@ import HearingCard from "../components/HearingCard";
 import CaseParties, { partiesOf, type CaseParty } from "../components/CaseParties";
 import CaseRequests from "../components/CaseRequests";
 import MemoAiPanel from "../components/MemoAiPanel";
+import { CLIENT_ROLE_LABELS_AR, clientRoleOf } from "../lib/clientRole";
+import CaseClaimSection, { claimSectionOf, type ClaimSectionValue } from "../components/CaseClaimSection";
+import CaseDecisions, { decisionsOf, type CaseDecision } from "../components/CaseDecisions";
 import CaseJudgments, { judgmentsOf, legacyFinalJudgment, type CaseJudgment } from "../components/CaseJudgments";
 import { EXECUTION_DEED_TYPES, EXECUTION_REQUEST_TYPES } from "../lib/execution";
 import { AiMemoDrafterModal } from "../components/AiMemoDrafterModal";
@@ -191,7 +194,7 @@ export default function CaseDetails() {
     // Prepare template variables
     const dateStr = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     const clientName = customData.client?.fullName || '..........';
-    const lawyerName = customData.lawyerName || '..........';
+    const lawyerName = customData.assignedLawyerName || customData.lawyerName || '..........';
     const courtName = customData.courtName || '..........';
     const opponentName = customData.opponentName || '..........';
     const courtCircle = customData.courtCircle || '..........';
@@ -475,7 +478,11 @@ export default function CaseDetails() {
   // Najiz integration states
   // ?tab= يسمح بفتح تبويب محدد مباشرة (مثال: قائمة قضايا التنفيذ تفتح على تبويب "تنفيذ الأحكام")
   const [searchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState(() => searchParams.get("tab") || "info");
+  // تبويب "تنفيذ الأحكام" أُزيل — الروابط القديمة إليه تفتح التبويب الأول
+  const [activeTab, setActiveTab] = useState(() => {
+    const tab = searchParams.get("tab");
+    return tab && tab !== "enforcement" ? tab : "info";
+  });
   // الجهة المرسَل إليها تقرير حالة القضية — تُغيّر عنوان التقرير فقط
   const [reportAudience, setReportAudience] = useState<"CLIENT" | "OFFICE">("OFFICE");
   const [isGeneratingReportPdf, setIsGeneratingReportPdf] = useState(false);
@@ -588,6 +595,30 @@ export default function CaseDetails() {
     } catch (err) {
       console.error("Error saving judgments:", err);
       alert("حدث خطأ أثناء حفظ الأحكام");
+      throw err;
+    }
+  };
+
+  // أسانيد الدعوى وطلباتها — نص ومرفقات في حقل واحد لكل قسم
+  const handleSaveClaimSection = async (field: "claimGrounds" | "claimRequests", value: ClaimSectionValue) => {
+    if (!data) return;
+    try {
+      await updateDoc(doc(db, "cases", data.id), { [field]: value, updatedAt: new Date().toISOString() });
+      setData((prev: any) => ({ ...prev, [field]: value }));
+    } catch (err) {
+      console.error(`Error saving ${field}:`, err);
+      throw err;
+    }
+  };
+
+  const handleSaveDecisions = async (decisions: CaseDecision[]) => {
+    if (!data) return;
+    try {
+      await updateDoc(doc(db, "cases", data.id), { decisions, updatedAt: new Date().toISOString() });
+      setData((prev: any) => ({ ...prev, decisions }));
+    } catch (err) {
+      console.error("Error saving decisions:", err);
+      alert("حدث خطأ أثناء حفظ القرارات");
       throw err;
     }
   };
@@ -999,7 +1030,7 @@ export default function CaseDetails() {
             >
               <div className="min-w-0">
                 <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "info" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>التفاصيل العامة</span>
-                <span className={`text-sm leading-tight font-bold block truncate ${activeTab === "info" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>الملف الرئيسي</span>
+                <span className={`text-sm leading-tight font-bold block ${activeTab === "info" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>موضوع الدعوى</span>
               </div>
               <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "info" ? "!bg-white/20 !text-amber-300" : "bg-indigo-100/70 text-indigo-600"}`}>
                 <Scale size={16} />
@@ -1020,23 +1051,6 @@ export default function CaseDetails() {
               </div>
               <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "parties" ? "!bg-white/20 !text-amber-300" : "bg-emerald-100/70 text-emerald-600"}`}>
                 <UsersRound size={16} />
-              </div>
-            </TabsTrigger>
-
-            <TabsTrigger 
-              value="requests" 
-              className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
-                activeTab === "requests"
-                  ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
-                  : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
-              }`}
-            >
-              <div className="min-w-0">
-                <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "requests" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>الطلبات</span>
-                <span className={`text-lg leading-tight font-bold block ${activeTab === "requests" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.requests?.length || 0}</span>
-              </div>
-              <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "requests" ? "!bg-white/20 !text-amber-300" : "bg-lime-100/70 text-lime-700"}`}>
-                <Archive size={16} />
               </div>
             </TabsTrigger>
 
@@ -1075,19 +1089,36 @@ export default function CaseDetails() {
             </TabsTrigger>
 
             <TabsTrigger 
-              value="docs" 
+              value="requests" 
               className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
-                activeTab === "docs"
+                activeTab === "requests"
                   ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
                   : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
               <div className="min-w-0">
-                <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "docs" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>المستندات</span>
-                <span className={`text-lg leading-tight font-bold block ${activeTab === "docs" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.documents.length}</span>
+                <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "requests" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>الطلبات</span>
+                <span className={`text-lg leading-tight font-bold block ${activeTab === "requests" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.requests?.length || 0}</span>
               </div>
-              <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "docs" ? "!bg-white/20 !text-amber-300" : "bg-rose-100/70 text-rose-600"}`}>
-                <FileText size={16} />
+              <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "requests" ? "!bg-white/20 !text-amber-300" : "bg-lime-100/70 text-lime-700"}`}>
+                <Archive size={16} />
+              </div>
+            </TabsTrigger>
+
+            <TabsTrigger 
+              value="decisions" 
+              className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
+                activeTab === "decisions"
+                  ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
+                  : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
+              }`}
+            >
+              <div className="min-w-0">
+                <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "decisions" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>القرارات</span>
+                <span className={`text-lg leading-tight font-bold block ${activeTab === "decisions" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{decisionsOf(data).length}</span>
+              </div>
+              <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "decisions" ? "!bg-white/20 !text-amber-300" : "bg-indigo-100/70 text-indigo-600"}`}>
+                <ScrollText size={16} />
               </div>
             </TabsTrigger>
 
@@ -1108,24 +1139,22 @@ export default function CaseDetails() {
               </div>
             </TabsTrigger>
 
-            {isExecutionCase && (
-              <TabsTrigger
-                value="enforcement"
-                className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
-                  activeTab === "enforcement"
-                    ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
-                    : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
-                }`}
-              >
-                <div className="min-w-0">
-                  <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "enforcement" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>تنفيذ الأحكام</span>
-                  <span className={`text-sm leading-tight font-bold block truncate ${activeTab === "enforcement" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{enforcementProgress}%</span>
-                </div>
-                <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "enforcement" ? "!bg-white/20 !text-amber-300" : "bg-amber-100/70 text-amber-700"}`}>
-                  <Landmark size={16} />
-                </div>
-              </TabsTrigger>
-            )}
+            <TabsTrigger 
+              value="docs" 
+              className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
+                activeTab === "docs"
+                  ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
+                  : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
+              }`}
+            >
+              <div className="min-w-0">
+                <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "docs" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>المستندات</span>
+                <span className={`text-lg leading-tight font-bold block ${activeTab === "docs" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.documents.length}</span>
+              </div>
+              <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "docs" ? "!bg-white/20 !text-amber-300" : "bg-rose-100/70 text-rose-600"}`}>
+                <FileText size={16} />
+              </div>
+            </TabsTrigger>
 
             <TabsTrigger
               value="reports"
@@ -1149,37 +1178,7 @@ export default function CaseDetails() {
 
         <TabsContent value="info" className="mt-8 outline-none space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">أطراف النزاع</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex justify-between border-b pb-3 border-gray-100">
-                    <span className="text-gray-500">العميل (العميل)</span>
-                    <span className="font-bold text-[#133B2E]">{data.client?.fullName} <Badge variant="outline" className="mr-2 font-normal text-xs">{data.client?.clientType === 'COMPANY' ? 'شركة' : 'فرد'}</Badge></span>
-                  </div>
-                  <div className="flex justify-between border-b pb-3 border-gray-100">
-                    <span className="text-gray-500">المدعي (المدعون)</span>
-                    <span className="font-bold text-green-700">{data.plaintiffName || data.client?.fullName || "غير محدد"}</span>
-                  </div>
-                  <div className="flex justify-between border-b pb-3 border-gray-100">
-                    <span className="text-gray-500">المدعى عليه (المدعى عليهم)</span>
-                    <span className="font-bold text-red-700">{data.defendantName || data.opponentName || "غير محدد"}</span>
-                  </div>
-                  <div className="flex justify-between border-b pb-3 border-gray-100">
-                    <span className="text-gray-500">الخصم</span>
-                    <span className="font-medium text-red-600">{data.opponentName || "غير محدد"}</span>
-                  </div>
-                  <div className="flex justify-between pb-1">
-                    <span className="text-gray-500">محامي الخصم</span>
-                    <span className="font-medium">{data.opponentLawyer || "غير محدد"}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-sm">
+            <Card className="shadow-sm md:col-span-2">
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg">بيانات القضية</CardTitle>
               </CardHeader>
@@ -1187,7 +1186,15 @@ export default function CaseDetails() {
                 <div className="space-y-4">
                   <div className="flex justify-between border-b pb-3 border-gray-100">
                     <span className="text-gray-500">نوع القضية</span>
-                    <span className="font-medium">{data.type}</span>
+                    <span className="font-medium">
+                      {({ CIVIL: "مدني", COMMERCIAL: "تجاري", CRIMINAL: "جزائي", LABOR: "عمالي", EXECUTION: "تنفيذ", ENFORCEMENT: "تنفيذ" } as Record<string, string>)[data.type] || data.type || "غير محدد"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-b pb-3 border-gray-100">
+                    <span className="text-gray-500">الصفة</span>
+                    <span className="font-medium text-[#133B2E]">
+                      {CLIENT_ROLE_LABELS_AR[clientRoleOf(data)]}
+                    </span>
                   </div>
                   <div className="flex justify-between border-b pb-3 border-gray-100">
                     <span className="text-gray-500">المحكمة المرفوع أمامها</span>
@@ -1201,9 +1208,18 @@ export default function CaseDetails() {
                     <span className="text-gray-500">تاريخ البداية</span>
                     <span className="font-medium" dir="ltr">{data.startDate ? new Date(data.startDate).toLocaleDateString('ar-EG') : "-"}</span>
                   </div>
-                  <div className="flex justify-between pb-1">
+                  {/* نفس الحقول التي يحفظها نموذج تعديل القضية — فيظهر أي تعديل فور الحفظ */}
+                  <div className="flex justify-between border-b pb-3 border-gray-100">
                     <span className="text-gray-500">المحامي المسؤول</span>
-                    <span className="font-medium border-b border-dashed border-gray-400 pb-0.5">{data.lawyerName || "غير محدد"}</span>
+                    <span className="font-medium">{data.assignedLawyerName || "غير محدد"}</span>
+                  </div>
+                  <div className="flex justify-between border-b pb-3 border-gray-100">
+                    <span className="text-gray-500">المستشار</span>
+                    <span className="font-medium">{data.assignedConsultantName || "بلا مستشار"}</span>
+                  </div>
+                  <div className="flex justify-between gap-4 pb-1">
+                    <span className="text-gray-500 shrink-0">المتدربون</span>
+                    <span className="font-medium text-left">{data.traineeNames?.length ? data.traineeNames.join("، ") : "لا يوجد"}</span>
                   </div>
                 </div>
               </CardContent>
@@ -1220,158 +1236,21 @@ export default function CaseDetails() {
               </CardContent>
             </Card>
 
-            <Card className="shadow-sm md:col-span-2">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">ملخص القضية</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap bg-gray-50 p-4 rounded-lg border border-gray-100">
-                  {data.summary || "لا يوجد ملخص مضاف."}
-                </p>
-              </CardContent>
-            </Card>
+            <CaseClaimSection
+              title="أسانيد الدعوى"
+              placeholder="اكتب الأسانيد النظامية والوقائع والأدلة التي تستند إليها الدعوى..."
+              emptyText="لم تُضف أسانيد للدعوى بعد."
+              value={claimSectionOf(data.claimGrounds)}
+              onSave={(v) => handleSaveClaimSection("claimGrounds", v)}
+            />
 
-            {/* Najiz Integration Card */}
-            <Card className="shadow-sm md:col-span-2 border-amber-100 bg-[#FBF9F2]">
-              <CardHeader className="pb-3 border-b border-amber-100 flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg text-[#133B2E] flex items-center gap-2">
-                    <Scale className="text-[#D4AF37] w-5 h-5" /> تكامل منصة ناجز العدلية
-                  </CardTitle>
-                  <CardDescription className="text-gray-500">مزامنة بيانات القضية والجلسات والأحكام تلقائياً</CardDescription>
-                </div>
-                <Badge className="bg-[#D4AF37]/20 text-[#133B2E] hover:bg-[#D4AF37]/30 font-bold border border-[#D4AF37]/30">
-                  {localStorage.getItem("sys_najizMode") === "OFFICIAL_API" 
-                    ? "ربط رسمي مباشر"
-                    : localStorage.getItem("sys_najizMode") === "CHROME_EXTENSION"
-                    ? "ربط عبر الإضافة"
-                    : localStorage.getItem("sys_najizMode") === "SMART_IMPORT"
-                    ? "استيراد ملفات"
-                    : "الربط معطل"}
-                </Badge>
-              </CardHeader>
-              <CardContent className="p-5">
-                {localStorage.getItem("sys_najizMode") === "OFFICIAL_API" && (
-                  <div className="space-y-4">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-gray-100">
-                      <div>
-                        <p className="text-sm font-bold text-[#133B2E]">حالة الربط التلقائي بالخوادم</p>
-                        <p className="text-xs text-gray-500 mt-1">آخر مزامنة ناجحة: اليوم منذ ساعتين</p>
-                      </div>
-                      <Button 
-                        onClick={handleOfficialNajizSync} 
-                        disabled={isSyncingNajiz}
-                        className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white font-bold"
-                      >
-                        {isSyncingNajiz ? (
-                          <>
-                            <RefreshCw className="ml-2 h-4 w-4 animate-spin text-white" /> جاري جلب الجلسات...
-                          </>
-                        ) : (
-                          <>
-                            <RefreshCw className="ml-2 h-4 w-4" /> مزامنة وتحديث الآن
-                          </>
-                        )}
-                      </Button>
-                    </div>
-
-                    {najizSyncSuccess && (
-                      <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-xs font-bold flex items-center gap-2">
-                        <CheckCircle2 size={16} /> تم الاتصال بوزارة العدل وجلب أحدث المستندات والجلسات بنجاح وتحديث النظام!
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {localStorage.getItem("sys_najizMode") === "CHROME_EXTENSION" && (
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-                      <Chrome className="text-blue-600 shrink-0 w-6 h-6 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-bold text-blue-900">بانتظار المزامنة عبر إضافة المتصفح</p>
-                        <p className="text-xs text-blue-700 leading-relaxed mt-1">
-                          يقوم النظام بمزامنة الجلسات والقرارات تلقائياً بمجرد فتح بوابة ناجز القضائية وتسجيل دخولك هناك. 
-                          تأكد من تنصيب إضافة <strong>LawyerOS Extension</strong> على متصفح Chrome أو Edge.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 text-xs">
-                      <span className="text-gray-500">حالة اقتران الإضافة بالمتصفح:</span>
-                      <span className="font-bold text-green-600 flex items-center gap-1">
-                        <span className="w-2.5 h-2.5 bg-green-500 rounded-full inline-block animate-pulse"></span> متصل ونشط
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {localStorage.getItem("sys_najizMode") === "SMART_IMPORT" && (
-                  <div className="space-y-4">
-                    <p className="text-xs text-gray-600">ارفع ملف PDF المصدر من ناجز (تقرير القضية، صك الحكم، أو صحيفة الدعوى)، ليقوم الذكاء الاصطناعي باستخراج الجلسات والوقائع تلقائياً:</p>
-                    
-                    <div className="border-2 border-dashed border-gray-200 hover:border-[#D4AF37] transition bg-white rounded-xl p-6 text-center cursor-pointer relative">
-                      <input 
-                        type="file" 
-                        accept=".pdf,.html,.txt" 
-                        onChange={handleManualImportUpload}
-                        disabled={importFileLoading}
-                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                      />
-                      <div className="flex flex-col items-center gap-2">
-                        <UploadCloud className="text-gray-400 w-10 h-10" />
-                        {importFileLoading ? (
-                          <div className="text-sm text-gray-600 font-bold flex items-center gap-2 justify-center">
-                            <Loader2 className="animate-spin text-[#D4AF37] w-4 h-4" /> جاري قراءة الملف بالذكاء الاصطناعي واستخراج البيانات...
-                          </div>
-                        ) : (
-                          <>
-                            <p className="text-sm font-bold text-[#133B2E]">اسحب وأفلت تقرير ناجز هنا أو تصفح جهازك</p>
-                            <p className="text-xs text-gray-400">يدعم صيغ PDF و HTML المصدرة من وزارة العدل</p>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {importSuccess && (
-                      <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-xs font-bold flex items-center gap-2">
-                        <CheckCircle2 size={16} /> تم استيراد الملف بالذكاء الاصطناعي بنجاح! تم استخراج عدد (2) جلسات جديدة وتحديث تفاصيل الخصوم وموضوع الدعوى.
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {(!localStorage.getItem("sys_najizMode") || localStorage.getItem("sys_najizMode") === "DISABLED") && (
-                  <div className="flex items-start gap-3 bg-gray-50 p-4 rounded-xl border border-gray-200">
-                    <Info className="text-gray-500 shrink-0 w-5 h-5 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-bold text-gray-800">التكامل التلقائي مع ناجز غير مفعل</p>
-                      <p className="text-xs text-gray-500 leading-relaxed mt-1">
-                        لتفعيل التكامل التلقائي أو استيراد القضايا، يرجى الانتقال إلى شاشة <strong>الإعدادات &gt; الربط والأنظمة</strong> وتحديد آلية الربط المفضلة لمكتبك.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* ملخص تنفيذ الحكم — التفاصيل الكاملة انتقلت لتبويب "تنفيذ الأحكام" المستقل */}
-            {isExecutionCase && (
-              <Card className="shadow-sm md:col-span-2 border border-amber-200/60 overflow-hidden bg-white">
-                <CardContent className="p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-3 rounded-2xl bg-amber-100/70 text-amber-700 shrink-0">
-                      <Landmark size={22} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-[#133B2E]">مسار تنفيذ الحكم في نظام ناجز</p>
-                      <p className="text-xs text-gray-500 mt-0.5">مكتمل {completedStepsCount} من 22 خطوة ({enforcementProgress}%)</p>
-                    </div>
-                  </div>
-                  <Button onClick={() => setActiveTab("enforcement")} className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white shrink-0">
-                    فتح تبويب تنفيذ الأحكام
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
+            <CaseClaimSection
+              title="طلبات الدعوى"
+              placeholder="اكتب الطلبات الختامية في الدعوى..."
+              emptyText="لم تُضف طلبات للدعوى بعد."
+              value={claimSectionOf(data.claimRequests)}
+              onSave={(v) => handleSaveClaimSection("claimRequests", v)}
+            />
 
             {/* Najiz Litigation Steps Tracker Card */}
             {(data.type !== "تنفيذ" && data.type !== "ENFORCEMENT") && (
@@ -1896,6 +1775,10 @@ export default function CaseDetails() {
           />
         </TabsContent>
 
+        <TabsContent value="decisions" className="mt-8 outline-none space-y-6">
+          <CaseDecisions caseData={data} onSave={handleSaveDecisions} />
+        </TabsContent>
+
         <TabsContent value="judgment" className="mt-8 outline-none space-y-6">
           <CaseJudgments
             caseData={data}
@@ -1909,323 +1792,6 @@ export default function CaseDetails() {
             })}
           />
         </TabsContent>
-
-        {isExecutionCase && (
-          <TabsContent value="enforcement" className="mt-8 outline-none space-y-6">
-            <Card className="shadow-sm border border-amber-200/60 overflow-hidden bg-white">
-              <CardHeader className="pb-4 bg-amber-50/30 border-b border-amber-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                  <CardTitle className="text-lg text-[#133B2E] flex items-center gap-2">
-                    <Landmark className="text-[#D4AF37] w-5 h-5" /> مسار تنفيذ الحكم في نظام ناجز
-                  </CardTitle>
-                  <CardDescription className="text-gray-500 text-xs">
-                    من اكتساب الحكم صفته النهائية إلى استلام الحق وإقفال الملف — حسب دليل إجراءات التنفيذ لدى وزارة العدل
-                  </CardDescription>
-                </div>
-                <span className="text-xs font-bold text-[#133B2E] bg-amber-100 text-amber-800 px-3 py-1 rounded-full shrink-0">
-                  مكتمل: {completedStepsCount} من 22 ({enforcementProgress}%)
-                </span>
-              </CardHeader>
-              <CardContent className="p-6 space-y-8">
-                <div className="w-full bg-gray-100 h-2.5 rounded-full overflow-hidden">
-                  <div className="bg-[#D4AF37] h-full transition-all duration-500 ease-out rounded-full" style={{ width: `${enforcementProgress}%` }} />
-                </div>
-
-                {/* تصنيف طلب التنفيذ — يظهر في قائمة ملفات التنفيذ */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-600">نوع الطلب</label>
-                    <select
-                      className="w-full h-9 px-3 rounded-md border border-gray-300 text-sm bg-white"
-                      value={data.enforcementRequestType || ""}
-                      onChange={(e) => handleUpdateEnforcementField("enforcementRequestType", e.target.value)}
-                    >
-                      <option value="">— اختر —</option>
-                      {EXECUTION_REQUEST_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-600">نوع السند التنفيذي</label>
-                    <select
-                      className="w-full h-9 px-3 rounded-md border border-gray-300 text-sm bg-white"
-                      value={data.enforcementDeedType || ""}
-                      onChange={(e) => handleUpdateEnforcementField("enforcementDeedType", e.target.value)}
-                    >
-                      <option value="">— اختر —</option>
-                      {EXECUTION_DEED_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </div>
-                </div>
-
-                {/* المرحلة 1: الحكم النهائي — مرتبطة مباشرة بتبويب "الحكم القضائي" */}
-                <div className="flex gap-4">
-                  <div className="flex flex-col items-center shrink-0">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${data.finalJudgment ? "bg-green-500 text-white" : "bg-gray-200 text-gray-500"}`}>1</div>
-                    <div className="w-px flex-1 bg-gray-200 mt-1" />
-                  </div>
-                  <div className="flex-1 pb-2">
-                    <p className="font-bold text-[#133B2E] text-sm mb-1">اكتساب الحكم الصفة النهائية (السند التنفيذي)</p>
-                    {data.finalJudgment ? (
-                      <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2">
-                        <CheckCircle2 size={14} className="shrink-0" />
-                        <span>صدر الحكم بتاريخ {new Date(data.finalJudgment.judgmentDate).toLocaleDateString('ar-EG')} — أصبح سنداً تنفيذياً.</span>
-                        <button onClick={() => setActiveTab("judgment")} className="mr-auto font-bold underline hover:no-underline shrink-0">عرض الحكم</button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-                        <AlertTriangle size={14} className="shrink-0" />
-                        <span>لم يُسجَّل الحكم النهائي بعد — سجّله أولاً من تبويب "الحكم القضائي" ليصبح سنداً تنفيذياً.</span>
-                        <button onClick={() => setActiveTab("judgment")} className="mr-auto font-bold underline hover:no-underline shrink-0">تسجيل الحكم</button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* المرحلة 2: تقديم الطلب */}
-                <div className="flex gap-4">
-                  <div className="flex flex-col items-center shrink-0">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-[#133B2E] text-white">2</div>
-                    <div className="w-px flex-1 bg-gray-200 mt-1" />
-                  </div>
-                  <div className="flex-1 pb-2 border border-gray-100 rounded-xl overflow-hidden shadow-2xs">
-                    <button
-                      onClick={() => setExpandedStages((prev: any) => ({ ...prev, SUBMISSION: !prev.SUBMISSION }))}
-                      className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
-                    >
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-[#133B2E] text-sm">تقديم طلب التنفيذ والتحقق منه في ناجز</span>
-                        <span className="text-xs text-gray-500 font-medium">({enforcementStepsList.filter(s => s.stage === "SUBMISSION").filter(s => data.enforcementSteps?.[s.id]).length}/5)</span>
-                      </div>
-                      {expandedStages.SUBMISSION ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
-                    </button>
-                    {expandedStages.SUBMISSION && (
-                      <div className="p-3 bg-white divide-y divide-gray-50">
-                        {enforcementStepsList.filter(s => s.stage === "SUBMISSION").map(step => (
-                          <div key={step.id} onClick={() => handleToggleEnforcementStep(step.id)}
-                            className="flex items-start gap-3 py-2.5 px-2 hover:bg-amber-50/20 cursor-pointer rounded-lg transition">
-                            <div className={`w-5 h-5 rounded-full border shrink-0 flex items-center justify-center transition ${data.enforcementSteps?.[step.id] ? "bg-green-500 border-green-600 text-white" : "border-gray-300 bg-white"}`}>
-                              {data.enforcementSteps?.[step.id] && <span className="text-[10px] font-bold">✓</span>}
-                            </div>
-                            <span className={`text-xs leading-relaxed ${data.enforcementSteps?.[step.id] ? "text-gray-500 line-through" : "text-gray-800 font-medium"}`}>
-                              {step.label}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* المرحلة 3: التبليغ والمهلة — مرتبطة بوحدة المهام والتنبيهات */}
-                <div className="flex gap-4">
-                  <div className="flex flex-col items-center shrink-0">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-[#133B2E] text-white">3</div>
-                    <div className="w-px flex-1 bg-gray-200 mt-1" />
-                  </div>
-                  <div className="flex-1 pb-2 space-y-3">
-                    <div className="border border-gray-100 rounded-xl overflow-hidden shadow-2xs">
-                      <button
-                        onClick={() => setExpandedStages((prev: any) => ({ ...prev, NOTIFY: !prev.NOTIFY }))}
-                        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-[#133B2E] text-sm">التبليغ والمهلة النظامية</span>
-                          <span className="text-xs text-gray-500 font-medium">({enforcementStepsList.filter(s => s.stage === "NOTIFY").filter(s => data.enforcementSteps?.[s.id]).length}/4)</span>
-                        </div>
-                        {expandedStages.NOTIFY ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
-                      </button>
-                      {expandedStages.NOTIFY && (
-                        <div className="p-3 bg-white divide-y divide-gray-50">
-                          {enforcementStepsList.filter(s => s.stage === "NOTIFY").map(step => (
-                            <div key={step.id} onClick={() => handleToggleEnforcementStep(step.id)}
-                              className="flex items-start gap-3 py-2.5 px-2 hover:bg-amber-50/20 cursor-pointer rounded-lg transition">
-                              <div className={`w-5 h-5 rounded-full border shrink-0 flex items-center justify-center transition ${data.enforcementSteps?.[step.id] ? "bg-green-500 border-green-600 text-white" : "border-gray-300 bg-white"}`}>
-                                {data.enforcementSteps?.[step.id] && <span className="text-[10px] font-bold">✓</span>}
-                              </div>
-                              <span className={`text-xs leading-relaxed ${data.enforcementSteps?.[step.id] ? "text-gray-500 line-through" : "text-gray-800 font-medium"}`}>
-                                {step.label}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row items-start sm:items-end gap-3 bg-gray-50/50 p-3 rounded-xl border border-gray-100">
-                      <div className="space-y-1 flex-1">
-                        <label className="text-xs font-bold text-gray-600">تاريخ انتهاء المهلة النظامية</label>
-                        <Input type="date" defaultValue={data.enforcementNoticeDeadline || ""}
-                          onBlur={(e) => handleUpdateEnforcementField("enforcementNoticeDeadline", e.target.value)}
-                          className="bg-white" />
-                      </div>
-                      <Button variant="outline" size="sm" onClick={() => setIsAddTaskOpen(true)}
-                        className="border-[#133B2E] text-[#133B2E] whitespace-nowrap">
-                        <CheckSquare className="ml-1.5 h-3.5 w-3.5" /> إنشاء مهمة متابعة المهلة
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* المرحلة 4: التنفيذ الاختياري — جديدة من دليل الإجراءات */}
-                <div className="flex gap-4">
-                  <div className="flex flex-col items-center shrink-0">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-[#133B2E] text-white">4</div>
-                    <div className="w-px flex-1 bg-gray-200 mt-1" />
-                  </div>
-                  <div className="flex-1 pb-2 space-y-3 bg-gray-50/50 p-4 rounded-xl border border-gray-100">
-                    <p className="font-bold text-[#133B2E] text-sm">التنفيذ الاختياري (إن استجاب المنفذ ضده)</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="space-y-1">
-                        <label className="text-xs font-bold text-gray-600">طبيعة الوفاء</label>
-                        <select
-                          defaultValue={data.enforcementVoluntaryCompliance?.type || ""}
-                          onChange={(e) => handleUpdateEnforcementField("enforcementVoluntaryCompliance", { ...(data.enforcementVoluntaryCompliance || {}), type: e.target.value })}
-                          className="flex h-10 w-full items-center rounded-md border border-input bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                        >
-                          <option value="">لم يُحدَّد بعد</option>
-                          <option value="PAYMENT">سداد مبلغ مالي</option>
-                          <option value="DELIVERY">تسليم مال أو منقول</option>
-                          <option value="EVICTION">إخلاء عقار</option>
-                          <option value="SPECIFIC">تنفيذ التزام محدد</option>
-                        </select>
-                      </div>
-                      <div className="flex items-end">
-                        <Button variant="outline" size="sm" onClick={() => setIsAddDocOpen(true)} className="border-blue-200 text-blue-700 hover:bg-blue-50 w-full">
-                          <UploadCloud className="ml-1.5 h-3.5 w-3.5" /> رفع إثبات السداد / التسليم
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-600">ملاحظات</label>
-                      <textarea
-                        defaultValue={data.enforcementVoluntaryCompliance?.notes || ""}
-                        onBlur={(e) => handleUpdateEnforcementField("enforcementVoluntaryCompliance", { ...(data.enforcementVoluntaryCompliance || {}), notes: e.target.value })}
-                        placeholder="تفاصيل الوفاء الاختياري، القنوات المعتمدة في ناجز، إلخ..."
-                        className="flex min-h-[70px] w-full rounded-md border border-input bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring leading-relaxed"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* المرحلة 5: التنفيذ الجبري */}
-                <div className="flex gap-4">
-                  <div className="flex flex-col items-center shrink-0">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-[#133B2E] text-white">5</div>
-                    <div className="w-px flex-1 bg-gray-200 mt-1" />
-                  </div>
-                  <div className="flex-1 pb-2 space-y-3">
-                    <div className="border border-gray-100 rounded-xl overflow-hidden shadow-2xs">
-                      <button
-                        onClick={() => setExpandedStages((prev: any) => ({ ...prev, ENFORCE: !prev.ENFORCE }))}
-                        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-[#133B2E] text-sm">إجراءات التنفيذ الجبري وحجز أموال المدين</span>
-                          <span className="text-xs text-gray-500 font-medium">({enforcementStepsList.filter(s => s.stage === "ENFORCE").filter(s => data.enforcementSteps?.[s.id]).length}/9)</span>
-                        </div>
-                        {expandedStages.ENFORCE ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
-                      </button>
-                      {expandedStages.ENFORCE && (
-                        <div className="p-3 bg-white divide-y divide-gray-50">
-                          {enforcementStepsList.filter(s => s.stage === "ENFORCE").map(step => (
-                            <div key={step.id} onClick={() => handleToggleEnforcementStep(step.id)}
-                              className="flex items-start gap-3 py-2.5 px-2 hover:bg-amber-50/20 cursor-pointer rounded-lg transition">
-                              <div className={`w-5 h-5 rounded-full border shrink-0 flex items-center justify-center transition ${data.enforcementSteps?.[step.id] ? "bg-green-500 border-green-600 text-white" : "border-gray-300 bg-white"}`}>
-                                {data.enforcementSteps?.[step.id] && <span className="text-[10px] font-bold">✓</span>}
-                              </div>
-                              <span className={`text-xs leading-relaxed ${data.enforcementSteps?.[step.id] ? "text-gray-500 line-through" : "text-gray-800 font-medium"}`}>
-                                {step.label}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-1 bg-gray-50/50 p-3 rounded-xl border border-gray-100">
-                      <label className="text-xs font-bold text-gray-600 flex items-center gap-1.5">
-                        <Banknote size={13} /> حساب الآيبان الفعّال باسم طالب التنفيذ (لتحويل المبالغ المحصَّلة)
-                      </label>
-                      <Input dir="ltr" placeholder="SA00 0000 0000 0000 0000 0000" defaultValue={data.enforcementIban || ""}
-                        onBlur={(e) => handleUpdateEnforcementField("enforcementIban", e.target.value)}
-                        className="bg-white font-mono text-sm" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* المرحلة 6: الإنهاء وإقفال الملف */}
-                <div className="flex gap-4">
-                  <div className="flex flex-col items-center shrink-0">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-[#133B2E] text-white">6</div>
-                  </div>
-                  <div className="flex-1 space-y-3">
-                    <div className="border border-gray-100 rounded-xl overflow-hidden shadow-2xs">
-                      <button
-                        onClick={() => setExpandedStages((prev: any) => ({ ...prev, FINISH: !prev.FINISH }))}
-                        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-[#133B2E] text-sm">تحصيل الحق وإنهاء التنفيذ</span>
-                          <span className="text-xs text-gray-500 font-medium">({enforcementStepsList.filter(s => s.stage === "FINISH").filter(s => data.enforcementSteps?.[s.id]).length}/4)</span>
-                        </div>
-                        {expandedStages.FINISH ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
-                      </button>
-                      {expandedStages.FINISH && (
-                        <div className="p-3 bg-white divide-y divide-gray-50">
-                          {enforcementStepsList.filter(s => s.stage === "FINISH").map(step => (
-                            <div key={step.id} onClick={() => handleToggleEnforcementStep(step.id)}
-                              className="flex items-start gap-3 py-2.5 px-2 hover:bg-amber-50/20 cursor-pointer rounded-lg transition">
-                              <div className={`w-5 h-5 rounded-full border shrink-0 flex items-center justify-center transition ${data.enforcementSteps?.[step.id] ? "bg-green-500 border-green-600 text-white" : "border-gray-300 bg-white"}`}>
-                                {data.enforcementSteps?.[step.id] && <span className="text-[10px] font-bold">✓</span>}
-                              </div>
-                              <span className={`text-xs leading-relaxed ${data.enforcementSteps?.[step.id] ? "text-gray-500 line-through" : "text-gray-800 font-medium"}`}>
-                                {step.label}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-1 bg-gray-50/50 p-3 rounded-xl border border-gray-100">
-                      <label className="text-xs font-bold text-gray-600">سبب إنهاء السند التنفيذي</label>
-                      <select
-                        defaultValue={data.enforcementClosureReason || ""}
-                        onChange={(e) => handleUpdateEnforcementField("enforcementClosureReason", e.target.value)}
-                        className="flex h-10 w-full items-center rounded-md border border-input bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                      >
-                        <option value="">لم يُغلَق الملف بعد</option>
-                        <option value="PAYMENT">الوفاء الكامل بالحق</option>
-                        <option value="SETTLEMENT">الصلح بين الطرفين</option>
-                        <option value="WAIVER">تنازل طالب التنفيذ</option>
-                        <option value="OTHER">سبب آخر</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Special Scenarios Section */}
-                <div className="pt-4 border-t border-gray-100 space-y-3">
-                  <h4 className="text-sm font-bold text-[#133B2E] flex items-center gap-2">
-                    <AlertTriangle className="text-amber-500 w-4 h-4" /> حالات طارئة قد تطرأ أثناء التنفيذ
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-amber-50/20 p-4 rounded-xl border border-amber-100/50">
-                    {enforcementScenariosList.map(item => (
-                      <label key={item.id}
-                        className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer transition select-none ${data.enforcementScenarios?.[item.id] ? "bg-amber-100/50 text-[#133B2E] font-bold" : "hover:bg-gray-50 text-gray-600"}`}
-                      >
-                        <input type="checkbox" checked={!!data.enforcementScenarios?.[item.id]}
-                          onChange={() => handleToggleEnforcementScenario(item.id)}
-                          className="mt-1 rounded border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]" />
-                        <span className="text-xs leading-relaxed">{item.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        )}
 
         <TabsContent value="reports" className="mt-8 outline-none space-y-6">
           {(() => {

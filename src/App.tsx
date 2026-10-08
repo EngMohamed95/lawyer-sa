@@ -85,18 +85,13 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
   // (فصل الصلاحيات المالية عن القانونية — الوثيقة §خامساً).
   const canSeeFullReports = perms.scopeOf("report.view") === "FULL";
 
+  // العقود والفواتير والأتعاب والساعات لصاحب المكتب (LAWYER) وحده
+  const isOfficeOwner = perms.role === "LAWYER";
+
   const navItems: NavItem[] = [
     { name: "لوحة التحكم", path: "/app/dashboard", icon: <LayoutDashboard size={20} /> },
     { name: "المحامين", path: "/app/lawyers", icon: <Shield size={20} />, hidden: !perms.can("platform.manage") },
     { name: "الاشتراكات", path: "/app/subscriptions", icon: <CreditCard size={20} />, hidden: !perms.can("platform.manage") },
-
-    // العملاء
-    {
-      name: "العملاء",
-      path: "/app/clients",
-      icon: <Users size={20} />,
-      hidden: !perms.can("client.manage"),
-    },
 
     // ── العمل القضائي: القضية هي الجذر، وتحتها ما يتفرّع عنها ──
     // شرط الإخفاء لكل عنصر لم يتغيّر حرفاً واحداً؛ التغيير في الترتيب فقط.
@@ -119,7 +114,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
     // حتى تُبنى وحدة تنفيذ مستقلة عن القضايا لاحقاً.
     { name: "التنفيذ", path: "/app/cases?type=تنفيذ", icon: <Gavel size={20} />, hidden: !perms.can("case.update") },
 
-    { name: "العقود", path: "/app/contracts", icon: <FileSignature size={20} />, hidden: !perms.can("contract.manage") },
+    { name: "العقود", path: "/app/contracts", icon: <FileSignature size={20} />, hidden: !perms.can("contract.manage") || !isOfficeOwner },
 
     // ── المالية: الحسابات هي الجذر، وتحتها الفوترة والأتعاب والساعات ──
     {
@@ -128,9 +123,9 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
       icon: <Calculator size={20} />,
       hidden: !perms.can("finance.manage") || isBasic,
       children: [
-        { name: "الفواتير", path: "/app/invoices", icon: <ReceiptText size={18} />, hidden: !perms.can("invoice.manage") },
-        { name: "اتفاقيات الأتعاب", path: "/app/fee-agreements", icon: <Handshake size={18} />, hidden: !perms.can("invoice.manage") },
-        { name: "تسجيل الساعات", path: "/app/time-entries", icon: <Timer size={18} />, hidden: !perms.can("invoice.manage") },
+        { name: "الفواتير", path: "/app/invoices", icon: <ReceiptText size={18} />, hidden: !perms.can("invoice.manage") || !isOfficeOwner },
+        { name: "اتفاقيات الأتعاب", path: "/app/fee-agreements", icon: <Handshake size={18} />, hidden: !perms.can("invoice.manage") || !isOfficeOwner },
+        { name: "تسجيل الساعات", path: "/app/time-entries", icon: <Timer size={18} />, hidden: !perms.can("invoice.manage") || !isOfficeOwner },
       ],
     },
 
@@ -149,6 +144,12 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
 
     // ── التقارير والأدوات ──
     { name: "التقارير", path: "/app/reports", icon: <BarChart size={20} />, hidden: !canSeeFullReports || !isPremium },
+    {
+      name: "العملاء",
+      path: "/app/clients",
+      icon: <Users size={20} />,
+      hidden: !perms.can("client.manage"),
+    },
     { name: "المساعد الذكي", path: "/app/ai-chat", icon: <Sparkles size={20} />, hidden: !perms.can("ai.use") || !isPremium },
     { name: "المكتبة القانونية", path: "/app/library", icon: <BookOpen size={20} />, hidden: !perms.can("library.view") },
     { name: "المقترحات وتطوير النظام", path: "/app/suggestions", icon: <Lightbulb size={20} /> },
@@ -799,6 +800,13 @@ function LoadingFallback() {
     );
 }
 
+/** صفحات لصاحب المكتب فقط — غيره يُعاد للوحة التحكم حتى لو كتب الرابط يدوياً */
+function OfficeOwnerOnly({ children }: { children: React.ReactNode }) {
+  const perms = usePermissions();
+  if (perms.role !== "LAWYER") return <Navigate to="/app/dashboard" replace />;
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
     <Router>
@@ -833,12 +841,12 @@ export default function App() {
             <Route path="team" element={<Team />} />
             <Route path="audit-log" element={<AuditLog />} />
             <Route path="recycle-bin" element={<RecycleBin />} />
-            <Route path="contracts" element={<Contracts />} />
-            <Route path="invoices" element={<Invoices />} />
+            <Route path="contracts" element={<OfficeOwnerOnly><Contracts /></OfficeOwnerOnly>} />
+            <Route path="invoices" element={<OfficeOwnerOnly><Invoices /></OfficeOwnerOnly>} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="notifications" element={<NotificationsPage />} />
-            <Route path="fee-agreements" element={<FeeAgreements />} />
-            <Route path="time-entries" element={<TimeEntries />} />
+            <Route path="fee-agreements" element={<OfficeOwnerOnly><FeeAgreements /></OfficeOwnerOnly>} />
+            <Route path="time-entries" element={<OfficeOwnerOnly><TimeEntries /></OfficeOwnerOnly>} />
             <Route path="ai-chat" element={<AiChat />} />
             <Route path="reports" element={<Reports />} />
             <Route path="library" element={<LegalLibrary />} />

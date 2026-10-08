@@ -5,6 +5,7 @@ import { Input } from "./ui/input";
 import { Loader2 } from "lucide-react";
 import { AddClientModal } from "./AddClientModal";
 import { useOfficeLookups } from "../lib/officeLookups";
+import { clientRoleOf } from "../lib/clientRole";
 
 export function EditCaseModal({
   isOpen,
@@ -138,8 +139,7 @@ export function EditCaseModal({
 
   useEffect(() => {
     if (caseData) {
-      const role = caseData.clientRole || (caseData.plaintiffName === caseData.client?.fullName ? "PLAINTIFF" : "DEFENDANT");
-      setClientRole(role);
+      setClientRole(clientRoleOf(caseData));
       setFormData({
         title: caseData.title || "",
         caseNumber: caseData.caseNumber || "",
