@@ -96,6 +96,10 @@ function rateLimit(maxPerMinute: number) {
 
 /* ────────────────────────── وسيط الذكاء الاصطناعي (الثغرة V4) ────────────────────────── */
 
+/** نماذج احتياطية عند ضغط مؤقت على النموذج المطلوب — نفس القائمة في public/ai-proxy.php */
+const GEMINI_FALLBACK_MODELS = ["gemini-flash-lite-latest", "gemini-3.5-flash"];
+const GEMINI_RETRYABLE = new Set([429, 500, 503]);
+
 /**
  * ينفّذ نداء النموذج بمفتاح المكتب المخزَّن على الخادم،
  * فلا يُشحن أي مفتاح داخل حزمة الواجهة.
@@ -115,22 +119,26 @@ router.post("/ai/generate", rateLimit(20), async (req, res) => {
       }
 
       const modelName = typeof model === "string" && model ? model : "gemini-flash-latest";
-      const url =
-        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName)}` +
-        `:generateContent?key=${encodeURIComponent(key)}`;
-
-      const upstream = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents,
-          generationConfig: generationConfig ?? { temperature: 0.7, maxOutputTokens: 2048 },
-        }),
+      const body = JSON.stringify({
+        contents,
+        generationConfig: generationConfig ?? { temperature: 0.7, maxOutputTokens: 2048 },
       });
 
-      const data = await upstream.json();
+      // ضغط مؤقت على نموذج Google (503/429/500) — نعيد المحاولة بنماذج احتياطية
+      const models = [modelName, ...GEMINI_FALLBACK_MODELS.filter((m) => m !== modelName)];
+      let upstream: Response | null = null;
+      for (let i = 0; i < models.length; i++) {
+        if (i > 0) await new Promise((r) => setTimeout(r, 800));
+        upstream = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(models[i])}:generateContent`,
+          { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body },
+        );
+        if (!GEMINI_RETRYABLE.has(upstream.status)) break;
+      }
+
+      const data = await upstream!.json();
       // نمرّر الرد كما هو لتبقى معالجة الأخطاء في الواجهة كما كانت
-      return res.status(upstream.ok ? 200 : upstream.status).json(data);
+      return res.status(upstream!.ok ? 200 : upstream!.status).json(data);
     }
 
     if (provider === "GROQ") {

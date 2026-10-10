@@ -19,7 +19,9 @@ header('Cache-Control: no-store');
 
 const RATE_LIMIT_PER_MINUTE = 20;
 const MAX_BODY_BYTES = 4 * 1024 * 1024;
-const CERTS_URL = 'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com';
+/** نماذج احتياطية عند ضغط مؤقت على النموذج المطلوب — نفس القائمة في src/server/api.ts */
+const GEMINI_FALLBACK_MODELS = ['gemini-flash-lite-latest', 'gemini-3.5-flash'];
+const CERTS_URL ='https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com';
 
 function fail(int $status, string $message): void {
     http_response_code($status);
@@ -173,12 +175,19 @@ if ($provider === 'GEMINI') {
     if (!preg_match('/^[A-Za-z0-9._-]{1,80}$/', $modelName)) fail(400, 'اسم النموذج غير صالح.');
     $generationConfig = is_array($req['generationConfig'] ?? null) ? $req['generationConfig'] : ['temperature' => 0.7, 'maxOutputTokens' => 2048];
 
-    [$status, , $body] = http_request(
-        'POST',
-        "https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent",
-        ['Content-Type: application/json', "x-goog-api-key: $key"],
-        json_encode(['contents' => $contents, 'generationConfig' => $generationConfig], JSON_UNESCAPED_UNICODE)
-    );
+    // ضغط مؤقت على نموذج Google (503/429/500) — نعيد المحاولة بنماذج احتياطية
+    $payload = json_encode(['contents' => $contents, 'generationConfig' => $generationConfig], JSON_UNESCAPED_UNICODE);
+    $models = array_values(array_unique(array_merge([$modelName], GEMINI_FALLBACK_MODELS)));
+    foreach ($models as $i => $m) {
+        if ($i > 0) usleep(800000);
+        [$status, , $body] = http_request(
+            'POST',
+            "https://generativelanguage.googleapis.com/v1beta/models/$m:generateContent",
+            ['Content-Type: application/json', "x-goog-api-key: $key"],
+            $payload
+        );
+        if (!in_array($status, [429, 500, 503], true)) break;
+    }
     if ($status === 0 || json_decode($body) === null) fail(502, 'تعذّر تنفيذ طلب الذكاء الاصطناعي.');
     http_response_code($status >= 200 && $status < 300 ? 200 : $status);
     echo $body;
