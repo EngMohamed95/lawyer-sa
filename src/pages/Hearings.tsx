@@ -8,6 +8,7 @@ import { Pagination } from "../components/ui/Pagination";
 import { collection, getDocs, query, where, collectionGroup, limit } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import HearingCard from "../components/HearingCard";
+import { visibleCasesQuery } from "../lib/caseAccess";
 
 const PAGE_SIZE = 20;
 
@@ -45,7 +46,7 @@ export default function Hearings() {
         let casesQuery;
         if (userRole === "OFFICE_LAWYER") {
           const userId = localStorage.getItem("userId");
-          casesQuery = query(collection(db, "cases"), where("lawyerId", "==", lawyerId), where("assignedLawyerId", "==", userId), limit(100));
+          casesQuery = visibleCasesQuery(lawyerId || "", limit(100));
         } else {
           casesQuery = query(collection(db, "cases"), where("lawyerId", "==", lawyerId), limit(100));
         }
@@ -60,8 +61,9 @@ export default function Hearings() {
         hearingsData = arrays.flat();
       }
 
+      // الأحدث أولاً
       setHearings(
-        hearingsData.sort((a, b) => new Date(a.hearingDate).getTime() - new Date(b.hearingDate).getTime())
+        hearingsData.sort((a, b) => new Date(b.hearingDate).getTime() - new Date(a.hearingDate).getTime())
       );
       setPage(1);
     } catch (err: any) {

@@ -11,13 +11,16 @@ export function AddHearingModal({
   onClose, 
   onSuccess, 
   caseId,
-  initialCaseData 
-}: { 
-  isOpen: boolean; 
-  onClose: () => void; 
-  onSuccess: () => void; 
+  initialCaseData,
+  defaultDate
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
   caseId?: string;
   initialCaseData?: any;
+  /** تاريخ مبدئي YYYY-MM-DD — مثلاً اليوم المختار في التقويم */
+  defaultDate?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [cases, setCases] = useState<any[]>([]);
@@ -121,7 +124,7 @@ export function AddHearingModal({
 
     if (isOpen) {
       setFormData({
-        hearingDate: new Date().toISOString().split('T')[0],
+        hearingDate: defaultDate || new Date().toISOString().split('T')[0],
         court: initialCaseData?.courtName || initialCaseData?.court || "",
         circuit: initialCaseData?.courtCircle || initialCaseData?.circuit || "",
         requiredActions: "",
@@ -295,55 +298,40 @@ export function AddHearingModal({
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#133B2E]">المحكمة / الغرفة</label>
-              <Input 
-                value={formData.court}
-                onChange={e => setFormData({...formData, court: e.target.value})}
-                placeholder="مثال: الغرفة التجارية..." 
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-[#133B2E]">الدائرة / الرول</label>
-              <Input 
-                value={formData.circuit}
-                onChange={e => setFormData({...formData, circuit: e.target.value})}
-                placeholder="مثال: دائرة ٥، رول ٢٥..." 
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
               <label className="text-sm font-bold text-[#133B2E]">المدعي</label>
-              <Input 
+              <Input
                 value={formData.plaintiffName}
-                onChange={e => setFormData({...formData, plaintiffName: e.target.value})}
-                placeholder="اسم المدعي" 
+                readOnly
+                tabIndex={-1}
+                className="bg-gray-100 text-gray-700 cursor-not-allowed"
+                title="تُسحب من بيانات القضية — عدّلها من ملف القضية"
               />
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-bold text-[#133B2E]">المدعى عليه</label>
-              <Input 
+              <Input
                 value={formData.defendantName}
-                onChange={e => setFormData({...formData, defendantName: e.target.value})}
-                placeholder="اسم المدعى عليه" 
+                readOnly
+                tabIndex={-1}
+                className="bg-gray-100 text-gray-700 cursor-not-allowed"
+                title="تُسحب من بيانات القضية — عدّلها من ملف القضية"
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#133B2E]">الالتمسات / ما تم فيها</label>
-            <Input 
+            <label className="text-sm font-bold text-[#133B2E]">ملخص الجلسة</label>
+            <Textarea
+               rows={3}
                value={formData.requiredActions}
                onChange={e => setFormData({...formData, requiredActions: e.target.value})}
-               placeholder="المطلوب في الجلسة أو ما قدمته..." 
+               placeholder="ملخص ما دار في الجلسة وما قُدِّم فيها..."
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#133B2E]">طلبات القاضي (المطلوب قبل الجلسة القادمة)</label>
+            <label className="text-sm font-bold text-[#133B2E]">الإجراء القادم (المطلوب قبل الجلسة القادمة)</label>
             <Textarea
                rows={3}
                value={formData.judgeRequests}

@@ -14,6 +14,7 @@ import { db } from "../lib/firebase";
 import { Pagination } from "../components/ui/Pagination";
 import RelatedPanel from "../components/RelatedPanel";
 import { relatedToClient } from "../lib/links";
+import { visibleCasesQuery } from "../lib/caseAccess";
 
 export default function Clients() {
   const [clients, setClients] = useState<any[]>([]);
@@ -49,7 +50,7 @@ export default function Clients() {
       if (userRole === "OFFICE_LAWYER") {
         const userId = localStorage.getItem("userId");
         const casesSnap = await getDocs(
-          query(collection(db, "cases"), where("lawyerId", "==", lawyerId), where("assignedLawyerId", "==", userId))
+          visibleCasesQuery(lawyerId || "")
         );
         const clientIds = new Set(casesSnap.docs.map(doc => doc.data().clientId).filter(Boolean));
         clientsData = clientsData.filter(c => clientIds.has(c.id));

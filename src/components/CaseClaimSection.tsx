@@ -25,7 +25,8 @@ export const claimSectionOf = (v: any): ClaimSectionValue => ({
   attachments: Array.isArray(v?.attachments) ? v.attachments : [],
 });
 
-async function uploadFile(file: File): Promise<ClaimAttachment> {
+/** يرفع ملفاً عبر upload.php ويرجع اسمه ورابطه — مشترك مع مرفقات الطلبات */
+export async function uploadFile(file: File): Promise<ClaimAttachment> {
   const fd = new FormData();
   fd.append("file", file);
   const res = await fetch("/upload.php", { method: "POST", body: fd });

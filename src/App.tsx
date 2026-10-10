@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import CreateAdmin from "./pages/CreateAdmin";
+import { visibleCasesQuery } from "./lib/caseAccess";
 
 // أمان: مسار إنشاء المدير العام معطّل افتراضياً.
 // كان مفتوحاً للجميع، فكان بإمكان أي زائر إنشاء حساب SUPER_ADMIN لنفسه.
@@ -390,7 +391,7 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
       } else {
         let casesQuery;
         if (userRole === "OFFICE_LAWYER") {
-          casesQuery = query(collection(db, "cases"), where("lawyerId", "==", lawyerId), where("assignedLawyerId", "==", userId), limit(100));
+          casesQuery = visibleCasesQuery(lawyerId || "", limit(100));
         } else {
           casesQuery = query(collection(db, "cases"), where("lawyerId", "==", lawyerId), limit(100));
         }

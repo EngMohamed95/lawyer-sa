@@ -3,11 +3,14 @@
  * «موعد المتابعة» يظهر في التقويم للطلبات التي لم يُبتّ فيها بعد.
  */
 
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { addDoc, collection, deleteDoc, doc, updateDoc } from "firebase/firestore";
-import { Archive, EllipsisVertical, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Archive, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  AttachmentChips, AttachmentPicker, AttachmentSearch, matchesAttachmentSearch, uploadNewFiles, type PendingFile,
+} from "./AttachmentPicker";
 import { db } from "../lib/firebase";
-import { formatHijri } from "../lib/calendar";
+import { formatGregorian } from "../lib/calendar";
 import {
   COURT_DEGREE_LABELS_AR, REQUEST_STATUS_CLASS, REQUEST_STATUS_LABELS_AR, REQUEST_TYPES,
   isOpenRequest, type CaseRequest, type CourtDegree, type RequestStatus,
@@ -36,7 +39,7 @@ export default function CaseRequests({ caseId, caseData, requests, onChanged }: 
   const blank = (): Draft => ({
     type: "", requestNumber: "", status: "SUBMITTED",
     court: caseData?.courtName || "", circuit: caseData?.courtCircle || "",
-    requestDate: today(), followUpDate: "", degree: "FIRST", notes: "",
+    requestDate: today(), followUpDate: "", degree: "FIRST", notes: "", attachments: [],
   });
 
   const openAdd = () => { setEditing(null); setIsOpen(true); };
@@ -53,22 +56,29 @@ export default function CaseRequests({ caseId, caseData, requests, onChanged }: 
     }
   };
 
+  const [search, setSearch] = useState("");
   const sorted = [...requests].sort((a, b) => (b.requestDate || "").localeCompare(a.requestDate || ""));
+  const shown = sorted.filter((r) => matchesAttachmentSearch(r.attachments ?? [], search));
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold text-[#1a9a45]">الطلبات</h2>
-        <Button size="sm" className="bg-[#133B2E] hover:bg-[#133B2E]/90" onClick={openAdd}>
-          <Plus className="ml-2 h-4 w-4" /> إضافة طلب
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {sorted.length > 0 && <AttachmentSearch value={search} onChange={setSearch} />}
+          <Button size="sm" className="bg-[#133B2E] hover:bg-[#133B2E]/90" onClick={openAdd}>
+            <Plus className="ml-2 h-4 w-4" /> إضافة طلب
+          </Button>
+        </div>
       </div>
 
       {sorted.length === 0 ? (
         <p className="text-center py-10 text-gray-500 border border-dashed border-gray-200 rounded-lg">لا توجد طلبات مسجلة</p>
+      ) : shown.length === 0 ? (
+        <p className="text-center py-10 text-gray-500 border border-dashed border-gray-200 rounded-lg">لا توجد مرفقات تطابق «{search}»</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {sorted.map((r) => <RequestCard key={r.id} r={r} onEdit={() => openEdit(r)} onDelete={() => remove(r)} />)}
+        <div className="space-y-3">
+          {shown.map((r) => <RequestCard key={r.id} r={r} search={search} onEdit={() => openEdit(r)} onDelete={() => remove(r)} />)}
         </div>
       )}
 
@@ -95,71 +105,58 @@ export default function CaseRequests({ caseId, caseData, requests, onChanged }: 
   );
 }
 
-function Row({ label, children }: { label: string; children: ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="grid grid-cols-[5.5rem_1fr] gap-3 items-baseline">
-      <dt className="text-sm text-[#1a9a45]">{label}</dt>
-      <dd className="text-sm text-gray-900 truncate">{children}</dd>
+    <div className="min-w-0">
+      <dt className="text-xs text-[#1a9a45]">{label}</dt>
+      <dd className="text-sm font-medium text-gray-900 truncate">{children}</dd>
     </div>
   );
 }
 
-function RequestCard({ r, onEdit, onDelete }: { r: CaseRequest; onEdit: () => void; onDelete: () => void }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const close = (e: MouseEvent) => { if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false); };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [menuOpen]);
-
+function RequestCard({ r, search, onEdit, onDelete }: { r: CaseRequest; search: string; onEdit: () => void; onDelete: () => void }) {
   const followUpDue = isOpenRequest(r) && r.followUpDate;
+  const files = r.attachments ?? [];
 
   return (
-    <div className="flex flex-col bg-white rounded-lg border-2 border-[#bfe3d6] transition hover:shadow-md">
-      <div className="flex items-start justify-between gap-2 px-4 pt-4">
-        <div className="flex items-start gap-2.5 min-w-0">
-          <span className="mt-0.5 h-8 w-8 shrink-0 rounded-md bg-[#1a9a45] text-white flex items-center justify-center">
+    <div className="bg-white rounded-xl border border-[#bfe3d6] border-r-[5px] border-r-[#1a9a45] transition hover:shadow-md">
+      <div className="flex items-start justify-between gap-3 px-4 pt-3.5">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="h-8 w-8 shrink-0 rounded-md bg-[#1a9a45] text-white flex items-center justify-center">
             <Archive size={16} />
           </span>
-          <h3 className="text-lg font-bold text-gray-900 leading-snug line-clamp-2">{r.type || "طلب"}</h3>
+          <h3 className="text-base font-bold text-gray-900 leading-snug truncate">{r.type || "طلب"}</h3>
+          <span className={`shrink-0 rounded-full bg-gray-50 px-2.5 py-0.5 text-xs font-bold ${REQUEST_STATUS_CLASS[r.status] || ""}`}>
+            {REQUEST_STATUS_LABELS_AR[r.status] || r.status}
+          </span>
         </div>
-        <div className="relative" ref={menuRef}>
-          <button onClick={() => setMenuOpen((o) => !o)} aria-label="إجراءات الطلب"
-            className="h-8 w-8 flex items-center justify-center rounded-md text-gray-600 hover:bg-gray-100">
-            <EllipsisVertical size={18} />
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button onClick={onEdit}
+            className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-gray-200 text-sm font-bold text-[#133B2E] hover:bg-gray-50 transition">
+            <Pencil size={14} /> تعديل
           </button>
-          {menuOpen && (
-            <div className="absolute left-0 top-9 z-10 w-32 rounded-lg border border-gray-200 bg-white shadow-lg py-1">
-              <button onClick={() => { setMenuOpen(false); onEdit(); }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                <Pencil size={14} /> تعديل
-              </button>
-              <button onClick={() => { setMenuOpen(false); onDelete(); }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50">
-                <Trash2 size={14} /> حذف
-              </button>
-            </div>
-          )}
+          <button onClick={onDelete}
+            className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-red-100 text-sm font-bold text-red-600 hover:bg-red-50 transition">
+            <Trash2 size={14} /> حذف
+          </button>
         </div>
       </div>
 
-      <dl className="px-4 py-3 space-y-2 flex-1">
-        <Row label="رقم الطلب">{r.requestNumber || "-"}</Row>
-        <Row label="حالة الطلب">
-          <span className={REQUEST_STATUS_CLASS[r.status] || ""}>{REQUEST_STATUS_LABELS_AR[r.status] || r.status}</span>
-        </Row>
-        <Row label="المحكمة">{r.court || "-"}</Row>
-        <Row label="الدائرة">{r.circuit || "-"}</Row>
-        {followUpDue && <Row label="موعد المتابعة"><span className="font-bold text-amber-700">{formatHijri(r.followUpDate)}</span></Row>}
+      <dl className="grid grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-2.5 px-4 py-3">
+        <Field label="رقم الطلب"><span dir="ltr">{r.requestNumber || "-"}</span></Field>
+        <Field label="تاريخ الطلب">{formatGregorian(r.requestDate)}</Field>
+        <Field label="الدرجة">{COURT_DEGREE_LABELS_AR[r.degree] || "-"}</Field>
+        <Field label="موعد المتابعة">
+          {followUpDue ? <span className="font-bold text-amber-700">{formatGregorian(r.followUpDate)}</span> : "-"}
+        </Field>
       </dl>
 
-      <div className="flex items-center justify-between gap-2 border-t border-gray-100 px-4 py-2.5 text-xs text-gray-400">
-        <span>تاريخ الطلب {formatHijri(r.requestDate)}</span>
-        <span className="text-[#1a9a45]/70">{COURT_DEGREE_LABELS_AR[r.degree] || ""}</span>
-      </div>
+      {(r.notes || files.length > 0) && (
+        <div className="space-y-2 border-t border-gray-100 px-4 py-2.5">
+          {r.notes && <p className="text-sm text-gray-600 whitespace-pre-wrap"><span className="text-gray-400">ملاحظات: </span>{r.notes}</p>}
+          <AttachmentChips files={files} highlight={search} />
+        </div>
+      )}
     </div>
   );
 }
@@ -173,8 +170,10 @@ function RequestDialog({ isOpen, initial, isEdit, onClose, onSubmit }: {
 }) {
   const [form, setForm] = useState<Draft>(initial);
   const [saving, setSaving] = useState(false);
+  // ملفات مختارة لم تُرفع بعد — تُرفع عند الحفظ
+  const [newFiles, setNewFiles] = useState<PendingFile[]>([]);
 
-  useEffect(() => { if (isOpen) setForm(initial); }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (isOpen) { setForm(initial); setNewFiles([]); } }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setForm((f) => ({ ...f, [k]: v }));
   const label = "text-sm font-bold text-[#133B2E]";
@@ -184,7 +183,10 @@ function RequestDialog({ isOpen, initial, isEdit, onClose, onSubmit }: {
     e.preventDefault();
     setSaving(true);
     try {
-      await onSubmit({ ...form, type: form.type.trim(), requestNumber: form.requestNumber.trim() });
+      await onSubmit({
+        ...form, type: form.type.trim(), requestNumber: form.requestNumber.trim(),
+        attachments: await uploadNewFiles(form.attachments ?? [], newFiles),
+      });
     } catch (err: any) {
       console.error("Error saving request:", err);
       alert("تعذّر حفظ الطلب: " + (err?.message || ""));
@@ -223,14 +225,6 @@ function RequestDialog({ isOpen, initial, isEdit, onClose, onSubmit }: {
               </select>
             </div>
             <div className="space-y-2">
-              <label className={label}>المحكمة</label>
-              <Input value={form.court} onChange={(e) => set("court", e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <label className={label}>الدائرة</label>
-              <Input value={form.circuit} onChange={(e) => set("circuit", e.target.value)} />
-            </div>
-            <div className="space-y-2">
               <label className={label}>تاريخ الطلب *</label>
               <Input type="date" required value={form.requestDate} onChange={(e) => set("requestDate", e.target.value)} />
             </div>
@@ -254,11 +248,20 @@ function RequestDialog({ isOpen, initial, isEdit, onClose, onSubmit }: {
             <Textarea rows={2} value={form.notes} onChange={(e) => set("notes", e.target.value)} />
           </div>
 
+          <AttachmentPicker
+            label="مرفقات الطلب"
+            hint="لا توجد مرفقات — أرفق صحيفة الطلب أو المستندات المؤيدة."
+            existing={form.attachments ?? []}
+            onExistingChange={(files) => set("attachments", files)}
+            newFiles={newFiles}
+            onNewFilesChange={setNewFiles}
+          />
+
           <DialogFooter className="mt-4">
             <Button type="button" variant="outline" onClick={onClose}>إلغاء</Button>
             <Button type="submit" disabled={saving} className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white">
               {saving && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-              {isEdit ? "حفظ التعديلات" : "إضافة الطلب"}
+              {saving && newFiles.length ? "جاري رفع المرفقات..." : isEdit ? "حفظ التعديلات" : "إضافة الطلب"}
             </Button>
           </DialogFooter>
         </form>

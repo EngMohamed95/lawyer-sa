@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useSearchParams } from "react-router";
-import { ChevronRight, UsersRound, Archive, Calendar, FileText, CheckSquare, Plus, Download, Edit, Save, Trash2, File, Scale, FileSignature, Sparkles, RefreshCw, UploadCloud, Chrome, Info, CheckCircle2, Loader2, ChevronDown, ChevronUp, AlertTriangle, Gavel, Eye, Landmark, Banknote, FileBarChart, Printer, MessageCircle, ScrollText } from "lucide-react";
+import { ChevronRight, UsersRound, Calendar, FileText, CheckSquare, Plus, Download, Edit, Save, Trash2, File, Scale, FileSignature, Sparkles, RefreshCw, UploadCloud, Chrome, Info, CheckCircle2, Loader2, ChevronDown, ChevronUp, AlertTriangle, Gavel, Eye, Landmark, Banknote, FileBarChart, Printer, MessageCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -16,8 +16,16 @@ import HearingCard from "../components/HearingCard";
 import CaseParties, { partiesOf, type CaseParty } from "../components/CaseParties";
 import CaseRequests from "../components/CaseRequests";
 import MemoAiPanel from "../components/MemoAiPanel";
-import { CLIENT_ROLE_LABELS_AR, clientRoleOf } from "../lib/clientRole";
+import { clientRoleLabelOf } from "../lib/clientRole";
+import { formatGregorian } from "../lib/calendar";
+import ExecutionContentCard from "../components/ExecutionContentCard";
+import CaseAttachmentsCard from "../components/CaseAttachmentsCard";
+import { caseTypeLabel } from "../lib/caseTypes";
+import { canSeeCase } from "../lib/caseAccess";
+import { assignedLawyersLabel } from "../lib/assignedLawyers";
 import CaseClaimSection, { claimSectionOf, type ClaimSectionValue } from "../components/CaseClaimSection";
+import CaseStatusReport from "../components/CaseStatusReport";
+import { stripUnsupportedColorsOnClone } from "../lib/reportUtils";
 import CaseDecisions, { decisionsOf, type CaseDecision } from "../components/CaseDecisions";
 import CaseJudgments, { judgmentsOf, legacyFinalJudgment, type CaseJudgment } from "../components/CaseJudgments";
 import { EXECUTION_DEED_TYPES, EXECUTION_REQUEST_TYPES } from "../lib/execution";
@@ -31,10 +39,7 @@ import { db } from "../lib/firebase";
 import Documents from "./Documents";
 import { usePermissions } from "../lib/usePermissions";
 import { useOfficeSettings } from "../lib/officeSettings";
-import {
-  renderLetterheadHeader, renderLetterheadFooter,
-  renderLetterheadHeaderWordSafe, renderLetterheadFooterWordSafe,
-} from "../lib/letterhead";
+import { renderMemoLetterheadHeader, renderMemoLetterheadFooter } from "../lib/letterhead";
 import { writeAudit } from "../lib/audit";
 import {
   MEMO_STATUS_COLORS, MEMO_STATUS_LABELS_AR, memoActions, statusOf,
@@ -129,37 +134,6 @@ const getStatusBadge = (status: string) => {
     default: return <Badge>{status}</Badge>;
   }
 };
-
-/**
- * hook لخيار html2canvas: html2pdf.js يستنسخ العنصر المصدر ويُلحق النسخة
- * بـ document.body الرئيسي دائمًا (بصرف النظر عن مصدر العنصر)، فترث النسخة
- * تنسيقات Tailwind v4 العامة (*, ::before, ::after) التي تستخدم oklch() —
- * وhtml2canvas لا تدعم oklch() فتفشل. نزيل كل الأنماط من نسخة المستند التي
- * يبنيها html2canvas للرسم، ونعيد فقط خط Tajawal (محتوى التقرير كله inline
- * styles أصلًا، فلا حاجة لأي CSS آخر).
- */
-async function stripUnsupportedColorsOnClone(clonedDoc: Document) {
-  clonedDoc.querySelectorAll('link[rel="stylesheet"], style').forEach((el) => el.remove());
-  const fontLink = clonedDoc.createElement("link");
-  fontLink.rel = "stylesheet";
-  fontLink.href = "https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap";
-  clonedDoc.head.appendChild(fontLink);
-  try {
-    await (clonedDoc as any).fonts?.ready;
-  } catch {
-    // خط بديل كافٍ إن تعذّر تحميل Tajawal — لا داعي لإفشال توليد PDF بسببه
-  }
-}
-
-/** يحوّل رقم هاتف محلي (05xxxxxxxx أو بصيغة دولية) إلى صيغة wa.me بلا رموز أو مسافات */
-function toWhatsAppNumber(raw: string | undefined | null): string | null {
-  if (!raw) return null;
-  let digits = raw.replace(/[^\d]/g, "");
-  if (!digits) return null;
-  if (digits.startsWith("00")) digits = digits.slice(2);
-  if (digits.startsWith("0")) digits = "966" + digits.slice(1);
-  return digits;
-}
 
 export default function CaseDetails() {
   const { id } = useParams();
@@ -367,7 +341,7 @@ export default function CaseDetails() {
       const element = document.createElement("div");
       element.innerHTML = `
         <div style="font-family: 'Tajawal', sans-serif; line-height: 1.8; direction: rtl; text-align: right; min-height: 100%; background:#fff;">
-          ${renderLetterheadHeader(office.officeProfile)}
+          ${renderMemoLetterheadHeader(office.officeProfile)}
           <div style="padding: 30px 40px;">
             <h1 style="text-align: center; color: #133B2E; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; font-size: 22pt;">${selectedMemoForHearing.title}</h1>
             <div style="color: #666; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 10pt;">
@@ -375,7 +349,7 @@ export default function CaseDetails() {
             </div>
             <div style="font-size: 14pt; text-align: justify;">${selectedMemoForHearing.content}</div>
           </div>
-          ${renderLetterheadFooter(office.officeProfile, { stampUrl: office.officialStampUrl })}
+          ${renderMemoLetterheadFooter(office.officeProfile, { stampUrl: office.officialStampUrl })}
         </div>
       `;
       document.body.appendChild(element);
@@ -416,14 +390,14 @@ export default function CaseDetails() {
       const wordHtml = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
         <head><meta charset="utf-8"><title>${selectedMemoForHearing.title}</title></head>
         <body dir="rtl" style="font-family: 'Traditional Arabic', 'Tajawal', sans-serif; padding: 0; line-height: 1.8; text-align: right;">
-          ${renderLetterheadHeaderWordSafe(office.officeProfile)}
+          ${renderMemoLetterheadHeader(office.officeProfile)}
           <div style="padding: 40px;">
             <h1 style="text-align: center; color: #133B2E; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; font-size: 22pt;">${selectedMemoForHearing.title}</h1>
             <div style="color: #666; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 10pt;">
               قضية رقم: ${data.caseNumber || '---'} | تاريخ الاعتماد: ${new Date().toLocaleDateString('ar-EG')}
             </div>
             <div style="font-size: 14pt; text-align: justify;">${selectedMemoForHearing.content}</div>
-            ${renderLetterheadFooterWordSafe(office.officeProfile, { stampUrl: office.officialStampUrl })}
+            ${renderMemoLetterheadFooter(office.officeProfile, { stampUrl: office.officialStampUrl })}
           </div>
         </body>
       </html>`;
@@ -481,12 +455,10 @@ export default function CaseDetails() {
   // تبويب "تنفيذ الأحكام" أُزيل — الروابط القديمة إليه تفتح التبويب الأول
   const [activeTab, setActiveTab] = useState(() => {
     const tab = searchParams.get("tab");
+    if (tab === "requests" || tab === "decisions") return "hearings";
     return tab && tab !== "enforcement" ? tab : "info";
   });
   // الجهة المرسَل إليها تقرير حالة القضية — تُغيّر عنوان التقرير فقط
-  const [reportAudience, setReportAudience] = useState<"CLIENT" | "OFFICE">("OFFICE");
-  const [isGeneratingReportPdf, setIsGeneratingReportPdf] = useState(false);
-  const [isSendingReportWhatsApp, setIsSendingReportWhatsApp] = useState(false);
   const [isSyncingNajiz, setIsSyncingNajiz] = useState(false);
   const [najizSyncSuccess, setNajizSyncSuccess] = useState(false);
   const [importFileLoading, setImportFileLoading] = useState(false);
@@ -611,6 +583,17 @@ export default function CaseDetails() {
     }
   };
 
+  const handleSaveCaseField = async (patch: Record<string, unknown>) => {
+    if (!data) return;
+    try {
+      await updateDoc(doc(db, "cases", data.id), { ...patch, updatedAt: new Date().toISOString() });
+      setData((prev: any) => ({ ...prev, ...patch }));
+    } catch (err) {
+      console.error("Error saving case field:", err);
+      throw err;
+    }
+  };
+
   const handleSaveDecisions = async (decisions: CaseDecision[]) => {
     if (!data) return;
     try {
@@ -720,7 +703,7 @@ export default function CaseDetails() {
       const currentUserId = localStorage.getItem("userId");
       if (
         userRole !== "SUPER_ADMIN" && 
-        (caseData.lawyerId !== currentLawyerId || (userRole === "OFFICE_LAWYER" && caseData.assignedLawyerId !== currentUserId))
+        (caseData.lawyerId !== currentLawyerId || (userRole === "OFFICE_LAWYER" && !canSeeCase(caseData, { role: userRole, userId: currentUserId || "" })))
       ) {
           setData({ error: "غير مصرح لك بالدخول لهذه القضية" });
           return;
@@ -1030,7 +1013,7 @@ export default function CaseDetails() {
             >
               <div className="min-w-0">
                 <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "info" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>التفاصيل العامة</span>
-                <span className={`text-sm leading-tight font-bold block ${activeTab === "info" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>موضوع الدعوى</span>
+                <span className={`text-sm leading-tight font-bold block ${activeTab === "info" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{isExecutionCase ? "مضمون الطلب" : "موضوع الدعوى"}</span>
               </div>
               <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "info" ? "!bg-white/20 !text-amber-300" : "bg-indigo-100/70 text-indigo-600"}`}>
                 <Scale size={16} />
@@ -1085,40 +1068,6 @@ export default function CaseDetails() {
               </div>
               <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "hearings" ? "!bg-white/20 !text-amber-300" : "bg-cyan-100/70 text-cyan-600"}`}>
                 <Calendar size={16} />
-              </div>
-            </TabsTrigger>
-
-            <TabsTrigger 
-              value="requests" 
-              className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
-                activeTab === "requests"
-                  ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
-                  : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
-              }`}
-            >
-              <div className="min-w-0">
-                <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "requests" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>الطلبات</span>
-                <span className={`text-lg leading-tight font-bold block ${activeTab === "requests" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.requests?.length || 0}</span>
-              </div>
-              <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "requests" ? "!bg-white/20 !text-amber-300" : "bg-lime-100/70 text-lime-700"}`}>
-                <Archive size={16} />
-              </div>
-            </TabsTrigger>
-
-            <TabsTrigger 
-              value="decisions" 
-              className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
-                activeTab === "decisions"
-                  ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
-                  : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
-              }`}
-            >
-              <div className="min-w-0">
-                <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "decisions" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>القرارات</span>
-                <span className={`text-lg leading-tight font-bold block ${activeTab === "decisions" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{decisionsOf(data).length}</span>
-              </div>
-              <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "decisions" ? "!bg-white/20 !text-amber-300" : "bg-indigo-100/70 text-indigo-600"}`}>
-                <ScrollText size={16} />
               </div>
             </TabsTrigger>
 
@@ -1180,24 +1129,37 @@ export default function CaseDetails() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="shadow-sm md:col-span-2">
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">بيانات القضية</CardTitle>
+                <CardTitle className="text-lg">{isExecutionCase ? "بيانات الطلب" : "بيانات القضية"}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex justify-between border-b pb-3 border-gray-100">
-                    <span className="text-gray-500">نوع القضية</span>
-                    <span className="font-medium">
-                      {({ CIVIL: "مدني", COMMERCIAL: "تجاري", CRIMINAL: "جزائي", LABOR: "عمالي", EXECUTION: "تنفيذ", ENFORCEMENT: "تنفيذ" } as Record<string, string>)[data.type] || data.type || "غير محدد"}
-                    </span>
-                  </div>
+                  {isExecutionCase ? (
+                    <>
+                      <div className="flex justify-between border-b pb-3 border-gray-100">
+                        <span className="text-gray-500">نوع الطلب</span>
+                        <span className="font-medium">{data.enforcementRequestType || "غير محدد"}</span>
+                      </div>
+                      <div className="flex justify-between border-b pb-3 border-gray-100">
+                        <span className="text-gray-500">نوع السند</span>
+                        <span className="font-medium">{data.enforcementDeedType || "غير محدد"}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex justify-between border-b pb-3 border-gray-100">
+                      <span className="text-gray-500">نوع القضية</span>
+                      <span className="font-medium">
+                        {caseTypeLabel(data.type) || "غير محدد"}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between border-b pb-3 border-gray-100">
                     <span className="text-gray-500">الصفة</span>
                     <span className="font-medium text-[#133B2E]">
-                      {CLIENT_ROLE_LABELS_AR[clientRoleOf(data)]}
+                      {clientRoleLabelOf(data)}
                     </span>
                   </div>
                   <div className="flex justify-between border-b pb-3 border-gray-100">
-                    <span className="text-gray-500">المحكمة المرفوع أمامها</span>
+                    <span className="text-gray-500">{isExecutionCase ? "محكمة التنفيذ" : "المحكمة المرفوع أمامها"}</span>
                     <span className="font-medium text-[#133B2E]">{data.courtName || "غير محدد"}</span>
                   </div>
                   <div className="flex justify-between border-b pb-3 border-gray-100">
@@ -1205,21 +1167,13 @@ export default function CaseDetails() {
                     <span className="font-medium text-[#133B2E]">{data.courtCircle || "غير محدد"}</span>
                   </div>
                   <div className="flex justify-between border-b pb-3 border-gray-100">
-                    <span className="text-gray-500">تاريخ البداية</span>
-                    <span className="font-medium" dir="ltr">{data.startDate ? new Date(data.startDate).toLocaleDateString('ar-EG') : "-"}</span>
+                    <span className="text-gray-500">{isExecutionCase ? "تاريخ تقديم الطلب" : "تاريخ القضية"}</span>
+                    <span className="font-medium">{data.startDate ? formatGregorian(data.startDate) : "-"}</span>
                   </div>
                   {/* نفس الحقول التي يحفظها نموذج تعديل القضية — فيظهر أي تعديل فور الحفظ */}
-                  <div className="flex justify-between border-b pb-3 border-gray-100">
-                    <span className="text-gray-500">المحامي المسؤول</span>
-                    <span className="font-medium">{data.assignedLawyerName || "غير محدد"}</span>
-                  </div>
-                  <div className="flex justify-between border-b pb-3 border-gray-100">
-                    <span className="text-gray-500">المستشار</span>
-                    <span className="font-medium">{data.assignedConsultantName || "بلا مستشار"}</span>
-                  </div>
                   <div className="flex justify-between gap-4 pb-1">
-                    <span className="text-gray-500 shrink-0">المتدربون</span>
-                    <span className="font-medium text-left">{data.traineeNames?.length ? data.traineeNames.join("، ") : "لا يوجد"}</span>
+                    <span className="text-gray-500 shrink-0">{isExecutionCase ? "الأشخاص المسؤولون" : "المحامي المسؤول"}</span>
+                    <span className="font-medium text-left">{assignedLawyersLabel(data)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -1227,15 +1181,31 @@ export default function CaseDetails() {
 
             <Card className="shadow-sm md:col-span-2">
               <CardHeader className="pb-3">
-                <CardTitle className="text-lg">موضوع الدعوى القضائية</CardTitle>
+                <CardTitle className="text-lg">{isExecutionCase ? "منطوق الحكم / مضمون السند" : "موضوع الدعوى القضائية"}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-700 leading-relaxed whitespace-pre-wrap bg-gray-50 p-4 rounded-lg border border-gray-100 font-medium">
-                  {data.caseSubject || "لم يتم تحديد موضوع تفصيلي للدعوى بعد."}
+                  {data.caseSubject || (isExecutionCase ? "لم يُكتب منطوق الحكم بعد — أضفه من «تعديل»." : "لم يتم تحديد موضوع تفصيلي للدعوى بعد.")}
                 </p>
               </CardContent>
             </Card>
 
+            {isExecutionCase && <ExecutionContentCard caseData={data} />}
+
+            {data.notes && (
+              <Card className="shadow-sm md:col-span-2">
+                <CardHeader className="pb-3"><CardTitle className="text-lg">ملاحظات</CardTitle></CardHeader>
+                <CardContent>
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-wrap bg-amber-50/50 p-4 rounded-lg border border-amber-100">{data.notes}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {isExecutionCase && (
+              <CaseAttachmentsCard caseData={data} onSave={(attachments) => handleSaveCaseField({ attachments })} />
+            )}
+
+            {!isExecutionCase && (<>
             <CaseClaimSection
               title="أسانيد الدعوى"
               placeholder="اكتب الأسانيد النظامية والوقائع والأدلة التي تستند إليها الدعوى..."
@@ -1251,6 +1221,7 @@ export default function CaseDetails() {
               value={claimSectionOf(data.claimRequests)}
               onSave={(v) => handleSaveClaimSection("claimRequests", v)}
             />
+            </>)}
 
             {/* Najiz Litigation Steps Tracker Card */}
             {(data.type !== "تنفيذ" && data.type !== "ENFORCEMENT") && (
@@ -1446,11 +1417,7 @@ export default function CaseDetails() {
         </TabsContent>
 
         <TabsContent value="parties" className="mt-8 outline-none space-y-6">
-          <CaseParties caseData={data} onSave={handleSaveParties} />
-        </TabsContent>
-
-        <TabsContent value="requests" className="mt-8 outline-none space-y-6">
-          <CaseRequests caseId={id!} caseData={data} requests={data.requests || []} onChanged={fetchCaseData} />
+          <CaseParties caseData={data} onSave={handleSaveParties} isExecution={isExecutionCase} />
         </TabsContent>
 
         <TabsContent value="hearings" className="mt-8 outline-none space-y-6">
@@ -1458,7 +1425,7 @@ export default function CaseDetails() {
             <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
               <div>
                 <CardTitle className="text-lg">سجل الجلسات</CardTitle>
-                <CardDescription>الترتيب من الأقدم للأحدث</CardDescription>
+                <CardDescription>الأحدث أولاً</CardDescription>
               </div>
               <Button size="sm" className="bg-[#133B2E] hover:bg-[#133B2E]/90" onClick={() => setIsAddHearingOpen(true)}>
                 <Plus className="ml-2 h-4 w-4" /> اضافة جلسة جديدة
@@ -1469,7 +1436,10 @@ export default function CaseDetails() {
                 <p className="text-center py-8 text-gray-500">لا يوجد جلسات مسجلة</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {data.hearings.map((h: any) => (
+                  {/* الأحدث أولاً */}
+                  {[...data.hearings]
+                    .sort((a: any, b: any) => String(b.hearingDate || "").localeCompare(String(a.hearingDate || "")))
+                    .map((h: any) => (
                     <HearingCard
                       key={h.id}
                       h={h}
@@ -1489,6 +1459,10 @@ export default function CaseDetails() {
               )}
             </CardContent>
           </Card>
+
+          {/* الطلبات والقرارات تتبع الجلسات — في نفس التبويب */}
+          <CaseRequests caseId={id!} caseData={data} requests={data.requests || []} onChanged={fetchCaseData} />
+          <CaseDecisions caseData={data} onSave={handleSaveDecisions} title={isExecutionCase ? "قرارات التنفيذ" : "القرارات"} />
         </TabsContent>
 
         <TabsContent value="memos" className="mt-8 outline-none space-y-6">
@@ -1565,13 +1539,13 @@ export default function CaseDetails() {
                                       </style>
                                     </head>
                                     <body>
-                                      ${renderLetterheadHeader(office.officeProfile)}
+                                      ${renderMemoLetterheadHeader(office.officeProfile)}
                                       <div style="padding: 40px 50px;">
                                         <h1>${memo.title}</h1>
                                         <div class="meta">قضية رقم: ${data.caseNumber} | تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</div>
                                         <div class="content">${memo.content}</div>
                                       </div>
-                                      ${renderLetterheadFooter(office.officeProfile, { stampUrl: stamped ? office.officialStampUrl : null })}
+                                      ${renderMemoLetterheadFooter(office.officeProfile, { stampUrl: stamped ? office.officialStampUrl : null })}
                                       <script>window.onload = function() { window.print(); window.close(); }</script>
                                     </body>
                                   </html>
@@ -1692,14 +1666,22 @@ export default function CaseDetails() {
                   </div>
                 </div>
                 
-                {/* يمين: صفحة المحرر بنظام الوورد — يسار: المساعد الذكي */}
-                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_22rem] gap-5 items-start">
-                  <div className="rounded-2xl bg-gray-100 border border-gray-200 p-3 sm:p-6">
+                {/* يمين: المساعد الذكي — يسار: صفحة المحرر بنظام الوورد (على الجوال المحرر أولاً) */}
+                <div className="grid grid-cols-1 lg:grid-cols-[22rem_minmax(0,1fr)] gap-5 items-start">
+                  <div className="rounded-2xl bg-gray-100 border border-gray-200 p-3 sm:p-6 lg:order-last">
+                    {!office.officeProfile.name && (
+                      <div className="mx-auto max-w-[850px] mb-3 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                        <Info size={14} className="shrink-0" />
+                        الترويسة تعرض بيانات افتراضية — أكمل اسم المكتب وشعاره وهواتفه من الإعدادات ← مطبوعات المكتب.
+                      </div>
+                    )}
                     <div className="mx-auto max-w-[850px] bg-white shadow-md">
                       <RichTextEditor
                         value={memoContent}
                         onChange={(val) => setMemoContent(val)}
                         placeholder="ابدأ الكتابة هنا..."
+                        headerHtml={renderMemoLetterheadHeader(office.officeProfile)}
+                        footerHtml={renderMemoLetterheadFooter(office.officeProfile)}
                       />
                     </div>
                   </div>
@@ -1713,10 +1695,6 @@ export default function CaseDetails() {
                       if (memoContent && !confirm("سيُستبدل محتوى المحرر بالكامل بهذا النص. متابعة؟")) return;
                       ensureMemoTitle();
                       setMemoContent(html);
-                    }}
-                    onFillTemplate={() => {
-                      if (memoContent && !confirm("سيُستبدل محتوى المحرر بنموذج جاهز يسحب بيانات القضية. متابعة؟")) return;
-                      handleMemoTypeChange(memoType, true);
                     }}
                   />
                 </div>
@@ -1775,10 +1753,6 @@ export default function CaseDetails() {
           />
         </TabsContent>
 
-        <TabsContent value="decisions" className="mt-8 outline-none space-y-6">
-          <CaseDecisions caseData={data} onSave={handleSaveDecisions} />
-        </TabsContent>
-
         <TabsContent value="judgment" className="mt-8 outline-none space-y-6">
           <CaseJudgments
             caseData={data}
@@ -1794,219 +1768,14 @@ export default function CaseDetails() {
         </TabsContent>
 
         <TabsContent value="reports" className="mt-8 outline-none space-y-6">
-          {(() => {
-            const profile = office.officeProfile;
-            const now = new Date();
-            const sortedHearings = [...(data.hearings || [])].sort(
-              (a: any, b: any) => new Date(a.hearingDate).getTime() - new Date(b.hearingDate).getTime()
-            );
-            const pastHearings = sortedHearings.filter((h: any) => h.hearingDate && new Date(h.hearingDate) < now);
-            const upcomingHearings = sortedHearings.filter((h: any) => h.hearingDate && new Date(h.hearingDate) >= now);
-            const judgmentLabel = data.finalJudgment ? "صادر" : "لم يصدر بعد";
-            const judgmentColor = data.finalJudgment ? "#0f9d58" : "#b8962e";
-            // ٦ خانات hex فقط — html2canvas (المستخدمة داخل html2pdf.js) لا تدعم صيغة 8 خانات (RRGGBBAA)
-            const judgmentBg = data.finalJudgment ? "#eafaf1" : "#fdf6e6";
-            const addressee = reportAudience === "CLIENT"
-              ? `السيد/ة الفاضل/ة: ${data.client?.fullName || "العميل الموقّر"}`
-              : "إلى: مدير المكتب";
-            const clientPhone = toWhatsAppNumber(data.client?.phone);
-
-            const hearingCard = (h: any, isPast: boolean) => `
-              <div style="background:#fff; border:1px solid #eee; border-right:4px solid ${isPast ? "#0f9d58" : "#2563eb"}; border-radius:12px; padding:14px 18px; margin-bottom:10px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
-                  <strong style="color:#133B2E; font-size:11pt;">${h.hearingDate ? new Date(h.hearingDate).toLocaleDateString('ar-EG', { year:'numeric', month:'long', day:'numeric' }) : '—'}</strong>
-                  <span style="background:${isPast ? "#e6f6ec" : "#eef4ff"}; color:${isPast ? "#0f9d58" : "#2563eb"}; border-radius:999px; padding:3px 12px; font-size:9pt; font-weight:bold;">${isPast ? "انعقدت" : "قادمة"}</span>
-                </div>
-                <div style="font-size:9.5pt; color:#888; margin-top:4px;">${[h.court, h.circuit ? `دائرة: ${h.circuit}` : ""].filter(Boolean).join(" — ") || "—"}</div>
-                ${h.requiredActions ? `<div style="margin-top:8px; font-size:10.5pt;"><strong style="color:#133B2E;">ما تم في الجلسة:</strong> ${h.requiredActions}</div>` : ""}
-                ${h.result ? `<div style="margin-top:6px; font-size:10.5pt; background:#fdf2f2; color:#b91c1c; border-radius:8px; padding:8px 12px;"><strong>القرار / النتيجة:</strong> ${h.result}</div>` : ""}
-                ${h.judgmentText ? `<div style="margin-top:6px; font-size:10.5pt; background:#eefaf1; color:#0f9d58; border-radius:8px; padding:8px 12px;"><strong>صدر حكم/قرار في هذه الجلسة:</strong> ${h.judgmentText}</div>` : ""}
-                ${(!isPast && !h.result && !h.requiredActions) ? `<div style="margin-top:6px; font-size:10pt; color:#999;">لم تنعقد بعد</div>` : ""}
-              </div>
-            `;
-
-            const reportBodyHtml = `
-              <div style="font-family: 'Tajawal', sans-serif; direction: rtl; text-align: right; padding: 0; position: relative; min-height: 100%; background:#fff;">
-                ${renderLetterheadHeader(profile)}
-
-                <div style="padding: 30px 40px;">
-                  <h1 style="text-align:center; font-size:19pt; color:#133B2E; margin:0 0 4px; letter-spacing:0.5px;">تقرير حالة القضية</h1>
-                  <p style="text-align:center; font-size:10.5pt; color:#D4AF37; font-weight:bold; margin-bottom:22px;">${addressee}</p>
-
-                  <div style="background:#f8f9f8; border-radius:14px; padding:18px 20px; margin-bottom:22px; font-size:11pt; line-height:2;">
-                    <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px;">
-                      <span><strong style="color:#133B2E;">رقم القضية:</strong> ${data.caseNumber || '—'}</span>
-                      <span><strong style="color:#133B2E;">النوع:</strong> ${data.type || '—'}</span>
-                      <span><strong style="color:#133B2E;">الحالة:</strong> ${data.status || '—'}</span>
-                    </div>
-                    <div style="margin-top:4px;"><strong style="color:#133B2E;">عنوان القضية:</strong> ${data.title || '—'}</div>
-                    <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; margin-top:4px;">
-                      <span><strong style="color:#133B2E;">العميل:</strong> ${data.client?.fullName || '—'}</span>
-                      <span><strong style="color:#133B2E;">الخصم:</strong> ${data.opponentName || '—'}</span>
-                    </div>
-                    <div style="margin-top:4px;"><strong style="color:#133B2E;">المحكمة:</strong> ${data.courtName || '—'}</div>
-                  </div>
-
-                  <h2 style="font-size:13pt; color:#133B2E; border-bottom:2px solid #D4AF37; padding-bottom:6px; margin-bottom:14px;">الجلسات التي انعقدت</h2>
-                  ${pastHearings.length > 0 ? pastHearings.map((h: any) => hearingCard(h, true)).join("") : `<p style="color:#999; font-size:10.5pt; margin-bottom:18px;">لا توجد جلسات منعقدة بعد.</p>`}
-
-                  <h2 style="font-size:13pt; color:#133B2E; border-bottom:2px solid #D4AF37; padding-bottom:6px; margin:22px 0 14px;">الجلسات القادمة</h2>
-                  ${upcomingHearings.length > 0 ? upcomingHearings.map((h: any) => hearingCard(h, false)).join("") : `<p style="color:#999; font-size:10.5pt; margin-bottom:18px;">لا توجد جلسات قادمة مجدولة حالياً.</p>`}
-
-                  ${isExecutionCase ? `
-                    <div style="background:#fff8e6; border:1px solid #f0e0b0; border-radius:12px; padding:12px 18px; margin:18px 0; font-size:10.5pt;">
-                      <strong style="color:#b8962e;">نسبة إنجاز إجراءات التنفيذ:</strong> ${enforcementProgress}%
-                    </div>
-                  ` : ""}
-
-                  <h2 style="font-size:13pt; color:#133B2E; border-bottom:2px solid #D4AF37; padding-bottom:6px; margin:22px 0 14px;">الحكم القضائي</h2>
-                  <div style="border:1px solid ${judgmentColor}; border-radius:12px; padding:14px 18px;">
-                    <span style="display:inline-block; background:${judgmentBg}; color:${judgmentColor}; border-radius:999px; padding:5px 14px; font-size:10pt; font-weight:bold; margin-bottom:${data.finalJudgment ? "10px" : "0"};">
-                      الحالة: ${judgmentLabel}
-                    </span>
-                    ${data.finalJudgment ? `
-                      <div style="font-size:10.5pt; color:#666; margin-bottom:6px;">تاريخ الصدور: ${new Date(data.finalJudgment.judgmentDate).toLocaleDateString('ar-EG', { year:'numeric', month:'long', day:'numeric' })}</div>
-                      <div style="font-size:10.5pt; color:#333; white-space:pre-wrap;"><strong>منطوق الحكم:</strong> ${data.finalJudgment.judgmentRuling || "—"}</div>
-                    ` : ""}
-                  </div>
-                </div>
-
-                ${renderLetterheadFooter(profile, { stampUrl: office.officialStampUrl })}
-              </div>
-            `;
-
-            const ensureHtml2pdf = async () => {
-              if ((window as any).html2pdf) return;
-              const script = window.document.createElement("script");
-              script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-              script.async = true;
-              window.document.body.appendChild(script);
-              await new Promise<void>((resolve, reject) => {
-                script.onload = () => resolve();
-                script.onerror = (err) => reject(err);
-              });
-            };
-
-            const reportPdfOptions = {
-              margin: 0,
-              filename: `تقرير حالة القضية - ${data.caseNumber || data.title}.pdf`,
-              image: { type: 'jpeg', quality: 0.98 },
-              html2canvas: { scale: 2, useCORS: true, onclone: stripUnsupportedColorsOnClone },
-              jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            };
-
-            const handleDownloadPdf = async () => {
-              setIsGeneratingReportPdf(true);
-              try {
-                await ensureHtml2pdf();
-                const element = document.createElement("div");
-                element.innerHTML = reportBodyHtml;
-                document.body.appendChild(element);
-                await (window as any).html2pdf().from(element).set(reportPdfOptions).save();
-                document.body.removeChild(element);
-              } catch (err) {
-                console.error(err);
-                alert("تعذّر توليد ملف PDF: " + (err instanceof Error ? err.message : String(err)));
-              } finally {
-                setIsGeneratingReportPdf(false);
-              }
-            };
-
-            const handleSendWhatsApp = async () => {
-              if (!clientPhone) {
-                alert("لا يوجد رقم جوال مسجَّل للعميل. أضفه من ملف العميل أولاً.");
-                return;
-              }
-              setIsSendingReportWhatsApp(true);
-              try {
-                await ensureHtml2pdf();
-                const element = document.createElement("div");
-                element.innerHTML = reportBodyHtml;
-                document.body.appendChild(element);
-                const pdfBlob = await (window as any).html2pdf().from(element).set(reportPdfOptions).output('blob');
-                document.body.removeChild(element);
-
-                const fileOfBlob = new window.File([pdfBlob], `تقرير حالة القضية - ${data.caseNumber || data.title}.pdf`, { type: 'application/pdf' });
-                const fd = new FormData();
-                fd.append("file", fileOfBlob);
-                const response = await fetch("/upload.php", { method: "POST", body: fd });
-                if (!response.ok) throw new Error("فشل رفع التقرير");
-                const uploadResult = await response.json();
-                if (uploadResult.error) throw new Error(uploadResult.error);
-
-                const message = `مرحباً ${data.client?.fullName || ""}،\nمرفق تقرير حالة القضية «${data.title || data.caseNumber}»:\n${uploadResult.fileUrl}`;
-                window.open(`https://wa.me/${clientPhone}?text=${encodeURIComponent(message)}`, "_blank");
-              } catch (err) {
-                console.error(err);
-                alert("تعذّر تجهيز التقرير لإرساله عبر واتساب: " + (err instanceof Error ? err.message : String(err)));
-              } finally {
-                setIsSendingReportWhatsApp(false);
-              }
-            };
-
-            return (
-              <Card className="shadow-lg border border-teal-200/60 overflow-hidden bg-white">
-                <CardHeader className="pb-4 bg-teal-50/30 border-b border-teal-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div>
-                    <CardTitle className="text-lg text-[#133B2E] flex items-center gap-2">
-                      <FileBarChart className="text-teal-600 w-5 h-5" /> تقرير حالة القضية
-                    </CardTitle>
-                    <CardDescription className="text-gray-500 text-xs">
-                      ملخّص جاهز للطباعة أو التحميل أو الإرسال مباشرة عبر واتساب، على ترويسة المكتب.
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl p-1 shrink-0">
-                    <button onClick={() => setReportAudience("OFFICE")}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${reportAudience === "OFFICE" ? "bg-[#133B2E] text-[#D4AF37]" : "text-gray-500"}`}>
-                      نسخة صاحب المكتب
-                    </button>
-                    <button onClick={() => setReportAudience("CLIENT")}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${reportAudience === "CLIENT" ? "bg-[#133B2E] text-[#D4AF37]" : "text-gray-500"}`}>
-                      نسخة العميل
-                    </button>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="border-b border-gray-100 bg-gray-100/60 p-4 sm:p-8">
-                    <div className="max-w-2xl mx-auto shadow-xl rounded-2xl overflow-hidden" dangerouslySetInnerHTML={{ __html: reportBodyHtml }} />
-                  </div>
-                  <div className="p-4 flex flex-wrap justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        const printWindow = window.open('', '_blank');
-                        if (printWindow) {
-                          printWindow.document.write(`<html dir="rtl"><head><title>تقرير حالة القضية</title></head><body>${reportBodyHtml}<script>window.onload=function(){window.print();window.close();}</script></body></html>`);
-                          printWindow.document.close();
-                        }
-                      }}
-                      className="border-gray-200 text-gray-700 hover:bg-gray-50"
-                    >
-                      <Printer className="ml-2 h-4 w-4" /> طباعة
-                    </Button>
-                    <Button
-                      disabled={isGeneratingReportPdf}
-                      onClick={handleDownloadPdf}
-                      variant="outline"
-                      className="border-[#133B2E] text-[#133B2E] hover:bg-gray-50"
-                    >
-                      {isGeneratingReportPdf ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Download className="ml-2 h-4 w-4" />}
-                      تحميل PDF
-                    </Button>
-                    <Button
-                      disabled={isSendingReportWhatsApp}
-                      onClick={handleSendWhatsApp}
-                      title={clientPhone ? `إرسال إلى ${clientPhone}` : "لا يوجد رقم جوال مسجَّل للعميل"}
-                      className="bg-[#25D366] hover:bg-[#1fb855] text-white"
-                    >
-                      {isSendingReportWhatsApp ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <MessageCircle className="ml-2 h-4 w-4" />}
-                      إرسال واتساب للعميل
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })()}
+          <CaseStatusReport
+            data={data}
+            profile={office.officeProfile}
+            stampUrl={office.officialStampUrl}
+            isExecutionCase={isExecutionCase}
+            enforcementProgress={enforcementProgress}
+            onDataChange={(patch) => setData((prev: any) => ({ ...prev, ...patch }))}
+          />
         </TabsContent>
 
       </Tabs>

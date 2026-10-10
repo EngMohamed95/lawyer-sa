@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx --watch --watch-preserve-output --watch-path server.ts --watch-path src server.ts",
+    "dev": "tsx server.ts",
     "build": "vite build && tsc server.ts --outDir dist --module esnext --target esnext --moduleResolution node --esModuleInterop --allowSyntheticDefaultImports --skipLibCheck",
     "start": "node dist/server.js",
     "preview": "vite preview",

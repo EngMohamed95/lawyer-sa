@@ -18,7 +18,8 @@ header('X-Content-Type-Options: nosniff');
 header('Cache-Control: no-store');
 
 const RATE_LIMIT_PER_MINUTE = 20;
-const MAX_BODY_BYTES = 4 * 1024 * 1024;
+// المرفقات (PDF/صور) تُرسل مضمّنة بـ base64 — الواجهة تحدّها بـ 10MB خام (~14MB مرمّزة)
+const MAX_BODY_BYTES = 20 * 1024 * 1024;
 /** نماذج احتياطية عند ضغط مؤقت على النموذج المطلوب — نفس القائمة في src/server/api.ts */
 const GEMINI_FALLBACK_MODELS = ['gemini-flash-lite-latest', 'gemini-3.5-flash'];
 const CERTS_URL ='https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com';

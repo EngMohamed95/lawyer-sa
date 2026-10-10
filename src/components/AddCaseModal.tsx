@@ -5,6 +5,28 @@ import { Input } from "./ui/input";
 import { Loader2 } from "lucide-react";
 import { AddClientModal } from "./AddClientModal";
 import { useOfficeLookups } from "../lib/officeLookups";
+import { assignedLawyersFields } from "../lib/assignedLawyers";
+import LawyerMultiSelect from "./LawyerMultiSelect";
+import { Textarea } from "./ui/textarea";
+import { caseTypeLabel } from "../lib/caseTypes";
+import { partyLabels } from "../lib/clientRole";
+import { EMPTY_EXECUTION_DETAILS } from "../lib/execution";
+import { ExecutionContentFields, ExecutionTypeFields, SectionTitle } from "./ExecutionDetailsFields";
+import { AttachmentPicker, uploadNewFiles, type PendingFile } from "./AttachmentPicker";
+
+/** حقول إضافية — الملاحظات لكل القضايا، والباقي لطلبات التنفيذ */
+const blankExtra = () => ({
+  notes: "",
+  enforcementRequestType: "",
+  enforcementDeedType: "",
+  executionDetails: { ...EMPTY_EXECUTION_DETAILS },
+});
+
+/** القضية الجديدة تُسند افتراضياً لمن أنشأها */
+const defaultAssigned = () => {
+  const id = localStorage.getItem("userId") || "";
+  return assignedLawyersFields(id ? [id] : [], [{ id, name: localStorage.getItem("userName") || "" }]);
+};
 
 export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOpen: boolean, onClose: () => void, onSuccess: () => void, defaultType?: string }) {
   const { caseTypes } = useOfficeLookups();
@@ -18,7 +40,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
   const [formData, setFormData] = useState({
     title: "",
     caseNumber: "",
-    type: "مدني",
+    type: "عامة",
     clientId: "",
     opponentName: "",
     opponentLawyer: "",
@@ -28,13 +50,14 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
     defendantName: "",
     caseSubject: "",
     startDate: new Date().toISOString().split('T')[0],
-    assignedLawyerId: localStorage.getItem("userId") || "",
-    assignedLawyerName: localStorage.getItem("userName") || "",
+    ...defaultAssigned(),
     assignedConsultantId: "",
     assignedConsultantName: "",
     traineeIds: [] as string[],
     traineeNames: [] as string[],
+    ...blankExtra(),
   });
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
 
   const fetchClients = async () => {
     try {
@@ -119,7 +142,8 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
 
   useEffect(() => {
     if (isOpen) {
-      if (defaultType) setFormData((f) => ({ ...f, type: defaultType }));
+      // صفحة القضايا وصفحة التنفيذ تتشاركان النموذج — كل فتح يبدأ بنوعه الصحيح
+      setFormData((f) => ({ ...f, type: defaultType || "عامة" }));
       fetchClients();
       fetchOfficeLawyers();
       fetchConsultants();
@@ -141,8 +165,14 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
       const finalPlaintiffName = clientRole === "PLAINTIFF" ? clientName : formData.opponentName;
       const finalDefendantName = clientRole === "PLAINTIFF" ? formData.opponentName : clientName;
 
+      const exec = caseTypeLabel(formData.type) === "تنفيذ";
+      const { enforcementRequestType, enforcementDeedType, executionDetails, ...base } = formData;
       const data = {
-        ...formData,
+        ...base,
+        ...(exec ? {
+          enforcementRequestType, enforcementDeedType, executionDetails,
+          attachments: await uploadNewFiles([], pendingFiles),
+        } : {}),
         plaintiffName: finalPlaintiffName,
         defendantName: finalDefendantName,
         clientRole,
@@ -156,7 +186,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
       setFormData({
         title: "",
         caseNumber: "",
-        type: "مدني",
+        type: "عامة",
         clientId: "",
         opponentName: "",
         opponentLawyer: "",
@@ -166,13 +196,14 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
         defendantName: "",
         caseSubject: "",
         startDate: new Date().toISOString().split('T')[0],
-        assignedLawyerId: localStorage.getItem("userId") || "",
-        assignedLawyerName: localStorage.getItem("userName") || "",
+        ...defaultAssigned(),
         assignedConsultantId: "",
         assignedConsultantName: "",
         traineeIds: [],
         traineeNames: [],
+        ...blankExtra(),
       });
+      setPendingFiles([]);
       setClientRole("PLAINTIFF");
     } catch (error: any) {
       console.error(error);
@@ -182,37 +213,43 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
     }
   };
 
+  const isExec = caseTypeLabel(formData.type) === "تنفيذ";
+  const P = partyLabels(isExec);
+  const label = "text-sm font-bold text-[#133B2E]";
+  const canAssign = localStorage.getItem("userRole") === "LAWYER" || localStorage.getItem("userRole") === "SUPER_ADMIN";
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[820px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-[#133B2E]">إضافة قضية جديدة</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-[#133B2E]">{isExec ? "إضافة طلب تنفيذ" : "إضافة قضية جديدة"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {isExec && <SectionTitle>بيانات الطلب</SectionTitle>}
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#133B2E]">عنوان القضية *</label>
-              <Input 
+              <label className={label}>{isExec ? "عنوان الطلب *" : "عنوان القضية *"}</label>
+              <Input
                 required
                 value={formData.title}
                 onChange={e => setFormData({...formData, title: e.target.value})}
-                placeholder="مثال: دعوى تعويض ضد شركة س" 
+                placeholder={isExec ? "مثال: تنفيذ سند لأمر - شركة س" : "مثال: دعوى تعويض ضد شركة س"}
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#133B2E]">رقم القضية *</label>
-              <Input 
+              <label className={label}>{isExec ? "رقم الطلب *" : "رقم القضية *"}</label>
+              <Input
                 required
                 value={formData.caseNumber}
                 onChange={e => setFormData({...formData, caseNumber: e.target.value})}
-                placeholder="مثال: ١٢٣٤/٢٠٢٣" 
+                placeholder="مثال: ١٢٣٤/٢٠٢٣"
               />
             </div>
-            
+
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="text-sm font-bold text-[#133B2E]">العميل *</label>
+                <label className={label}>العميل *</label>
                 <button
                   type="button"
                   onClick={() => setIsAddClientOpen(true)}
@@ -221,7 +258,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
                   + إضافة عميل جديد
                 </button>
               </div>
-              <select 
+              <select
                 required
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={formData.clientId}
@@ -233,24 +270,40 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
                 ))}
               </select>
             </div>
-            
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-[#133B2E]">نوع القضية</label>
-              <select 
-                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                value={formData.type}
-                onChange={e => setFormData({...formData, type: e.target.value})}
-              >
-                {caseTypes.map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-            </div>
 
-            <div className="space-y-2 border-t pt-2 md:col-span-2 text-xs font-bold text-gray-500">أطراف الدعوى والنزاع</div>
+            {isExec ? (
+              <div className="space-y-2">
+                <label className={label}>تاريخ تقديم الطلب *</label>
+                <Input type="date" required value={formData.startDate}
+                  onChange={e => setFormData({...formData, startDate: e.target.value})} />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label className={label}>نوع القضية</label>
+                <select
+                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={formData.type}
+                  onChange={e => setFormData({...formData, type: e.target.value})}
+                >
+                  {caseTypes.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {isExec && (
+              <ExecutionTypeFields
+                requestType={formData.enforcementRequestType}
+                deedType={formData.enforcementDeedType}
+                onChange={(patch) => setFormData({ ...formData, ...patch })}
+              />
+            )}
+
+            <SectionTitle>{isExec ? "أطراف الطلب" : "أطراف الدعوى والنزاع"}</SectionTitle>
 
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-bold text-[#133B2E]">صفة العميل في القضية</label>
+              <label className={label}>صفة العميل في {isExec ? "الطلب" : "القضية"}</label>
               <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
                 <button
                   type="button"
@@ -261,7 +314,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
-                  مدعي (طالب الحق)
+                  {isExec ? "طالب التنفيذ" : "مدعي (طالب الحق)"}
                 </button>
                 <button
                   type="button"
@@ -272,166 +325,135 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
-                  مدعى عليه (المطلوب منه)
+                  {isExec ? "المنفذ ضده" : "مدعى عليه (المطلوب منه)"}
                 </button>
               </div>
               <p className="text-xs font-medium mt-1">
                 {clientRole === "PLAINTIFF" ? (
-                  <span className="text-blue-700">← سيكون العميل هو الطرف المدعي، والخصم هو الطرف المدعى عليه.</span>
+                  <span className="text-blue-700">← سيكون العميل هو {P.PLAINTIFF}، والخصم هو {P.DEFENDANT}.</span>
                 ) : (
-                  <span className="text-rose-700">← سيكون العميل هو الطرف المدعى عليه، والخصم هو الطرف المدعي.</span>
+                  <span className="text-rose-700">← سيكون العميل هو {P.DEFENDANT}، والخصم هو {P.PLAINTIFF}.</span>
                 )}
               </p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#133B2E]">
-                {clientRole === "PLAINTIFF" ? "اسم المدعى عليه (الخصم)" : "اسم المدعي (الخصم)"}
+              <label className={label}>
+                اسم {clientRole === "PLAINTIFF" ? P.DEFENDANT : P.PLAINTIFF} (الخصم)
               </label>
-              <Input 
+              <Input
                 value={formData.opponentName}
                 onChange={e => setFormData({...formData, opponentName: e.target.value})}
-                placeholder={clientRole === "PLAINTIFF" ? "اسم المدعى عليه" : "اسم المدعي"} 
+                placeholder={`اسم ${clientRole === "PLAINTIFF" ? P.DEFENDANT : P.PLAINTIFF}`}
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#133B2E]">
-                {clientRole === "PLAINTIFF" ? "محامي المدعى عليه" : "محامي المدعي"}
+              <label className={label}>
+                محامي {clientRole === "PLAINTIFF" ? P.DEFENDANT : P.PLAINTIFF}
               </label>
-              <Input 
+              <Input
                 value={formData.opponentLawyer}
                 onChange={e => setFormData({...formData, opponentLawyer: e.target.value})}
-                placeholder="محامي الخصم إن وجد" 
+                placeholder="محامي الخصم إن وجد"
               />
             </div>
 
-            <div className="space-y-2 border-t pt-2 md:col-span-2 text-xs font-bold text-gray-500">المحكمة وموضوع الدعوى</div>
+            <SectionTitle>{isExec ? "المحكمة ومنطوق الحكم" : "المحكمة وموضوع الدعوى"}</SectionTitle>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#133B2E]">المحكمة المرفوع أمامها</label>
-              <Input 
+              <label className={label}>{isExec ? "محكمة التنفيذ" : "المحكمة المرفوع أمامها"}</label>
+              <Input
                 value={formData.courtName}
                 onChange={e => setFormData({...formData, courtName: e.target.value})}
-                placeholder="مثال: المحكمة العامة بالرياض" 
+                placeholder={isExec ? "مثال: محكمة التنفيذ بالرياض" : "مثال: المحكمة العامة بالرياض"}
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#133B2E]">الدائرة القضائية</label>
-              <Input 
+              <label className={label}>الدائرة القضائية</label>
+              <Input
                 value={formData.courtCircle}
                 onChange={e => setFormData({...formData, courtCircle: e.target.value})}
-                placeholder="مثال: الدائرة الحقوقية الثالثة" 
+                placeholder="مثال: الدائرة الحقوقية الثالثة"
               />
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-bold text-[#133B2E]">موضوع الدعوى / القضية</label>
-              <Input 
-                value={formData.caseSubject}
-                onChange={e => setFormData({...formData, caseSubject: e.target.value})}
-                placeholder="تفاصيل مختصرة لموضوع الدعوى..." 
-              />
+              <label className={label}>{isExec ? "منطوق الحكم / مضمون السند" : "موضوع الدعوى / القضية"}</label>
+              {isExec ? (
+                <Textarea rows={3} value={formData.caseSubject}
+                  onChange={e => setFormData({...formData, caseSubject: e.target.value})}
+                  placeholder="اكتب منطوق الحكم أو مضمون السند المطلوب تنفيذه..." />
+              ) : (
+                <Input
+                  value={formData.caseSubject}
+                  onChange={e => setFormData({...formData, caseSubject: e.target.value})}
+                  placeholder="تفاصيل مختصرة لموضوع الدعوى..."
+                />
+              )}
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-[#133B2E]">تاريخ البداية</label>
-              <Input 
-                type="date"
-                required
-                value={formData.startDate}
-                onChange={e => setFormData({...formData, startDate: e.target.value})}
-              />
-            </div>
-
-            {(localStorage.getItem("userRole") === "LAWYER" || localStorage.getItem("userRole") === "SUPER_ADMIN") && (
+            {!isExec && (
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[#133B2E] block mr-1">المحامي المسؤول</label>
-                <select
-                  value={formData.assignedLawyerId}
-                  onChange={e => {
-                    const selected = officeLawyers.find(l => l.id === e.target.value);
-                    setFormData({
-                      ...formData,
-                      assignedLawyerId: e.target.value,
-                      assignedLawyerName: selected ? selected.name : ""
-                    });
-                  }}
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/10 focus:border-[#133B2E] transition-all text-sm h-10"
-                >
-                  {officeLawyers.map(l => (
-                    <option key={l.id} value={l.id}>{l.name}</option>
-                  ))}
-                </select>
+                <label className={label}>تاريخ القضية</label>
+                <Input
+                  type="date"
+                  required
+                  value={formData.startDate}
+                  onChange={e => setFormData({...formData, startDate: e.target.value})}
+                />
               </div>
             )}
 
-            {(localStorage.getItem("userRole") === "LAWYER" || localStorage.getItem("userRole") === "SUPER_ADMIN") && (
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-[#133B2E] block mr-1">المستشار</label>
-                <select
-                  value={formData.assignedConsultantId}
-                  onChange={e => {
-                    const selected = consultants.find(c => c.id === e.target.value);
-                    setFormData({
-                      ...formData,
-                      assignedConsultantId: e.target.value,
-                      assignedConsultantName: selected ? selected.name : ""
-                    });
-                  }}
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/10 focus:border-[#133B2E] transition-all text-sm h-10"
-                >
-                  <option value="">بلا مستشار</option>
-                  {consultants.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
+            {isExec && (
+              <ExecutionContentFields
+                value={formData.executionDetails}
+                onChange={(executionDetails) => setFormData({ ...formData, executionDetails })}
+              />
             )}
 
-            {(localStorage.getItem("userRole") === "LAWYER" || localStorage.getItem("userRole") === "SUPER_ADMIN") && (
+            {isExec && <SectionTitle>المسؤولون والملاحظات والمرفقات</SectionTitle>}
+
+            {canAssign && (
               <div className="space-y-2 md:col-span-2">
-                <label className="text-sm font-bold text-[#133B2E] block mr-1">المتدربون</label>
-                <div className="flex flex-wrap gap-2 p-3 bg-gray-50 border border-gray-200 rounded-xl min-h-10">
-                  {trainees.length === 0 && (
-                    <span className="text-xs text-gray-400">لا يوجد متدربون مسجلون في المكتب — أضفهم من "فريق المكتب"</span>
-                  )}
-                  {trainees.map(t => {
-                    const checked = formData.traineeIds.includes(t.id);
-                    return (
-                      <label
-                        key={t.id}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm cursor-pointer border transition-all ${
-                          checked ? "bg-[#133B2E] text-white border-[#133B2E]" : "bg-white text-gray-600 border-gray-200"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          className="hidden"
-                          checked={checked}
-                          onChange={() => {
-                            const nextIds = checked
-                              ? formData.traineeIds.filter(id => id !== t.id)
-                              : [...formData.traineeIds, t.id];
-                            const nextNames = nextIds.map(id => trainees.find(tr => tr.id === id)?.name || "");
-                            setFormData({ ...formData, traineeIds: nextIds, traineeNames: nextNames });
-                          }}
-                        />
-                        {t.name}
-                      </label>
-                    );
-                  })}
-                </div>
+                <label className={`${label} block mr-1`}>{isExec ? "الأشخاص المسؤولون" : "المحامون المسؤولون"}</label>
+                <LawyerMultiSelect
+                  lawyers={officeLawyers}
+                  value={formData.assignedLawyerIds}
+                  onChange={(ids) => setFormData({ ...formData, ...assignedLawyersFields(ids, officeLawyers) })}
+                />
               </div>
             )}
+
+            <div className="space-y-2 md:col-span-2">
+              <label className={label}>ملاحظات</label>
+              <Textarea rows={3} value={formData.notes}
+                onChange={e => setFormData({...formData, notes: e.target.value})}
+                placeholder="أي ملاحظات داخلية..." />
+            </div>
+
+            {isExec && (
+              <div className="md:col-span-2">
+                <AttachmentPicker
+                  label="مرفقات الطلب"
+                  hint="لا توجد مرفقات — أرفق السند وصحيفة الطلب والمستندات المؤيدة. لكل مرفق اسم وتاريخ، وتُرقَّم بالتسلسل."
+                  existing={[]}
+                  onExistingChange={() => {}}
+                  newFiles={pendingFiles}
+                  onNewFilesChange={setPendingFiles}
+                  numbered
+                />
+              </div>
+            )}
+
           </div>
 
           <DialogFooter className="mt-6">
             <Button type="button" variant="outline" onClick={onClose}>إلغاء</Button>
             <Button type="submit" disabled={loading} className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              حفظ القضية
+              {caseTypeLabel(formData.type) === "تنفيذ" ? "حفظ الطلب" : "حفظ القضية"}
             </Button>
           </DialogFooter>
         </form>

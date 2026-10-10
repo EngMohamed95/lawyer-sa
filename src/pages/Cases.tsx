@@ -12,8 +12,11 @@ import { db } from "../lib/firebase";
 import { Pagination } from "../components/ui/Pagination";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { formatHijri } from "../lib/calendar";
-import { CLIENT_ROLE_LABELS_AR, clientRoleOf } from "../lib/clientRole";
+import { clientRoleLabelOf } from "../lib/clientRole";
+import { caseTypeLabel } from "../lib/caseTypes";
+import { assignedLawyersLabel } from "../lib/assignedLawyers";
 import ExecutionOverview, { matchesExecution, type ExecutionCapacity, type ExecutionFilter } from "../components/ExecutionOverview";
+import { visibleCasesQuery } from "../lib/caseAccess";
 
 const STATUS_LABELS_AR: Record<string, string> = {
   // القيم الحالية التي يكتبها النظام
@@ -49,15 +52,6 @@ const isEnforcementOverdue = (c: any): boolean =>
   !!c.enforcementNoticeDeadline &&
   !c.enforcementClosureReason &&
   new Date(c.enforcementNoticeDeadline).getTime() < Date.now();
-
-// أنواع قديمة محفوظة بالإنجليزي في بعض البيانات
-const CASE_TYPE_LABELS_AR: Record<string, string> = {
-  CIVIL: "مدني",
-  COMMERCIAL: "تجاري",
-  CRIMINAL: "جزائي",
-  LABOR: "عمالي",
-  EXECUTION: "تنفيذ",
-};
 
 
 const CaseField = ({ label, children, className = "" }: { label: string; children: ReactNode; className?: string }) => (
@@ -159,8 +153,8 @@ function CaseRow({ c, expanded, onToggle, userRole }: { c: any; expanded: boolea
             <span dir="ltr" className="truncate">{c.caseNumber || "-"}</span>
           </Link>
           <div className="flex flex-wrap gap-1.5">
-            <Chip>{CASE_TYPE_LABELS_AR[c.type] || c.type || "-"}</Chip>
-            <Chip>{CLIENT_ROLE_LABELS_AR[clientRoleOf(c)]}</Chip>
+            <Chip>{caseTypeLabel(c.type) || "-"}</Chip>
+            <Chip>{clientRoleLabelOf(c)}</Chip>
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
             {court && <span className="flex min-w-0 items-center gap-1"><Landmark size={13} className="shrink-0" /> <span className="truncate">{court}</span></span>}
@@ -203,11 +197,9 @@ function CaseRow({ c, expanded, onToggle, userRole }: { c: any; expanded: boolea
           <div className="grid grid-cols-2 gap-x-6 gap-y-3 md:grid-cols-4">
             <CaseField label="محامي الخصم">{c.opponentLawyer || "-"}</CaseField>
             {(userRole === "LAWYER" || userRole === "OFFICE_LAWYER") && (
-              <CaseField label="المحامي المسؤول">{c.assignedLawyerName || "المدير"}</CaseField>
+              <CaseField label="المحامي المسؤول">{assignedLawyersLabel(c, "المدير")}</CaseField>
             )}
             {userRole === "SUPER_ADMIN" && <CaseField label="المحامي">{c.lawyerId || "غير محدد"}</CaseField>}
-            <CaseField label="المستشار">{c.assignedConsultantName || "-"}</CaseField>
-            <CaseField label="المتدربون">{c.traineeNames?.length ? c.traineeNames.join("، ") : "-"}</CaseField>
           </div>
         </div>
       )}
@@ -309,7 +301,7 @@ export default function Cases() {
         casesQuery = query(collection(db, "cases"), limit(200));
       } else if (userRole === "OFFICE_LAWYER") {
         const userId = localStorage.getItem("userId");
-        casesQuery = query(collection(db, "cases"), where("lawyerId", "==", lawyerId), where("assignedLawyerId", "==", userId), limit(200));
+        casesQuery = visibleCasesQuery(lawyerId || "", limit(200));
       } else {
         casesQuery = query(collection(db, "cases"), where("lawyerId", "==", lawyerId), limit(200));
       }
@@ -366,15 +358,13 @@ export default function Cases() {
       const rows = filteredCases.map(c => ({
         "رقم القضية": c.caseNumber || "",
         "عنوان القضية": c.title || "",
-        "نوع القضية": c.type || "",
+        "نوع القضية": caseTypeLabel(c.type),
         "العميل": c.client?.fullName || "",
         "الخصم": c.opponentName || "",
         "محامي الخصم": c.opponentLawyer || "",
         "المحكمة": c.courtName || "",
-        "تاريخ البداية": c.startDate || "",
+        "تاريخ القضية": c.startDate || "",
         "الحالة": getStatusLabel(c.status || "OPEN"),
-        "المستشار": c.assignedConsultantName || "",
-        "المتدربون": (c.traineeNames || []).join("، "),
         ...(isExecutionView ? {
           "نوع الطلب": c.enforcementRequestType || "",
           "نوع السند": c.enforcementDeedType || "",

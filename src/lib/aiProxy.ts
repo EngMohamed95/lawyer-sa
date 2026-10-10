@@ -45,10 +45,13 @@ export function readAiSettings(): AiSettings {
   return { provider: platform.provider, model: platform.model };
 }
 
+/** جزء من رسالة Gemini — نص، أو ملف مضمّن (PDF/صورة) بترميز base64 */
+export type GeminiPart = { text: string } | { inlineData: { mimeType: string; data: string } };
+
 /** جزء من محادثة بصيغة Gemini */
 export interface GeminiContent {
   role: "user" | "model";
-  parts: { text: string }[];
+  parts: GeminiPart[];
 }
 
 export interface GenerationConfig {
@@ -88,7 +91,8 @@ function extractGeminiText(data: unknown): string {
     candidates?: { content?: { parts?: { text?: string }[] } }[];
   };
   if (d?.error) throw new Error(d.error.message || "خطأ في معالجة طلب Gemini");
-  return d?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  // الردود الطويلة قد تأتي مقسّمة على عدة أجزاء
+  return (d?.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? "").join("");
 }
 
 /**

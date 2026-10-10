@@ -7,6 +7,7 @@
  */
 
 import { useState, type ReactNode } from "react";
+import { partyLabels } from "../lib/clientRole";
 import { Briefcase, Pencil, Plus, Trash2, UserRound, X, Check } from "lucide-react";
 
 export type PartyRole = "PLAINTIFF" | "DEFENDANT";
@@ -25,7 +26,6 @@ export interface CaseParty {
   representativeNumber?: string;
 }
 
-const ROLE_LABEL: Record<PartyRole, string> = { PLAINTIFF: "المدعي", DEFENDANT: "مدعى عليه" };
 
 export const REPRESENTATIVE_TYPES = ["محامٍ", "وكيل شرعي", "ممثل نظامي", "ولي / وصي"];
 
@@ -58,11 +58,15 @@ export function partiesOf(c: any): CaseParty[] {
   return out;
 }
 
-export default function CaseParties({ caseData, onSave }: {
+export default function CaseParties({ caseData, onSave, isExecution = false }: {
   caseData: any;
   onSave: (parties: CaseParty[]) => Promise<void>;
+  /** طلب تنفيذ: «طالب التنفيذ / المنفذ ضده» بدل «المدعي / المدعى عليه» */
+  isExecution?: boolean;
 }) {
   const parties = partiesOf(caseData);
+  const L = partyLabels(isExecution);
+  const roleLabel: Record<PartyRole, string> = { PLAINTIFF: L.PLAINTIFF, DEFENDANT: L.DEFENDANT };
   const [editing, setEditing] = useState<CaseParty | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -104,7 +108,7 @@ export default function CaseParties({ caseData, onSave }: {
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-gray-900">{heading}</h3>
+          <h3 className="text-xl font-bold text-gray-900">{heading}</h3>
           <button
             onClick={() => setEditing({ id: newId(), name: "", role, nationalId: "", nationality: "سعودي" })}
             disabled={saving}
@@ -120,12 +124,12 @@ export default function CaseParties({ caseData, onSave }: {
 
         {list.map((p) =>
           editing?.id === p.id
-            ? <PartyForm key={p.id} value={editing} onChange={setEditing} onSubmit={submit} onCancel={() => setEditing(null)} saving={saving} />
-            : <PartyCard key={p.id} p={p} onEdit={() => setEditing(p)} onDelete={() => remove(p)} disabled={saving} />
+            ? <PartyForm key={p.id} value={editing} onChange={setEditing} onSubmit={submit} onCancel={() => setEditing(null)} saving={saving} roleLabel={roleLabel} />
+            : <PartyCard key={p.id} p={p} onEdit={() => setEditing(p)} onDelete={() => remove(p)} disabled={saving} roleLabel={roleLabel} />
         )}
 
         {addingHere && editing && (
-          <PartyForm value={editing} onChange={setEditing} onSubmit={submit} onCancel={() => setEditing(null)} saving={saving} />
+          <PartyForm value={editing} onChange={setEditing} onSubmit={submit} onCancel={() => setEditing(null)} saving={saving} roleLabel={roleLabel} />
         )}
       </div>
     );
@@ -133,10 +137,10 @@ export default function CaseParties({ caseData, onSave }: {
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
-      <h2 className="text-xl font-bold text-[#1a9a45]">أطراف الدعوى</h2>
+      <h2 className="text-xl font-bold text-[#1a9a45]">{isExecution ? "أطراف الطلب" : "أطراف الدعوى"}</h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {column("PLAINTIFF", "قائمة المدعين")}
-        {column("DEFENDANT", "قائمة المدعى عليهم")}
+        {column("PLAINTIFF", `قائمة ${L.plaintiffs}`)}
+        {column("DEFENDANT", `قائمة ${L.defendants}`)}
       </div>
     </div>
   );
@@ -144,21 +148,21 @@ export default function CaseParties({ caseData, onSave }: {
 
 function Chip({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex items-center px-3 py-1 rounded-full border border-gray-200 bg-white text-xs text-gray-600 whitespace-nowrap">
+    <span className="inline-flex items-center px-3 py-1 rounded-full border border-gray-200 bg-white text-sm font-medium text-gray-700 whitespace-nowrap">
       {children}
     </span>
   );
 }
 
-function PartyCard({ p, onEdit, onDelete, disabled }: {
-  p: CaseParty; onEdit: () => void; onDelete: () => void; disabled: boolean;
+function PartyCard({ p, onEdit, onDelete, disabled, roleLabel }: {
+  p: CaseParty; onEdit: () => void; onDelete: () => void; disabled: boolean; roleLabel: Record<PartyRole, string>;
 }) {
   return (
-    <div className="group rounded-md bg-gray-50/70 border border-gray-200 shadow-sm px-4 py-3 space-y-3">
+    <div className="group rounded-lg bg-gray-50/70 border border-gray-200 shadow-sm px-5 py-4 space-y-3">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <h4 className="text-base font-bold text-gray-900 truncate">{p.name}</h4>
-          {p.isClient && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#D4AF37]/15 text-[#8a6d12]">العميل</span>}
+          <h4 className="text-lg font-bold text-gray-900 truncate">{p.name}</h4>
+          {p.isClient && <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#D4AF37]/15 text-[#8a6d12]">العميل</span>}
         </div>
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition">
           <button onClick={onEdit} disabled={disabled} title="تعديل"
@@ -172,14 +176,14 @@ function PartyCard({ p, onEdit, onDelete, disabled }: {
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
-        <Chip>{ROLE_LABEL[p.role]}</Chip>
+        <Chip>{roleLabel[p.role]}</Chip>
         {p.nationalId && <Chip>الهوية الوطنية: {p.nationalId}</Chip>}
         {p.nationality && <Chip>الجنسية: {p.nationality}</Chip>}
       </div>
       {p.representativeName && (
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-gray-200 pt-2.5 text-sm">
-          <Briefcase size={14} className="shrink-0 text-[#1a9a45]" />
-          <span className="text-gray-500">الممثل:</span>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-t border-gray-200 pt-3 text-base">
+          <Briefcase size={17} className="shrink-0 text-[#1a9a45]" />
+          <span className="text-gray-500">الصفة:</span>
           <span className="font-bold text-gray-900">{p.representativeName}</span>
           {p.representativeType && <Chip>{p.representativeType}</Chip>}
           {p.representativeNumber && <Chip>رقم الرخصة / الوكالة: {p.representativeNumber}</Chip>}
@@ -189,12 +193,13 @@ function PartyCard({ p, onEdit, onDelete, disabled }: {
   );
 }
 
-function PartyForm({ value, onChange, onSubmit, onCancel, saving }: {
+function PartyForm({ value, onChange, onSubmit, onCancel, saving, roleLabel }: {
   value: CaseParty;
   onChange: (p: CaseParty) => void;
   onSubmit: (p: CaseParty) => void;
   onCancel: () => void;
   saving: boolean;
+  roleLabel: Record<PartyRole, string>;
 }) {
   const input = "w-full h-9 px-3 rounded-md border border-gray-300 text-sm bg-white focus:outline-none focus:border-[#1a9a45] focus:ring-1 focus:ring-[#1a9a45]";
   return (
@@ -203,7 +208,7 @@ function PartyForm({ value, onChange, onSubmit, onCancel, saving }: {
       className="rounded-md border-2 border-[#bfe3d6] bg-white px-4 py-3 space-y-2.5"
     >
       <div className="flex items-center gap-2 text-sm font-bold text-[#133B2E]">
-        <UserRound size={15} /> {ROLE_LABEL[value.role]}
+        <UserRound size={15} /> {roleLabel[value.role]}
       </div>
       <input autoFocus required placeholder="الاسم الكامل" className={input}
         value={value.name} onChange={(e) => onChange({ ...value, name: e.target.value })} />
@@ -219,9 +224,9 @@ function PartyForm({ value, onChange, onSubmit, onCancel, saving }: {
       </label>
       <div className="space-y-2 border-t border-gray-100 pt-2.5">
         <div className="flex items-center gap-2 text-xs font-bold text-[#133B2E]">
-          <Briefcase size={13} /> ممثل {ROLE_LABEL[value.role]} (اختياري)
+          <Briefcase size={13} /> صفة {roleLabel[value.role]} (اختياري)
         </div>
-        <input placeholder="اسم الممثل" className={input}
+        <input placeholder="الصفة (مثال: مباشر بدون محامي، أو اسم الوكيل)" className={input}
           value={value.representativeName || ""} onChange={(e) => onChange({ ...value, representativeName: e.target.value })} />
         <div className="grid grid-cols-2 gap-2">
           <select className={input} value={value.representativeType || REPRESENTATIVE_TYPES[0]}

@@ -16,6 +16,7 @@ import { FileSignature, ShieldCheck } from "lucide-react";
 import { createContractFromDocument } from "../lib/contractFromDocument";
 import DocumentPermissionsModal from "../components/DocumentPermissionsModal";
 import { normalizeRole } from "../lib/roles";
+import { caseTypeLabel } from "../lib/caseTypes";
 import {
   CONFIDENTIALITY_COLORS, CONFIDENTIALITY_SHORT_AR, canManageDocument, confidentialityOf,
   filterReadable, isArchived, logDocumentAccess, matchesSearch, onlyLatest, versionChain, versionOf as docVersion,
@@ -23,6 +24,7 @@ import {
 } from "../lib/documentAcl";
 import { useOfficeLookups } from "../lib/officeLookups";
 import { downloadWordDoc } from "../lib/wordExport";
+import { visibleCasesQuery } from "../lib/caseAccess";
 
 type ViewMode = 'CLIENTS' | 'CASES' | 'DOCS';
 type HubTab = 'ARCHIVE' | 'WORD_GENERATOR' | 'EXCEL_IMPORTER';
@@ -467,7 +469,7 @@ export default function Documents({
 
       if (userRole === "OFFICE_LAWYER") {
         const userId = localStorage.getItem("userId");
-        casesQ = query(collection(db, "cases"), where("lawyerId", "==", lawyerId), where("assignedLawyerId", "==", userId));
+        casesQ = visibleCasesQuery(lawyerId || "");
         clientsQ = query(collection(db, "clients"), where("lawyerId", "==", lawyerId));
         foldersQ = query(collection(db, "template_folders"), where("lawyerId", "==", lawyerId));
         customTemplatesQ = query(collection(db, "custom_templates"), where("lawyerId", "==", lawyerId));
@@ -943,17 +945,17 @@ export default function Documents({
             "اسم الخصم": "شركة النور التجارية",
             "محامي الخصم": "الأستاذ حسن يوسف",
             "المحكمة": "محكمة القاهرة الاقتصادية",
-            "تاريخ البداية (YYYY-MM-DD)": "2026-05-18"
+            "تاريخ القضية (YYYY-MM-DD)": "2026-05-18"
           },
           {
             "عنوان القضية": "فسخ عقد إيجار لعدم السداد",
             "رقم القضية": "١٢٩٣ / ٢٠٢٦",
             "اسم العميل": "شركة الأمل للمقاولات",
-            "نوع القضية": "مدني",
+            "نوع القضية": "عامة",
             "اسم الخصم": "حسام عبد الرحيم",
             "محامي الخصم": "",
             "المحكمة": "محكمة الجيزة الابتدائية",
-            "تاريخ البداية (YYYY-MM-DD)": "2026-04-10"
+            "تاريخ القضية (YYYY-MM-DD)": "2026-04-10"
           }
         ];
         filename = "نموذج_استيراد_القضايا.xlsx";
@@ -1178,11 +1180,11 @@ export default function Documents({
             title: row["عنوان القضية"] || "قضية مستوردة",
             caseNumber: String(row["رقم القضية"] || ""),
             clientId,
-            type: row["نوع القضية"] || "مدني",
+            type: caseTypeLabel(row["نوع القضية"]) || "عامة",
             opponentName: row["اسم الخصم"] || "",
             opponentLawyer: row["محامي الخصم"] || "",
             courtName: row["المحكمة"] || "",
-            startDate: row["تاريخ البداية (YYYY-MM-DD)"] || new Date().toISOString().split('T')[0],
+            startDate: row["تاريخ القضية (YYYY-MM-DD)"] || row["تاريخ البداية (YYYY-MM-DD)"] || new Date().toISOString().split('T')[0],
             status: "OPEN",
             lawyerId,
             createdAt: new Date().toISOString(),

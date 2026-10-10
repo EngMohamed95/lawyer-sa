@@ -172,7 +172,7 @@ export default function HearingDetails() {
       <Card className="shadow-sm border-gray-200">
         <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
           <Calendar className="w-5 h-5 text-[#D4AF37]" />
-          <CardTitle className="text-lg text-[#133B2E]">بيانات الجلسة</CardTitle>
+          <CardTitle className="text-lg text-[#133B2E]">معلومات الجلسة</CardTitle>
         </CardHeader>
         <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <InfoField
@@ -205,11 +205,11 @@ export default function HearingDetails() {
       <Card className="shadow-sm border-gray-200">
         <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
           <Scale className="w-5 h-5 text-[#D4AF37]" />
-          <CardTitle className="text-lg text-[#133B2E]">الالتمسات والقرار</CardTitle>
+          <CardTitle className="text-lg text-[#133B2E]">ملخص الجلسة والقرار</CardTitle>
         </CardHeader>
         <CardContent className="p-6 space-y-4">
-          <InfoField label="الالتمسات / ما تم فيها" value={hearing.requiredActions} />
-          <InfoField label="طلبات القاضي" value={hearing.judgeRequests} />
+          <InfoField label="ملخص الجلسة" value={hearing.requiredActions} />
+          <InfoField label="الإجراء القادم" value={hearing.judgeRequests} />
           <InfoField label="قرار الجلسة (النتيجة)" value={hearing.result} />
         </CardContent>
       </Card>

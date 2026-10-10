@@ -4,11 +4,14 @@
  * من المصدر الموحّد نفسه الذي يبني صفحة التقويم الكاملة.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
-import { CalendarDays, ChevronLeft, ChevronRight, Gavel } from "lucide-react";
+import { CalendarDays, CalendarPlus, CheckSquare, ChevronLeft, ChevronRight, Gavel, Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { usePermissions } from "../lib/usePermissions";
+import { AddHearingModal } from "./AddHearingModal";
+import { AddTaskModal } from "./AddTaskModal";
+import AddAppointmentModal from "./AddAppointmentModal";
 import {
   SOURCE_DOT, SOURCE_LABELS_AR, WEEKDAYS_AR,
   addDays, aggregateCalendar, dayKey, endOfMonth, groupByDay, monthGrid, monthLabel,
@@ -27,6 +30,25 @@ export default function DashboardCalendar() {
   const [selectedKey, setSelectedKey] = useState(todayKey);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // الإضافة من التقويم — بتاريخ اليوم المختار، وتُحفظ في مكانها الأصلي (القضية/المهام/المواعيد)
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [adding, setAdding] = useState<"hearing" | "task" | "appointment" | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const addOptions = [
+    { kind: "hearing" as const, label: "جلسة", icon: Gavel, allowed: perms.can("hearing.manage") },
+    { kind: "task" as const, label: "مهمة", icon: CheckSquare, allowed: perms.can("task.manage") },
+    { kind: "appointment" as const, label: "موعد", icon: CalendarPlus, allowed: perms.can("appointment.manage") },
+  ].filter((o) => o.allowed);
+  const onAdded = () => { setAdding(null); setReloadKey((k) => k + 1); };
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const close = (e: MouseEvent) => { if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false); };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [menuOpen]);
 
   useEffect(() => {
     if (!canView || !perms.lawyerId) { setLoading(false); return; }
@@ -49,10 +71,10 @@ export default function DashboardCalendar() {
           if (!cancelled) setLoading(false);
         }
       })();
-    }, 1200);
+    }, reloadKey ? 0 : 1200);
 
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [perms.lawyerId, canView, anchor.getFullYear(), anchor.getMonth()]);
+  }, [perms.lawyerId, canView, anchor.getFullYear(), anchor.getMonth(), reloadKey]);
 
   const byDay = useMemo(() => groupByDay(events), [events]);
   const days = useMemo(() => monthGrid(anchor), [anchor]);
@@ -119,6 +141,8 @@ export default function DashboardCalendar() {
               const hasHearing = list.some((e) => e.source === "hearing");
               return (
                 <button key={key} onClick={() => setSelectedKey(key)}
+                  onDoubleClick={() => { setSelectedKey(key); if (addOptions.length) setMenuOpen(true); }}
+                  title="ضغطتان للإضافة في هذا اليوم"
                   className={`h-16 border-b border-l border-slate-100 p-1.5 flex flex-col items-center gap-1 transition ${
                     isSelected ? "bg-[#133B2E]/5 ring-2 ring-inset ring-[#133B2E]"
                     : inMonth ? "bg-white hover:bg-slate-50" : "bg-slate-50/60 hover:bg-slate-100/60"
@@ -146,8 +170,27 @@ export default function DashboardCalendar() {
 
         {/* أحداث اليوم المختار */}
         <div className="flex flex-col min-h-[240px]">
-          <div className="px-4 py-3 border-b border-slate-100">
+          <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-2">
             <p className="text-sm font-bold text-[#133B2E]">{selectedKey === todayKey ? "اليوم — " : ""}{dayTitle(selectedKey)}</p>
+            {addOptions.length > 0 && (
+              <div className="relative" ref={menuRef}>
+                <button onClick={() => setMenuOpen((o) => !o)} aria-expanded={menuOpen}
+                  className="flex items-center gap-1 px-2.5 h-8 rounded-lg bg-[#133B2E] text-[#D4AF37] text-xs font-bold hover:bg-[#133B2E]/90 transition">
+                  <Plus size={14} /> إضافة
+                </button>
+                {menuOpen && (
+                  <div className="absolute left-0 top-9 z-20 w-40 rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                    <p className="px-3 py-1.5 text-[10px] text-slate-400">في {dayTitle(selectedKey)}</p>
+                    {addOptions.map((o) => (
+                      <button key={o.kind} onClick={() => { setMenuOpen(false); setAdding(o.kind); }}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-[#133B2E] hover:bg-slate-50">
+                        <o.icon size={15} className="text-[#D4AF37]" /> {o.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           {loading ? (
             <p className="p-6 text-center text-sm text-slate-400">جاري التحميل...</p>
@@ -166,6 +209,12 @@ export default function DashboardCalendar() {
           )}
         </div>
       </CardContent>
+
+      <AddHearingModal isOpen={adding === "hearing"} onClose={() => setAdding(null)} onSuccess={onAdded} defaultDate={selectedKey} />
+      <AddTaskModal isOpen={adding === "task"} onClose={() => setAdding(null)} onSuccess={onAdded} defaultDate={selectedKey} />
+      {adding === "appointment" && (
+        <AddAppointmentModal onClose={() => setAdding(null)} onDone={onAdded} existing={events} defaultDate={selectedKey} />
+      )}
     </Card>
   );
 }

@@ -101,6 +101,80 @@ export function renderLetterheadFooter(profile: OfficeProfile, opts: LetterheadF
   `;
 }
 
+/* ────────────────────────── ترويسة المذكرات الرسمية ────────────────────────── */
+
+const escapeHtml = (s: string) =>
+  s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+
+/**
+ * ترويسة رسمية للمذكرات والصحف المقدَّمة للمحاكم: خلفية بيضاء، الاسم العربي يميناً،
+ * الشعار في الوسط، الاسم الإنجليزي ووسائل التواصل يساراً، وخط مزدوج ذهبي/أخضر.
+ * جداول فقط — فتظهر متطابقة في المحرر والطباعة و PDF و Word.
+ */
+export function renderMemoLetterheadHeader(profile: OfficeProfile): string {
+  const name = escapeHtml(profile.name || "مكتب المحاماة");
+  const logo = profile.logoUrl
+    ? `<img src="${escapeHtml(profile.logoUrl)}" alt="شعار المكتب" width="80" height="80" style="width:80px; height:80px; object-fit:contain; display:block; margin:0 auto;" />`
+    : `<div style="width:68px; height:68px; line-height:64px; margin:0 auto; border:2px solid ${BRAND_GOLD}; border-radius:50%; text-align:center; font-size:26pt; font-weight:bold; color:${BRAND_DARK}; font-family:'Amiri',serif;">${escapeHtml(initial(profile))}</div>`;
+
+  const arLines = [
+    profile.licenseNumber && `ترخيص مزاولة المحاماة رقم: ${escapeHtml(profile.licenseNumber)}`,
+    profile.crNumber && `السجل التجاري: ${escapeHtml(profile.crNumber)}`,
+  ].filter(Boolean);
+  const enLines = [
+    profile.phone && `Tel: ${escapeHtml(profile.phone)}`,
+    profile.phone2 && `Tel: ${escapeHtml(profile.phone2)}`,
+    profile.email && escapeHtml(profile.email),
+  ].filter(Boolean);
+
+  return `
+    <div style="font-family:'Tajawal',sans-serif; direction:rtl; padding:26px 36px 0; background:#fff;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <tr>
+          <td style="width:40%; vertical-align:middle; text-align:right;">
+            <div style="font-size:17pt; font-weight:bold; color:${BRAND_DARK}; line-height:1.3;">${name}</div>
+            ${arLines.map((l) => `<div style="font-size:8.5pt; color:#666; margin-top:2px;">${l}</div>`).join("")}
+          </td>
+          <td style="width:20%; vertical-align:middle; text-align:center;">${logo}</td>
+          <td style="width:40%; vertical-align:middle; text-align:left; direction:ltr;">
+            ${profile.nameEn ? `<div style="font-size:13pt; font-weight:bold; color:${BRAND_DARK}; font-family:Georgia,'Times New Roman',serif; letter-spacing:0.5px; line-height:1.3;">${escapeHtml(profile.nameEn)}</div>` : ""}
+            ${enLines.map((l) => `<div style="font-size:8.5pt; color:#666; margin-top:2px; font-family:Arial,sans-serif;">${l}</div>`).join("")}
+          </td>
+        </tr>
+      </table>
+      <div style="height:3px; background:${BRAND_GOLD}; margin-top:16px;"></div>
+      <div style="height:1px; background:${BRAND_DARK}; margin-top:2px;"></div>
+    </div>
+  `;
+}
+
+/** تذييل رسمي للمذكرات: خط مزدوج، ثم العنوان والهواتف والبريد والسجل في سطر واحد، وختم اختياري */
+export function renderMemoLetterheadFooter(profile: OfficeProfile, opts: { stampUrl?: string | null } = {}): string {
+  // الأرقام في كتلة واحدة باتجاه LTR — وإلا عكس اتجاه RTL ترتيبها حول الفاصل
+  const phones = [profile.phone, profile.phone2].filter(Boolean).map((p) => escapeHtml(p));
+  const parts = [
+    profile.address && escapeHtml(profile.address),
+    phones.length && `هاتف: <span dir="ltr" style="unicode-bidi:isolate;">${phones.join(" / ")}</span>`,
+    profile.email && `<span dir="ltr">${escapeHtml(profile.email)}</span>`,
+    profile.crNumber && `س.ت: ${escapeHtml(profile.crNumber)}`,
+  ].filter(Boolean);
+
+  return `
+    <div style="font-family:'Tajawal',sans-serif; direction:rtl; padding:0 36px 22px; background:#fff;">
+      ${opts.stampUrl ? `<div style="text-align:left; padding-bottom:8px;"><img src="${escapeHtml(opts.stampUrl)}" alt="ختم المكتب" width="100" style="width:100px; opacity:0.92;" /></div>` : ""}
+      <div style="height:1px; background:${BRAND_DARK};"></div>
+      <div style="height:3px; background:${BRAND_GOLD}; margin-top:2px;"></div>
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <tr>
+          <td style="text-align:center; font-size:8.5pt; color:#555; padding-top:9px; line-height:1.7;">
+            ${parts.length ? parts.join(`<span style="color:${BRAND_GOLD}; padding:0 8px;">|</span>`) : escapeHtml(profile.name || "")}
+          </td>
+        </tr>
+      </table>
+    </div>
+  `;
+}
+
 /** نسخة متوافقة مع Word (جداول فقط، بلا Flexbox) — لتصدير .doc حصراً */
 export function renderLetterheadHeaderWordSafe(profile: OfficeProfile, opts: LetterheadHeaderOptions = {}): string {
   const logoCell = profile.logoUrl

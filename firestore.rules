@@ -163,9 +163,14 @@ service cloud.firestore {
 
     /* ────────────────────────── القضايا والعملاء ────────────────────────── */
 
-    /** المحامي (OFFICE_LAWYER) يصل للقضايا المكلَّف بها فقط؛ باقي الأدوار بلا قيد إضافي */
+    /**
+     * المحامي (OFFICE_LAWYER) يصل للقضايا المكلَّف بها فقط؛ باقي الأدوار بلا قيد إضافي.
+     * القضية قد يتولاها أكثر من محامٍ (assignedLawyerIds)، والقضايا القديمة تحمل assignedLawyerId فقط.
+     */
     function caseAssignedToMe(caseData) {
-      return myRole() != 'OFFICE_LAWYER' || caseData.get('assignedLawyerId', '') == request.auth.uid;
+      return myRole() != 'OFFICE_LAWYER'
+        || caseData.get('assignedLawyerId', '') == request.auth.uid
+        || request.auth.uid in caseData.get('assignedLawyerIds', []);
     }
 
     match /cases/{caseId} {

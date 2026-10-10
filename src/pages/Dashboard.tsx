@@ -27,6 +27,7 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { db } from "../lib/firebase";
+import { visibleCasesQuery } from "../lib/caseAccess";
 
 type RecentCase = {
   id: string;
@@ -86,7 +87,7 @@ export default function Dashboard() {
           casesQ = collection(db, "cases");
         } else if (isOfficeLawyer) {
           const userId = localStorage.getItem("userId");
-          casesQ = query(collection(db, "cases"), where("lawyerId", "==", lawyerId), where("assignedLawyerId", "==", userId));
+          casesQ = visibleCasesQuery(lawyerId || "");
         } else {
           casesQ = query(collection(db, "cases"), where("lawyerId", "==", lawyerId));
         }
@@ -136,7 +137,7 @@ export default function Dashboard() {
         const getClientsCount = async () => {
           if (isOfficeLawyer) {
             const userId = localStorage.getItem("userId");
-            const casesSnap = await getDocs(query(collection(db, "cases"), where("lawyerId", "==", lawyerId), where("assignedLawyerId", "==", userId)));
+            const casesSnap = await getDocs(visibleCasesQuery(lawyerId || ""));
             const clientIds = new Set(casesSnap.docs.map(doc => doc.data().clientId).filter(Boolean));
             return clientIds.size;
           }

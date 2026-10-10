@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { Building2, UploadCloud, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { usePermissions } from "../../lib/usePermissions";
 import { useOfficeSettings, saveOfficeProfile, type OfficeProfile } from "../../lib/officeSettings";
+import { renderMemoLetterheadFooter, renderMemoLetterheadHeader } from "../../lib/letterhead";
 
 export default function OfficeProfileCard() {
   const perms = usePermissions();
@@ -102,6 +103,12 @@ export default function OfficeProfileCard() {
           className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#133B2E] text-sm disabled:bg-gray-50" />
       </div>
       <div className="space-y-2">
+        <label className="text-xs font-bold text-gray-600">اسم المكتب بالإنجليزية (اختياري)</label>
+        <input type="text" dir="ltr" disabled={!canManage} value={profile.nameEn} placeholder="e.g. Al-Riyadh Law Firm"
+          onChange={(e) => setProfile((p) => ({ ...p, nameEn: e.target.value }))}
+          className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#133B2E] text-sm disabled:bg-gray-50" />
+      </div>
+      <div className="space-y-2">
         <label className="text-xs font-bold text-gray-600">العنوان</label>
         <input type="text" disabled={!canManage} value={profile.address}
           onChange={(e) => setProfile((p) => ({ ...p, address: e.target.value }))}
@@ -115,10 +122,38 @@ export default function OfficeProfileCard() {
             className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#133B2E] text-sm disabled:bg-gray-50" />
         </div>
         <div className="space-y-2">
+          <label className="text-xs font-bold text-gray-600">رقم هاتف آخر (اختياري)</label>
+          <input type="text" dir="ltr" disabled={!canManage} value={profile.phone2}
+            onChange={(e) => setProfile((p) => ({ ...p, phone2: e.target.value }))}
+            className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#133B2E] text-sm disabled:bg-gray-50" />
+        </div>
+        <div className="space-y-2 col-span-2">
+          <label className="text-xs font-bold text-gray-600">البريد الإلكتروني (اختياري)</label>
+          <input type="email" dir="ltr" disabled={!canManage} value={profile.email}
+            onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
+            className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#133B2E] text-sm disabled:bg-gray-50" />
+        </div>
+        <div className="space-y-2">
           <label className="text-xs font-bold text-gray-600">السجل التجاري</label>
           <input type="text" dir="ltr" disabled={!canManage} value={profile.crNumber}
             onChange={(e) => setProfile((p) => ({ ...p, crNumber: e.target.value }))}
             className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#133B2E] text-sm disabled:bg-gray-50" />
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-gray-600">رقم ترخيص المحاماة (اختياري)</label>
+          <input type="text" dir="ltr" disabled={!canManage} value={profile.licenseNumber}
+            onChange={(e) => setProfile((p) => ({ ...p, licenseNumber: e.target.value }))}
+            className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#133B2E] text-sm disabled:bg-gray-50" />
+        </div>
+      </div>
+
+      {/* معاينة حيّة لترويسة المذكرات وتذييلها كما ستظهر في المحرر والطباعة */}
+      <div className="space-y-1.5">
+        <span className="text-xs font-bold text-gray-600">معاينة ترويسة المذكرات</span>
+        <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div dangerouslySetInnerHTML={{ __html: renderMemoLetterheadHeader(profile) }} />
+          <div className="h-16" />
+          <div dangerouslySetInnerHTML={{ __html: renderMemoLetterheadFooter(profile) }} />
         </div>
       </div>
 

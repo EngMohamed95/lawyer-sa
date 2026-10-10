@@ -1,16 +1,19 @@
 /**
- * قسم «الأحكام» بتصميم ناجز — كل حكم بطاقة (نهائي / غير نهائي) برقم الصك وتاريخه.
+ * قسم «الأحكام» — كل حكم بطاقة (نهائي / غير نهائي) برقم الصك وتاريخه، ومرفقات متعددة.
  *
  * الأحكام تُحفظ في `cases/{id}.judgments`. الحقل القديم `finalJudgment` (حكم واحد)
- * يبقى مُزامَناً مع آخر حكم نهائي لأن تبويب التنفيذ وتقرير الحالة يقرآن منه.
+ * يبقى مُزامَناً مع آخر حكم نهائي لأن تقرير الحالة يقرأ منه، وfileUrl/fileName
+ * لكل حكم يبقيان مساويين لأول مرفق لنفس السبب.
  */
 
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
-import {
-  AlertCircle, EllipsisVertical, Eye, File, Gavel, Loader2, Pencil, Plus, Sparkles, Trash2,
-} from "lucide-react";
-import { formatHijri } from "../lib/calendar";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { AlertCircle, Eye, Gavel, Loader2, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
+import { formatGregorian } from "../lib/calendar";
 import { COURT_DEGREE_LABELS_AR, type CourtDegree } from "../lib/caseRequests";
+import {
+  AttachmentChips, AttachmentPicker, AttachmentSearch, attachmentsOf, matchesAttachmentSearch, uploadNewFiles,
+  type Attachment, type PendingFile,
+} from "./AttachmentPicker";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -30,8 +33,10 @@ export interface CaseJudgment {
   objectionDeadline: string;
   ruling: string;
   details: string;
+  /** أول مرفق — للتوافق مع finalJudgment وتقرير الحالة */
   fileUrl: string;
   fileName: string;
+  attachments?: Attachment[];
 }
 
 /** الأحكام المحفوظة، أو الحكم القديم المفرد محوَّلاً إلى القائمة */
@@ -72,6 +77,15 @@ const addDaysTo = (date: string, n: number) => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 };
 
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-xs text-[#1a9a45]">{label}</dt>
+      <dd className="text-sm font-medium text-gray-900 truncate">{children}</dd>
+    </div>
+  );
+}
+
 export default function CaseJudgments({ caseData, onSave, onAnalyze }: {
   caseData: any;
   onSave: (list: CaseJudgment[]) => Promise<void>;
@@ -81,11 +95,12 @@ export default function CaseJudgments({ caseData, onSave, onAnalyze }: {
   const [editing, setEditing] = useState<CaseJudgment | null>(null);
   const [viewing, setViewing] = useState<CaseJudgment | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [search, setSearch] = useState("");
 
   const blank = (): CaseJudgment => ({
     id: newId(), isFinal: false, deedNumber: "", judgmentDate: "",
     court: caseData?.courtName || "", circuit: caseData?.courtCircle || "", degree: "FIRST",
-    objectionDeadline: "", ruling: "", details: "", fileUrl: "", fileName: "",
+    objectionDeadline: "", ruling: "", details: "", fileUrl: "", fileName: "", attachments: [],
   });
 
   const remove = async (j: CaseJudgment) => {
@@ -98,23 +113,29 @@ export default function CaseJudgments({ caseData, onSave, onAnalyze }: {
   };
 
   const sorted = [...judgments].sort((a, b) => (b.judgmentDate || "").localeCompare(a.judgmentDate || ""));
+  const shown = sorted.filter((j) => matchesAttachmentSearch(attachmentsOf(j), search));
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold text-[#1a9a45]">الأحكام</h2>
-        <Button size="sm" className="bg-[#133B2E] hover:bg-[#133B2E]/90"
-          onClick={() => { setEditing(null); setIsFormOpen(true); }}>
-          <Plus className="ml-2 h-4 w-4" /> إضافة حكم
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {sorted.length > 0 && <AttachmentSearch value={search} onChange={setSearch} />}
+          <Button size="sm" className="bg-[#133B2E] hover:bg-[#133B2E]/90"
+            onClick={() => { setEditing(null); setIsFormOpen(true); }}>
+            <Plus className="ml-2 h-4 w-4" /> إضافة حكم
+          </Button>
+        </div>
       </div>
 
       {sorted.length === 0 ? (
         <p className="text-center py-10 text-gray-500 border border-dashed border-gray-200 rounded-lg">لم يصدر حكم بعد</p>
+      ) : shown.length === 0 ? (
+        <p className="text-center py-10 text-gray-500 border border-dashed border-gray-200 rounded-lg">لا توجد مرفقات تطابق «{search}»</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {sorted.map((j) => (
-            <JudgmentCard key={j.id} j={j}
+        <div className="space-y-3">
+          {shown.map((j) => (
+            <JudgmentCard key={j.id} j={j} search={search}
               onView={() => setViewing(j)}
               onEdit={() => { setEditing(j); setIsFormOpen(true); }}
               onDelete={() => remove(j)} />
@@ -124,7 +145,9 @@ export default function CaseJudgments({ caseData, onSave, onAnalyze }: {
 
       <JudgmentForm
         isOpen={isFormOpen}
-        initial={editing ?? blank()}
+        initial={editing
+          ? { ...editing, court: editing.court || caseData?.courtName || "", circuit: editing.circuit || caseData?.courtCircle || "" }
+          : blank()}
         isEdit={!!editing}
         onClose={() => setIsFormOpen(false)}
         onSubmit={async (j) => {
@@ -139,84 +162,51 @@ export default function CaseJudgments({ caseData, onSave, onAnalyze }: {
   );
 }
 
-function Row({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="grid grid-cols-[6rem_1fr] gap-3 items-baseline">
-      <dt className="text-sm text-[#1a9a45]">{label}</dt>
-      <dd className="text-sm text-gray-900 truncate">{children}</dd>
-    </div>
-  );
-}
-
-function JudgmentCard({ j, onView, onEdit, onDelete }: {
-  j: CaseJudgment; onView: () => void; onEdit: () => void; onDelete: () => void;
+function JudgmentCard({ j, search, onView, onEdit, onDelete }: {
+  j: CaseJudgment; search: string; onView: () => void; onEdit: () => void; onDelete: () => void;
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const close = (e: MouseEvent) => { if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false); };
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [menuOpen]);
-
-  const item = "w-full flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50";
-
+  const accent = j.isFinal ? "border-r-[#1a9a45]" : "border-r-[#5fb8c2]";
   return (
-    <div className={`flex flex-col bg-white rounded-lg border-2 transition hover:shadow-md ${
-      j.isFinal ? "border-[#1a9a45]" : "border-[#9fd6dc]"
-    }`}>
-      <div className="flex items-start justify-between gap-2 px-4 pt-4">
-        <div className="flex items-center gap-2.5">
-          <Gavel size={26} className="text-[#1a9a45] -scale-x-100" />
-          <h3 className="text-lg font-bold text-gray-900">{j.isFinal ? "نهائي" : "غير نهائي"}</h3>
-        </div>
-        <div className="flex items-center gap-1">
-          {!j.isFinal && (
-            <span title={j.objectionDeadline ? `قابل للاعتراض حتى ${formatHijri(j.objectionDeadline)}` : "حكم غير نهائي — قابل للاعتراض"}
-              className="text-gray-500">
-              <AlertCircle size={20} />
+    <div className={`bg-white rounded-xl border border-[#bfe3d6] border-r-[5px] ${accent} transition hover:shadow-md`}>
+      <div className="flex items-start justify-between gap-3 px-4 pt-3.5">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="h-8 w-8 shrink-0 rounded-md bg-[#1a9a45] text-white flex items-center justify-center">
+            <Gavel size={16} className="-scale-x-100" />
+          </span>
+          <h3 className="text-base font-bold text-gray-900 truncate">حكم {j.isFinal ? "نهائي" : "غير نهائي"}</h3>
+          {!j.isFinal && j.objectionDeadline && (
+            <span className="shrink-0 flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-700">
+              <AlertCircle size={12} /> قابل للاعتراض حتى {formatGregorian(j.objectionDeadline)}
             </span>
           )}
-          <div className="relative" ref={menuRef}>
-            <button onClick={() => setMenuOpen((o) => !o)} aria-label="إجراءات الحكم"
-              className="h-8 w-8 flex items-center justify-center rounded-md text-gray-600 hover:bg-gray-100">
-              <EllipsisVertical size={18} />
-            </button>
-            {menuOpen && (
-              <div className="absolute left-0 top-9 z-10 w-36 rounded-lg border border-gray-200 bg-white shadow-lg py-1">
-                <button onClick={() => { setMenuOpen(false); onView(); }} className={`${item} text-gray-700`}>
-                  <Eye size={14} /> عرض المنطوق
-                </button>
-                <button onClick={() => { setMenuOpen(false); onEdit(); }} className={`${item} text-gray-700`}>
-                  <Pencil size={14} /> تعديل
-                </button>
-                <button onClick={() => { setMenuOpen(false); onDelete(); }} className={`${item} text-red-600 hover:bg-red-50`}>
-                  <Trash2 size={14} /> حذف
-                </button>
-              </div>
-            )}
-          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button onClick={onView}
+            className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-gray-200 text-sm font-bold text-[#1a9a45] hover:bg-green-50 transition">
+            <Eye size={14} /> المنطوق
+          </button>
+          <button onClick={onEdit}
+            className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-gray-200 text-sm font-bold text-[#133B2E] hover:bg-gray-50 transition">
+            <Pencil size={14} /> تعديل
+          </button>
+          <button onClick={onDelete}
+            className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-red-100 text-sm font-bold text-red-600 hover:bg-red-50 transition">
+            <Trash2 size={14} /> حذف
+          </button>
         </div>
       </div>
 
-      <button onClick={onView} className="text-right">
-        <dl className="px-4 py-3 space-y-2">
-          <Row label="رقم الصك">{j.deedNumber || "-"}</Row>
-          <Row label="تاريخ صك الحكم">{formatHijri(j.judgmentDate)}</Row>
-          <Row label="المحكمة">{j.court || "-"}</Row>
-          <Row label="الدائرة">{j.circuit || "-"}</Row>
-        </dl>
-      </button>
+      <dl className="grid grid-cols-2 lg:grid-cols-5 gap-x-5 gap-y-2.5 px-4 py-3">
+        <Field label="رقم الصك"><span dir="ltr">{j.deedNumber || "-"}</span></Field>
+        <Field label="تاريخ الحكم">{formatGregorian(j.judgmentDate)}</Field>
+        <Field label="المحكمة">{j.court || "-"}</Field>
+        <Field label="الدائرة">{j.circuit || "-"}</Field>
+        <Field label="الدرجة">{COURT_DEGREE_LABELS_AR[j.degree] || "-"}</Field>
+      </dl>
 
-      <div className="mt-auto flex items-center justify-between gap-2 border-t border-gray-100 px-4 py-2.5 text-xs">
-        <span className="text-[#1a9a45]/80">{COURT_DEGREE_LABELS_AR[j.degree] || ""}</span>
-        {!j.isFinal && j.objectionDeadline && (
-          <span className="text-gray-500">
-            <span className="text-[#1a9a45]">انتهاء المدة الاعتراضية</span> {formatHijri(j.objectionDeadline)}
-          </span>
-        )}
+      <div className="space-y-2 border-t border-gray-100 px-4 py-2.5">
+        {j.ruling && <p className="line-clamp-2 text-sm leading-relaxed text-gray-800 font-serif">{j.ruling}</p>}
+        <AttachmentChips files={attachmentsOf(j)} highlight={search} />
       </div>
     </div>
   );
@@ -238,20 +228,15 @@ function JudgmentDetails({ j, onClose, onAnalyze }: {
             </DialogHeader>
             <div className="space-y-4 py-2 text-sm">
               <div className="grid grid-cols-2 gap-3 text-gray-700">
-                <p><span className="text-gray-500">تاريخ الصك: </span>{formatHijri(j.judgmentDate)}</p>
+                <p><span className="text-gray-500">تاريخ الحكم: </span>{formatGregorian(j.judgmentDate)}</p>
                 <p><span className="text-gray-500">الدرجة: </span>{COURT_DEGREE_LABELS_AR[j.degree]}</p>
                 <p><span className="text-gray-500">المحكمة: </span>{j.court || "-"}</p>
                 <p><span className="text-gray-500">الدائرة: </span>{j.circuit || "-"}</p>
                 {!j.isFinal && j.objectionDeadline && (
-                  <p className="col-span-2 text-amber-700 font-bold">انتهاء المدة الاعتراضية: {formatHijri(j.objectionDeadline)}</p>
+                  <p className="col-span-2 text-amber-700 font-bold">انتهاء المدة الاعتراضية: {formatGregorian(j.objectionDeadline)}</p>
                 )}
               </div>
-              {j.fileName && (
-                <a href={j.fileUrl} target="_blank" rel="noreferrer" download
-                  className="flex items-center gap-2 text-blue-600 underline font-semibold">
-                  <File size={15} className="text-green-600" /> {j.fileName}
-                </a>
-              )}
+              <AttachmentChips files={attachmentsOf(j)} />
               <div className="space-y-1.5">
                 <p className="font-bold text-gray-500">منطوق الحكم</p>
                 <p className="whitespace-pre-wrap leading-relaxed bg-gray-50 rounded-lg border border-gray-100 p-3 font-serif">{j.ruling || "—"}</p>
@@ -285,10 +270,16 @@ function JudgmentForm({ isOpen, initial, isEdit, onClose, onSubmit }: {
   onSubmit: (j: CaseJudgment) => Promise<void>;
 }) {
   const [form, setForm] = useState<CaseJudgment>(initial);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<Attachment[]>([]);
+  const [newFiles, setNewFiles] = useState<PendingFile[]>([]);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { if (isOpen) { setForm(initial); setFile(null); } }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!isOpen) return;
+    setForm(initial);
+    setFiles(attachmentsOf(initial));
+    setNewFiles([]);
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = <K extends keyof CaseJudgment>(k: K, v: CaseJudgment[K]) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -306,19 +297,10 @@ function JudgmentForm({ isOpen, initial, isEdit, onClose, onSubmit }: {
     e.preventDefault();
     setSaving(true);
     try {
-      let { fileUrl, fileName } = form;
-      if (file) {
-        const fd = new FormData();
-        fd.append("file", file);
-        const res = await fetch("/upload.php", { method: "POST", body: fd });
-        if (!res.ok) throw new Error("فشل رفع صك الحكم");
-        const json = await res.json();
-        if (json.error) throw new Error(json.error);
-        fileUrl = json.fileUrl;
-        fileName = file.name;
-      }
+      const attachments = await uploadNewFiles(files, newFiles);
       await onSubmit({
-        ...form, fileUrl, fileName,
+        ...form, attachments,
+        fileUrl: attachments[0]?.url || "", fileName: attachments[0]?.fileName || attachments[0]?.name || "",
         deedNumber: form.deedNumber.trim(),
         objectionDeadline: form.isFinal ? "" : form.objectionDeadline,
       });
@@ -354,16 +336,18 @@ function JudgmentForm({ isOpen, initial, isEdit, onClose, onSubmit }: {
               <Input value={form.deedNumber} onChange={(e) => set("deedNumber", e.target.value)} dir="ltr" />
             </div>
             <div className="space-y-2">
-              <label className={label}>تاريخ صك الحكم *</label>
+              <label className={label}>تاريخ الحكم *</label>
               <Input type="date" required value={form.judgmentDate} onChange={(e) => setDate(e.target.value)} />
             </div>
             <div className="space-y-2">
               <label className={label}>المحكمة</label>
-              <Input value={form.court} onChange={(e) => set("court", e.target.value)} />
+              <Input value={form.court} readOnly tabIndex={-1} className="bg-gray-100 text-gray-700 cursor-not-allowed"
+                title="تُسحب من بيانات القضية — عدّلها من ملف القضية" />
             </div>
             <div className="space-y-2">
               <label className={label}>الدائرة</label>
-              <Input value={form.circuit} onChange={(e) => set("circuit", e.target.value)} />
+              <Input value={form.circuit} readOnly tabIndex={-1} className="bg-gray-100 text-gray-700 cursor-not-allowed"
+                title="تُسحب من بيانات القضية — عدّلها من ملف القضية" />
             </div>
             <div className="space-y-2">
               <label className={label}>الدرجة</label>
@@ -390,17 +374,21 @@ function JudgmentForm({ isOpen, initial, isEdit, onClose, onSubmit }: {
             <label className={label}>أسباب وتفاصيل الحكم (اختياري)</label>
             <Textarea rows={3} value={form.details} onChange={(e) => set("details", e.target.value)} />
           </div>
-          <div className="space-y-2">
-            <label className={label}>ملف صك الحكم (PDF / صورة)</label>
-            <Input type="file" className="bg-white" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-            {form.fileName && !file && <p className="text-xs text-gray-500">الملف الحالي: {form.fileName}</p>}
-          </div>
+
+          <AttachmentPicker
+            label="مرفقات الحكم"
+            hint="لا توجد مرفقات — أرفق صك الحكم والمستندات المتعلقة به."
+            existing={files}
+            onExistingChange={setFiles}
+            newFiles={newFiles}
+            onNewFilesChange={setNewFiles}
+          />
 
           <DialogFooter className="mt-4">
             <Button type="button" variant="outline" onClick={onClose}>إلغاء</Button>
             <Button type="submit" disabled={saving} className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white">
               {saving && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-              {isEdit ? "حفظ التعديلات" : "إضافة الحكم"}
+              {saving && newFiles.length ? "جاري رفع المرفقات..." : isEdit ? "حفظ التعديلات" : "إضافة الحكم"}
             </Button>
           </DialogFooter>
         </form>

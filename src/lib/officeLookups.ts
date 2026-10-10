@@ -12,6 +12,7 @@
 import { useCallback, useSyncExternalStore } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
+import { normalizeCaseTypes } from "./caseTypes";
 
 export interface LookupOption {
   value: string;
@@ -33,7 +34,7 @@ export interface OfficeLookups {
 }
 
 export const DEFAULT_LOOKUPS: OfficeLookups = {
-  caseTypes: ["مدني", "جنائي", "تجاري", "عمالي", "أسرة", "إداري", "تنفيذ"],
+  caseTypes: ["عامة", "جزائية", "تجارية", "عمالية", "أحوال شخصية", "إداري", "تنفيذ"],
   documentTypes: [
     { value: "POWER_OF_ATTORNEY", label: "توكيل" },
     { value: "CONTRACT", label: "عقد" },
@@ -58,8 +59,9 @@ export const DEFAULT_LOOKUPS: OfficeLookups = {
 
 function sanitize(raw: unknown): OfficeLookups {
   const src = (raw && typeof raw === "object") ? (raw as Partial<OfficeLookups>) : {};
+  // قوائم المكاتب المحفوظة بالأسماء القديمة (مدني، جنائي...) تُعرض بالأسماء المعتمدة
   const caseTypes = Array.isArray(src.caseTypes) && src.caseTypes.length > 0
-    ? src.caseTypes.filter((v): v is string => typeof v === "string" && v.trim().length > 0)
+    ? normalizeCaseTypes(src.caseTypes.filter((v): v is string => typeof v === "string" && v.trim().length > 0))
     : DEFAULT_LOOKUPS.caseTypes;
 
   const isOptionArray = (v: unknown): v is LookupOption[] =>

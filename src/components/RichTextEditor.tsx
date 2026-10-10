@@ -11,6 +11,9 @@ interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  /** ترويسة وتذييل HTML تُعرض داخل الورقة للمعاينة فقط — لا تُحرَّر ولا تدخل في value */
+  headerHtml?: string;
+  footerHtml?: string;
 }
 
 const FONTS = [
@@ -83,7 +86,8 @@ const extractContent = (html: string) => {
   return html;
 };
 
-export default function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
+export default function RichTextEditor({ value, onChange, placeholder, headerHtml, footerHtml }: RichTextEditorProps) {
+  const framed = !!(headerHtml || footerHtml);
   const editorRef = useRef<HTMLDivElement>(null);
   const [borderStyle, setBorderStyle] = useState<'none' | 'solid' | 'double' | 'gold'>('none');
   const [showTableModal, setShowTableModal] = useState(false);
@@ -467,16 +471,25 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
 
       {/* Page Canvas Container with Borders Applied */}
       <div className="p-4 bg-gray-50/30 overflow-x-auto min-h-[550px]">
-        {/* Editable Sheet Workspace */}
-        <div
-          ref={editorRef}
-          contentEditable
-          onInput={handleInput}
-          className={`min-h-[500px] outline-none focus:outline-none bg-white text-sm leading-relaxed text-gray-800 dir-rtl prose prose-slate max-w-none transition-all duration-300 rounded-2xl shadow-sm ${getBorderClassName(borderStyle)}`}
-          // div لا يقبل السمة placeholder — الصيغة الصحيحة لمحرّر contentEditable هي data-placeholder
-          data-placeholder={placeholder}
-          style={{ direction: 'rtl', textAlign: 'right', fontFamily: "'Tajawal', sans-serif" }}
-        />
+        {/* مع ترويسة/تذييل: الإطار يلفّ الورقة كلها بلا حشوة، والحشوة على منطقة الكتابة فقط.
+            بدونهما: السلوك الأصلي كما هو (الإطار والحشوة على منطقة الكتابة) */}
+        <div className={framed ? `bg-white rounded-2xl shadow-sm overflow-hidden ${getBorderClassName(borderStyle).replace(/\bp-8\b/, "")}` : ""}>
+          {/* الترويسة — للمعاينة فقط، خارج المنطقة القابلة للتحرير */}
+          {headerHtml && <div className="select-none" contentEditable={false} dangerouslySetInnerHTML={{ __html: headerHtml }} />}
+
+          {/* Editable Sheet Workspace */}
+          <div
+            ref={editorRef}
+            contentEditable
+            onInput={handleInput}
+            className={`${framed ? "min-h-[420px] px-9 py-6" : `min-h-[500px] rounded-2xl shadow-sm ${getBorderClassName(borderStyle)}`} outline-none focus:outline-none bg-white text-sm leading-relaxed text-gray-800 dir-rtl prose prose-slate max-w-none transition-all duration-300`}
+            // div لا يقبل السمة placeholder — الصيغة الصحيحة لمحرّر contentEditable هي data-placeholder
+            data-placeholder={placeholder}
+            style={{ direction: 'rtl', textAlign: 'right', fontFamily: "'Tajawal', sans-serif" }}
+          />
+
+          {footerHtml && <div className="select-none" contentEditable={false} dangerouslySetInnerHTML={{ __html: footerHtml }} />}
+        </div>
       </div>
 
     </div>

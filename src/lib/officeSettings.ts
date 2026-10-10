@@ -19,14 +19,20 @@ export type PermissionOverrides = Partial<Record<Role, Partial<Record<Permission
 /** مطبوعات المكتب — تُستخدم كترويسة على التقارير والمستندات الرسمية المطبوعة */
 export interface OfficeProfile {
   name: string;
+  /** الاسم بالإنجليزية — يظهر في الجهة اليسرى من ترويسة المذكرات */
+  nameEn: string;
   address: string;
   phone: string;
+  phone2: string;
+  email: string;
   crNumber: string;
+  /** رقم ترخيص مزاولة المحاماة */
+  licenseNumber: string;
   logoUrl: string | null;
 }
 
 export const EMPTY_OFFICE_PROFILE: OfficeProfile = {
-  name: "", address: "", phone: "", crNumber: "", logoUrl: null,
+  name: "", nameEn: "", address: "", phone: "", phone2: "", email: "", crNumber: "", licenseNumber: "", logoUrl: null,
 };
 
 export interface OfficeSettings {
@@ -198,9 +204,13 @@ function sanitizeOfficeProfile(raw: unknown): OfficeProfile {
   const src = (raw && typeof raw === "object") ? (raw as Partial<OfficeProfile>) : {};
   return {
     name: str(src.name),
+    nameEn: str(src.nameEn),
     address: str(src.address),
     phone: str(src.phone),
+    phone2: str(src.phone2),
+    email: str(src.email),
     crNumber: str(src.crNumber),
+    licenseNumber: str(src.licenseNumber),
     logoUrl: sanitizeStampUrl(src.logoUrl),
   };
 }

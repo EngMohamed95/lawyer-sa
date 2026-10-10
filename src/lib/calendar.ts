@@ -353,7 +353,7 @@ function nextHearingToEvent(n: NextHearing, caseTitle: string): CalendarEvent {
     id: `hn_${n.id}`,
     source: "hearing",
     title: `الجلسة القادمة — ${caseTitle}`,
-    subtitle: [n.court || null, n.judgeRequests ? `طلبات القاضي: ${n.judgeRequests}` : null].filter(Boolean).join(" · ") || null,
+    subtitle: [n.court || null, n.judgeRequests ? `الإجراء القادم: ${n.judgeRequests}` : null].filter(Boolean).join(" · ") || null,
     start: `${n.date}T09:00:00`,
     end: `${n.date}T10:00:00`,
     allDay: true,
@@ -374,7 +374,7 @@ function hearingToEvent(h: Record<string, unknown> & { id: string }, caseTitle: 
     subtitle: [
       str(h.court) || null,
       str(h.requiredActions) || null,
-      judgeRequests ? `طلبات القاضي: ${judgeRequests}` : null,
+      judgeRequests ? `الإجراء القادم: ${judgeRequests}` : null,
     ].filter(Boolean).join(" · ") || null,
     start: date ? `${date}T09:00:00` : "",
     end: date ? `${date}T10:00:00` : "",
@@ -399,7 +399,7 @@ function requestToEvents(r: Row, caseTitle: string): CalendarEvent[] {
   const base = {
     source: "request" as const,
     allDay: true,
-    href: caseId ? `/app/cases/${caseId}?tab=requests` : null,
+    href: caseId ? `/app/cases/${caseId}?tab=hearings` : null,
     caseId: caseId || null,
     clientName: null,
     status: statusLabel,
@@ -704,6 +704,18 @@ export function downloadIcs(events: CalendarEvent[], filename = "lawyeros-calend
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/** التاريخ بالميلادي بشهر مكتوب، مثل «10 أكتوبر 2026» — لا لبس بين اليوم والشهر */
+export function formatGregorian(value?: string | null): string {
+  if (!value) return "-";
+  const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value);
+  if (Number.isNaN(d.getTime())) return value;
+  try {
+    return new Intl.DateTimeFormat("ar-SA-u-ca-gregory-nu-latn", { year: "numeric", month: "long", day: "numeric" }).format(d);
+  } catch {
+    return d.toLocaleDateString("en-GB");
+  }
 }
 
 /* ────────────────────────── التاريخ الهجري ────────────────────────── */

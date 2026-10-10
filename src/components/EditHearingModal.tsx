@@ -146,7 +146,7 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader className="flex flex-row justify-between items-center">
-          <DialogTitle className="text-xl font-bold text-[#133B2E]">تعديل بيانات الجلسة</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-[#133B2E]">تعديل معلومات الجلسة</DialogTitle>
           {hearingData && (
             <Button 
               type="button" 
@@ -184,37 +184,18 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
             </div>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-[#133B2E]">المحكمة / الغرفة</label>
-              <Input 
-                value={formData.court}
-                onChange={e => setFormData({...formData, court: e.target.value})}
-                placeholder="مثال: الغرفة التجارية..." 
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-[#133B2E]">الدائرة / الرول</label>
-              <Input 
-                value={formData.circuit}
-                onChange={e => setFormData({...formData, circuit: e.target.value})}
-                placeholder="مثال: دائرة ٥، رول ٢٥..." 
-              />
-            </div>
-          </div>
-
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#133B2E]">الالتمسات / ما تم فيها</label>
-            <Input 
+            <label className="text-sm font-bold text-[#133B2E]">ملخص الجلسة</label>
+            <Textarea
+               rows={3}
                value={formData.requiredActions}
                onChange={e => setFormData({...formData, requiredActions: e.target.value})}
-               placeholder="المطلوب في الجلسة أو ما قدمته..." 
+               placeholder="ملخص ما دار في الجلسة وما قُدِّم فيها..."
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#133B2E]">طلبات القاضي (المطلوب قبل الجلسة القادمة)</label>
+            <label className="text-sm font-bold text-[#133B2E]">الإجراء القادم (المطلوب قبل الجلسة القادمة)</label>
             <Textarea
                rows={3}
                value={formData.judgeRequests}

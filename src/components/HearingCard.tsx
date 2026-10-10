@@ -6,7 +6,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { Gavel } from "lucide-react";
-import { formatHijri } from "../lib/calendar";
+import { formatGregorian } from "../lib/calendar";
 
 type HearingStatus = "today" | "past" | "upcoming";
 
@@ -65,7 +65,7 @@ export default function HearingCard({ h, caseId, showCase = true, actions }: {
           </div>
         </div>
         <div className="shrink-0 text-left">
-          <p className="text-base font-bold text-gray-700">{formatHijri(h.hearingDate)}</p>
+          <p className="text-base font-bold text-gray-700">{formatGregorian(h.hearingDate)}</p>
           {h.hearingTime && <p className="text-sm text-gray-500" dir="ltr">{h.hearingTime}</p>}
         </div>
       </div>
@@ -75,8 +75,8 @@ export default function HearingCard({ h, caseId, showCase = true, actions }: {
         <Row label="المحكمة">{h.court || "-"}</Row>
         <Row label="الدائرة">{h.circuit || "-"}</Row>
         {h.judgeRequests
-          ? <Row label="طلبات القاضي">{h.judgeRequests}</Row>
-          : <Row label="الالتماسات">{h.requiredActions || "-"}</Row>}
+          ? <Row label="الإجراء القادم">{h.judgeRequests}</Row>
+          : <Row label="ملخص الجلسة">{h.requiredActions || "-"}</Row>}
         {h.result && <Row label="القرار">{h.result}</Row>}
       </dl>
 
@@ -89,7 +89,7 @@ export default function HearingCard({ h, caseId, showCase = true, actions }: {
           {actions}
         </div>
         {h.nextHearingDate && (
-          <span className="text-xs text-gray-400">الجلسة القادمة: {formatHijri(h.nextHearingDate)}</span>
+          <span className="text-xs text-gray-400">الجلسة القادمة: {formatGregorian(h.nextHearingDate)}</span>
         )}
       </div>
     </div>

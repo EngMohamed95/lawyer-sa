@@ -20,6 +20,8 @@ export interface CaseRequest {
   followUpDate: string;
   degree: CourtDegree;
   notes: string;
+  /** ملفات الطلب (صحيفة، مذكرة، مستندات مؤيدة) — رابط من upload.php */
+  attachments?: { name: string; url: string; fileName?: string; date?: string }[];
   createdAt?: string;
   updatedAt?: string;
 }

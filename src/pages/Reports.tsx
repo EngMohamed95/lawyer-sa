@@ -8,6 +8,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import AgingReport from "../components/AgingReport";
 import { visibleCasesQuery } from "../lib/caseAccess";
+import { caseTypeLabel } from "../lib/caseTypes";
 
 export default function Reports() {
   const [data, setData] = useState<any>(null);
@@ -56,13 +57,8 @@ export default function Reports() {
 
       // 1. Cases by Type
       const casesByTypeObj = cases.reduce((acc: any, curr: any) => {
-        const type = curr.type === "ENFORCEMENT" || curr.type === "تنفيذ" ? "تنفيذ"
-                   : curr.type === "COMMERCIAL" ? "تجاري"
-                   : curr.type === "LABOR" ? "عمالي"
-                   : curr.type === "CRIMINAL" ? "جنائي"
-                   : curr.type === "CIVIL" ? "مدني"
-                   : curr.type;
-        const typeName = type || "أخرى";
+        // الأسماء القديمة والجديدة لنفس النوع تُجمع معاً (مدني + عامة = عامة)
+        const typeName = caseTypeLabel(curr.type) || "أخرى";
         acc[typeName] = (acc[typeName] || 0) + 1;
         return acc;
       }, {});

@@ -1,15 +1,18 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageSquare, Send, Sparkles, Bot, User, Loader2, Plus, Trash2 } from "lucide-react";
+import { MessageSquare, Send, Sparkles, Bot, User, Loader2, Plus, Trash2, Paperclip, X, FileText } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { collection, getDocs, doc, updateDoc, deleteDoc, query, where, addDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { callGemini, callGroq, readAiSettings, type GeminiContent } from "../lib/aiProxy";
+import { AI_ACCEPT, AI_MAX_FILES, AI_MAX_TOTAL_BYTES, addAiFiles, attachmentsText, formatSize, hasInline, inlineParts, type AiAttachment } from "../lib/aiAttachments";
 
 interface Message {
   role: 'assistant' | 'user';
   content: string;
   createdAt: string;
+  /** أسماء الملفات المرفقة بهذه الرسالة — الملفات نفسها لا تُحفظ */
+  files?: string[];
 }
 
 interface Conversation {
@@ -30,6 +33,34 @@ export default function AiChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // مرفقات المحادثة الحالية — تبقى مرفقة طوال المحادثة فيعتمد عليها المساعد في كل سؤال لاحق
+  const [attachments, setAttachments] = useState<AiAttachment[]>([]);
+  const [announced, setAnnounced] = useState<string[]>([]);
+  const [reading, setReading] = useState(false);
+  const [attachError, setAttachError] = useState("");
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const resetAttachments = () => { setAttachments([]); setAnnounced([]); setAttachError(""); };
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setReading(true);
+    setAttachError("");
+    try {
+      setAttachments(await addAiFiles(attachments, Array.from(files)));
+    } catch (err: any) {
+      setAttachError(err?.message || "تعذّرت قراءة الملف.");
+    } finally {
+      setReading(false);
+      if (fileInput.current) fileInput.current.value = "";
+    }
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments((current) => current.filter((file) => file.id !== id));
+    setAnnounced((current) => current.filter((fileId) => fileId !== id));
+    setAttachError("");
+  };
 
   const userId = localStorage.getItem("userId") || "";
   const lawyerId = localStorage.getItem("lawyerId") || "";
@@ -77,6 +108,7 @@ export default function AiChat() {
     if (convo) {
       setActiveId(id);
       setMessages(convo.messages || []);
+      resetAttachments();
     }
   };
 
@@ -85,6 +117,7 @@ export default function AiChat() {
     setActiveId(null);
     setMessages([]);
     setInput("");
+    resetAttachments();
   };
 
   // Delete a conversation thread
@@ -105,13 +138,17 @@ export default function AiChat() {
 
   const handleSend = async (customMsg?: string) => {
     const textToSend = customMsg || input;
-    if (!textToSend.trim() || isLoading) return;
+    const newFiles = attachments.filter(a => !announced.includes(a.id));
+    if ((!textToSend.trim() && !newFiles.length) || isLoading || reading) return;
 
-    const userMsg = textToSend.trim();
+    const userMsg = textToSend.trim() || "اطّلع على المرفقات ولخّص أهم ما فيها من الناحية القانونية.";
     if (!customMsg) setInput("");
 
     const now = new Date().toISOString();
-    const newUserMessage: Message = { role: 'user', content: userMsg, createdAt: now };
+    const newUserMessage: Message = {
+      role: 'user', content: userMsg, createdAt: now,
+      ...(newFiles.length ? { files: newFiles.map(a => a.name) } : {}),
+    };
     const updatedMessages = [...messages, newUserMessage];
     
     setMessages(updatedMessages);
@@ -134,7 +171,8 @@ export default function AiChat() {
 1. إذا كان السؤال خارج الشأن القانوني (مثل البرمجة، الطبخ، الرياضة، الترفيه، المعلومات العامة، الكتابة غير القانونية)، فاعتذر بجملة واحدة مهذبة: "أنا مساعد مخصص للشؤون القانونية فقط، تفضّل بسؤالك القانوني." ولا تُجب عن المضمون.
 2. اعتمد على الأنظمة السارية في ${countryContext}، واذكر اسم النظام ورقم المادة متى كنت متأكداً منه، ولا تخترع مواداً أو أرقاماً.
 3. نبّه عند الحاجة إلى أن الإجابة استرشادية ولا تغني عن مراجعة النص النظامي المحدَّث.
-4. تحدّث بالعربية الفصحى بلهجة مهنية محترمة، ونظّم الإجابة بعناوين ونقاط عند الحاجة.`;
+4. تحدّث بالعربية الفصحى بلهجة مهنية محترمة، ونظّم الإجابة بعناوين ونقاط عند الحاجة.${attachments.length ? `
+5. أرفق المستخدم المستندات التالية: ${attachments.map(a => a.name).join("، ")}. اعتمد عليها مصدراً أساسياً للوقائع والأرقام والتواريخ، ولا تختلق ما ليس فيها.` : ""}`;
 
       // AI Provider settings — مركزية على مستوى المنصة كلها
       const { provider: aiProvider, model: aiModel } = readAiSettings();
@@ -154,9 +192,10 @@ export default function AiChat() {
           });
         });
 
+        // المرفقات تُرسل مع آخر رسالة — نصّ Word/النص مُلحق، و PDF/الصور مضمّنة
         geminiContents.push({
           role: "user",
-          parts: [{ text: userMsg }]
+          parts: [{ text: userMsg + attachmentsText(attachments) }, ...inlineParts(attachments)]
         });
 
         responseText = (await callGemini(
@@ -165,11 +204,12 @@ export default function AiChat() {
           { provider: "GEMINI", model: aiModel },
         )) || "عذراً، لم أتمكن من الحصول على رد من Gemini.";
       } else {
+        if (hasInline(attachments)) throw new Error("قراءة ملفات PDF والصور تحتاج مزوّد Gemini — غيّر المزوّد من إعدادات المنصة أو أرفق ملفات Word/نص.");
         responseText = (await callGroq(
           [
             { role: "system", content: systemPrompt },
             ...messages.map(m => ({ role: m.role, content: m.content })),
-            { role: "user", content: userMsg }
+            { role: "user", content: userMsg + attachmentsText(attachments) }
           ],
           { provider: "GROQ", model: aiModel },
         )) || "لم يتم استلام رد من خادم الذكاء الاصطناعي.";
@@ -212,6 +252,7 @@ export default function AiChat() {
       }
 
       setMessages(finalMessages);
+      setAnnounced(attachments.map(a => a.id));
     } catch (error: any) {
       console.error("AI Chat Error:", error);
       const errorMsg = error.message || "حدث خطأ غير معروف";
@@ -332,6 +373,16 @@ export default function AiChat() {
                         : 'bg-[#133B2E] text-white rounded-tl-none'
                     }`}>
                       {msg.content}
+                      {!!msg.files?.length && (
+                        <div className="mt-3 flex flex-wrap gap-2 border-t border-gray-200/70 pt-3">
+                          {msg.files.map((name) => (
+                            <span key={name} className="inline-flex max-w-full items-center gap-1.5 rounded-lg bg-[#D4AF37]/15 px-2.5 py-1 text-[11px] font-semibold text-[#133B2E]">
+                              <FileText size={13} className="shrink-0" />
+                              <span className="truncate">{name}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -355,23 +406,77 @@ export default function AiChat() {
         )}
 
         {/* Bottom Input Area */}
-        <div className="p-4 bg-white border-t border-gray-200 flex gap-2">
-          <Input 
-            placeholder="اكتب استشارتك القانونية أو سؤالك هنا..." 
-            className="rounded-2xl border-gray-200 focus-visible:ring-[#133B2E]/20 focus-visible:border-[#133B2E] h-12 text-sm"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-            disabled={isLoading}
-          />
-          <Button 
-            onClick={() => handleSend()} 
-            disabled={isLoading || !input.trim()}
-            className="bg-[#D4AF37] hover:bg-[#B8962E] text-[#133B2E] font-bold rounded-2xl h-12 px-6 shrink-0 transition-all active:scale-[0.97]"
-          >
-            <Send size={18} className="ml-2" />
-            <span>إرسال</span>
-          </Button>
+        <div className="border-t border-gray-200 bg-white p-4">
+          {!!attachments.length && (
+            <div className="mb-3 flex flex-wrap gap-2" aria-label="المرفقات المختارة">
+              {attachments.map((file) => (
+                <div key={file.id} className="flex max-w-full items-center gap-2 rounded-xl border border-[#D4AF37]/35 bg-[#D4AF37]/10 px-3 py-2 text-xs text-[#133B2E]">
+                  <FileText size={15} className="shrink-0 text-[#B8962E]" />
+                  <div className="min-w-0">
+                    <p className="max-w-52 truncate font-bold">{file.name}</p>
+                    <p className="text-[10px] text-gray-500">{formatSize(file.size)}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeAttachment(file.id)}
+                    disabled={isLoading}
+                    className="rounded-full p-1 text-gray-500 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                    aria-label={`إزالة ${file.name}`}
+                    title="إزالة المرفق"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {attachError && <p className="mb-2 text-xs font-medium text-red-600">{attachError}</p>}
+
+          <div className="flex gap-2">
+            <input
+              ref={fileInput}
+              type="file"
+              accept={AI_ACCEPT}
+              multiple
+              className="hidden"
+              onChange={(event) => void handleFiles(event.target.files)}
+            />
+            <button
+              type="button"
+              onClick={() => fileInput.current?.click()}
+              disabled={isLoading || reading || attachments.length >= AI_MAX_FILES}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-gray-200 bg-gray-50 text-[#133B2E] transition hover:border-[#D4AF37] hover:bg-[#D4AF37]/10 disabled:cursor-not-allowed disabled:opacity-50"
+              title={`إرفاق ملفات PDF أو Word أو صور أو نص — حتى ${AI_MAX_FILES} ملفات بإجمالي ${formatSize(AI_MAX_TOTAL_BYTES)}`}
+              aria-label="إضافة مرفقات"
+            >
+              {reading ? <Loader2 size={19} className="animate-spin" /> : <Paperclip size={19} />}
+            </button>
+            <Input
+              placeholder={attachments.length ? "اكتب طلبك عن المرفقات أو أرسلها مباشرة..." : "اكتب استشارتك القانونية أو سؤالك هنا..."}
+              className="h-12 rounded-2xl border-gray-200 text-sm focus-visible:border-[#133B2E] focus-visible:ring-[#133B2E]/20"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  void handleSend();
+                }
+              }}
+              disabled={isLoading || reading}
+            />
+            <Button
+              onClick={() => void handleSend()}
+              disabled={isLoading || reading || (!input.trim() && !attachments.some((file) => !announced.includes(file.id)))}
+              className="h-12 shrink-0 rounded-2xl bg-[#D4AF37] px-6 font-bold text-[#133B2E] transition-all hover:bg-[#B8962E] active:scale-[0.97]"
+            >
+              <Send size={18} className="ml-2" />
+              <span>إرسال</span>
+            </Button>
+          </div>
+          <p className="mt-2 px-1 text-[10px] text-gray-400">
+            PDF، صور، Word وTXT — حتى {AI_MAX_FILES} ملفات بإجمالي {formatSize(AI_MAX_TOTAL_BYTES)}. تبقى المرفقات متاحة للمساعد طوال المحادثة الحالية.
+          </p>
         </div>
 
       </div>

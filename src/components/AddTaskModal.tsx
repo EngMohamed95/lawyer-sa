@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Loader2 } from "lucide-react";
+import { fetchCaseOptions, type CaseOption } from "../lib/links";
 
 const priorityOptions = [
   { value: "LOW", label: "منخفضة" },
@@ -25,13 +26,16 @@ export function AddTaskModal({
   onClose, 
   onSuccess,
   caseId,
-  clientId
-}: { 
-  isOpen: boolean; 
-  onClose: () => void; 
+  clientId,
+  defaultDate
+}: {
+  isOpen: boolean;
+  onClose: () => void;
   onSuccess: () => void;
   caseId?: string;
   clientId?: string;
+  /** تاريخ استحقاق مبدئي YYYY-MM-DD — مثلاً اليوم المختار في التقويم */
+  defaultDate?: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -45,6 +49,19 @@ export function AddTaskModal({
   const [users, setUsers] = useState<any[]>([]);
 
   const lawyerId = localStorage.getItem("lawyerId");
+
+  useEffect(() => {
+    if (isOpen && defaultDate) setFormData((f) => ({ ...f, dueDate: defaultDate }));
+  }, [isOpen, defaultDate]);
+
+  // من خارج القضية (التقويم مثلاً): ربط اختياري بقضية — فتظهر المهمة داخلها
+  const [caseOptions, setCaseOptions] = useState<CaseOption[]>([]);
+  const [linkedCaseId, setLinkedCaseId] = useState("");
+  useEffect(() => {
+    if (!isOpen || caseId || !lawyerId || lawyerId === "ALL") return;
+    setLinkedCaseId("");
+    fetchCaseOptions(lawyerId).then(setCaseOptions).catch(() => setCaseOptions([]));
+  }, [isOpen, caseId, lawyerId]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -82,8 +99,8 @@ export function AddTaskModal({
 
       await addDoc(collection(db, "tasks"), {
         ...formData,
-        caseId: caseId || null,
-        clientId: clientId || null,
+        caseId: caseId || linkedCaseId || null,
+        clientId: clientId || caseOptions.find((c) => c.id === linkedCaseId)?.clientId || null,
         lawyerId, // Important for multi-tenancy
         assigneeName: assignee?.name || "غير محدد",
         createdAt: new Date().toISOString(),
@@ -136,6 +153,22 @@ export function AddTaskModal({
                 rows={4}
               />
             </div>
+
+            {!caseId && (
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-[#133B2E]">القضية المرتبطة (اختياري)</label>
+                <select
+                  value={linkedCaseId}
+                  onChange={(e) => setLinkedCaseId(e.target.value)}
+                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                >
+                  <option value="">بدون قضية — مهمة عامة</option>
+                  {caseOptions.map((c) => (
+                    <option key={c.id} value={c.id}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">

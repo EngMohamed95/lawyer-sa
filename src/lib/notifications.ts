@@ -250,7 +250,7 @@ export async function collectCandidates(lawyerId: string, userId: string): Promi
 
   const hearingReminder = (diff: number, judgeRequests: string) => ({
     title: (diff === 0 ? "جلسة اليوم" : `جلسة بعد ${diff} ${diff === 1 ? "يوم" : "أيام"}`)
-      + (judgeRequests ? " — مطلوب تنفيذ طلبات القاضي" : ""),
+      + (judgeRequests ? " — مطلوب تنفيذ الإجراء القادم" : ""),
     priority: (diff === 0 ? "URGENT" : diff === 1 || judgeRequests ? "HIGH" : "NORMAL") as Priority,
   });
   // طلبات القاضي تحتاج وقتاً للتحضير — تذكير إضافي قبل أسبوع
@@ -268,7 +268,7 @@ export async function collectCandidates(lawyerId: string, userId: string): Promi
         event: "HEARING_REMINDER",
         ...hearingReminder(diff, judgeRequests),
         body: `${h.caseTitle} — ${str(h.court) || "المحكمة"}${str(h.requiredActions) ? ` · ${str(h.requiredActions)}` : ""}`
-          + (judgeRequests ? ` · طلبات القاضي: ${judgeRequests}` : ""),
+          + (judgeRequests ? ` · الإجراء القادم: ${judgeRequests}` : ""),
         link: `/app/cases/${h.caseId}`,
         entity: "hearing", entityId: h.id,
         offset: diff,
@@ -295,7 +295,7 @@ export async function collectCandidates(lawyerId: string, userId: string): Promi
       event: "HEARING_REMINDER",
       ...hearingReminder(diff, n.judgeRequests),
       body: `${titleOf.get(n.caseId) || "قضية"} — ${n.court || "المحكمة"}`
-        + (n.judgeRequests ? ` · طلبات القاضي: ${n.judgeRequests}` : ""),
+        + (n.judgeRequests ? ` · الإجراء القادم: ${n.judgeRequests}` : ""),
       link: `/app/cases/${n.caseId}`,
       entity: "hearing", entityId: n.id,
       offset: diff,

@@ -87,7 +87,7 @@ export default function HearingReportSection({ caseData, hearing, onUpdated }: H
 - المستشار: ${hearing.assignedConsultantName || "لا يوجد"}
 - المتدرب: ${traineeNames.length > 0 ? traineeNames.join("، ") : "لا يوجد"}
 
-الالتماسات / ما تم فيها: ${hearing.requiredActions || "غير مذكور"}
+ملخص الجلسة: ${hearing.requiredActions || "غير مذكور"}
 قرار الجلسة (النتيجة): ${hearing.result || "غير مذكور"}
 نص محضر الضبط المكتوب: ${hearing.minutesText || "لا يوجد"}
 
