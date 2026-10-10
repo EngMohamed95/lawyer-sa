@@ -70,6 +70,9 @@ jobs:
         # نبني نسخة الخادم كما يتوقعها Hostinger:
         #   الجذر: index.js + package.json + .env + محتوى dist مسطّحاً
         #   ونُبقي dist/ كاملاً لأن start script يشير إلى dist/server.js
+        env:
+          GEMINI_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
           set -e
           rm -rf release
@@ -87,6 +90,27 @@ jobs:
             echo "أُضيف مفتاح حساب الخدمة."
           else
             echo "تنبيه: لا يوجد سرّ FIREBASE_SERVICE_ACCOUNT_KEY — تُنشر الحزمة بدونه."
+          fi
+
+          # مفاتيح وسيط الذكاء الاصطناعي (ai-proxy.php) — تُكتب وقت النشر فقط ولا تدخل المستودع.
+          # .htaccess يمنع تقديم الملف للمتصفح. المفاتيح حروف وأرقام فقط، فنرفض أي شيء آخر.
+          if [ -n "$GEMINI_KEY" ] || [ -n "$GROQ_KEY" ]; then
+            for k in "$GEMINI_KEY" "$GROQ_KEY"; do
+              if [ -n "$k" ] && ! printf '%s' "$k" | grep -Eq '^[A-Za-z0-9_-]+$'; then
+                echo "صيغة مفتاح الذكاء الاصطناعي غير متوقعة"; exit 1
+              fi
+            done
+            {
+              echo "<?php"
+              echo "return ["
+              echo "  'gemini_key' => '$GEMINI_KEY',"
+              echo "  'groq_key' => '$GROQ_KEY',"
+              echo "  'firebase_project_id' => 'lawyer-sa',"
+              echo "];"
+            } > release/ai-config.php
+            echo "أُضيف ملف مفاتيح الذكاء الاصطناعي."
+          else
+            echo "تنبيه: لا يوجد سرّ GEMINI_API_KEY — الذكاء الاصطناعي لن يعمل على اللايف."
           fi
 
           # مجلد رفع المستخدمين يجب أن يوجد ولا يُمسّ محتواه لاحقاً

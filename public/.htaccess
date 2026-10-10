@@ -1,6 +1,16 @@
+# ملفات الأسرار — لا تُقدَّم للمتصفح أبداً (ai-proxy.php يقرأ ai-config.php من القرص مباشرة)
+<FilesMatch "^(ai-config\.php|serviceAccountKey\.json|\.env)$">
+  Require all denied
+</FilesMatch>
+
+# بعض إعدادات PHP تُسقط ترويسة Authorization — نمرّرها صراحةً لـ ai-proxy.php
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
+  # الاستضافة لا تشغّل Node — وسيط الذكاء الاصطناعي بـ PHP على نفس المسار
+  RewriteRule ^api/ai/generate$ ai-proxy.php [L]
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d

@@ -16,6 +16,7 @@ lawyer-system.zip
 
 /src/generated/prisma
 serviceAccountKey.json
+ai-config.php
 
 # ملفات مرفوعة محلياً أثناء التطوير — لا تُرفع للمستودع
 public/uploads/
