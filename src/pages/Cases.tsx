@@ -6,6 +6,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { AiSummarizerModal } from "../components/AiSummarizerModal";
 import { AddCaseModal } from "../components/AddCaseModal";
+import { EditCaseModal } from "../components/EditCaseModal";
 import { collection, getDocs, query, where, limit } from "firebase/firestore";
 import type { Query, DocumentData } from "firebase/firestore";
 import { db } from "../lib/firebase";
@@ -209,7 +210,7 @@ function CaseRow({ c, expanded, onToggle, userRole }: { c: any; expanded: boolea
 
 /* ────────────────────────── قائمة ملفات التنفيذ (بتصميم ناجز) ────────────────────────── */
 
-const EXECUTION_COLS = "grid grid-cols-[1.3fr_0.9fr_1.4fr_1fr_1.5fr_1.2fr_0.9fr_5rem] gap-4 items-center";
+const EXECUTION_COLS = "grid grid-cols-[1.3fr_0.9fr_1.4fr_1fr_1.5fr_1.2fr_0.9fr_9.5rem] gap-4 items-center";
 
 const executionStatusOf = (c: any): { label: string; dot: string; text: string } => {
   if (c.enforcementClosureReason) return { label: "منتهي", dot: "bg-gray-400", text: "text-gray-500" };
@@ -227,7 +228,7 @@ const debtorNamesOf = (c: any): string[] => {
   return fallback ? String(fallback).split("، ") : [];
 };
 
-function ExecutionRows({ cases }: { cases: any[] }) {
+function ExecutionRows({ cases, onEdit }: { cases: any[]; onEdit: (c: any) => void }) {
   return (
     <div className="p-3 space-y-2 bg-gray-50/60">
       <div className={`${EXECUTION_COLS} px-4 py-2 text-sm font-bold text-gray-700`}>
@@ -260,10 +261,16 @@ function ExecutionRows({ cases }: { cases: any[] }) {
             <span className={`flex items-center gap-1.5 text-xs ${status.text}`}>
               <span className={`w-2 h-2 rounded-full shrink-0 ${status.dot}`} /> {status.label}
             </span>
-            <Link to={`/app/cases/${c.id}`}
-              className="justify-self-end px-3 py-1.5 rounded-md border border-gray-300 text-sm font-bold text-gray-800 hover:bg-gray-50 transition">
-              تفاصيل
-            </Link>
+            <div className="justify-self-end flex gap-2">
+              <button onClick={() => onEdit(c)}
+                className="px-3 py-1.5 rounded-md border border-[#D4AF37] text-sm font-bold text-[#B8962E] hover:bg-amber-50 transition">
+                تعديل
+              </button>
+              <Link to={`/app/cases/${c.id}`}
+                className="px-3 py-1.5 rounded-md border border-gray-300 text-sm font-bold text-gray-800 hover:bg-gray-50 transition">
+                تفاصيل
+              </Link>
+            </div>
           </div>
         );
       })}
@@ -277,6 +284,7 @@ export default function Cases() {
   const [activeAiCase, setActiveAiCase] = useState<any>(null);
   const [search, setSearch] = useState("");
   const [isAddCaseOpen, setIsAddCaseOpen] = useState(false);
+  const [editingCase, setEditingCase] = useState<any>(null);
   const [page, setPage] = useState(1);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [execFilter, setExecFilter] = useState<ExecutionFilter>("ALL");
@@ -425,6 +433,13 @@ export default function Cases() {
         defaultType={typeFilter || undefined}
       />
 
+      <EditCaseModal
+        isOpen={!!editingCase}
+        onClose={() => setEditingCase(null)}
+        onSuccess={fetchCases}
+        caseData={editingCase}
+      />
+
       {isExecutionView ? (
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">التنفيذ</h1>
@@ -505,7 +520,7 @@ export default function Cases() {
               <div className="text-center py-10 text-gray-500">لا يوجد ملفات تنفيذ مطابقة</div>
             ) : (
               <CaseRowsScroller>
-                <ExecutionRows cases={pagedCases} />
+                <ExecutionRows cases={pagedCases} onEdit={setEditingCase} />
               </CaseRowsScroller>
             )
           ) : (

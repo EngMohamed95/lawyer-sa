@@ -99,7 +99,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
     // ولو أُخفي الأب وظهر أبناؤه (العميل مثلاً يرى الجلسات ولا يرى القضايا)
     // يرفعهم visibleNavItems للمستوى الأعلى فلا يفقد أحد وصولاً كان يملكه.
     {
-      name: "القضاء",
+      name: "القضايا",
       path: "/app/cases",
       icon: <Briefcase size={20} />,
       hidden: !perms.can("case.update"),

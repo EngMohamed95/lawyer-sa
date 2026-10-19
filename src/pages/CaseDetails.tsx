@@ -979,7 +979,7 @@ export default function CaseDetails() {
               <Sparkles className="ml-2 h-4 w-4" /> تلخيص شامل للذكاء الاصطناعي
             </Button>
             <Button className="bg-[#D4AF37] hover:bg-[#B8962E] text-white" onClick={() => setIsEditCaseOpen(true)}>
-              <Edit className="ml-2 h-4 w-4" /> تعديل بيانات القضية
+              <Edit className="ml-2 h-4 w-4" /> {isExecutionCase ? "تعديل بيانات الطلب" : "تعديل بيانات القضية"}
             </Button>
           </div>
         </div>
