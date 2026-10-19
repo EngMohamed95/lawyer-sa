@@ -21,7 +21,7 @@ export function downloadWordDoc(htmlBodyContent: string, customDocTitle: string)
       </xml>
       <style>
         body { font-family: 'Arial', 'Tajawal', sans-serif; direction: rtl; text-align: right; padding: 1.5in 1.0in 1.0in 1.0in; }
-        h2 { text-align: center; color: #133B2E; font-size: 18pt; margin-bottom: 25px; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+        h2 { text-align: center; color: #192a56; font-size: 18pt; margin-bottom: 25px; border-bottom: 2px solid #273c75; padding-bottom: 10px; }
         p { font-size: 12pt; line-height: 1.8; text-align: justify; margin-bottom: 12px; }
         ol, ul { margin-bottom: 15px; }
         li { font-size: 12pt; line-height: 1.8; margin-bottom: 8px; }

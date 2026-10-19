@@ -68,7 +68,7 @@ export function AttachmentSearch({ value, onChange }: { value: string; onChange:
     <div className="relative w-full sm:w-72">
       <Search size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
       <input value={value} onChange={(e) => onChange(e.target.value)} placeholder="ابحث في المرفقات بالاسم أو التاريخ..."
-        className="h-9 w-full rounded-lg border border-gray-200 bg-white pr-9 pl-8 text-sm focus:outline-none focus:border-[#1a9a45] focus:ring-1 focus:ring-[#1a9a45]" />
+        className="h-9 w-full rounded-lg border border-gray-200 bg-white pr-9 pl-8 text-sm focus:outline-none focus:border-[#273c75] focus:ring-1 focus:ring-[#273c75]" />
       {value && (
         <button onClick={() => onChange("")} aria-label="مسح البحث"
           className="absolute left-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-gray-400 hover:text-gray-600">
@@ -111,7 +111,7 @@ export function AttachmentPicker({ label = "المرفقات", hint, existing, o
   numbered?: boolean;
 }) {
   const input = useRef<HTMLInputElement>(null);
-  const field = "h-8 rounded-md border border-gray-300 bg-white px-2 text-xs focus:outline-none focus:border-[#1a9a45]";
+  const field = "h-8 rounded-md border border-gray-300 bg-white px-2 text-xs focus:outline-none focus:border-[#273c75]";
 
   const editExisting = (i: number, patch: Partial<Attachment>) =>
     onExistingChange(existing.map((a, j) => (j === i ? { ...a, ...patch } : a)));
@@ -121,7 +121,7 @@ export function AttachmentPicker({ label = "المرفقات", hint, existing, o
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-bold text-[#133B2E]">{label}</label>
+        <label className="text-sm font-bold text-[#192a56]">{label}</label>
         <input ref={input} type="file" multiple className="hidden"
           onChange={(e) => {
             const picked = Array.from(e.target.files ?? []).map((file) => ({ file, name: baseName(file.name), date: todayKey() }));

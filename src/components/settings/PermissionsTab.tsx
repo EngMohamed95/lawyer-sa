@@ -113,11 +113,11 @@ export default function PermissionsTab() {
       {/* ===== الاستثناءات القابلة للتعديل ===== */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-base font-black text-[#133B2E]">استثناءات مكتبك</h3>
+          <h3 className="text-base font-black text-[#192a56]">استثناءات مكتبك</h3>
           {canManage && (
             <button
               onClick={handleReset}
-              className="text-xs text-gray-500 hover:text-[#133B2E] flex items-center gap-1"
+              className="text-xs text-gray-500 hover:text-[#192a56] flex items-center gap-1"
             >
               <RotateCcw size={13} /> استعادة الافتراضي
             </button>
@@ -131,17 +131,17 @@ export default function PermissionsTab() {
             <div
               key={item.id}
               className={`flex items-center justify-between gap-4 p-4 rounded-xl border transition-colors ${
-                changed ? "border-[#D4AF37]/40 bg-[#D4AF37]/5" : "border-gray-100"
+                changed ? "border-[#273c75]/40 bg-[#273c75]/5" : "border-gray-100"
               }`}
             >
               <div className="min-w-0">
-                <p className="font-bold text-[#133B2E] text-sm flex items-center gap-2 flex-wrap">
+                <p className="font-bold text-[#192a56] text-sm flex items-center gap-2 flex-wrap">
                   {item.label}
                   <span className="text-[10px] font-normal px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
                     {ROLE_LABELS_AR[item.role]}
                   </span>
                   {changed && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#D4AF37] text-[#133B2E]">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#273c75] text-[#192a56]">
                       معدّل
                     </span>
                   )}
@@ -157,7 +157,7 @@ export default function PermissionsTab() {
                 disabled={!canManage}
                 onClick={() => setToggles((t) => ({ ...t, [item.id]: !on }))}
                 className={`w-11 h-6 rounded-full relative shrink-0 transition-colors ${
-                  on ? "bg-[#D4AF37]" : "bg-gray-200"
+                  on ? "bg-[#273c75]" : "bg-gray-200"
                 } ${canManage ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}
               >
                 <span
@@ -182,7 +182,7 @@ export default function PermissionsTab() {
             <button
               onClick={handleSave}
               disabled={saving || !isDirty}
-              className="px-6 py-3 bg-[#133B2E] text-[#D4AF37] font-bold rounded-2xl text-sm hover:bg-[#133B2E]/90 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-6 py-3 bg-[#192a56] text-[#273c75] font-bold rounded-2xl text-sm hover:bg-[#192a56]/90 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
             >
               <Save size={16} />
               {saving ? "جاري الحفظ..." : "حفظ الصلاحيات"}
@@ -202,7 +202,7 @@ export default function PermissionsTab() {
       {/* ===== مصفوفة الصلاحيات من الوثيقة ===== */}
       <div className="space-y-3 border-t border-gray-100 pt-6">
         <div>
-          <h3 className="text-base font-black text-[#133B2E]">مصفوفة الصلاحيات</h3>
+          <h3 className="text-base font-black text-[#192a56]">مصفوفة الصلاحيات</h3>
           <p className="text-xs text-gray-500 mt-1">
             الصلاحيات المعتمدة لكل دور حسب وثيقة متطلبات النظام. الخلايا المميّزة
             بالذهبي تعني وجود استثناء مطبَّق في مكتبك.
@@ -212,7 +212,7 @@ export default function PermissionsTab() {
         <div className="overflow-x-auto rounded-2xl border border-gray-100">
           <table className="w-full text-sm min-w-[720px]">
             <thead>
-              <tr className="bg-[#133B2E] text-white">
+              <tr className="bg-[#192a56] text-white">
                 <th className="text-right py-3 px-4 font-bold whitespace-nowrap">الخدمة</th>
                 {DOCUMENT_ROLES.map((r) => (
                   <th key={r} className="py-3 px-3 font-bold text-center whitespace-nowrap text-xs">
@@ -224,7 +224,7 @@ export default function PermissionsTab() {
             <tbody>
               {DOCUMENT_PERMISSIONS.map((p, i) => (
                 <tr key={p} className={i % 2 ? "bg-gray-50/60" : "bg-white"}>
-                  <td className="py-2.5 px-4 font-bold text-[#133B2E] whitespace-nowrap">
+                  <td className="py-2.5 px-4 font-bold text-[#192a56] whitespace-nowrap">
                     {PERMISSION_LABELS_AR[p]}
                   </td>
                   {DOCUMENT_ROLES.map((r) => {
@@ -236,7 +236,7 @@ export default function PermissionsTab() {
                         <span
                           className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-bold ${
                             overridden
-                              ? "bg-[#D4AF37] text-[#133B2E]"
+                              ? "bg-[#273c75] text-[#192a56]"
                               : actual === "NONE"
                                 ? "bg-gray-100 text-gray-400"
                                 : actual === "FULL"

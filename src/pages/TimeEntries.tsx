@@ -173,7 +173,7 @@ export default function TimeEntries() {
         <div className="w-14 h-14 rounded-full bg-red-50 text-red-500 flex items-center justify-center">
           <ShieldAlert size={26} />
         </div>
-        <h2 className="text-xl font-bold text-[#133B2E]">لا تملك صلاحية الوصول لتسجيل الساعات</h2>
+        <h2 className="text-xl font-bold text-[#192a56]">لا تملك صلاحية الوصول لتسجيل الساعات</h2>
         <p className="text-sm text-gray-500">راجع مدير المكتب لمنحك الصلاحية.</p>
       </div>
     );
@@ -188,7 +188,7 @@ export default function TimeEntries() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">تسجيل الساعات</h1>
+          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">تسجيل الساعات</h1>
           <p className="text-gray-500 mt-1 text-sm">
             ساعات العمل القابلة للفوترة — {rows.length} سجل
           </p>
@@ -205,7 +205,7 @@ export default function TimeEntries() {
             </Button>
           )}
           {canManage && (
-            <Button onClick={() => setIsAddOpen(true)} className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white shadow-lg">
+            <Button onClick={() => setIsAddOpen(true)} className="bg-[#192a56] hover:bg-[#192a56]/90 text-white shadow-lg">
               <Plus className="ml-2 h-4 w-4" /> تسجيل ساعات
             </Button>
           )}
@@ -214,7 +214,7 @@ export default function TimeEntries() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          ["إجمالي الساعات", `${summary.totalHours}`, "text-[#133B2E]", ""],
+          ["إجمالي الساعات", `${summary.totalHours}`, "text-[#192a56]", ""],
           ["ساعات قابلة للفوترة", `${summary.billableHours}`, "text-indigo-600", ""],
           ["قيمة قابلة للفوترة", money(summary.billableAmount), "text-green-600", currency],
           ["غير مفوتر بعد", money(summary.unbilledAmount), "text-amber-600", currency],
@@ -247,7 +247,7 @@ export default function TimeEntries() {
         <div className="flex items-center gap-2">
           <label className="text-sm font-bold text-gray-600">القضية:</label>
           <select value={caseFilter} onChange={(e) => setCaseFilter(e.target.value)}
-            className="px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-[#133B2E]">
+            className="px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-[#192a56]">
             <option value="ALL">كل القضايا</option>
             {cases.map((c) => (
               <option key={c.id} value={c.id}>
@@ -260,8 +260,8 @@ export default function TimeEntries() {
 
       <Card className="shadow-sm border-gray-200">
         <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
-          <Timer className="w-5 h-5 text-[#D4AF37]" />
-          <h2 className="font-bold text-lg text-[#133B2E]">
+          <Timer className="w-5 h-5 text-[#273c75]" />
+          <h2 className="font-bold text-lg text-[#192a56]">
             السجلات <span className="text-sm font-normal text-gray-400">({filtered.length})</span>
           </h2>
         </CardHeader>
@@ -269,13 +269,13 @@ export default function TimeEntries() {
           <Table>
             <TableHeader className="bg-white">
               <TableRow>
-                <TableHead className="text-right font-bold text-[#133B2E]">التاريخ</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E]">الوصف / القضية</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E]">الساعات</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E] hidden sm:table-cell">السعر</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E]">القيمة</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E]">الحالة</TableHead>
-                {canManage && <TableHead className="text-center font-bold text-[#133B2E]">إجراءات</TableHead>}
+                <TableHead className="text-right font-bold text-[#192a56]">التاريخ</TableHead>
+                <TableHead className="text-right font-bold text-[#192a56]">الوصف / القضية</TableHead>
+                <TableHead className="text-right font-bold text-[#192a56]">الساعات</TableHead>
+                <TableHead className="text-right font-bold text-[#192a56] hidden sm:table-cell">السعر</TableHead>
+                <TableHead className="text-right font-bold text-[#192a56]">القيمة</TableHead>
+                <TableHead className="text-right font-bold text-[#192a56]">الحالة</TableHead>
+                {canManage && <TableHead className="text-center font-bold text-[#192a56]">إجراءات</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -291,7 +291,7 @@ export default function TimeEntries() {
                 <TableRow key={e.id} className="hover:bg-gray-50/50">
                   <TableCell dir="ltr" className="text-right text-sm">{e.date}</TableCell>
                   <TableCell>
-                    <div className="font-semibold text-[#133B2E] text-sm">{e.description || "—"}</div>
+                    <div className="font-semibold text-[#192a56] text-sm">{e.description || "—"}</div>
                     {e.caseId ? (
                       <Link to={`/app/cases/${e.caseId}`}
                         className="flex items-center gap-1 text-xs text-indigo-700 hover:underline mt-0.5">
@@ -302,7 +302,7 @@ export default function TimeEntries() {
                     )}
                     {e.userName && <div className="text-[10px] text-gray-400 mt-0.5">{e.userName}</div>}
                   </TableCell>
-                  <TableCell className="font-bold text-[#133B2E]">{e.hours}</TableCell>
+                  <TableCell className="font-bold text-[#192a56]">{e.hours}</TableCell>
                   <TableCell className="hidden sm:table-cell text-sm text-gray-600">{money(e.rate)}</TableCell>
                   <TableCell className="font-bold text-green-700">{money(e.amount)}</TableCell>
                   <TableCell>
@@ -417,19 +417,19 @@ function AddTimeEntryModal({
     } finally { setBusy(false); }
   };
 
-  const field = "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#133B2E] text-sm";
+  const field = "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#192a56] text-sm";
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl" onClick={onClose}>
       <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="p-6 border-b bg-[#133B2E] text-white flex justify-between items-center sticky top-0 z-10">
+        <div className="p-6 border-b bg-[#192a56] text-white flex justify-between items-center sticky top-0 z-10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center text-[#133B2E]">
+            <div className="w-10 h-10 bg-[#273c75] rounded-xl flex items-center justify-center text-[#192a56]">
               <Timer size={20} />
             </div>
             <div>
               <h2 className="text-xl font-bold">تسجيل ساعات</h2>
-              <p className="text-xs text-[#D4AF37]">تُضاف للفاتورة عند الفوترة</p>
+              <p className="text-xs text-[#273c75]">تُضاف للفاتورة عند الفوترة</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full"><X size={20} /></button>
@@ -484,15 +484,15 @@ function AddTimeEntryModal({
             <div className="flex items-center gap-2">
               <input id="billable" type="checkbox" checked={form.billable}
                 onChange={(e) => setForm({ ...form, billable: e.target.checked })}
-                className="w-5 h-5 accent-[#133B2E]" />
+                className="w-5 h-5 accent-[#192a56]" />
               <label htmlFor="billable" className="text-sm font-bold text-gray-700 cursor-pointer">قابل للفوترة</label>
             </div>
-            <p className="font-black text-lg text-[#D4AF37]">{money(amount)} {currency}</p>
+            <p className="font-black text-lg text-[#273c75]">{money(amount)} {currency}</p>
           </div>
 
           <div className="flex gap-3">
             <Button type="submit" disabled={busy}
-              className="flex-1 py-6 bg-[#133B2E] text-[#D4AF37] font-bold rounded-2xl hover:bg-[#133B2E]/90">
+              className="flex-1 py-6 bg-[#192a56] text-[#273c75] font-bold rounded-2xl hover:bg-[#192a56]/90">
               <Save size={16} className="ml-2" />
               {busy ? "جاري الحفظ..." : "حفظ السجل"}
             </Button>

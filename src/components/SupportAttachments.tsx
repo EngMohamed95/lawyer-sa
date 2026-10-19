@@ -41,7 +41,7 @@ export function SupportFilePicker({
         }}
       />
       <button
-        className="inline-flex items-center gap-2 rounded-lg border border-[#133B2E]/20 px-3 py-2 text-[#133B2E] hover:border-[#D4AF37] disabled:opacity-50"
+        className="inline-flex items-center gap-2 rounded-lg border border-[#192a56]/20 px-3 py-2 text-[#192a56] hover:border-[#273c75] disabled:opacity-50"
         type="button"
         disabled={disabled}
         onClick={() => input.current?.click()}
@@ -54,7 +54,7 @@ export function SupportFilePicker({
       {files.map((file, index) => (
         <div
           key={`${file.name}-${index}`}
-          className="flex items-center justify-between gap-2 rounded-lg bg-[#D4AF37]/10 px-3 py-2 text-[#133B2E]"
+          className="flex items-center justify-between gap-2 rounded-lg bg-[#273c75]/10 px-3 py-2 text-[#192a56]"
         >
           <span className="truncate">{file.name}</span>
           <button
@@ -90,7 +90,7 @@ export function SupportAttachmentList({
           key={file.path}
           type="button"
           disabled={!!busy}
-          className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[#133B2E]/20 bg-white px-3 py-2 text-xs text-[#133B2E] hover:border-[#D4AF37]"
+          className="inline-flex max-w-full items-center gap-2 rounded-lg border border-[#192a56]/20 bg-white px-3 py-2 text-xs text-[#192a56] hover:border-[#273c75]"
           onClick={async () => {
             setBusy(file.path);
             setError("");

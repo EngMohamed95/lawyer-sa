@@ -64,14 +64,14 @@ export default function AddConsultantModal({ isOpen, onClose, onSuccess }: AddCo
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
       <div className="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-[#133B2E] text-white">
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-[#192a56] text-white">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center text-[#133B2E]">
+            <div className="w-10 h-10 bg-[#273c75] rounded-xl flex items-center justify-center text-[#192a56]">
               <UserPlus size={20} />
             </div>
             <div>
               <h2 className="text-xl font-bold">إضافة مستشار جديد</h2>
-              <p className="text-xs text-[#D4AF37]">إنشاء حساب بصلاحيات مستشار قانوني</p>
+              <p className="text-xs text-[#273c75]">إنشاء حساب بصلاحيات مستشار قانوني</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full transition-colors">
@@ -88,7 +88,7 @@ export default function AddConsultantModal({ isOpen, onClose, onSuccess }: AddCo
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/10 focus:border-[#133B2E] transition-all"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#192a56]/10 focus:border-[#192a56] transition-all"
                 placeholder="أدخل اسم المستشار"
               />
             </div>
@@ -104,7 +104,7 @@ export default function AddConsultantModal({ isOpen, onClose, onSuccess }: AddCo
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full pr-12 pl-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/10 focus:border-[#133B2E] transition-all"
+                  className="w-full pr-12 pl-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#192a56]/10 focus:border-[#192a56] transition-all"
                   placeholder="consultant@example.com"
                 />
               </div>
@@ -119,7 +119,7 @@ export default function AddConsultantModal({ isOpen, onClose, onSuccess }: AddCo
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full pr-12 pl-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/10 focus:border-[#133B2E] transition-all"
+                  className="w-full pr-12 pl-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#192a56]/10 focus:border-[#192a56] transition-all"
                   placeholder="05xxxxxxxx"
                 />
               </div>
@@ -135,7 +135,7 @@ export default function AddConsultantModal({ isOpen, onClose, onSuccess }: AddCo
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full pr-12 pl-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/10 focus:border-[#133B2E] transition-all"
+                className="w-full pr-12 pl-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#192a56]/10 focus:border-[#192a56] transition-all"
                 placeholder="••••••••"
               />
             </div>
@@ -152,7 +152,7 @@ export default function AddConsultantModal({ isOpen, onClose, onSuccess }: AddCo
             <Button
               type="submit"
               disabled={loading}
-              className="flex-1 py-6 bg-[#133B2E] text-[#D4AF37] font-bold rounded-2xl hover:bg-[#133B2E]/90 active:scale-[0.98] transition-all"
+              className="flex-1 py-6 bg-[#192a56] text-[#273c75] font-bold rounded-2xl hover:bg-[#192a56]/90 active:scale-[0.98] transition-all"
             >
               {loading ? "جاري الإضافة..." : "تأكيد الإضافة"}
             </Button>

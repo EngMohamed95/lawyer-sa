@@ -51,8 +51,8 @@ export default function RelatedPanel({
   return (
     <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden" dir="rtl">
       <div className="px-5 py-3 border-b bg-gray-50/60 flex items-center gap-2">
-        <Link2 size={17} className="text-[#D4AF37]" />
-        <h3 className="font-bold text-[#133B2E]">
+        <Link2 size={17} className="text-[#273c75]" />
+        <h3 className="font-bold text-[#192a56]">
           {title} <span className="text-sm font-normal text-gray-400">({items.length})</span>
         </h3>
         <button onClick={() => void load()} disabled={loading}
@@ -66,14 +66,14 @@ export default function RelatedPanel({
         <div className="px-5 py-3 flex flex-wrap gap-2 border-b border-gray-100">
           <button onClick={() => setFilter("ALL")}
             className={`px-3 py-1 rounded-full text-xs font-bold border transition ${
-              filter === "ALL" ? "bg-[#133B2E] text-[#D4AF37] border-[#133B2E]" : "bg-white text-gray-600 border-gray-200"
+              filter === "ALL" ? "bg-[#192a56] text-[#273c75] border-[#192a56]" : "bg-white text-gray-600 border-gray-200"
             }`}>
             الكل ({items.length})
           </button>
           {(Object.keys(counts) as LinkKind[]).map((k) => (
             <button key={k} onClick={() => setFilter(filter === k ? "ALL" : k)}
               className={`px-3 py-1 rounded-full text-xs font-bold border transition ${
-                filter === k ? "bg-[#133B2E] text-[#D4AF37] border-[#133B2E]" : LINK_KIND_COLORS[k]
+                filter === k ? "bg-[#192a56] text-[#273c75] border-[#192a56]" : LINK_KIND_COLORS[k]
               }`}>
               {LINK_KIND_LABELS_AR[k]} ({counts[k]})
             </button>
@@ -94,7 +94,7 @@ export default function RelatedPanel({
                   {LINK_KIND_LABELS_AR[it.kind]}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-[#133B2E] truncate">{it.label}</p>
+                  <p className="text-sm font-bold text-[#192a56] truncate">{it.label}</p>
                   {it.sublabel && <p className="text-xs text-gray-500 truncate mt-0.5">{it.sublabel}</p>}
                 </div>
                 {it.badge && (

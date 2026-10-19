@@ -107,13 +107,15 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
         { name: "الجلسات", path: "/app/hearings", icon: <Calendar size={18} />, hidden: !perms.can("hearing.manage") },
         { name: "المواعيد والتقويم", path: "/app/calendar", icon: <CalendarDays size={18} />, hidden: !perms.can("appointment.manage") },
         { name: "المهام", path: "/app/tasks", icon: <CheckSquare size={18} />, hidden: !perms.can("task.manage") || paidRoleOnBasic },
-        { name: "المستندات", path: "/app/documents", icon: <FileText size={18} />, hidden: !perms.can("document.manage") || paidRoleOnBasic },
       ],
     },
 
     // التنفيذ: مظلة منفصلة في القائمة، لكنها تبقى قضايا عادية (type: "تنفيذ")
     // حتى تُبنى وحدة تنفيذ مستقلة عن القضايا لاحقاً.
     { name: "التنفيذ", path: "/app/cases?type=تنفيذ", icon: <Gavel size={20} />, hidden: !perms.can("case.update") },
+
+    // المستندات عنصر مستقل في القائمة لا تحت القضايا
+    { name: "المستندات", path: "/app/documents", icon: <FileText size={20} />, hidden: !perms.can("document.manage") || paidRoleOnBasic },
 
     { name: "العقود", path: "/app/contracts", icon: <FileSignature size={20} />, hidden: !perms.can("contract.manage") || !isOfficeOwner },
 
@@ -198,7 +200,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
         onClick={onClose}
       />
       
-      <aside className={`fixed md:sticky top-0 right-0 h-screen w-64 bg-[#133B2E] text-white flex flex-col shadow-2xl transition-transform duration-300 z-50 md:translate-x-0 ${isOpen ? "translate-x-0" : "translate-x-full md:translate-x-0"}`}>
+      <aside className={`fixed md:sticky top-0 right-0 h-screen w-64 bg-[#192a56] text-white flex flex-col shadow-2xl transition-transform duration-300 z-50 md:translate-x-0 ${isOpen ? "translate-x-0" : "translate-x-full md:translate-x-0"}`}>
         <div className="p-8 flex flex-col items-center border-b border-white/10 relative">
           <button onClick={onClose} className="md:hidden absolute top-4 left-4 text-white/70 hover:text-white">
             <Menu size={24} />
@@ -225,7 +227,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
                       onClick={onClose}
                       className={`flex items-center gap-3 px-6 py-3 transition-all duration-200 ${
                         isActive
-                          ? "bg-[#D4AF37]/20 text-[#D4AF37] border-r-4 border-[#D4AF37] font-bold"
+                          ? "bg-[#273c75]/20 text-[#273c75] border-r-4 border-[#273c75] font-bold"
                           : "hover:bg-white/5 text-gray-300 hover:text-white"
                       }`}
                     >
@@ -242,7 +244,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
                   <div
                     className={`flex items-center transition-all duration-200 ${
                       isActive
-                        ? "bg-[#D4AF37]/20 text-[#D4AF37] border-r-4 border-[#D4AF37] font-bold"
+                        ? "bg-[#273c75]/20 text-[#273c75] border-r-4 border-[#273c75] font-bold"
                         : "hover:bg-white/5 text-gray-300 hover:text-white"
                     }`}
                   >
@@ -270,7 +272,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
                             onClick={onClose}
                             className={`flex items-center gap-3 pr-12 pl-6 py-2.5 text-sm transition-all duration-200 ${
                               location.pathname === child.path
-                                ? "text-[#D4AF37] border-r-4 border-[#D4AF37] font-bold bg-[#D4AF37]/10"
+                                ? "text-[#273c75] border-r-4 border-[#273c75] font-bold bg-[#273c75]/10"
                                 : "hover:bg-white/5 text-gray-400 hover:text-white"
                             }`}
                           >
@@ -496,7 +498,7 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
             description: t.description || `باقي ${diffDays} أيام على التسليم.`,
             date: t.dueDate,
             badge: `خلال ${diffDays} يوم`,
-            badgeColor: "bg-amber-400 text-[#133B2E]",
+            badgeColor: "bg-amber-400 text-[#192a56]",
             link: "/app/tasks"
           });
         }
@@ -563,7 +565,7 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 sticky top-0 z-30 shadow-sm">
       <div className="flex items-center gap-4">
-        <button onClick={onMenuOpen} className="md:hidden text-[#133B2E] hover:text-gray-700 p-1">
+        <button onClick={onMenuOpen} className="md:hidden text-[#192a56] hover:text-gray-700 p-1">
           <Menu size={24} />
         </button>
         <div className="relative hidden sm:block">
@@ -571,7 +573,7 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
           <input
             type="text"
             placeholder="بحث..."
-            className="pl-4 pr-10 py-2 border border-gray-300 rounded-full text-sm focus:outline-none focus:border-[#133B2E] focus:ring-1 focus:ring-[#133B2E] w-64 bg-gray-50"
+            className="pl-4 pr-10 py-2 border border-gray-300 rounded-full text-sm focus:outline-none focus:border-[#192a56] focus:ring-1 focus:ring-[#192a56] w-64 bg-gray-50"
           />
         </div>
       </div>
@@ -605,11 +607,11 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
                   className="absolute left-0 mt-2 w-80 sm:w-96 bg-white border border-gray-200 shadow-2xl rounded-2xl overflow-hidden z-50 font-['Tajawal'] text-right"
                   dir="rtl"
                 >
-                  <div className="bg-[#133B2E] p-4 text-white flex items-center justify-between">
+                  <div className="bg-[#192a56] p-4 text-white flex items-center justify-between">
                     <span className="font-bold text-sm">التنبيهات والإشعارات ({notifications.length})</span>
                     <button 
                       onClick={fetchNotifications}
-                      className="text-xs text-[#D4AF37] hover:underline flex items-center gap-1"
+                      className="text-xs text-[#273c75] hover:underline flex items-center gap-1"
                       disabled={loadingNotifications}
                     >
                       {loadingNotifications ? "جاري التحديث..." : "تحديث"}
@@ -619,7 +621,7 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
                   <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100">
                     {loadingNotifications && notifications.length === 0 ? (
                       <div className="p-8 text-center text-gray-500 text-sm flex flex-col items-center gap-2">
-                        <Loader2 className="animate-spin text-[#133B2E]" size={20} />
+                        <Loader2 className="animate-spin text-[#192a56]" size={20} />
                         <span>جاري تحميل التنبيهات...</span>
                       </div>
                     ) : notifications.length === 0 ? (
@@ -638,12 +640,12 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
                           onClick={() => setShowDropdown(false)}
                           className="p-4 flex gap-3 hover:bg-gray-50 transition-colors block text-right"
                         >
-                          <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center ${n.type === "HEARING" ? "bg-amber-50 text-[#D4AF37]" : "bg-blue-50 text-blue-600"}`}>
+                          <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center ${n.type === "HEARING" ? "bg-amber-50 text-[#273c75]" : "bg-blue-50 text-blue-600"}`}>
                             {n.type === "HEARING" ? <Calendar size={16} /> : <CheckSquare size={16} />}
                           </div>
                           <div className="flex-1 min-w-0 space-y-1">
                             <div className="flex items-start justify-between gap-2">
-                              <p className="font-bold text-xs text-[#133B2E] truncate">{n.title}</p>
+                              <p className="font-bold text-xs text-[#192a56] truncate">{n.title}</p>
                               <span className={`shrink-0 text-[9px] font-bold px-2 py-0.5 rounded-full ${n.badgeColor}`}>
                                 {n.badge}
                               </span>
@@ -660,7 +662,7 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
                   <Link
                     to="/app/notifications"
                     onClick={() => setShowDropdown(false)}
-                    className="block border-t bg-gray-50/70 px-4 py-2.5 text-center text-xs font-bold text-[#133B2E] hover:bg-gray-100 transition"
+                    className="block border-t bg-gray-50/70 px-4 py-2.5 text-center text-xs font-bold text-[#192a56] hover:bg-gray-100 transition"
                   >
                     عرض كل التنبيهات
                   </Link>
@@ -672,10 +674,10 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
 
         <div className="flex items-center gap-2 md:gap-3 border-l pr-2 md:pl-4 border-gray-200">
           <div className="text-right hidden sm:block">
-            <p className="text-sm font-semibold text-[#133B2E]">{userName}</p>
+            <p className="text-sm font-semibold text-[#192a56]">{userName}</p>
             <p className="text-xs text-gray-500">{roleName}</p>
           </div>
-          <div className="w-8 h-8 md:w-10 md:h-10 bg-[#D4AF37] rounded-full flex items-center justify-center font-bold text-lg overflow-hidden border-2 border-white/20 shadow-sm">
+          <div className="w-8 h-8 md:w-10 md:h-10 bg-[#273c75] rounded-full flex items-center justify-center font-bold text-lg overflow-hidden border-2 border-white/20 shadow-sm">
             <img src="/logo.png" alt="User" className="w-full h-full object-cover" />
           </div>
         </div>
@@ -732,7 +734,7 @@ function SessionExpired({ email }: { email: string | null }) {
         <div className="w-16 h-16 mx-auto rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
           <Shield size={30} />
         </div>
-        <h1 className="text-2xl font-bold text-[#133B2E]">انتهت جلستك</h1>
+        <h1 className="text-2xl font-bold text-[#192a56]">انتهت جلستك</h1>
         <p className="text-sm text-gray-600 leading-relaxed">
           انتهت صلاحية تسجيل دخولك، ولهذا ظهرت البيانات فارغة.
           سجّل الدخول مرة أخرى لمتابعة العمل — لم يُفقد أي شيء من بياناتك.
@@ -742,7 +744,7 @@ function SessionExpired({ email }: { email: string | null }) {
         )}
         <button
           onClick={goLogin}
-          className="w-full py-3.5 rounded-2xl bg-[#133B2E] text-[#D4AF37] font-bold hover:bg-[#133B2E]/90 transition"
+          className="w-full py-3.5 rounded-2xl bg-[#192a56] text-[#273c75] font-bold hover:bg-[#192a56]/90 transition"
         >
           تسجيل الدخول من جديد
         </button>
@@ -777,7 +779,7 @@ function Layout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#F3F4F6] text-[#133B2E] font-['Tajawal']" dir="rtl">
+    <div className="flex min-h-screen bg-[#F3F4F6] text-[#192a56] font-['Tajawal']" dir="rtl">
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header onMenuOpen={() => setIsSidebarOpen(true)} />
@@ -794,8 +796,8 @@ function LoadingFallback() {
     return (
         <div className="flex items-center justify-center min-h-[50vh]">
             <div className="flex flex-col items-center gap-4">
-                <div className="w-10 h-10 border-4 border-[#133B2E] border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-[#133B2E] font-bold">جاري التحميل...</p>
+                <div className="w-10 h-10 border-4 border-[#192a56] border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-[#192a56] font-bold">جاري التحميل...</p>
             </div>
         </div>
     );

@@ -9,12 +9,12 @@ import {
 } from "../lib/execution";
 import { Input } from "./ui/input";
 
-const label = "text-sm font-bold text-[#133B2E]";
+const label = "text-sm font-bold text-[#192a56]";
 const select = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
 
 export const SectionTitle = ({ children }: { children: string }) => (
-  <div className="md:col-span-2 mt-2 flex items-center gap-2 border-t border-gray-200 pt-4 text-base font-bold text-[#133B2E]">
-    <span className="h-5 w-1.5 rounded-full bg-[#D4AF37]" />{children}
+  <div className="md:col-span-2 mt-2 flex items-center gap-2 border-t border-gray-200 pt-4 text-base font-bold text-[#192a56]">
+    <span className="h-5 w-1.5 rounded-full bg-[#273c75]" />{children}
   </div>
 );
 

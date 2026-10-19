@@ -185,7 +185,7 @@ export default function Invoices() {
         <div className="w-14 h-14 rounded-full bg-red-50 text-red-500 flex items-center justify-center">
           <ShieldAlert size={26} />
         </div>
-        <h2 className="text-xl font-bold text-[#133B2E]">لا تملك صلاحية الوصول للفواتير</h2>
+        <h2 className="text-xl font-bold text-[#192a56]">لا تملك صلاحية الوصول للفواتير</h2>
         <p className="text-sm text-gray-500">راجع مدير المكتب لمنحك الصلاحية.</p>
       </div>
     );
@@ -204,7 +204,7 @@ export default function Invoices() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">الفواتير</h1>
+          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">الفواتير</h1>
           <p className="text-gray-500 mt-1 text-sm">
             إصدار الفواتير واعتمادها ومتابعة تحصيلها — {rows.length} فاتورة
           </p>
@@ -214,7 +214,7 @@ export default function Invoices() {
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
           </Button>
           {canCreateInvoice(perms.role) && (
-            <Button onClick={() => setIsAddOpen(true)} className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white shadow-lg">
+            <Button onClick={() => setIsAddOpen(true)} className="bg-[#192a56] hover:bg-[#192a56]/90 text-white shadow-lg">
               <Plus className="ml-2 h-4 w-4" /> فاتورة جديدة
             </Button>
           )}
@@ -223,7 +223,7 @@ export default function Invoices() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          ["إجمالي المفوتر", summary.billed, "text-[#133B2E]"],
+          ["إجمالي المفوتر", summary.billed, "text-[#192a56]"],
           ["المحصَّل", summary.collected, "text-green-600"],
           ["المستحق", summary.outstanding, "text-amber-600"],
           ["المتأخر", summary.overdue, "text-red-600"],
@@ -260,27 +260,27 @@ export default function Invoices() {
       {rows.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <button onClick={() => setStatusFilter("ALL")}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${statusFilter === "ALL" ? "bg-[#133B2E] text-[#D4AF37] border-[#133B2E]" : "bg-white text-gray-600 border-gray-200"}`}>
+            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${statusFilter === "ALL" ? "bg-[#192a56] text-[#273c75] border-[#192a56]" : "bg-white text-gray-600 border-gray-200"}`}>
             الكل ({rows.length})
           </button>
           {[...counts.entries()].map(([s, n]) => (
             <button key={s} onClick={() => setStatusFilter(statusFilter === s ? "ALL" : s)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${statusFilter === s ? "bg-[#133B2E] text-[#D4AF37] border-[#133B2E]" : "bg-white text-gray-600 border-gray-200"}`}>
+              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${statusFilter === s ? "bg-[#192a56] text-[#273c75] border-[#192a56]" : "bg-white text-gray-600 border-gray-200"}`}>
               {INVOICE_STATUS_LABELS_AR[s]} ({n})
             </button>
           ))}
           <div className="relative mr-auto">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="بحث بالرقم أو العميل أو القضية..."
-              className="pr-9 pl-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:border-[#133B2E] w-full sm:w-64 bg-white" />
+              className="pr-9 pl-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:border-[#192a56] w-full sm:w-64 bg-white" />
           </div>
         </div>
       )}
 
       <Card className="shadow-sm border-gray-200">
         <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
-          <Receipt className="w-5 h-5 text-[#D4AF37]" />
-          <h2 className="font-bold text-lg text-[#133B2E]">
+          <Receipt className="w-5 h-5 text-[#273c75]" />
+          <h2 className="font-bold text-lg text-[#192a56]">
             قائمة الفواتير <span className="text-sm font-normal text-gray-400">({filtered.length})</span>
           </h2>
         </CardHeader>
@@ -321,7 +321,7 @@ export default function Invoices() {
                             </span>
                           )}
                         </div>
-                        <p className="font-bold text-[#133B2E] mt-1">{inv.clientName || "بلا عميل"}</p>
+                        <p className="font-bold text-[#192a56] mt-1">{inv.clientName || "بلا عميل"}</p>
                         <p className="text-xs text-gray-500 mt-0.5">
                           {money(inv.total)} {inv.currency || currency}
                           {inv.paidAmount > 0 ? ` · محصَّل ${money(inv.paidAmount)}` : ""}
@@ -397,9 +397,9 @@ export default function Invoices() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl"
           onClick={() => setPreview(null)}>
           <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[88vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b bg-[#133B2E] text-white flex justify-between items-center sticky top-0">
+            <div className="p-6 border-b bg-[#192a56] text-white flex justify-between items-center sticky top-0">
               <div>
-                <p className="font-mono text-xs text-[#D4AF37]" dir="ltr">{preview.invoiceNumber}</p>
+                <p className="font-mono text-xs text-[#273c75]" dir="ltr">{preview.invoiceNumber}</p>
                 <h2 className="text-xl font-bold">{preview.clientName || "—"}</h2>
               </div>
               <button onClick={() => setPreview(null)} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full"><X size={20} /></button>
@@ -416,7 +416,7 @@ export default function Invoices() {
                 ].map(([k, v]) => (
                   <div key={k} className="bg-gray-50 rounded-xl p-3">
                     <p className="text-xs text-gray-500">{k}</p>
-                    <p className="font-bold text-[#133B2E]">{v}</p>
+                    <p className="font-bold text-[#192a56]">{v}</p>
                   </div>
                 ))}
               </div>
@@ -443,7 +443,7 @@ export default function Invoices() {
               )}
 
               <div>
-                <p className="font-bold text-[#133B2E] mb-2">البنود</p>
+                <p className="font-bold text-[#192a56] mb-2">البنود</p>
                 <div className="border border-gray-100 rounded-xl overflow-hidden">
                   <div className="grid grid-cols-12 gap-2 px-3 py-2 bg-gray-50 text-xs font-bold text-gray-600">
                     <div className="col-span-6">الوصف</div>
@@ -466,7 +466,7 @@ export default function Invoices() {
                 <div className="mt-3 space-y-1 text-xs">
                   <div className="flex justify-between"><span className="text-gray-500">المجموع</span><span className="font-bold">{money(preview.subtotal)}</span></div>
                   <div className="flex justify-between"><span className="text-gray-500">الضريبة ({preview.vatRate}%)</span><span className="font-bold">{money(preview.vatAmount)}</span></div>
-                  <div className="flex justify-between text-sm pt-1 border-t"><span className="font-bold text-[#133B2E]">الإجمالي</span><span className="font-black text-[#D4AF37]">{money(preview.total)} {preview.currency}</span></div>
+                  <div className="flex justify-between text-sm pt-1 border-t"><span className="font-bold text-[#192a56]">الإجمالي</span><span className="font-black text-[#273c75]">{money(preview.total)} {preview.currency}</span></div>
                 </div>
               </div>
 
@@ -570,19 +570,19 @@ function RecordPaymentModal({
     } finally { setBusy(false); }
   };
 
-  const field = "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#133B2E] text-sm";
+  const field = "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#192a56] text-sm";
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl" onClick={onClose}>
       <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="p-6 border-b bg-[#133B2E] text-white flex justify-between items-center">
+        <div className="p-6 border-b bg-[#192a56] text-white flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center text-[#133B2E]">
+            <div className="w-10 h-10 bg-[#273c75] rounded-xl flex items-center justify-center text-[#192a56]">
               <Banknote size={20} />
             </div>
             <div>
               <h2 className="text-xl font-bold">سند قبض</h2>
-              <p className="text-xs text-[#D4AF37]">
+              <p className="text-xs text-[#273c75]">
                 {invoice.invoiceNumber} · المتبقي {money(invoice.remainingAmount)} {invoice.currency}
               </p>
             </div>
@@ -634,7 +634,7 @@ function RecordPaymentModal({
 
           <div className="flex gap-3">
             <Button type="submit" disabled={busy}
-              className="flex-1 py-6 bg-[#133B2E] text-[#D4AF37] font-bold rounded-2xl hover:bg-[#133B2E]/90">
+              className="flex-1 py-6 bg-[#192a56] text-[#273c75] font-bold rounded-2xl hover:bg-[#192a56]/90">
               {busy ? "جاري الحفظ..." : "حفظ السند"}
             </Button>
             <Button type="button" variant="outline" onClick={onClose}

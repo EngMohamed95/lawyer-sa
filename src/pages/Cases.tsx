@@ -109,7 +109,7 @@ function CaseRowsScroller({ children }: { children: ReactNode }) {
 
 // لون الحافة الجانبية وشارة الحالة في بطاقة القضية
 const CASE_STATUS_STYLES: Record<string, { bar: string; pill: string }> = {
-  "مفتوحة": { bar: "border-r-[#133B2E]", pill: "bg-[#133B2E] text-white" },
+  "مفتوحة": { bar: "border-r-[#192a56]", pill: "bg-[#192a56] text-white" },
   "معلّقة": { bar: "border-r-amber-500", pill: "bg-amber-500 text-white" },
   "موقوفة": { bar: "border-r-red-500", pill: "bg-red-500 text-white" },
   "مكتملة": { bar: "border-r-green-600", pill: "bg-green-600 text-white" },
@@ -118,7 +118,7 @@ const CASE_STATUS_STYLES: Record<string, { bar: string; pill: string }> = {
 };
 
 const Chip = ({ children }: { children: ReactNode }) => (
-  <span className="rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-[#133B2E]">{children}</span>
+  <span className="rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-[#192a56]">{children}</span>
 );
 
 function CaseRow({ c, expanded, onToggle, userRole }: { c: any; expanded: boolean; onToggle: () => void; userRole: string | null }) {
@@ -141,14 +141,14 @@ function CaseRow({ c, expanded, onToggle, userRole }: { c: any; expanded: boolea
       <div className="flex flex-col gap-4 p-4 lg:flex-row lg:items-center">
         {/* التاريخ */}
         <div className="w-fit shrink-0 rounded-lg bg-gray-100 px-4 py-2 text-center lg:w-28">
-          <div className="text-sm font-bold text-[#133B2E]">{formatHijri(c.startDate || c.createdAt)}</div>
+          <div className="text-sm font-bold text-[#192a56]">{formatHijri(c.startDate || c.createdAt)}</div>
           <div className="mt-0.5 text-xs text-gray-500">تاريخ القضية</div>
         </div>
 
         {/* رقم القضية ونوعها */}
         <div className="min-w-0 shrink-0 space-y-1.5 lg:w-72">
-          <Link to={`/app/cases/${c.id}`} className="flex items-center gap-2 text-lg font-bold text-[#133B2E] transition-colors hover:text-blue-700">
-            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#133B2E] text-white">
+          <Link to={`/app/cases/${c.id}`} className="flex items-center gap-2 text-lg font-bold text-[#192a56] transition-colors hover:text-blue-700">
+            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#192a56] text-white">
               <Briefcase size={14} />
             </span>
             <span dir="ltr" className="truncate">{c.caseNumber || "-"}</span>
@@ -186,7 +186,7 @@ function CaseRow({ c, expanded, onToggle, userRole }: { c: any; expanded: boolea
               <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`} />
             </button>
             <Link to={`/app/cases/${c.id}`} aria-label="فتح القضية" title="فتح القضية"
-              className="border-r border-gray-200 px-3 py-2 text-[#133B2E] transition-colors hover:bg-gray-50">
+              className="border-r border-gray-200 px-3 py-2 text-[#192a56] transition-colors hover:bg-gray-50">
               <Eye className="h-4 w-4" />
             </Link>
           </div>
@@ -247,7 +247,7 @@ function ExecutionRows({ cases, onEdit }: { cases: any[]; onEdit: (c: any) => vo
         return (
           <div key={c.id} className={`${EXECUTION_COLS} px-4 py-3 rounded-lg bg-white border border-gray-100 shadow-xs hover:shadow-sm transition`}>
             <Link to={`/app/cases/${c.id}`} dir="ltr" style={{ textAlign: "right" }}
-              className="text-base font-bold text-gray-900 hover:text-[#1a9a45] truncate">
+              className="text-base font-bold text-gray-900 hover:text-[#273c75] truncate">
               {c.caseNumber || "-"}
             </Link>
             <span className="text-sm text-gray-800 truncate">{c.enforcementRequestType || "-"}</span>
@@ -263,7 +263,7 @@ function ExecutionRows({ cases, onEdit }: { cases: any[]; onEdit: (c: any) => vo
             </span>
             <div className="justify-self-end flex gap-2">
               <button onClick={() => onEdit(c)}
-                className="px-3 py-1.5 rounded-md border border-[#D4AF37] text-sm font-bold text-[#B8962E] hover:bg-amber-50 transition">
+                className="px-3 py-1.5 rounded-md border border-[#273c75] text-sm font-bold text-[#192a56] hover:bg-amber-50 transition">
                 تعديل
               </button>
               <Link to={`/app/cases/${c.id}`}
@@ -442,15 +442,15 @@ export default function Cases() {
 
       {isExecutionView ? (
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">التنفيذ</h1>
-          <Button className="bg-[#1a9a45] hover:bg-[#15803a] text-white px-5 py-5 rounded-lg font-bold" onClick={() => setIsAddCaseOpen(true)}>
+          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">التنفيذ</h1>
+          <Button className="bg-[#273c75] hover:bg-[#192a56] text-white px-5 py-5 rounded-lg font-bold" onClick={() => setIsAddCaseOpen(true)}>
             <Plus className="ml-2 h-4 w-4" /> طلب تنفيذ جديد
           </Button>
         </div>
       ) : (
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">
+          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">
             {typeFilter ? `قضايا ${typeFilter}` : "إدارة القضايا"}
           </h1>
           <p className="text-gray-500 mt-1">سجل القضايا والعملاء</p>
@@ -463,7 +463,7 @@ export default function Cases() {
           >
             <FileSpreadsheet className="ml-2 h-5 w-5 text-green-600" /> تصدير لإكسل
           </Button>
-          <Button className="bg-[#D4AF37] hover:bg-[#B8962E] text-white px-6 py-6 rounded-2xl font-bold" onClick={() => setIsAddCaseOpen(true)}>
+          <Button className="bg-[#273c75] hover:bg-[#192a56] text-white px-6 py-6 rounded-2xl font-bold" onClick={() => setIsAddCaseOpen(true)}>
             <Plus className="ml-2 h-4 w-4" /> إضافة قضية جديدة
           </Button>
         </div>

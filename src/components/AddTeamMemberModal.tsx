@@ -147,14 +147,14 @@ export default function AddTeamMemberModal({
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
       <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in duration-300">
 
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-[#133B2E] text-white sticky top-0 z-10">
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-[#192a56] text-white sticky top-0 z-10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center text-[#133B2E]">
+            <div className="w-10 h-10 bg-[#273c75] rounded-xl flex items-center justify-center text-[#192a56]">
               <UserPlus size={20} />
             </div>
             <div>
               <h2 className="text-xl font-bold">إضافة عضو لفريق المكتب</h2>
-              <p className="text-xs text-[#D4AF37]">إنشاء حساب دخول وتحديد الدور والصلاحيات</p>
+              <p className="text-xs text-[#273c75]">إنشاء حساب دخول وتحديد الدور والصلاحيات</p>
             </div>
           </div>
           <button onClick={closeAndReset} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full transition-colors">
@@ -203,7 +203,7 @@ export default function AddTeamMemberModal({
 
             <div className="flex gap-3">
               <Button type="button" onClick={reset}
-                className="flex-1 py-5 bg-[#133B2E] text-[#D4AF37] rounded-2xl font-bold hover:bg-[#133B2E]/90">
+                className="flex-1 py-5 bg-[#192a56] text-[#273c75] rounded-2xl font-bold hover:bg-[#192a56]/90">
                 إضافة عضو آخر
               </Button>
               <Button type="button" variant="outline" onClick={closeAndReset}
@@ -225,7 +225,7 @@ export default function AddTeamMemberModal({
 
             {/* اختيار الدور */}
             <div className="space-y-3">
-              <label className="text-sm font-bold text-[#133B2E] block">الدور والصلاحيات</label>
+              <label className="text-sm font-bold text-[#192a56] block">الدور والصلاحيات</label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {ROLES_CREATABLE_BY_OFFICE.map((r) => (
                   <button
@@ -234,13 +234,13 @@ export default function AddTeamMemberModal({
                     onClick={() => setRole(r)}
                     className={`text-right p-3 rounded-2xl border-2 transition-all ${
                       role === r
-                        ? "border-[#D4AF37] bg-[#D4AF37]/10 shadow-sm"
+                        ? "border-[#273c75] bg-[#273c75]/10 shadow-sm"
                         : "border-gray-200 hover:border-gray-300 bg-white"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-bold text-sm text-[#133B2E]">{ROLE_LABELS_AR[r]}</span>
-                      {role === r && <Check size={16} className="text-[#D4AF37] shrink-0" />}
+                      <span className="font-bold text-sm text-[#192a56]">{ROLE_LABELS_AR[r]}</span>
+                      {role === r && <Check size={16} className="text-[#273c75] shrink-0" />}
                     </div>
                     <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
                       {ROLE_DESCRIPTIONS_AR[r]}
@@ -255,7 +255,7 @@ export default function AddTeamMemberModal({
               <input
                 required type="text" value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/10 focus:border-[#133B2E] transition-all"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#192a56]/10 focus:border-[#192a56] transition-all"
                 placeholder="الاسم رباعي"
               />
             </div>
@@ -268,7 +268,7 @@ export default function AddTeamMemberModal({
                   <input
                     required type="email" value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full pr-12 pl-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/10 focus:border-[#133B2E] transition-all"
+                    className="w-full pr-12 pl-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#192a56]/10 focus:border-[#192a56] transition-all"
                     placeholder="name@example.com" dir="ltr"
                   />
                 </div>
@@ -281,7 +281,7 @@ export default function AddTeamMemberModal({
                   <input
                     type="tel" value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    className="w-full pr-12 pl-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/10 focus:border-[#133B2E] transition-all"
+                    className="w-full pr-12 pl-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#192a56]/10 focus:border-[#192a56] transition-all"
                     placeholder="05xxxxxxxx" dir="ltr"
                   />
                 </div>
@@ -296,7 +296,7 @@ export default function AddTeamMemberModal({
                   <input
                     required type="text" value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    className="w-full pr-12 pl-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/10 focus:border-[#133B2E] transition-all font-mono text-sm"
+                    className="w-full pr-12 pl-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#192a56]/10 focus:border-[#192a56] transition-all font-mono text-sm"
                     placeholder="8 أحرف على الأقل، حروف وأرقام" dir="ltr"
                   />
                 </div>
@@ -304,7 +304,7 @@ export default function AddTeamMemberModal({
                   type="button"
                   onClick={() => setForm({ ...form, password: generatePassword() })}
                   variant="outline"
-                  className="px-4 rounded-2xl border-gray-200 text-[#133B2E] hover:bg-gray-50 shrink-0"
+                  className="px-4 rounded-2xl border-gray-200 text-[#192a56] hover:bg-gray-50 shrink-0"
                   title="توليد كلمة مرور قوية"
                 >
                   <RefreshCw size={16} />
@@ -326,7 +326,7 @@ export default function AddTeamMemberModal({
 
             <div className="flex gap-3 pt-2">
               <Button type="submit" disabled={loading}
-                className="flex-1 py-6 bg-[#133B2E] text-[#D4AF37] font-bold rounded-2xl hover:bg-[#133B2E]/90 active:scale-[0.98] transition-all">
+                className="flex-1 py-6 bg-[#192a56] text-[#273c75] font-bold rounded-2xl hover:bg-[#192a56]/90 active:scale-[0.98] transition-all">
                 {loading ? "جاري الإنشاء..." : "إنشاء الحساب"}
               </Button>
               <Button type="button" variant="outline" onClick={closeAndReset}

@@ -112,7 +112,7 @@ export default function CaseParties({ caseData, onSave, isExecution = false }: {
           <button
             onClick={() => setEditing({ id: newId(), name: "", role, nationalId: "", nationality: "سعودي" })}
             disabled={saving}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-gray-200 text-xs font-bold text-[#1a9a45] hover:bg-green-50 transition disabled:opacity-50"
+            className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-gray-200 text-xs font-bold text-[#273c75] hover:bg-green-50 transition disabled:opacity-50"
           >
             <Plus size={14} /> إضافة
           </button>
@@ -137,7 +137,7 @@ export default function CaseParties({ caseData, onSave, isExecution = false }: {
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
-      <h2 className="text-xl font-bold text-[#1a9a45]">{isExecution ? "أطراف الطلب" : "أطراف الدعوى"}</h2>
+      <h2 className="text-xl font-bold text-[#273c75]">{isExecution ? "أطراف الطلب" : "أطراف الدعوى"}</h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {column("PLAINTIFF", `قائمة ${L.plaintiffs}`)}
         {column("DEFENDANT", `قائمة ${L.defendants}`)}
@@ -162,11 +162,11 @@ function PartyCard({ p, onEdit, onDelete, disabled, roleLabel }: {
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <h4 className="text-lg font-bold text-gray-900 truncate">{p.name}</h4>
-          {p.isClient && <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#D4AF37]/15 text-[#8a6d12]">العميل</span>}
+          {p.isClient && <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#273c75]/15 text-[#192a56]">العميل</span>}
         </div>
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition">
           <button onClick={onEdit} disabled={disabled} title="تعديل"
-            className="h-7 w-7 flex items-center justify-center rounded-md text-gray-500 hover:bg-white hover:text-[#133B2E]">
+            className="h-7 w-7 flex items-center justify-center rounded-md text-gray-500 hover:bg-white hover:text-[#192a56]">
             <Pencil size={14} />
           </button>
           <button onClick={onDelete} disabled={disabled} title="حذف"
@@ -182,7 +182,7 @@ function PartyCard({ p, onEdit, onDelete, disabled, roleLabel }: {
       </div>
       {p.representativeName && (
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 border-t border-gray-200 pt-3 text-base">
-          <Briefcase size={17} className="shrink-0 text-[#1a9a45]" />
+          <Briefcase size={17} className="shrink-0 text-[#273c75]" />
           <span className="text-gray-500">الصفة:</span>
           <span className="font-bold text-gray-900">{p.representativeName}</span>
           {p.representativeType && <Chip>{p.representativeType}</Chip>}
@@ -201,13 +201,13 @@ function PartyForm({ value, onChange, onSubmit, onCancel, saving, roleLabel }: {
   saving: boolean;
   roleLabel: Record<PartyRole, string>;
 }) {
-  const input = "w-full h-9 px-3 rounded-md border border-gray-300 text-sm bg-white focus:outline-none focus:border-[#1a9a45] focus:ring-1 focus:ring-[#1a9a45]";
+  const input = "w-full h-9 px-3 rounded-md border border-gray-300 text-sm bg-white focus:outline-none focus:border-[#273c75] focus:ring-1 focus:ring-[#273c75]";
   return (
     <form
       onSubmit={(e) => { e.preventDefault(); onSubmit(value); }}
-      className="rounded-md border-2 border-[#bfe3d6] bg-white px-4 py-3 space-y-2.5"
+      className="rounded-md border-2 border-[#c9d1e6] bg-white px-4 py-3 space-y-2.5"
     >
-      <div className="flex items-center gap-2 text-sm font-bold text-[#133B2E]">
+      <div className="flex items-center gap-2 text-sm font-bold text-[#192a56]">
         <UserRound size={15} /> {roleLabel[value.role]}
       </div>
       <input autoFocus required placeholder="الاسم الكامل" className={input}
@@ -223,7 +223,7 @@ function PartyForm({ value, onChange, onSubmit, onCancel, saving, roleLabel }: {
         هذا الطرف هو العميل
       </label>
       <div className="space-y-2 border-t border-gray-100 pt-2.5">
-        <div className="flex items-center gap-2 text-xs font-bold text-[#133B2E]">
+        <div className="flex items-center gap-2 text-xs font-bold text-[#192a56]">
           <Briefcase size={13} /> صفة {roleLabel[value.role]} (اختياري)
         </div>
         <input placeholder="الصفة (مثال: مباشر بدون محامي، أو اسم الوكيل)" className={input}
@@ -243,7 +243,7 @@ function PartyForm({ value, onChange, onSubmit, onCancel, saving, roleLabel }: {
           <X size={13} /> إلغاء
         </button>
         <button type="submit" disabled={saving || !value.name.trim()}
-          className="flex items-center gap-1 px-4 py-1.5 rounded-md bg-[#1a9a45] hover:bg-[#15803a] text-white text-xs font-bold disabled:opacity-50">
+          className="flex items-center gap-1 px-4 py-1.5 rounded-md bg-[#273c75] hover:bg-[#192a56] text-white text-xs font-bold disabled:opacity-50">
           <Check size={13} /> {saving ? "جاري الحفظ..." : "حفظ"}
         </button>
       </div>

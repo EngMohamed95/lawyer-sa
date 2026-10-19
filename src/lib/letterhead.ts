@@ -15,9 +15,9 @@ import type { OfficeProfile } from "./officeSettings";
 
 /** شعار المنصة — يُخدَّم من جذر المشروع (public/logo.png عبر Vite) */
 const PLATFORM_LOGO_URL = "/logo.png";
-const BRAND_DARK = "#133B2E";
-const BRAND_DARK_2 = "#1c5741";
-const BRAND_GOLD = "#D4AF37";
+const BRAND_DARK = "#192a56";
+const BRAND_DARK_2 = "#273c75";
+const BRAND_GOLD = "#273c75";
 
 export interface LetterheadHeaderOptions {
   /** نص صغير أعلى يمين الترويسة (مثال: "نسخة العميل") */
@@ -41,11 +41,11 @@ function initial(profile: OfficeProfile): string {
   return (profile.name || "مكتب").trim().charAt(0) || "م";
 }
 
-/** ترويسة احترافية بتدرّج أخضر داكن + شعار المكتب — للطباعة المباشرة و PDF */
+/** ترويسة احترافية بتدرّج كحلي داكن + شعار المكتب — للطباعة المباشرة و PDF */
 export function renderLetterheadHeader(profile: OfficeProfile, opts: LetterheadHeaderOptions = {}): string {
   const officeLogo = profile.logoUrl
     ? `<img src="${profile.logoUrl}" alt="شعار المكتب" style="width:54px; height:54px; object-fit:contain; background:#fff; border-radius:12px; padding:5px;" />`
-    : `<div style="width:54px; height:54px; border-radius:12px; background:rgba(255,255,255,0.14); display:flex; align-items:center; justify-content:center; font-size:20pt; font-weight:bold; color:${BRAND_GOLD};">${initial(profile)}</div>`;
+    : `<div style="width:54px; height:54px; border-radius:12px; background:rgba(255,255,255,0.14); display:flex; align-items:center; justify-content:center; font-size:20pt; font-weight:bold; color:#fff;">${initial(profile)}</div>`;
 
   const contact = contactLine(profile);
 
@@ -57,7 +57,7 @@ export function renderLetterheadHeader(profile: OfficeProfile, opts: LetterheadH
             ${officeLogo}
             <div style="min-width:0;">
               <div style="font-size:15pt; font-weight:bold; white-space:nowrap;">${profile.name || "مكتب المحاماة"}</div>
-              ${contact ? `<div style="font-size:9pt; color:${BRAND_GOLD}; margin-top:2px;">${contact}</div>` : ""}
+              ${contact ? `<div style="font-size:9pt; color:rgba(255,255,255,0.8); margin-top:2px;">${contact}</div>` : ""}
             </div>
           </div>
           <div style="display:flex; align-items:center; gap:10px;">
@@ -71,7 +71,7 @@ export function renderLetterheadHeader(profile: OfficeProfile, opts: LetterheadH
         </div>
         ${opts.documentLabel ? `<div style="margin-top:14px; text-align:center; font-size:14pt; font-weight:bold;">${opts.documentLabel}</div>` : ""}
       </div>
-      <div style="height:4px; background:linear-gradient(90deg, ${BRAND_GOLD} 0%, #f3d879 50%, ${BRAND_GOLD} 100%);"></div>
+      <div style="height:4px; background:linear-gradient(90deg, ${BRAND_GOLD} 0%, #8b9bc9 50%, ${BRAND_GOLD} 100%);"></div>
     </div>
   `;
 }
@@ -188,7 +188,7 @@ export function renderLetterheadHeaderWordSafe(profile: OfficeProfile, opts: Let
         <td style="padding:16px 20px 16px 0; width:70px;">${logoCell}</td>
         <td style="padding:16px 0; text-align:right;">
           <div style="font-size:16pt; font-weight:bold;">${profile.name || "مكتب المحاماة"}</div>
-          ${contact ? `<div style="font-size:10pt; color:${BRAND_GOLD};">${contact}</div>` : ""}
+          ${contact ? `<div style="font-size:10pt; color:rgba(255,255,255,0.8);">${contact}</div>` : ""}
         </td>
         <td style="padding:16px 20px; text-align:left; font-size:9pt; color:#e5e5e5; white-space:nowrap;">
           ${new Date().toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" })}

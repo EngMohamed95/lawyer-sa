@@ -108,7 +108,7 @@ export default function AuditLog({ embedded = false }: { embedded?: boolean } = 
         <div className="w-14 h-14 rounded-full bg-red-50 text-red-500 flex items-center justify-center">
           <ShieldAlert size={26} />
         </div>
-        <h2 className="text-xl font-bold text-[#133B2E]">لا تملك صلاحية الاطلاع على سجل التدقيق</h2>
+        <h2 className="text-xl font-bold text-[#192a56]">لا تملك صلاحية الاطلاع على سجل التدقيق</h2>
         <p className="text-sm text-gray-500">هذه الصفحة متاحة لمدير المكتب فقط.</p>
       </div>
     );
@@ -125,7 +125,7 @@ export default function AuditLog({ embedded = false }: { embedded?: boolean } = 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           {/* داخل الإعدادات يوجد عنوان الصفحة أصلاً، فلا نكرّره */}
-          <h1 className={`font-bold text-[#133B2E] tracking-tight ${embedded ? "text-xl" : "text-3xl"}`}>
+          <h1 className={`font-bold text-[#192a56] tracking-tight ${embedded ? "text-xl" : "text-3xl"}`}>
             سجل التدقيق
           </h1>
           <p className="text-gray-500 mt-1 text-sm">
@@ -150,7 +150,7 @@ export default function AuditLog({ embedded = false }: { embedded?: boolean } = 
           <button
             onClick={() => setActionFilter("ALL")}
             className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${
-              actionFilter === "ALL" ? "bg-[#133B2E] text-[#D4AF37] border-[#133B2E]" : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+              actionFilter === "ALL" ? "bg-[#192a56] text-[#273c75] border-[#192a56]" : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
             }`}
           >
             الكل ({rows.length})
@@ -160,7 +160,7 @@ export default function AuditLog({ embedded = false }: { embedded?: boolean } = 
               key={a}
               onClick={() => setActionFilter(actionFilter === a ? "ALL" : a)}
               className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${
-                actionFilter === a ? "bg-[#133B2E] text-[#D4AF37] border-[#133B2E]" : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                actionFilter === a ? "bg-[#192a56] text-[#273c75] border-[#192a56]" : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
               }`}
             >
               {AUDIT_ACTION_LABELS_AR[a]} ({rows.filter((r) => r.action === a).length})
@@ -172,7 +172,7 @@ export default function AuditLog({ embedded = false }: { embedded?: boolean } = 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="بحث بالمستخدم أو السجل..."
-              className="pr-9 pl-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:border-[#133B2E] w-full sm:w-64 bg-white"
+              className="pr-9 pl-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:border-[#192a56] w-full sm:w-64 bg-white"
             />
           </div>
         </div>
@@ -180,8 +180,8 @@ export default function AuditLog({ embedded = false }: { embedded?: boolean } = 
 
       <Card className="shadow-sm border-gray-200">
         <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
-          <ScrollText className="w-5 h-5 text-[#D4AF37]" />
-          <h2 className="font-bold text-lg text-[#133B2E]">
+          <ScrollText className="w-5 h-5 text-[#273c75]" />
+          <h2 className="font-bold text-lg text-[#192a56]">
             العمليات <span className="text-sm font-normal text-gray-400">({filtered.length})</span>
           </h2>
         </CardHeader>
@@ -192,7 +192,7 @@ export default function AuditLog({ embedded = false }: { embedded?: boolean } = 
               <p className="text-sm text-gray-700 max-w-lg mx-auto leading-relaxed">{error}</p>
               {indexUrl ? (
                 <a href={indexUrl} target="_blank" rel="noreferrer"
-                  className="inline-block px-6 py-3 bg-[#133B2E] text-[#D4AF37] rounded-2xl font-bold text-sm">
+                  className="inline-block px-6 py-3 bg-[#192a56] text-[#273c75] rounded-2xl font-bold text-sm">
                   إنشاء الفهرس في Firebase
                 </a>
               ) : (
@@ -224,7 +224,7 @@ export default function AuditLog({ embedded = false }: { embedded?: boolean } = 
                       </span>
 
                       <div className="flex-1 min-w-0 space-y-1">
-                        <p className="text-sm text-[#133B2E]">
+                        <p className="text-sm text-[#192a56]">
                           <span className="font-bold">{r.actorName || "مستخدم غير معروف"}</span>
                           <span className="text-gray-500"> — </span>
                           <span className="text-gray-600">
@@ -238,7 +238,7 @@ export default function AuditLog({ embedded = false }: { embedded?: boolean } = 
                           {hasDetail && (
                             <button
                               onClick={() => setExpanded(isOpen ? null : r.id)}
-                              className="text-xs text-[#D4AF37] hover:underline flex items-center gap-1"
+                              className="text-xs text-[#273c75] hover:underline flex items-center gap-1"
                             >
                               {isOpen ? "إخفاء التفاصيل" : "عرض التفاصيل"}
                               <ChevronDown size={12} className={`transition-transform ${isOpen ? "rotate-180" : ""}`} />

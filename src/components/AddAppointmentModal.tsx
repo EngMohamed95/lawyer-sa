@@ -155,19 +155,19 @@ export default function AddAppointmentModal({
     } finally { setBusy(false); }
   };
 
-  const field = "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#133B2E] text-sm";
+  const field = "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#192a56] text-sm";
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl" onClick={onClose}>
       <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="p-6 border-b bg-[#133B2E] text-white flex justify-between items-center sticky top-0 z-10">
+        <div className="p-6 border-b bg-[#192a56] text-white flex justify-between items-center sticky top-0 z-10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center text-[#133B2E]">
+            <div className="w-10 h-10 bg-[#273c75] rounded-xl flex items-center justify-center text-[#192a56]">
               <CalendarPlus size={20} />
             </div>
             <div>
               <h2 className="text-xl font-bold">موعد جديد</h2>
-              <p className="text-xs text-[#D4AF37]">يظهر في التقويم الموحّد مع الجلسات والمهام</p>
+              <p className="text-xs text-[#273c75]">يظهر في التقويم الموحّد مع الجلسات والمهام</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full"><X size={20} /></button>
@@ -239,7 +239,7 @@ export default function AddAppointmentModal({
             )}
 
             <div className="md:col-span-2 flex items-center gap-2">
-              <input id="allDay" type="checkbox" checked={form.allDay} className="w-5 h-5 accent-[#133B2E]"
+              <input id="allDay" type="checkbox" checked={form.allDay} className="w-5 h-5 accent-[#192a56]"
                 onChange={(e) => setForm({ ...form, allDay: e.target.checked })} />
               <label htmlFor="allDay" className="text-sm font-bold text-gray-700 cursor-pointer">يوم كامل</label>
             </div>
@@ -273,7 +273,7 @@ export default function AddAppointmentModal({
 
           <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 space-y-3">
             <div className="flex items-center gap-2">
-              <input id="isOnline" type="checkbox" checked={form.isOnline} className="w-5 h-5 accent-[#133B2E]"
+              <input id="isOnline" type="checkbox" checked={form.isOnline} className="w-5 h-5 accent-[#192a56]"
                 onChange={(e) => setForm({ ...form, isOnline: e.target.checked })} />
               <label htmlFor="isOnline" className="text-sm font-bold text-gray-700 cursor-pointer flex items-center gap-1">
                 <Video size={15} /> اجتماع عن بُعد
@@ -322,12 +322,12 @@ export default function AddAppointmentModal({
             <p className="text-sm font-bold text-gray-700">التذكيرات</p>
             <div className="flex flex-wrap gap-4">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input type="checkbox" checked={form.remindDayBefore} className="w-4 h-4 accent-[#133B2E]"
+                <input type="checkbox" checked={form.remindDayBefore} className="w-4 h-4 accent-[#192a56]"
                   onChange={(e) => setForm({ ...form, remindDayBefore: e.target.checked })} />
                 قبل يوم
               </label>
               <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input type="checkbox" checked={form.remindHourBefore} className="w-4 h-4 accent-[#133B2E]"
+                <input type="checkbox" checked={form.remindHourBefore} className="w-4 h-4 accent-[#192a56]"
                   onChange={(e) => setForm({ ...form, remindHourBefore: e.target.checked })} />
                 قبل ساعة
               </label>
@@ -345,7 +345,7 @@ export default function AddAppointmentModal({
 
           <div className="flex gap-3 pt-2">
             <Button type="submit" disabled={busy}
-              className="flex-1 py-6 bg-[#133B2E] text-[#D4AF37] font-bold rounded-2xl hover:bg-[#133B2E]/90">
+              className="flex-1 py-6 bg-[#192a56] text-[#273c75] font-bold rounded-2xl hover:bg-[#192a56]/90">
               <Save size={16} className="ml-2" />
               {busy ? "جاري الحفظ..." : conflicts.length > 0 ? "حفظ رغم التعارض" : "حفظ الموعد"}
             </Button>

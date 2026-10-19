@@ -28,9 +28,9 @@ import { Button } from "./ui/button";
 
 type Audience = "OFFICE" | "CLIENT";
 
-const GREEN = "#133B2E";
-const GREEN_2 = "#1a9a45";
-const GOLD = "#D4AF37";
+const GREEN = "#192a56";
+const GREEN_2 = "#273c75";
+const GOLD = "#273c75";
 const MUTED = "#6b7280";
 const LINE = "#e5e7eb";
 
@@ -128,7 +128,7 @@ export function renderCaseReportHtml({ data, profile, stampUrl, audience, aiHtml
   const hearingRow = (h: any, isPast: boolean) => `
     <tr>
       <td style="width:110px; vertical-align:top; padding:12px 0 12px 12px; border-bottom:1px solid ${LINE};">
-        <div style="background:${isPast ? "#ecfdf3" : "#eff6ff"}; color:${isPast ? GREEN_2 : "#2563eb"}; border-radius:10px; padding:8px 6px; text-align:center;">
+        <div style="background:${isPast ? "#eef1f8" : "#eff6ff"}; color:${isPast ? GREEN_2 : "#2563eb"}; border-radius:10px; padding:8px 6px; text-align:center;">
           <div style="font-size:10pt; font-weight:bold;">${esc(formatGregorian(h.hearingDate))}</div>
           <div style="font-size:8pt; margin-top:2px;">${isPast ? "انعقدت" : "قادمة"}</div>
         </div>
@@ -179,7 +179,7 @@ export function renderCaseReportHtml({ data, profile, stampUrl, audience, aiHtml
             ${kpi("حالة القضية", statusAr, data.status === "CLOSED" ? MUTED : GREEN_2)}
             ${kpi("جلسات انعقدت", String(past.length))}
             ${kpi("الجلسة القادمة", upcoming[0] ? esc(formatGregorian(upcoming[0].hearingDate)) : "لا يوجد", upcoming[0] ? "#2563eb" : MUTED)}
-            ${kpi("الحكم", finalJudgment ? "صدر حكم نهائي" : judgments.length ? "حكم غير نهائي" : "لم يصدر", finalJudgment ? GREEN_2 : "#b8962e")}
+            ${kpi("الحكم", finalJudgment ? "صدر حكم نهائي" : judgments.length ? "حكم غير نهائي" : "لم يصدر", finalJudgment ? GREEN_2 : "#192a56")}
           </tr>
         </table>
 
@@ -200,7 +200,7 @@ export function renderCaseReportHtml({ data, profile, stampUrl, audience, aiHtml
           <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr>
             ${kpi("المدون في السند", d.deedAmount ? esc(formatMoney(d.deedAmount)) : "—")}
             ${kpi("المستلم", esc(formatMoney(d.receivedAmount || 0)), GREEN_2)}
-            ${kpi("المتبقي", rem === null ? "—" : esc(formatMoney(rem)), "#b8962e")}
+            ${kpi("المتبقي", rem === null ? "—" : esc(formatMoney(rem)), "#192a56")}
             ${kpi("المطلوب تنفيذه", d.requestedAmount ? esc(formatMoney(d.requestedAmount)) : "—")}
           </tr></table>
           <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; border:1px solid ${LINE}; margin-top:10px;">
@@ -211,7 +211,7 @@ export function renderCaseReportHtml({ data, profile, stampUrl, audience, aiHtml
 
         ${aiHtml ? `
           ${sectionTitle(forClient ? "ملخص وضع قضيتكم" : "الملخص الذكي والتحليل")}
-          <div style="background:#f7fbf8; border:1px solid #cfe9d8; border-radius:12px; padding:14px 18px; font-size:10.5pt; line-height:1.85; color:#1f2937;">
+          <div style="background:#f5f7fb; border:1px solid #d6dcec; border-radius:12px; padding:14px 18px; font-size:10.5pt; line-height:1.85; color:#1f2937;">
             ${styleAiHtml(aiHtml)}
             <div style="margin-top:8px; font-size:8pt; color:${MUTED};">✦ أُعدّ هذا الملخص بمساعدة الذكاء الاصطناعي ومراجعة المكتب.</div>
           </div>` : ""}
@@ -227,7 +227,7 @@ export function renderCaseReportHtml({ data, profile, stampUrl, audience, aiHtml
           <div style="border:1px solid ${LINE}; border-radius:10px; padding:12px 16px;">
             <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr>
               <td style="font-size:10.5pt; color:${GREEN}; font-weight:bold;">نسبة الإنجاز</td>
-              <td style="text-align:left; font-size:12pt; font-weight:bold; color:#b8962e;">${enforcementProgress}%</td>
+              <td style="text-align:left; font-size:12pt; font-weight:bold; color:#192a56;">${enforcementProgress}%</td>
             </tr></table>
             <div style="height:8px; background:#f3f4f6; border-radius:999px; margin-top:8px; overflow:hidden;">
               <div style="height:8px; width:${Math.max(0, Math.min(100, enforcementProgress))}%; background:${GOLD}; border-radius:999px;"></div>
@@ -239,7 +239,7 @@ export function renderCaseReportHtml({ data, profile, stampUrl, audience, aiHtml
           `حكم ${j.isFinal ? "نهائي" : "غير نهائي"}${j.deedNumber ? ` — صك ${esc(j.deedNumber)}` : ""}`,
           esc([formatGregorian(j.judgmentDate), COURT_DEGREE_LABELS_AR[j.degree]].filter(Boolean).join(" · ")),
           esc(j.ruling),
-          j.isFinal ? GREEN_2 : "#5fb8c2",
+          j.isFinal ? GREEN_2 : "#353b48",
         )).join("") : emptyNote("لم يصدر حكم في القضية بعد.")}
 
         ${decisions.length ? `
@@ -442,8 +442,8 @@ export default function CaseStatusReport({ data, profile, stampUrl, isExecutionC
       <CardHeader className="border-b border-gray-100 bg-gray-50/60 pb-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2 text-lg text-[#133B2E]">
-              <FileBarChart className="h-5 w-5 text-[#1a9a45]" /> تقرير حالة القضية
+            <CardTitle className="flex items-center gap-2 text-lg text-[#192a56]">
+              <FileBarChart className="h-5 w-5 text-[#273c75]" /> تقرير حالة القضية
             </CardTitle>
             <CardDescription className="mt-1 text-xs text-gray-500">
               على ترويسة المكتب — اطبعه أو حمّله PDF أو أرسله للعميل عبر واتساب.
@@ -452,7 +452,7 @@ export default function CaseStatusReport({ data, profile, stampUrl, isExecutionC
           <div className="flex shrink-0 items-center gap-1 rounded-xl border border-gray-200 bg-white p-1">
             {(["OFFICE", "CLIENT"] as Audience[]).map((a) => (
               <button key={a} onClick={() => { setAudience(a); setAiError(""); }}
-                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${audience === a ? "bg-[#133B2E] text-[#D4AF37]" : "text-gray-500 hover:bg-gray-50"}`}>
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${audience === a ? "bg-[#192a56] text-[#273c75]" : "text-gray-500 hover:bg-gray-50"}`}>
                 {a === "OFFICE" ? "نسخة صاحب المكتب" : "نسخة العميل"}
               </button>
             ))}
@@ -464,7 +464,7 @@ export default function CaseStatusReport({ data, profile, stampUrl, isExecutionC
           <div className="flex items-start gap-2.5">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-600 text-white"><Sparkles size={17} /></span>
             <div>
-              <p className="text-sm font-bold text-[#133B2E]">
+              <p className="text-sm font-bold text-[#192a56]">
                 {audience === "CLIENT" ? "ملخص ذكي مبسّط للعميل" : "ملخص وتحليل ذكي لصاحب المكتب"}
               </p>
               <p className="text-xs text-gray-500">
@@ -500,7 +500,7 @@ export default function CaseStatusReport({ data, profile, stampUrl, isExecutionC
           <Button variant="outline" onClick={handlePrint} className="border-gray-200 text-gray-700 hover:bg-gray-50">
             <Printer className="ml-2 h-4 w-4" /> طباعة
           </Button>
-          <Button variant="outline" disabled={pdfBusy} onClick={handleDownload} className="border-[#133B2E] text-[#133B2E] hover:bg-gray-50">
+          <Button variant="outline" disabled={pdfBusy} onClick={handleDownload} className="border-[#192a56] text-[#192a56] hover:bg-gray-50">
             {pdfBusy ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Download className="ml-2 h-4 w-4" />} تحميل PDF
           </Button>
           <Button disabled={waBusy} onClick={handleWhatsApp} title={clientPhone ? `إرسال إلى ${clientPhone}` : "لا يوجد رقم جوال مسجَّل للعميل"}

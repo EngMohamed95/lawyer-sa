@@ -126,7 +126,7 @@ export const SOURCE_LABELS_AR: Record<EventSource, string> = {
 
 /** ألوان الشرائح داخل التقويم — لكل مصدر لون ثابت */
 export const SOURCE_COLORS: Record<EventSource, string> = {
-  appointment: "bg-[#133B2E] text-white border-[#133B2E]",
+  appointment: "bg-[#192a56] text-white border-[#192a56]",
   hearing: "bg-cyan-100 text-cyan-900 border-cyan-200",
   request: "bg-lime-100 text-lime-900 border-lime-200",
   task: "bg-purple-100 text-purple-900 border-purple-200",
@@ -135,7 +135,7 @@ export const SOURCE_COLORS: Record<EventSource, string> = {
 };
 
 export const SOURCE_DOT: Record<EventSource, string> = {
-  appointment: "bg-[#133B2E]",
+  appointment: "bg-[#192a56]",
   hearing: "bg-cyan-500",
   request: "bg-lime-500",
   task: "bg-purple-500",

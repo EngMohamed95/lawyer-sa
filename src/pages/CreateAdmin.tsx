@@ -44,14 +44,14 @@ export default function CreateAdmin() {
   // طبقة حماية ثانية: حتى لو وصل أحد لهذا المكوّن بأي طريقة، لا يعمل إلا بتفعيل صريح.
   if (import.meta.env.VITE_ENABLE_CREATE_ADMIN !== "true") {
     return (
-      <div dir="rtl" className="min-h-screen bg-[#133B2E] text-white flex items-center justify-center p-6 font-['Tajawal']">
+      <div dir="rtl" className="min-h-screen bg-[#192a56] text-white flex items-center justify-center p-6 font-['Tajawal']">
         <div className="bg-white text-gray-900 p-8 rounded-2xl max-w-md w-full shadow-2xl text-center space-y-3">
-          <h1 className="text-xl font-bold text-[#133B2E]">هذه الصفحة معطّلة</h1>
+          <h1 className="text-xl font-bold text-[#192a56]">هذه الصفحة معطّلة</h1>
           <p className="text-sm text-gray-600 leading-relaxed">
             إنشاء حساب المدير العام غير متاح من المتصفح لأسباب أمنية.
             يتم إنشاؤه من الخادم عبر <span className="font-mono text-xs">create_admin.mjs</span> فقط.
           </p>
-          <a href="/login" className="inline-block mt-2 px-6 py-2 bg-[#133B2E] text-[#D4AF37] rounded-xl font-bold text-sm">
+          <a href="/login" className="inline-block mt-2 px-6 py-2 bg-[#192a56] text-[#273c75] rounded-xl font-bold text-sm">
             العودة لتسجيل الدخول
           </a>
         </div>
@@ -60,9 +60,9 @@ export default function CreateAdmin() {
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#133B2E] text-white flex items-center justify-center p-6 font-['Tajawal']">
+    <div dir="rtl" className="min-h-screen bg-[#192a56] text-white flex items-center justify-center p-6 font-['Tajawal']">
       <div className="bg-white text-gray-900 p-8 rounded-2xl max-w-md w-full shadow-2xl">
-        <h1 className="text-2xl font-bold text-center text-[#133B2E] mb-6">إنشاء حساب المدير العام (Super Admin)</h1>
+        <h1 className="text-2xl font-bold text-center text-[#192a56] mb-6">إنشاء حساب المدير العام (Super Admin)</h1>
         
         <form onSubmit={handleCreate} className="space-y-4">
           <div>
@@ -104,7 +104,7 @@ export default function CreateAdmin() {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full bg-[#D4AF37] text-white p-3 rounded-xl font-bold hover:bg-[#D4AF37]/90 transition-colors"
+            className="w-full bg-[#273c75] text-white p-3 rounded-xl font-bold hover:bg-[#273c75]/90 transition-colors"
           >
             {loading ? "جاري الإنشاء..." : "إنشاء الحساب"}
           </button>

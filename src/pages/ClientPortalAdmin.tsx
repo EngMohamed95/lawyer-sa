@@ -75,7 +75,7 @@ export default function ClientPortalAdmin() {
         <div className="w-14 h-14 rounded-full bg-red-50 text-red-500 flex items-center justify-center">
           <ShieldAlert size={26} />
         </div>
-        <h2 className="text-xl font-bold text-[#133B2E]">لا تملك صلاحية إدارة بوابة العملاء</h2>
+        <h2 className="text-xl font-bold text-[#192a56]">لا تملك صلاحية إدارة بوابة العملاء</h2>
       </div>
     );
   }
@@ -103,7 +103,7 @@ export default function ClientPortalAdmin() {
   const TabBtn = ({ id, label, icon, badge }: { id: Tab; label: string; icon: React.ReactNode; badge?: number }) => (
     <button onClick={() => setTab(id)}
       className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold border transition ${
-        tab === id ? "bg-[#133B2E] text-[#D4AF37] border-[#133B2E]" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+        tab === id ? "bg-[#192a56] text-[#273c75] border-[#192a56]" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
       }`}>
       {icon} {label}
       {badge ? (
@@ -125,7 +125,7 @@ export default function ClientPortalAdmin() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">بوابة العملاء</h1>
+          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">بوابة العملاء</h1>
           <p className="text-gray-500 mt-1 text-sm">
             {accounts.length} حساب · {newRequests} طلب جديد · {unread} رسالة غير مقروءة
           </p>
@@ -135,7 +135,7 @@ export default function ClientPortalAdmin() {
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
           </Button>
           {canManage && (
-            <Button onClick={() => setInviteOpen(true)} className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white shadow-lg">
+            <Button onClick={() => setInviteOpen(true)} className="bg-[#192a56] hover:bg-[#192a56]/90 text-white shadow-lg">
               <UserPlus className="ml-2 h-4 w-4" /> دعوة عميل
             </Button>
           )}
@@ -170,7 +170,7 @@ export default function ClientPortalAdmin() {
 
       <Card className="shadow-sm border-gray-200">
         <CardHeader className="border-b bg-gray-50/50 py-4">
-          <h2 className="font-bold text-lg text-[#133B2E]">
+          <h2 className="font-bold text-lg text-[#192a56]">
             {tab === "accounts" ? "حسابات البوابة" : tab === "requests" ? "طلبات العملاء" : "المحادثات"}
           </h2>
         </CardHeader>
@@ -192,7 +192,7 @@ export default function ClientPortalAdmin() {
                         </span>
                         <span className="text-xs text-gray-400" dir="ltr">{a.email}</span>
                       </div>
-                      <p className="font-bold text-[#133B2E] mt-1">{a.clientName || "عميل"}</p>
+                      <p className="font-bold text-[#192a56] mt-1">{a.clientName || "عميل"}</p>
                       <p className="text-xs text-gray-500 mt-0.5">
                         {(a.allowedCaseIds ?? []).length === 0 ? "كل قضاياه" : `${a.allowedCaseIds.length} قضية محددة`}
                         {" · "}
@@ -243,7 +243,7 @@ export default function ClientPortalAdmin() {
                           </span>
                           <span className="text-xs text-gray-400">{r.clientName}</span>
                         </div>
-                        <p className="font-bold text-[#133B2E] mt-1">{r.subject}</p>
+                        <p className="font-bold text-[#192a56] mt-1">{r.subject}</p>
                         <p className="text-xs text-gray-500 mt-0.5">{r.body}</p>
                         {r.caseId && (
                           <Link to={`/app/cases/${r.caseId}`}
@@ -289,11 +289,11 @@ export default function ClientPortalAdmin() {
                     <div key={clientId}>
                       <button onClick={() => setActiveThread(open ? null : clientId)}
                         className="w-full flex items-center gap-3 p-4 hover:bg-gray-50/60 text-right transition">
-                        <div className="w-9 h-9 rounded-full bg-[#133B2E] text-[#D4AF37] flex items-center justify-center shrink-0">
+                        <div className="w-9 h-9 rounded-full bg-[#192a56] text-[#273c75] flex items-center justify-center shrink-0">
                           <MessageSquare size={16} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-bold text-[#133B2E]">{name}</p>
+                          <p className="font-bold text-[#192a56]">{name}</p>
                           <p className="text-xs text-gray-500 truncate">
                             {msgs[msgs.length - 1]?.body.slice(0, 80)}
                           </p>
@@ -312,7 +312,7 @@ export default function ClientPortalAdmin() {
                               <div key={m.id}
                                 className={`max-w-[80%] p-3 rounded-2xl text-sm ${
                                   m.senderType === "OFFICE"
-                                    ? "bg-[#133B2E] text-white mr-auto"
+                                    ? "bg-[#192a56] text-white mr-auto"
                                     : "bg-white border border-gray-200 text-gray-800"
                                 }`}>
                                 <p className="text-[10px] opacity-70 mb-1">
@@ -327,10 +327,10 @@ export default function ClientPortalAdmin() {
                             <div className="flex gap-2 pt-2">
                               <input value={reply} onChange={(e) => setReply(e.target.value)}
                                 placeholder="اكتب ردّك..."
-                                className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-[#133B2E]" />
+                                className="flex-1 px-4 py-2.5 bg-white border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-[#192a56]" />
                               <Button disabled={busy === clientId || !reply.trim()}
                                 onClick={() => void sendReply(clientId)}
-                                className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white rounded-2xl">
+                                className="bg-[#192a56] hover:bg-[#192a56]/90 text-white rounded-2xl">
                                 <Send size={15} className="ml-1" /> إرسال
                               </Button>
                             </div>
@@ -392,19 +392,19 @@ function InviteModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
     } finally { setBusy(false); }
   };
 
-  const field = "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#133B2E] text-sm";
+  const field = "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#192a56] text-sm";
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl" onClick={onClose}>
       <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="p-6 border-b bg-[#133B2E] text-white flex justify-between items-center">
+        <div className="p-6 border-b bg-[#192a56] text-white flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center text-[#133B2E]">
+            <div className="w-10 h-10 bg-[#273c75] rounded-xl flex items-center justify-center text-[#192a56]">
               <UserPlus size={20} />
             </div>
             <div>
               <h2 className="text-xl font-bold">دعوة عميل للبوابة</h2>
-              <p className="text-xs text-[#D4AF37]">تُسجَّل الدعوة الآن ويُفعَّل الدخول عند فتح البوابة</p>
+              <p className="text-xs text-[#273c75]">تُسجَّل الدعوة الآن ويُفعَّل الدخول عند فتح البوابة</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full"><X size={20} /></button>
@@ -434,7 +434,7 @@ function InviteModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
           </div>
           <div className="flex gap-3 pt-2">
             <Button type="submit" disabled={busy}
-              className="flex-1 py-6 bg-[#133B2E] text-[#D4AF37] font-bold rounded-2xl hover:bg-[#133B2E]/90">
+              className="flex-1 py-6 bg-[#192a56] text-[#273c75] font-bold rounded-2xl hover:bg-[#192a56]/90">
               <Save size={16} className="ml-2" /> {busy ? "جاري التسجيل..." : "تسجيل الدعوة"}
             </Button>
             <Button type="button" variant="outline" onClick={onClose}
@@ -467,10 +467,10 @@ function PermissionsModal({
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl" onClick={onClose}>
       <div className="bg-white rounded-3xl w-full max-w-xl shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="p-6 border-b bg-[#133B2E] text-white flex justify-between items-center">
+        <div className="p-6 border-b bg-[#192a56] text-white flex justify-between items-center">
           <div className="min-w-0">
             <h2 className="text-lg font-bold truncate">صلاحيات {account.clientName}</h2>
-            <p className="text-xs text-[#D4AF37]">ما يستطيع العميل فعله داخل البوابة</p>
+            <p className="text-xs text-[#273c75]">ما يستطيع العميل فعله داخل البوابة</p>
           </div>
           <button onClick={onClose} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full shrink-0"><X size={20} /></button>
         </div>
@@ -478,12 +478,12 @@ function PermissionsModal({
           {(Object.keys(PORTAL_PERMISSION_LABELS_AR) as (keyof PortalPermissions)[]).map((k) => (
             <label key={k} className="flex items-center justify-between p-3 rounded-2xl border border-gray-200 hover:bg-gray-50 cursor-pointer">
               <span className="text-sm font-bold text-gray-700">{PORTAL_PERMISSION_LABELS_AR[k]}</span>
-              <input type="checkbox" checked={p[k]} className="w-5 h-5 accent-[#133B2E]"
+              <input type="checkbox" checked={p[k]} className="w-5 h-5 accent-[#192a56]"
                 onChange={(e) => setP({ ...p, [k]: e.target.checked })} />
             </label>
           ))}
           <Button onClick={save} disabled={busy}
-            className="w-full py-6 mt-3 bg-[#133B2E] text-[#D4AF37] font-bold rounded-2xl hover:bg-[#133B2E]/90">
+            className="w-full py-6 mt-3 bg-[#192a56] text-[#273c75] font-bold rounded-2xl hover:bg-[#192a56]/90">
             <Save size={16} className="ml-2" /> {busy ? "جاري الحفظ..." : "حفظ الصلاحيات"}
           </Button>
         </div>

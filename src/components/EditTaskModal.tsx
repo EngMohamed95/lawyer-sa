@@ -104,13 +104,13 @@ export function EditTaskModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[680px]" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-[#133B2E]">تعديل المهمة</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-[#192a56]">تعديل المهمة</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#133B2E]">عنوان المهمة *</label>
+              <label className="text-sm font-bold text-[#192a56]">عنوان المهمة *</label>
               <Input
                 required
                 value={formData.title}
@@ -120,7 +120,7 @@ export function EditTaskModal({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#133B2E]">تفاصيل المهمة</label>
+              <label className="text-sm font-bold text-[#192a56]">تفاصيل المهمة</label>
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -131,7 +131,7 @@ export function EditTaskModal({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[#133B2E]">مسؤول التنفيذ</label>
+                <label className="text-sm font-bold text-[#192a56]">مسؤول التنفيذ</label>
                 <select
                   value={formData.assignedTo}
                   onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
@@ -145,7 +145,7 @@ export function EditTaskModal({
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[#133B2E]">تاريخ الاستحقاق</label>
+                <label className="text-sm font-bold text-[#192a56]">تاريخ الاستحقاق</label>
                 <Input
                   type="date"
                   value={formData.dueDate}
@@ -157,7 +157,7 @@ export function EditTaskModal({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[#133B2E]">الأولوية</label>
+                <label className="text-sm font-bold text-[#192a56]">الأولوية</label>
                 <select
                   value={formData.priority}
                   onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
@@ -171,7 +171,7 @@ export function EditTaskModal({
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[#133B2E]">الحالة</label>
+                <label className="text-sm font-bold text-[#192a56]">الحالة</label>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
@@ -191,7 +191,7 @@ export function EditTaskModal({
             <Button type="button" variant="outline" onClick={onClose}>
               إلغاء
             </Button>
-            <Button type="submit" disabled={loading} className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white">
+            <Button type="submit" disabled={loading} className="bg-[#192a56] hover:bg-[#192a56]/90 text-white">
               {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
               حفظ التعديلات
             </Button>

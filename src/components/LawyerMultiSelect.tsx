@@ -21,9 +21,9 @@ export default function LawyerMultiSelect({ lawyers, value, onChange }: {
           return (
             <button key={l.id} type="button" onClick={() => toggle(l.id)} aria-pressed={on}
               className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-sm font-bold transition ${
-                on ? "border-[#133B2E] bg-[#133B2E] text-white" : "border-gray-200 bg-gray-50 text-gray-700 hover:border-[#133B2E]/40 hover:bg-white"
+                on ? "border-[#192a56] bg-[#192a56] text-white" : "border-gray-200 bg-gray-50 text-gray-700 hover:border-[#192a56]/40 hover:bg-white"
               }`}>
-              <span className={`flex h-4 w-4 items-center justify-center rounded border ${on ? "border-[#D4AF37] bg-[#D4AF37] text-[#133B2E]" : "border-gray-300 bg-white"}`}>
+              <span className={`flex h-4 w-4 items-center justify-center rounded border ${on ? "border-[#273c75] bg-[#273c75] text-[#192a56]" : "border-gray-300 bg-white"}`}>
                 {on && <Check size={12} strokeWidth={3} />}
               </span>
               {l.name}

@@ -122,7 +122,7 @@ export default function RecycleBin({ embedded = false }: { embedded?: boolean } 
         <div className="w-14 h-14 rounded-full bg-red-50 text-red-500 flex items-center justify-center">
           <ShieldAlert size={26} />
         </div>
-        <h2 className="text-xl font-bold text-[#133B2E]">لا تملك صلاحية سلة المحذوفات</h2>
+        <h2 className="text-xl font-bold text-[#192a56]">لا تملك صلاحية سلة المحذوفات</h2>
         <p className="text-sm text-gray-500">هذه الصفحة متاحة لمدير المكتب فقط.</p>
       </div>
     );
@@ -136,7 +136,7 @@ export default function RecycleBin({ embedded = false }: { embedded?: boolean } 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           {/* داخل الإعدادات يوجد عنوان الصفحة أصلاً، فلا نكرّره بحجم كامل */}
-          <h1 className={`font-bold text-[#133B2E] tracking-tight ${embedded ? "text-xl" : "text-3xl"}`}>
+          <h1 className={`font-bold text-[#192a56] tracking-tight ${embedded ? "text-xl" : "text-3xl"}`}>
             سلة المحذوفات
           </h1>
           <p className="text-gray-500 mt-1 text-sm">
@@ -161,7 +161,7 @@ export default function RecycleBin({ embedded = false }: { embedded?: boolean } 
           <button
             onClick={() => setGroup("ALL")}
             className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${
-              group === "ALL" ? "bg-[#133B2E] text-[#D4AF37] border-[#133B2E]" : "bg-white text-gray-600 border-gray-200"
+              group === "ALL" ? "bg-[#192a56] text-[#273c75] border-[#192a56]" : "bg-white text-gray-600 border-gray-200"
             }`}
           >
             الكل ({rows.length})
@@ -171,7 +171,7 @@ export default function RecycleBin({ embedded = false }: { embedded?: boolean } 
               key={label}
               onClick={() => setGroup(group === label ? "ALL" : label)}
               className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${
-                group === label ? "bg-[#133B2E] text-[#D4AF37] border-[#133B2E]" : "bg-white text-gray-600 border-gray-200"
+                group === label ? "bg-[#192a56] text-[#273c75] border-[#192a56]" : "bg-white text-gray-600 border-gray-200"
               }`}
             >
               {label} ({n})
@@ -188,8 +188,8 @@ export default function RecycleBin({ embedded = false }: { embedded?: boolean } 
 
       <Card className="shadow-sm border-gray-200">
         <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
-          <Trash2 className="w-5 h-5 text-[#D4AF37]" />
-          <h2 className="font-bold text-lg text-[#133B2E]">
+          <Trash2 className="w-5 h-5 text-[#273c75]" />
+          <h2 className="font-bold text-lg text-[#192a56]">
             المحذوفات <span className="text-sm font-normal text-gray-400">({filtered.length})</span>
           </h2>
         </CardHeader>
@@ -210,7 +210,7 @@ export default function RecycleBin({ embedded = false }: { embedded?: boolean } 
               {filtered.map((row) => (
                 <li key={`${row.collection}-${row.id}`} className="p-4 flex flex-col sm:flex-row sm:items-center gap-3 hover:bg-gray-50/50">
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-[#133B2E] text-sm flex items-center gap-2 flex-wrap">
+                    <p className="font-bold text-[#192a56] text-sm flex items-center gap-2 flex-wrap">
                       {row.title}
                       <span className="text-[10px] font-normal px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">
                         {row.groupLabel}

@@ -44,12 +44,12 @@ import {
 } from "../lib/support";
 
 const field =
-  "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#D4AF37]/50";
+  "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#273c75]/50";
 const primary =
-  "inline-flex items-center justify-center gap-2 rounded-xl bg-[#133B2E] px-5 py-3 text-sm font-bold text-white hover:bg-[#0d2a20] disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-xl bg-[#192a56] px-5 py-3 text-sm font-bold text-white hover:bg-[#273c75] disabled:opacity-50";
 const colors: Record<SupportStatus, string> = {
-  OPEN: "bg-[#133B2E] text-white",
-  IN_PROGRESS: "bg-[#D4AF37]/20 text-[#765c08]",
+  OPEN: "bg-[#192a56] text-white",
+  IN_PROGRESS: "bg-[#273c75]/20 text-[#192a56]",
   WAITING: "bg-amber-100 text-amber-800",
   RESOLVED: "bg-emerald-100 text-emerald-800",
   CLOSED: "bg-gray-100 text-gray-600",
@@ -267,13 +267,13 @@ export default function SupportTickets() {
       label: isAdmin ? "إجمالي التذاكر" : "إجمالي تذاكري",
       value: counts?.total,
       icon: Ticket,
-      color: "text-[#D4AF37] bg-[#133B2E]",
+      color: "text-[#273c75] bg-[#192a56]",
     },
     {
       label: "قيد المتابعة",
       value: counts?.active,
       icon: Clock3,
-      color: "text-[#133B2E] bg-[#D4AF37]",
+      color: "text-[#192a56] bg-[#273c75]",
     },
     {
       label: isAdmin ? "بانتظار رد المستخدم" : "بانتظار ردك",
@@ -383,8 +383,8 @@ export default function SupportTickets() {
     );
 
   return (
-    <div className="mx-auto max-w-7xl space-y-4 font-sans text-[#133B2E]" dir="rtl">
-      <header className="flex flex-wrap items-center justify-between gap-5 rounded-3xl bg-gradient-to-l from-[#174b3a] to-[#0d2a20] p-6 text-white shadow-md md:p-7">
+    <div className="mx-auto max-w-7xl space-y-4 font-sans text-[#192a56]" dir="rtl">
+      <header className="flex flex-wrap items-center justify-between gap-5 rounded-3xl bg-gradient-to-l from-[#273c75] to-[#192a56] p-6 text-white shadow-md md:p-7">
         <div className="flex max-w-3xl items-center gap-4">
           <div className="hidden rounded-full bg-white/15 p-4 text-amber-400 sm:block">
             <Headset size={32} />
@@ -404,7 +404,7 @@ export default function SupportTickets() {
         </div>
         {!isAdmin && (
           <button
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[#D4AF37] px-5 py-3 text-sm font-bold text-[#133B2E] shadow hover:bg-[#c39e2f]"
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[#273c75] px-5 py-3 text-sm font-bold text-[#192a56] shadow hover:bg-[#192a56]"
             onClick={() => {
               setActionError("");
               setShowNew(true);
@@ -426,7 +426,7 @@ export default function SupportTickets() {
                   <s.icon size={21} />
                 </div>
                 <div>
-                  <p className="text-xs text-[#133B2E]/70">{s.label}</p>
+                  <p className="text-xs text-[#192a56]/70">{s.label}</p>
                   <p className="mt-1 text-xl">{s.value ?? "—"}</p>
                 </div>
               </div>
@@ -440,7 +440,7 @@ export default function SupportTickets() {
           <div className="grid gap-5 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm md:grid-cols-[1.4fr_1fr_0.8fr]">
             <div className="relative">
               <Search
-                className="absolute right-4 top-4 text-[#133B2E]/55"
+                className="absolute right-4 top-4 text-[#192a56]/55"
                 size={19}
               />
               <input
@@ -452,7 +452,7 @@ export default function SupportTickets() {
               />
             </div>
             <label className="relative">
-              <span className="absolute -top-2 right-4 bg-white px-1 text-xs text-[#133B2E]/70">
+              <span className="absolute -top-2 right-4 bg-white px-1 text-xs text-[#192a56]/70">
                 تصفية حسب الحالة
               </span>
               <select
@@ -476,7 +476,7 @@ export default function SupportTickets() {
               </select>
             </label>
             <label className="relative">
-              <span className="absolute -top-2 right-4 bg-white px-1 text-xs text-[#133B2E]/70">
+              <span className="absolute -top-2 right-4 bg-white px-1 text-xs text-[#192a56]/70">
                 الأولوية
               </span>
               <select
@@ -522,7 +522,7 @@ export default function SupportTickets() {
                 <Link
                   key={t.id}
                   to={`/app/support/tickets/${t.id}`}
-                  className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[#133B2E]/20 bg-white p-5 shadow-sm transition hover:border-[#D4AF37] hover:shadow-md focus-visible:ring-2 focus-visible:ring-[#D4AF37]"
+                  className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[#192a56]/20 bg-white p-5 shadow-sm transition hover:border-[#273c75] hover:shadow-md focus-visible:ring-2 focus-visible:ring-[#273c75]"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
@@ -533,21 +533,21 @@ export default function SupportTickets() {
                         #{t.id}
                       </span>
                       <span
-                        className={`rounded-full px-2 py-1 ${["HIGH", "URGENT"].includes(t.priority) ? "bg-[#D4AF37] text-[#133B2E]" : "bg-[#133B2E]/10 text-[#133B2E]"}`}
+                        className={`rounded-full px-2 py-1 ${["HIGH", "URGENT"].includes(t.priority) ? "bg-[#273c75] text-[#192a56]" : "bg-[#192a56]/10 text-[#192a56]"}`}
                       >
                         {SUPPORT_PRIORITIES[t.priority]}
                       </span>
-                      <span className="rounded-full bg-[#D4AF37]/10 px-2 py-1 text-[#765c08]">
+                      <span className="rounded-full bg-[#273c75]/10 px-2 py-1 text-[#192a56]">
                         {t.category}
                       </span>
                     </div>
                     <h2 className="break-words text-lg font-medium">
                       {t.subject}
                     </h2>
-                    <p className="mt-1 line-clamp-1 text-sm text-[#133B2E]/65">
+                    <p className="mt-1 line-clamp-1 text-sm text-[#192a56]/65">
                       {t.description}
                     </p>
-                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[#133B2E]/65">
+                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[#192a56]/65">
                       {isAdmin && <span>مقدم الطلب: {t.requesterName}</span>}
                       <span className="inline-flex items-center gap-1">
                         <CalendarDays size={13} /> تاريخ الإنشاء:{" "}
@@ -561,12 +561,12 @@ export default function SupportTickets() {
                   </div>
                   <div className="flex shrink-0 items-center gap-4">
                     <Status value={t.status} admin={isAdmin} />
-                    <ChevronLeft className="text-[#D4AF37]" size={21} />
+                    <ChevronLeft className="text-[#273c75]" size={21} />
                   </div>
                 </Link>
               ))
             )}
-            <div className="flex items-center justify-between p-3 text-sm text-[#133B2E]/70">
+            <div className="flex items-center justify-between p-3 text-sm text-[#192a56]/70">
               <span>
                 صفحة {page} · {tickets.length} تذاكر
               </span>
@@ -650,7 +650,7 @@ export default function SupportTickets() {
                     <button
                       disabled={olderBusy}
                       onClick={older}
-                      className="block mx-auto text-sm text-[#133B2E] underline"
+                      className="block mx-auto text-sm text-[#192a56] underline"
                     >
                       {olderBusy ? "جارٍ التحميل…" : "تحميل رسائل أقدم"}
                     </button>
@@ -707,7 +707,7 @@ export default function SupportTickets() {
                       ) : (
                         <button
                           disabled={busy}
-                          className="font-bold text-[#133B2E] underline"
+                          className="font-bold text-[#192a56] underline"
                           onClick={() => updateStatus("OPEN")}
                         >
                           إعادة فتح التذكرة

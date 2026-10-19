@@ -26,13 +26,13 @@ const STATUS_LABEL: Record<HearingStatus, string> = { today: "اليوم", past:
 const STATUS_CLASS: Record<HearingStatus, string> = {
   today: "text-amber-700 font-bold",
   past: "text-gray-900",
-  upcoming: "text-[#1a9a45] font-bold",
+  upcoming: "text-[#273c75] font-bold",
 };
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="grid grid-cols-[6.5rem_1fr] gap-3 items-baseline">
-      <dt className="text-sm text-[#1a9a45]">{label}</dt>
+      <dt className="text-sm text-[#273c75]">{label}</dt>
       <dd className="text-sm text-gray-900 truncate" title={typeof children === "string" ? children : undefined}>{children}</dd>
     </div>
   );
@@ -50,11 +50,11 @@ export default function HearingCard({ h, caseId, showCase = true, actions }: {
 
   return (
     <div className={`flex flex-col bg-white rounded-lg border-2 transition hover:shadow-md ${
-      status === "today" ? "border-amber-300" : "border-[#bfe3d6]"
+      status === "today" ? "border-amber-300" : "border-[#c9d1e6]"
     }`}>
       <div className="flex items-start justify-between gap-3 px-4 pt-4">
         <div className="flex items-start gap-2.5 min-w-0">
-          <span className="mt-0.5 h-9 w-9 shrink-0 rounded-full bg-[#1a9a45]/10 text-[#1a9a45] flex items-center justify-center">
+          <span className="mt-0.5 h-9 w-9 shrink-0 rounded-full bg-[#273c75]/10 text-[#273c75] flex items-center justify-center">
             <Gavel size={18} />
           </span>
           <div className="min-w-0">
@@ -83,7 +83,7 @@ export default function HearingCard({ h, caseId, showCase = true, actions }: {
       <div className="flex items-center justify-between gap-2 border-t border-gray-100 px-4 py-2.5">
         <div className="flex items-center gap-1.5">
           <Link to={`/app/hearings/${caseId}/${h.id}`}
-            className="px-5 py-1.5 rounded-md bg-[#1a9a45] hover:bg-[#15803a] text-white text-sm font-bold transition">
+            className="px-5 py-1.5 rounded-md bg-[#273c75] hover:bg-[#192a56] text-white text-sm font-bold transition">
             عرض
           </Link>
           {actions}

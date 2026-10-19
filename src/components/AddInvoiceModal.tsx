@@ -202,20 +202,20 @@ export default function AddInvoiceModal({
     }
   };
 
-  const field = "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/10 focus:border-[#133B2E] transition-all text-sm";
+  const field = "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#192a56]/10 focus:border-[#192a56] transition-all text-sm";
   const money = (n: number) => n.toLocaleString("ar-EG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
       <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-2xl">
-        <div className="p-6 border-b flex justify-between items-center bg-[#133B2E] text-white sticky top-0 z-10">
+        <div className="p-6 border-b flex justify-between items-center bg-[#192a56] text-white sticky top-0 z-10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center text-[#133B2E]">
+            <div className="w-10 h-10 bg-[#273c75] rounded-xl flex items-center justify-center text-[#192a56]">
               <Receipt size={20} />
             </div>
             <div>
               <h2 className="text-xl font-bold">فاتورة جديدة</h2>
-              <p className="text-xs text-[#D4AF37]">تُصدر كمسودة ثم تمرّ بالاعتماد قبل إرسالها للعميل</p>
+              <p className="text-xs text-[#273c75]">تُصدر كمسودة ثم تمرّ بالاعتماد قبل إرسالها للعميل</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full"><X size={20} /></button>
@@ -289,7 +289,7 @@ export default function AddInvoiceModal({
               <label className="text-sm font-bold text-gray-700">بنود الفاتورة *</label>
               <Button type="button" variant="outline" size="sm"
                 onClick={() => setItems((p) => [...p, emptyItem()])}
-                className="rounded-xl border-gray-200 text-[#133B2E]">
+                className="rounded-xl border-gray-200 text-[#192a56]">
                 <Plus size={14} className="ml-1" /> بند
               </Button>
             </div>
@@ -308,18 +308,18 @@ export default function AddInvoiceModal({
                   <div key={i} className="grid grid-cols-12 gap-2 px-3 py-2 items-center border-t border-gray-100">
                     <input value={it.description} placeholder="أتعاب مرافعة..."
                       onChange={(e) => setItem(i, { description: e.target.value })}
-                      className="col-span-5 px-2 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#133B2E]" />
+                      className="col-span-5 px-2 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#192a56]" />
                     <input type="number" min="0" step="0.01" value={it.quantity}
                       onChange={(e) => setItem(i, { quantity: Number(e.target.value) })}
-                      className="col-span-2 px-2 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#133B2E]" />
+                      className="col-span-2 px-2 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#192a56]" />
                     <input type="number" min="0" step="0.01" value={it.unitPrice}
                       onChange={(e) => setItem(i, { unitPrice: Number(e.target.value) })}
-                      className="col-span-2 px-2 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#133B2E]" />
-                    <div className="col-span-2 text-sm font-bold text-[#133B2E] px-1">{money(amount)}</div>
+                      className="col-span-2 px-2 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#192a56]" />
+                    <div className="col-span-2 text-sm font-bold text-[#192a56] px-1">{money(amount)}</div>
                     <div className="col-span-1 flex items-center justify-center gap-1">
                       <input type="checkbox" checked={it.taxable} title="خاضع للضريبة"
                         onChange={(e) => setItem(i, { taxable: e.target.checked })}
-                        className="w-4 h-4 accent-[#133B2E]" />
+                        className="w-4 h-4 accent-[#192a56]" />
                       {items.length > 1 && (
                         <button type="button" title="حذف البند"
                           onClick={() => setItems((p) => p.filter((_, idx) => idx !== i))}
@@ -359,10 +359,10 @@ export default function AddInvoiceModal({
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-2xl bg-gray-50 border border-gray-100 text-center">
-            <div><p className="text-xs text-gray-500">المجموع</p><p className="font-bold text-[#133B2E]">{money(totals.subtotal)}</p></div>
+            <div><p className="text-xs text-gray-500">المجموع</p><p className="font-bold text-[#192a56]">{money(totals.subtotal)}</p></div>
             <div><p className="text-xs text-gray-500">الخصم</p><p className="font-bold text-rose-600">{money(totals.discountAmount)}</p></div>
-            <div><p className="text-xs text-gray-500">الضريبة</p><p className="font-bold text-[#133B2E]">{money(totals.vatAmount)}</p></div>
-            <div><p className="text-xs text-gray-500">الإجمالي</p><p className="font-black text-[#D4AF37]">{money(totals.total)} {currency}</p></div>
+            <div><p className="text-xs text-gray-500">الضريبة</p><p className="font-bold text-[#192a56]">{money(totals.vatAmount)}</p></div>
+            <div><p className="text-xs text-gray-500">الإجمالي</p><p className="font-black text-[#273c75]">{money(totals.total)} {currency}</p></div>
           </div>
 
           <div className="space-y-2">
@@ -373,7 +373,7 @@ export default function AddInvoiceModal({
 
           <div className="flex gap-3 pt-2">
             <Button type="submit" disabled={loading}
-              className="flex-1 py-6 bg-[#133B2E] text-[#D4AF37] font-bold rounded-2xl hover:bg-[#133B2E]/90">
+              className="flex-1 py-6 bg-[#192a56] text-[#273c75] font-bold rounded-2xl hover:bg-[#192a56]/90">
               <Save size={16} className="ml-2" />
               {loading ? "جاري الإصدار..." : "حفظ كمسودة"}
             </Button>

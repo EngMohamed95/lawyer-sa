@@ -130,14 +130,14 @@ export default function Tasks() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">المهام</h1>
+          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">المهام</h1>
           <p className="text-gray-500 mt-1 print:hidden">إدارة المهام الموكلة للمحامين والمتدربين</p>
         </div>
         <div className="flex gap-2 print:hidden">
           <Button variant="outline" onClick={() => window.print()} className="border-blue-600 text-blue-600 hover:bg-blue-50">
             <CheckCircle className="ml-2 h-4 w-4" /> تحميل تقرير المهام
           </Button>
-          <Button onClick={() => setIsAddOpen(true)} className="bg-[#D4AF37] hover:bg-[#B8962E] text-white">
+          <Button onClick={() => setIsAddOpen(true)} className="bg-[#273c75] hover:bg-[#192a56] text-white">
             <Plus className="ml-2 h-4 w-4" /> إضافة مهمة
           </Button>
         </div>
@@ -159,13 +159,13 @@ export default function Tasks() {
           <Table>
             <TableHeader className="bg-gray-50">
               <TableRow>
-                <TableHead className="text-right font-bold text-[#133B2E]">العنوان</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E] hidden sm:table-cell">تفاصيل المهمة</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E] hidden md:table-cell">تاريخ الاستحقاق</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E]">الأولوية</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E]">الحالة</TableHead>
+                <TableHead className="text-right font-bold text-[#192a56]">العنوان</TableHead>
+                <TableHead className="text-right font-bold text-[#192a56] hidden sm:table-cell">تفاصيل المهمة</TableHead>
+                <TableHead className="text-right font-bold text-[#192a56] hidden md:table-cell">تاريخ الاستحقاق</TableHead>
+                <TableHead className="text-right font-bold text-[#192a56]">الأولوية</TableHead>
+                <TableHead className="text-right font-bold text-[#192a56]">الحالة</TableHead>
                 {userRole === "SUPER_ADMIN" && <TableHead className="text-right font-bold text-purple-600 hidden lg:table-cell">المحامي</TableHead>}
-                <TableHead className="text-center font-bold text-[#133B2E] print-hidden">إجراءات</TableHead>
+                <TableHead className="text-center font-bold text-[#192a56] print-hidden">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -182,7 +182,7 @@ export default function Tasks() {
                   const dueDate = t.dueDate ? new Date(t.dueDate) : null;
                   return (
                     <TableRow key={t.id} className="hover:bg-gray-50/50">
-                      <TableCell className="font-medium text-[#133B2E]">
+                      <TableCell className="font-medium text-[#192a56]">
                         {t.title}
                         {t.caseId && casesById[t.caseId] && (
                           <Link to={`/app/cases/${t.caseId}`}

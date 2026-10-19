@@ -155,14 +155,14 @@ export default function Clients() {
           dir="rtl" onClick={() => setLinkedClient(null)}>
           <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[88vh] overflow-y-auto shadow-2xl"
             onClick={e => e.stopPropagation()}>
-            <div className="p-6 border-b bg-[#133B2E] text-white flex justify-between items-center sticky top-0 z-10">
+            <div className="p-6 border-b bg-[#192a56] text-white flex justify-between items-center sticky top-0 z-10">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center text-[#133B2E]">
+                <div className="w-10 h-10 bg-[#273c75] rounded-xl flex items-center justify-center text-[#192a56]">
                   <Link2 size={20} />
                 </div>
                 <div>
                   <h2 className="text-xl font-bold">{linkedClient.fullName}</h2>
-                  <p className="text-xs text-[#D4AF37]">القضايا والعقود والدفعات المرتبطة بهذا العميل</p>
+                  <p className="text-xs text-[#273c75]">القضايا والعقود والدفعات المرتبطة بهذا العميل</p>
                 </div>
               </div>
               <button onClick={() => setLinkedClient(null)} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full">
@@ -183,7 +183,7 @@ export default function Clients() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight font-['Tajawal']">قائمة العملاء</h1>
+          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight font-['Tajawal']">قائمة العملاء</h1>
           <p className="text-gray-500 mt-1">إدارة كافة بيانات العملاء والشركات</p>
         </div>
         <div className="flex gap-3 w-full sm:w-auto">
@@ -196,7 +196,7 @@ export default function Clients() {
           </Button>
           <Button
             onClick={() => setIsAddModalOpen(true)}
-            className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white shadow-lg shadow-[#133B2E]/20 px-6 py-6 rounded-2xl transition-all active:scale-[0.98] font-bold font-['Tajawal']"
+            className="bg-[#192a56] hover:bg-[#192a56]/90 text-white shadow-lg shadow-[#192a56]/20 px-6 py-6 rounded-2xl transition-all active:scale-[0.98] font-bold font-['Tajawal']"
           >
             <Plus className="ml-2 h-5 w-5" /> إضافة عميل جديد
           </Button>
@@ -219,17 +219,17 @@ export default function Clients() {
           <Table>
             <TableHeader className="bg-gray-50">
               <TableRow>
-                <TableHead className="text-right font-bold text-[#133B2E]">الاسم</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E]">التواصل</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E] hidden sm:table-cell">النوع</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E] hidden md:table-cell">رقم الهوية</TableHead>
-                <TableHead className="text-right font-bold text-[#133B2E] hidden lg:table-cell">العنوان</TableHead>
+                <TableHead className="text-right font-bold text-[#192a56]">الاسم</TableHead>
+                <TableHead className="text-right font-bold text-[#192a56]">التواصل</TableHead>
+                <TableHead className="text-right font-bold text-[#192a56] hidden sm:table-cell">النوع</TableHead>
+                <TableHead className="text-right font-bold text-[#192a56] hidden md:table-cell">رقم الهوية</TableHead>
+                <TableHead className="text-right font-bold text-[#192a56] hidden lg:table-cell">العنوان</TableHead>
                 {userRole === "SUPER_ADMIN" && (
                   <TableHead className="text-right font-bold text-purple-600 hidden xl:table-cell">
                     المحامي
                   </TableHead>
                 )}
-                <TableHead className="text-center font-bold text-[#133B2E]">إجراءات</TableHead>
+                <TableHead className="text-center font-bold text-[#192a56]">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -256,9 +256,9 @@ export default function Clients() {
                   try {
                     return (
                       <TableRow key={client.id} className="hover:bg-gray-50/50 transition-colors">
-                        <TableCell className="font-medium text-[#133B2E]">
+                        <TableCell className="font-medium text-[#192a56]">
                           <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-[#133B2E]">
+                            <div className="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center text-[#192a56]">
                               <User size={18} />
                             </div>
                             {client.fullName || "غير مسجل"}
@@ -266,7 +266,7 @@ export default function Clients() {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col text-sm">
-                            <a href={`tel:${client.phone}`} className="flex items-center gap-1 text-[#133B2E] hover:underline decoration-[#D4AF37]">
+                            <a href={`tel:${client.phone}`} className="flex items-center gap-1 text-[#192a56] hover:underline decoration-[#273c75]">
                               <Phone size={12} className="text-gray-400" /> {client.phone || "-"}
                             </a>
                           </div>

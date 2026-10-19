@@ -80,7 +80,7 @@ export default function Notifications() {
     <div className="space-y-5 font-['Tajawal']" dir="rtl">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">التنبيهات</h1>
+          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">التنبيهات</h1>
           <p className="text-gray-500 mt-1 text-sm">
             {rows.length} تنبيه · {unread} غير مقروء
           </p>
@@ -96,7 +96,7 @@ export default function Notifications() {
             </Button>
           )}
           <Link to="/app/settings">
-            <Button className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white">
+            <Button className="bg-[#192a56] hover:bg-[#192a56]/90 text-white">
               إعدادات التنبيهات
             </Button>
           </Link>
@@ -113,21 +113,21 @@ export default function Notifications() {
         <div className="flex flex-wrap items-center gap-2">
           <button onClick={() => setEventFilter("ALL")}
             className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${
-              eventFilter === "ALL" ? "bg-[#133B2E] text-[#D4AF37] border-[#133B2E]" : "bg-white text-gray-600 border-gray-200"
+              eventFilter === "ALL" ? "bg-[#192a56] text-[#273c75] border-[#192a56]" : "bg-white text-gray-600 border-gray-200"
             }`}>
             الكل ({rows.length})
           </button>
           {[...counts.entries()].map(([e, n]) => (
             <button key={e} onClick={() => setEventFilter(eventFilter === e ? "ALL" : e)}
               className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${
-                eventFilter === e ? "bg-[#133B2E] text-[#D4AF37] border-[#133B2E]" : "bg-white text-gray-600 border-gray-200"
+                eventFilter === e ? "bg-[#192a56] text-[#273c75] border-[#192a56]" : "bg-white text-gray-600 border-gray-200"
               }`}>
               {EVENT_LABELS_AR[e]} ({n})
             </button>
           ))}
           <button onClick={() => setOnlyUnread(!onlyUnread)}
             className={`mr-auto flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold border transition ${
-              onlyUnread ? "bg-[#D4AF37] text-[#133B2E] border-[#D4AF37]" : "bg-white text-gray-600 border-gray-200"
+              onlyUnread ? "bg-[#273c75] text-[#192a56] border-[#273c75]" : "bg-white text-gray-600 border-gray-200"
             }`}>
             <Filter size={13} /> غير المقروء فقط
           </button>
@@ -136,8 +136,8 @@ export default function Notifications() {
 
       <Card className="shadow-sm border-gray-200">
         <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
-          <Bell className="w-5 h-5 text-[#D4AF37]" />
-          <h2 className="font-bold text-lg text-[#133B2E]">
+          <Bell className="w-5 h-5 text-[#273c75]" />
+          <h2 className="font-bold text-lg text-[#192a56]">
             القائمة <span className="text-sm font-normal text-gray-400">({filtered.length})</span>
           </h2>
         </CardHeader>
@@ -157,9 +157,9 @@ export default function Notifications() {
           ) : (
             <ul className="divide-y divide-gray-100">
               {filtered.map((n) => (
-                <li key={n.id} className={`p-4 transition hover:bg-gray-50/60 ${!n.readAt ? "bg-[#D4AF37]/5" : ""}`}>
+                <li key={n.id} className={`p-4 transition hover:bg-gray-50/60 ${!n.readAt ? "bg-[#273c75]/5" : ""}`}>
                   <div className="flex items-start gap-3">
-                    {!n.readAt && <span className="w-2 h-2 rounded-full bg-[#D4AF37] shrink-0 mt-2" />}
+                    {!n.readAt && <span className="w-2 h-2 rounded-full bg-[#273c75] shrink-0 mt-2" />}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${PRIORITY_COLORS[n.priority as Priority]}`}>
@@ -172,7 +172,7 @@ export default function Notifications() {
                           <Clock size={11} /> {when(n.createdAt)}
                         </span>
                       </div>
-                      <p className={`mt-1 ${!n.readAt ? "font-bold text-[#133B2E]" : "font-medium text-gray-700"}`}>
+                      <p className={`mt-1 ${!n.readAt ? "font-bold text-[#192a56]" : "font-medium text-gray-700"}`}>
                         {n.title}
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5">{n.body}</p>

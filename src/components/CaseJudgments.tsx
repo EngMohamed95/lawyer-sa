@@ -80,7 +80,7 @@ const addDaysTo = (date: string, n: number) => {
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
-      <dt className="text-xs text-[#1a9a45]">{label}</dt>
+      <dt className="text-xs text-[#273c75]">{label}</dt>
       <dd className="text-sm font-medium text-gray-900 truncate">{children}</dd>
     </div>
   );
@@ -118,10 +118,10 @@ export default function CaseJudgments({ caseData, onSave, onAnalyze }: {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-bold text-[#1a9a45]">الأحكام</h2>
+        <h2 className="text-xl font-bold text-[#273c75]">الأحكام</h2>
         <div className="flex flex-wrap items-center gap-2">
           {sorted.length > 0 && <AttachmentSearch value={search} onChange={setSearch} />}
-          <Button size="sm" className="bg-[#133B2E] hover:bg-[#133B2E]/90"
+          <Button size="sm" className="bg-[#192a56] hover:bg-[#192a56]/90"
             onClick={() => { setEditing(null); setIsFormOpen(true); }}>
             <Plus className="ml-2 h-4 w-4" /> إضافة حكم
           </Button>
@@ -165,12 +165,12 @@ export default function CaseJudgments({ caseData, onSave, onAnalyze }: {
 function JudgmentCard({ j, search, onView, onEdit, onDelete }: {
   j: CaseJudgment; search: string; onView: () => void; onEdit: () => void; onDelete: () => void;
 }) {
-  const accent = j.isFinal ? "border-r-[#1a9a45]" : "border-r-[#5fb8c2]";
+  const accent = j.isFinal ? "border-r-[#273c75]" : "border-r-[#353b48]";
   return (
-    <div className={`bg-white rounded-xl border border-[#bfe3d6] border-r-[5px] ${accent} transition hover:shadow-md`}>
+    <div className={`bg-white rounded-xl border border-[#c9d1e6] border-r-[5px] ${accent} transition hover:shadow-md`}>
       <div className="flex items-start justify-between gap-3 px-4 pt-3.5">
         <div className="flex items-center gap-2.5 min-w-0">
-          <span className="h-8 w-8 shrink-0 rounded-md bg-[#1a9a45] text-white flex items-center justify-center">
+          <span className="h-8 w-8 shrink-0 rounded-md bg-[#273c75] text-white flex items-center justify-center">
             <Gavel size={16} className="-scale-x-100" />
           </span>
           <h3 className="text-base font-bold text-gray-900 truncate">حكم {j.isFinal ? "نهائي" : "غير نهائي"}</h3>
@@ -182,11 +182,11 @@ function JudgmentCard({ j, search, onView, onEdit, onDelete }: {
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           <button onClick={onView}
-            className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-gray-200 text-sm font-bold text-[#1a9a45] hover:bg-green-50 transition">
+            className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-gray-200 text-sm font-bold text-[#273c75] hover:bg-green-50 transition">
             <Eye size={14} /> المنطوق
           </button>
           <button onClick={onEdit}
-            className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-gray-200 text-sm font-bold text-[#133B2E] hover:bg-gray-50 transition">
+            className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-gray-200 text-sm font-bold text-[#192a56] hover:bg-gray-50 transition">
             <Pencil size={14} /> تعديل
           </button>
           <button onClick={onDelete}
@@ -221,8 +221,8 @@ function JudgmentDetails({ j, onClose, onAnalyze }: {
         {j && (
           <>
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold text-[#133B2E] flex items-center gap-2">
-                <Gavel size={20} className="text-[#1a9a45]" />
+              <DialogTitle className="text-xl font-bold text-[#192a56] flex items-center gap-2">
+                <Gavel size={20} className="text-[#273c75]" />
                 حكم {j.isFinal ? "نهائي" : "غير نهائي"}{j.deedNumber ? ` — صك ${j.deedNumber}` : ""}
               </DialogTitle>
             </DialogHeader>
@@ -290,7 +290,7 @@ function JudgmentForm({ isOpen, initial, isEdit, onClose, onSubmit }: {
       ? addDaysTo(date, 30) : f.objectionDeadline,
   }));
 
-  const label = "text-sm font-bold text-[#133B2E]";
+  const label = "text-sm font-bold text-[#192a56]";
   const select = "w-full h-9 px-3 rounded-md border border-gray-300 text-sm bg-white";
 
   const submit = async (e: FormEvent) => {
@@ -316,14 +316,14 @@ function JudgmentForm({ isOpen, initial, isEdit, onClose, onSubmit }: {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-[#133B2E]">{isEdit ? "تعديل الحكم" : "إضافة حكم"}</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-[#192a56]">{isEdit ? "تعديل الحكم" : "إضافة حكم"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4 py-2">
           <div className="flex gap-2">
             {[false, true].map((final) => (
               <button type="button" key={String(final)} onClick={() => set("isFinal", final)}
                 className={`flex-1 py-2 rounded-lg border-2 text-sm font-bold transition ${
-                  form.isFinal === final ? "border-[#1a9a45] bg-green-50 text-[#1a9a45]" : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                  form.isFinal === final ? "border-[#273c75] bg-green-50 text-[#273c75]" : "border-gray-200 text-gray-500 hover:bg-gray-50"
                 }`}>
                 {final ? "نهائي" : "غير نهائي"}
               </button>
@@ -386,7 +386,7 @@ function JudgmentForm({ isOpen, initial, isEdit, onClose, onSubmit }: {
 
           <DialogFooter className="mt-4">
             <Button type="button" variant="outline" onClick={onClose}>إلغاء</Button>
-            <Button type="submit" disabled={saving} className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white">
+            <Button type="submit" disabled={saving} className="bg-[#192a56] hover:bg-[#192a56]/90 text-white">
               {saving && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
               {saving && newFiles.length ? "جاري رفع المرفقات..." : isEdit ? "حفظ التعديلات" : "إضافة الحكم"}
             </Button>

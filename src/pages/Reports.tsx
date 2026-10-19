@@ -214,14 +214,14 @@ export default function Reports() {
       {/* Header section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 no-print">
         <div>
-          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">التقارير والإحصائيات</h1>
+          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">التقارير والإحصائيات</h1>
           <p className="text-gray-500 mt-1 text-sm">تقارير شاملة محدثة لحظياً عن أداء المكتب والموارد المالية</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="bg-white border-gray-200" onClick={handlePrint}>
-            <Printer className="ml-2 h-4 w-4 text-[#133B2E]" /> طباعة التقرير
+            <Printer className="ml-2 h-4 w-4 text-[#192a56]" /> طباعة التقرير
           </Button>
-          <Button className="bg-[#D4AF37] hover:bg-[#B8962E] text-white font-bold" onClick={handleExportPDF}>
+          <Button className="bg-[#273c75] hover:bg-[#192a56] text-white font-bold" onClick={handleExportPDF}>
             <Download className="ml-2 h-4 w-4" /> تصدير PDF
           </Button>
         </div>
@@ -229,7 +229,7 @@ export default function Reports() {
 
       {loading ? (
         <div className="text-center py-20 text-gray-500 flex flex-col items-center justify-center gap-3">
-          <div className="w-10 h-10 border-4 border-[#133B2E] border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-10 h-10 border-4 border-[#192a56] border-t-transparent rounded-full animate-spin"></div>
           <span>جاري إنشاء التقارير وتحليل البيانات...</span>
         </div>
       ) : (
@@ -244,7 +244,7 @@ export default function Reports() {
                 </div>
               </CardHeader>
               <CardContent className="p-0 pt-2">
-                <div className="text-2xl font-extrabold text-[#133B2E]">{(data.totalCollected || 0).toLocaleString('ar-EG')} {currencySymbol}</div>
+                <div className="text-2xl font-extrabold text-[#192a56]">{(data.totalCollected || 0).toLocaleString('ar-EG')} {currencySymbol}</div>
                 <div className="text-[11px] font-semibold text-emerald-600 mt-1 flex items-center gap-0.5">
                   <ArrowUpRight size={12} /> مبالغ مستلمة من العملاء
                 </div>
@@ -259,7 +259,7 @@ export default function Reports() {
                 </div>
               </CardHeader>
               <CardContent className="p-0 pt-2">
-                <div className="text-2xl font-extrabold text-[#133B2E]">{(data.totalExpenses || 0).toLocaleString('ar-EG')} {currencySymbol}</div>
+                <div className="text-2xl font-extrabold text-[#192a56]">{(data.totalExpenses || 0).toLocaleString('ar-EG')} {currencySymbol}</div>
                 <div className="text-[11px] font-semibold text-rose-600 mt-1 flex items-center gap-0.5">
                   <ArrowDownRight size={12} /> رسوم قضائية ومصروفات إدارية
                 </div>
@@ -304,7 +304,7 @@ export default function Reports() {
             {/* Monthly Finance Chart */}
             <Card className="shadow-sm border-gray-100">
               <CardHeader>
-                <CardTitle className="text-base font-bold text-[#133B2E] flex items-center gap-2">
+                <CardTitle className="text-base font-bold text-[#192a56] flex items-center gap-2">
                   <BarChart3 className="text-blue-600" size={18} />
                   مقارنة الإيرادات بالمصروفات شهرياً
                 </CardTitle>
@@ -377,16 +377,16 @@ export default function Reports() {
               {/* Cases by Type */}
               <Card className="shadow-sm border-gray-100">
                 <CardHeader>
-                  <CardTitle className="text-base font-bold text-[#133B2E] flex items-center gap-2">
-                    <PieChart className="text-[#D4AF37]" size={18} />
+                  <CardTitle className="text-base font-bold text-[#192a56] flex items-center gap-2">
+                    <PieChart className="text-[#273c75]" size={18} />
                     توزيع القضايا والنزاعات
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col sm:flex-row items-center justify-center gap-8 py-4">
                   {/* Custom CSS Donut representation */}
-                  <div className="w-36 h-36 rounded-full border-[12px] border-blue-600 border-r-[#D4AF37] border-b-amber-500 border-l-red-500 relative flex items-center justify-center shadow-xs">
+                  <div className="w-36 h-36 rounded-full border-[12px] border-blue-600 border-r-[#273c75] border-b-amber-500 border-l-red-500 relative flex items-center justify-center shadow-xs">
                     <div className="text-center">
-                      <div className="text-2xl font-black text-[#133B2E]">{data.totalCases}</div>
+                      <div className="text-2xl font-black text-[#192a56]">{data.totalCases}</div>
                       <div className="text-[10px] text-gray-400 font-bold">إجمالي القضايا</div>
                     </div>
                   </div>
@@ -395,7 +395,7 @@ export default function Reports() {
                       <div className="text-xs text-gray-400 text-center">لا يوجد قضايا مسجلة</div>
                     ) : (
                       data.casesByType.map((item: any, idx: number) => {
-                        const colors = ["bg-blue-600", "bg-[#D4AF37]", "bg-amber-500", "bg-red-500", "bg-purple-500"];
+                        const colors = ["bg-blue-600", "bg-[#273c75]", "bg-amber-500", "bg-red-500", "bg-purple-500"];
                         const percent = Math.round((item.count / data.totalCases) * 100);
                         return (
                           <div key={idx} className="space-y-1">
@@ -420,7 +420,7 @@ export default function Reports() {
               {/* Expenses Breakdown */}
               <Card className="shadow-sm border-gray-100">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base font-bold text-[#133B2E] flex items-center gap-2">
+                  <CardTitle className="text-base font-bold text-[#192a56] flex items-center gap-2">
                     <Scale className="text-red-500" size={18} />
                     تحليل تصنيفات المصروفات
                   </CardTitle>
@@ -455,7 +455,7 @@ export default function Reports() {
             {/* General Performance */}
             <Card className="shadow-sm border-gray-100">
               <CardHeader>
-                <CardTitle className="text-base font-bold text-[#133B2E] flex items-center gap-2">
+                <CardTitle className="text-base font-bold text-[#192a56] flex items-center gap-2">
                   <CheckSquare className="text-green-600" size={18} />
                   إحصائيات المهام والعمل المنجز
                 </CardTitle>
@@ -463,7 +463,7 @@ export default function Reports() {
               <CardContent className="space-y-4">
                 <div className="flex justify-between border-b pb-2 text-sm font-semibold">
                   <span className="text-gray-500">إجمالي المهام المسندة</span>
-                  <span className="text-[#133B2E]">{data.totalTasks}</span>
+                  <span className="text-[#192a56]">{data.totalTasks}</span>
                 </div>
                 <div className="flex justify-between border-b pb-2 text-sm font-semibold">
                   <span className="text-gray-500">المهام المكتملة والمغلقة</span>
@@ -482,7 +482,7 @@ export default function Reports() {
             {/* Cases status */}
             <Card className="shadow-sm border-gray-100">
               <CardHeader>
-                <CardTitle className="text-base font-bold text-[#133B2E] flex items-center gap-2">
+                <CardTitle className="text-base font-bold text-[#192a56] flex items-center gap-2">
                   <FileText className="text-blue-600" size={18} />
                   حالة ملفات القضايا الحالية
                 </CardTitle>
@@ -511,7 +511,7 @@ export default function Reports() {
             {/* Client Reviews / Placeholder stats */}
             <Card className="shadow-sm border-gray-100">
               <CardHeader>
-                <CardTitle className="text-base font-bold text-[#133B2E] flex items-center gap-2">
+                <CardTitle className="text-base font-bold text-[#192a56] flex items-center gap-2">
                   <Users className="text-purple-600" size={18} />
                   كفاءة وجودة التمثيل القضائي
                 </CardTitle>
@@ -536,7 +536,7 @@ export default function Reports() {
           {/* Section 4: Lawyers Performance Table */}
           <Card className="shadow-sm border-gray-100">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-bold text-[#133B2E]">
+              <CardTitle className="text-base font-bold text-[#192a56]">
                 كشف أداء المحامين والمستشارين بالمكتب
               </CardTitle>
               <CardDescription>متابعة وتوزيع القضايا والمهام على مستوى الكادر القانوني</CardDescription>
@@ -545,10 +545,10 @@ export default function Reports() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50">
-                    <TableHead className="text-right font-bold text-[#133B2E]">المحامي</TableHead>
-                    <TableHead className="text-center font-bold text-[#133B2E] w-36">عدد القضايا النشطة</TableHead>
-                    <TableHead className="text-center font-bold text-[#133B2E] w-36">المهام المسندة</TableHead>
-                    <TableHead className="text-center font-bold text-[#133B2E] w-48">نسبة إنجاز المهام المسندة</TableHead>
+                    <TableHead className="text-right font-bold text-[#192a56]">المحامي</TableHead>
+                    <TableHead className="text-center font-bold text-[#192a56] w-36">عدد القضايا النشطة</TableHead>
+                    <TableHead className="text-center font-bold text-[#192a56] w-36">المهام المسندة</TableHead>
+                    <TableHead className="text-center font-bold text-[#192a56] w-48">نسبة إنجاز المهام المسندة</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -561,7 +561,7 @@ export default function Reports() {
                   ) : (
                     data.lawyersPerformance.map((lawyer: any, idx: number) => (
                       <TableRow key={idx} className="hover:bg-gray-50/50">
-                        <TableCell className="font-bold text-[#133B2E]">{lawyer.name}</TableCell>
+                        <TableCell className="font-bold text-[#192a56]">{lawyer.name}</TableCell>
                         <TableCell className="text-center font-semibold text-blue-600">{lawyer.casesCount} قضايا</TableCell>
                         <TableCell className="text-center text-gray-600 font-semibold">{lawyer.tasksCount} مهام</TableCell>
                         <TableCell className="text-center">
@@ -586,7 +586,7 @@ export default function Reports() {
           {/* Section 5: Recent Financial Activity */}
           <Card className="shadow-sm border-gray-100">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base font-bold text-[#133B2E]">
+              <CardTitle className="text-base font-bold text-[#192a56]">
                 أحدث القيود النقدية والحركات المالية
               </CardTitle>
               <CardDescription>متابعة تفصيلية لآخر ٥ عمليات استلام إيراد أو صرف مالي بالمكتب</CardDescription>
@@ -595,11 +595,11 @@ export default function Reports() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50">
-                    <TableHead className="text-right font-bold text-[#133B2E]">التاريخ</TableHead>
-                    <TableHead className="text-right font-bold text-[#133B2E]">المستفيد / العميل / القضية</TableHead>
-                    <TableHead className="text-right font-bold text-[#133B2E]">الحركة المالية</TableHead>
-                    <TableHead className="text-right font-bold text-[#133B2E] w-40">المبلغ</TableHead>
-                    <TableHead className="text-right font-bold text-[#133B2E] hidden sm:table-cell">البيان / ملاحظات</TableHead>
+                    <TableHead className="text-right font-bold text-[#192a56]">التاريخ</TableHead>
+                    <TableHead className="text-right font-bold text-[#192a56]">المستفيد / العميل / القضية</TableHead>
+                    <TableHead className="text-right font-bold text-[#192a56]">الحركة المالية</TableHead>
+                    <TableHead className="text-right font-bold text-[#192a56] w-40">المبلغ</TableHead>
+                    <TableHead className="text-right font-bold text-[#192a56] hidden sm:table-cell">البيان / ملاحظات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -616,7 +616,7 @@ export default function Reports() {
                           {act.date ? new Date(act.date).toLocaleDateString('ar-EG') : "-"}
                         </TableCell>
                         <TableCell>
-                          <div className="font-bold text-[#133B2E]">{act.clientName}</div>
+                          <div className="font-bold text-[#192a56]">{act.clientName}</div>
                           <div className="text-[10px] text-gray-400 font-bold">{act.caseTitle}</div>
                         </TableCell>
                         <TableCell>

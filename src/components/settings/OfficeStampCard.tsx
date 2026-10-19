@@ -63,7 +63,7 @@ export default function OfficeStampCard() {
   return (
     <div className="space-y-3 max-w-md">
       <div className="flex items-center gap-2">
-        <Stamp size={16} className="text-[#133B2E]" />
+        <Stamp size={16} className="text-[#192a56]" />
         <label className="text-sm font-bold text-gray-700">ختم المكتب الرسمي</label>
       </div>
       <p className="text-xs text-gray-500 leading-relaxed">
@@ -92,7 +92,7 @@ export default function OfficeStampCard() {
               type="button"
               disabled={uploading}
               onClick={() => fileRef.current?.click()}
-              className="flex items-center gap-2 px-4 py-2 bg-[#133B2E] text-[#D4AF37] font-bold rounded-xl text-xs hover:bg-[#133B2E]/90 transition disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-[#192a56] text-[#273c75] font-bold rounded-xl text-xs hover:bg-[#192a56]/90 transition disabled:opacity-50"
             >
               {uploading ? <Loader2 size={14} className="animate-spin" /> : <UploadCloud size={14} />}
               {office.officialStampUrl ? "استبدال الختم" : "رفع صورة الختم"}

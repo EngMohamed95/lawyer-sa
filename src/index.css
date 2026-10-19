@@ -1,9 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap');
 
 @theme {
-  --color-brand-green: #133B2E;
-  --color-brand-gold: #D4AF37;
+  --color-brand-green: #192a56;
+  --color-brand-gold: #273c75;
   --color-brand-gray: #F3F4F6;
+
+  /* البنفسجي والنيلي يُعاد تعريفهما بدرجات الهوية الكحلية — يغطي كل أدوات purple/violet/indigo/fuchsia */
+  --color-purple-50: #eef1f8; --color-purple-100: #dde3f1; --color-purple-200: #c0cae4; --color-purple-300: #97a6d0; --color-purple-400: #6b80b8; --color-purple-500: #3f5895; --color-purple-600: #273c75; --color-purple-700: #213366; --color-purple-800: #192a56; --color-purple-900: #131f40; --color-purple-950: #0d152c;
+  --color-violet-50: #eef1f8; --color-violet-100: #dde3f1; --color-violet-200: #c0cae4; --color-violet-300: #97a6d0; --color-violet-400: #6b80b8; --color-violet-500: #3f5895; --color-violet-600: #273c75; --color-violet-700: #213366; --color-violet-800: #192a56; --color-violet-900: #131f40; --color-violet-950: #0d152c;
+  --color-indigo-50: #eef1f8; --color-indigo-100: #dde3f1; --color-indigo-200: #c0cae4; --color-indigo-300: #97a6d0; --color-indigo-400: #6b80b8; --color-indigo-500: #3f5895; --color-indigo-600: #273c75; --color-indigo-700: #213366; --color-indigo-800: #192a56; --color-indigo-900: #131f40; --color-indigo-950: #0d152c;
+  --color-fuchsia-50: #eef1f8; --color-fuchsia-100: #dde3f1; --color-fuchsia-200: #c0cae4; --color-fuchsia-300: #97a6d0; --color-fuchsia-400: #6b80b8; --color-fuchsia-500: #3f5895; --color-fuchsia-600: #273c75; --color-fuchsia-700: #213366; --color-fuchsia-800: #192a56; --color-fuchsia-900: #131f40; --color-fuchsia-950: #0d152c;
   
   --font-sans: "IBM Plex Sans Arabic", "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
@@ -11,7 +17,7 @@
 @layer base {
   body {
     background-color: var(--color-brand-gray);
-    color: var(--color-brand-green);
+    color: #2f3640;
     font-family: var(--font-sans);
     direction: rtl; /* RTL Support */
   }
@@ -68,23 +74,23 @@
 
 :root {
     --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
+    --foreground: #2f3640;
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.145 0 0);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.26 0.045 160);
+    --primary: #192a56;
     --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.96 0.015 160);
-    --secondary-foreground: oklch(0.26 0.045 160);
-    --muted: oklch(0.96 0.015 160);
-    --muted-foreground: oklch(0.55 0.02 160);
-    --accent: oklch(0.96 0.015 160);
-    --accent-foreground: oklch(0.26 0.045 160);
+    --secondary: #eef1f8;
+    --secondary-foreground: #192a56;
+    --muted: #eef1f8;
+    --muted-foreground: #353b48;
+    --accent: #eef1f8;
+    --accent-foreground: #192a56;
     --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0.01 160);
-    --input: oklch(0.922 0.01 160);
-    --ring: oklch(0.65 0.03 160);
+    --border: #dfe3ee;
+    --input: #dfe3ee;
+    --ring: #273c75;
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
@@ -93,12 +99,12 @@
     --radius: 0.625rem;
     --sidebar: oklch(0.985 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.26 0.045 160);
+    --sidebar-primary: #192a56;
     --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.96 0.015 160);
-    --sidebar-accent-foreground: oklch(0.26 0.045 160);
-    --sidebar-border: oklch(0.922 0.01 160);
-    --sidebar-ring: oklch(0.65 0.03 160);
+    --sidebar-accent: #eef1f8;
+    --sidebar-accent-foreground: #192a56;
+    --sidebar-border: #dfe3ee;
+    --sidebar-ring: #273c75;
 }
 
 .dark {
@@ -108,13 +114,13 @@
     --card-foreground: oklch(0.985 0 0);
     --popover: oklch(0.205 0 0);
     --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0.02 160);
-    --primary-foreground: oklch(0.26 0.045 160);
-    --secondary: oklch(0.25 0.04 160);
+    --primary: #dfe3ee;
+    --primary-foreground: #192a56;
+    --secondary: #2f3640;
     --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.25 0.04 160);
-    --muted-foreground: oklch(0.708 0.02 160);
-    --accent: oklch(0.25 0.04 160);
+    --muted: #2f3640;
+    --muted-foreground: #b8bfd0;
+    --accent: #2f3640;
     --accent-foreground: oklch(0.985 0 0);
     --destructive: oklch(0.704 0.191 22.216);
     --border: oklch(1 0 0 / 10%);
@@ -127,9 +133,9 @@
     --chart-5: oklch(0.269 0 0);
     --sidebar: oklch(0.205 0 0);
     --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.85 0.03 160);
+    --sidebar-primary: #c9d1e6;
     --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.25 0.04 160);
+    --sidebar-accent: #2f3640;
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
@@ -153,12 +159,12 @@
 }
 
 /* ─────────────────────────────────────────────────────────────
-   أشرطة التمرير — بهوية LawyerOS: أخضر #133B2E وذهبي #D4AF37
+   أشرطة التمرير — بهوية LawyerOS: كحلي #192a56 وأزرق #273c75
    ───────────────────────────────────────────────────────────── */
 @layer base {
   :root {
-    --los-green: #133B2E;
-    --los-gold: #D4AF37;
+    --los-green: #192a56;
+    --los-gold: #273c75;
   }
 
   /*
@@ -170,12 +176,12 @@
   @supports not selector(::-webkit-scrollbar) {
     html {
       scrollbar-width: thin;
-      scrollbar-color: var(--los-green) rgb(19 59 46 / 0.08);
+      scrollbar-color: var(--los-green) rgb(25 42 86 / 0.08);
     }
     aside,
     .los-scroll-dark {
       scrollbar-width: thin;
-      scrollbar-color: var(--los-gold) rgb(255 255 255 / 0.08);
+      scrollbar-color: rgb(255 255 255 / 0.35) rgb(255 255 255 / 0.08);
     }
   }
 
@@ -186,7 +192,7 @@
   }
 
   ::-webkit-scrollbar-track {
-    background-color: rgb(19 59 46 / 0.06);
+    background-color: rgb(25 42 86 / 0.06);
     border-radius: 9999px;
   }
 
@@ -204,33 +210,33 @@
   }
 
   ::-webkit-scrollbar-thumb:active {
-    background-color: #0d2a20;
+    background-color: #192a56;
   }
 
   ::-webkit-scrollbar-corner {
     background: transparent;
   }
 
-  /* الأسطح الداكنة (القائمة الجانبية ورؤوس النوافذ) — ذهبي على أخضر غامق */
+  /* الأسطح الداكنة (القائمة الجانبية ورؤوس النوافذ) — فاتح على كحلي غامق */
   aside ::-webkit-scrollbar-track,
   aside::-webkit-scrollbar-track,
   .los-scroll-dark::-webkit-scrollbar-track,
-  [class*="bg-[#133B2E]"]::-webkit-scrollbar-track {
+  [class*="bg-[#192a56]"]::-webkit-scrollbar-track {
     background-color: rgb(255 255 255 / 0.06);
   }
 
   aside ::-webkit-scrollbar-thumb,
   aside::-webkit-scrollbar-thumb,
   .los-scroll-dark::-webkit-scrollbar-thumb,
-  [class*="bg-[#133B2E]"]::-webkit-scrollbar-thumb {
-    background-color: rgb(212 175 55 / 0.65);
+  [class*="bg-[#192a56]"]::-webkit-scrollbar-thumb {
+    background-color: rgb(255 255 255 / 0.35);
     background-clip: content-box;
   }
 
   aside ::-webkit-scrollbar-thumb:hover,
   aside::-webkit-scrollbar-thumb:hover,
   .los-scroll-dark::-webkit-scrollbar-thumb:hover,
-  [class*="bg-[#133B2E]"]::-webkit-scrollbar-thumb:hover {
+  [class*="bg-[#192a56]"]::-webkit-scrollbar-thumb:hover {
     background-color: var(--los-gold);
   }
 
@@ -239,4 +245,40 @@
     width: 6px;
     height: 6px;
   }
+}
+/* ─────────────────────────────────────────────────────────────
+   التمييز فوق الأسطح الداكنة
+   لون التمييز #273c75 قريب جداً من الكحلي #192a56 فلا يُقرأ فوقه،
+   فيصير أبيض على الأسطح الداكنة (القائمة الجانبية، الرؤوس، الأزرار الداكنة).
+   خارج @layer عمداً كي يتقدّم على أدوات Tailwind. الترتيب والأولوية مقصودان:
+   كلما قرب السطح من العنصر غلبت قاعدته.
+   ───────────────────────────────────────────────────────────── */
+:is(aside, .los-dark, [class~="bg-[#192a56]"], [class~="bg-[#273c75]"], [class~="bg-[#2f3640]"], [class~="bg-[#353b48]"]) :is(.text-\[\#273c75\], .text-\[\#192a56\], .hover\:text-\[\#273c75\]:hover) {
+  color: #fff;
+}
+
+:is(aside, .los-dark, [class~="bg-[#192a56]"], [class~="bg-[#2f3640]"], [class~="bg-[#353b48]"]) :is(.border-\[\#273c75\], .hover\:border-\[\#273c75\]:hover) {
+  border-color: rgb(255 255 255 / 0.85);
+}
+
+:is(aside, .los-dark, [class~="bg-[#192a56]"], [class~="bg-[#2f3640]"], [class~="bg-[#353b48]"]) :is(.bg-\[\#273c75\]\/10, .bg-\[\#273c75\]\/20) {
+  background-color: rgb(255 255 255 / 0.12);
+}
+
+/* سطح فاتح متداخل داخل سطح داكن (بطاقة بيضاء مثلاً) يستعيد ألوانه الأصلية */
+:is(aside, .los-dark, [class~="bg-[#192a56]"], [class~="bg-[#273c75]"], [class~="bg-[#2f3640]"], [class~="bg-[#353b48]"]) :is(.bg-white, .bg-gray-50, .bg-gray-100, .bg-card, .bg-background, .bg-popover) .text-\[\#273c75\] {
+  color: #273c75;
+}
+:is(aside, .los-dark, [class~="bg-[#192a56]"], [class~="bg-[#273c75]"], [class~="bg-[#2f3640]"], [class~="bg-[#353b48]"]) :is(.bg-white, .bg-gray-50, .bg-gray-100, .bg-card, .bg-background, .bg-popover) .text-\[\#192a56\] {
+  color: #192a56;
+}
+
+/* سطح داكن داخل فاتح داخل داكن (زر داكن في بطاقة بيضاء على صفحة داكنة) */
+:is(.bg-white, .bg-gray-50, .bg-gray-100, .bg-card, .bg-background, .bg-popover) :is([class~="bg-[#192a56]"], [class~="bg-[#273c75]"], [class~="bg-[#2f3640]"], [class~="bg-[#353b48]"]) :is(.text-\[\#273c75\], .text-\[\#192a56\]) {
+  color: #fff;
+}
+
+/* خلفية العنصر نفسه تحسم دائماً — :not(#_) يرفع الأولوية فوق كل ما سبق */
+:is([class~="bg-[#192a56]"], [class~="bg-[#273c75]"], [class~="bg-[#2f3640]"], [class~="bg-[#353b48]"]):is(.text-\[\#273c75\], .text-\[\#192a56\]):not(#_) {
+  color: #fff;
 }

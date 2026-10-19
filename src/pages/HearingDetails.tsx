@@ -14,7 +14,7 @@ function InfoField({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="space-y-1">
       <p className="text-xs font-bold text-gray-400">{label}</p>
-      <p className="text-sm font-medium text-[#133B2E]">{value || "—"}</p>
+      <p className="text-sm font-medium text-[#192a56]">{value || "—"}</p>
     </div>
   );
 }
@@ -41,7 +41,7 @@ function ArchiveBlock({
     <div className="p-4 rounded-2xl border border-gray-100 bg-gray-50/60 space-y-3">
       <div className="flex items-center gap-2">
         <span className={`w-2 h-2 rounded-full ${dotColor}`}></span>
-        <span className="text-sm font-bold text-[#133B2E]">{title}</span>
+        <span className="text-sm font-bold text-[#192a56]">{title}</span>
       </div>
       {text && <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">{text}</p>}
       {(fileUrl || secondFileUrl) && (
@@ -109,7 +109,7 @@ export default function HearingDetails() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-6 w-6 animate-spin text-[#133B2E]" />
+        <Loader2 className="h-6 w-6 animate-spin text-[#192a56]" />
       </div>
     );
   }
@@ -146,10 +146,10 @@ export default function HearingDetails() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <Link to="/app/hearings" className="text-sm text-gray-500 hover:text-[#133B2E] flex items-center gap-1 mb-2">
+          <Link to="/app/hearings" className="text-sm text-gray-500 hover:text-[#192a56] flex items-center gap-1 mb-2">
             <ArrowRight size={14} /> رجوع لكل الجلسات
           </Link>
-          <h1 className="text-2xl font-bold text-[#133B2E] tracking-tight flex items-center gap-3 flex-wrap">
+          <h1 className="text-2xl font-bold text-[#192a56] tracking-tight flex items-center gap-3 flex-wrap">
             تفاصيل الجلسة
             {isToday && <Badge className="bg-amber-500 text-white">اليوم</Badge>}
             {!isToday && (
@@ -164,15 +164,15 @@ export default function HearingDetails() {
             </Link>
           )}
         </div>
-        <Button className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white" onClick={() => setIsEditOpen(true)}>
+        <Button className="bg-[#192a56] hover:bg-[#192a56]/90 text-white" onClick={() => setIsEditOpen(true)}>
           <Edit className="ml-2 h-4 w-4" /> تعديل الجلسة
         </Button>
       </div>
 
       <Card className="shadow-sm border-gray-200">
         <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
-          <Calendar className="w-5 h-5 text-[#D4AF37]" />
-          <CardTitle className="text-lg text-[#133B2E]">معلومات الجلسة</CardTitle>
+          <Calendar className="w-5 h-5 text-[#273c75]" />
+          <CardTitle className="text-lg text-[#192a56]">معلومات الجلسة</CardTitle>
         </CardHeader>
         <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <InfoField
@@ -192,8 +192,8 @@ export default function HearingDetails() {
 
       <Card className="shadow-sm border-gray-200">
         <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
-          <Users className="w-5 h-5 text-[#D4AF37]" />
-          <CardTitle className="text-lg text-[#133B2E]">فريق العمل على القضية</CardTitle>
+          <Users className="w-5 h-5 text-[#273c75]" />
+          <CardTitle className="text-lg text-[#192a56]">فريق العمل على القضية</CardTitle>
         </CardHeader>
         <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
           <InfoField label="المحامي المسؤول" value={hearing.assignedLawyerName} />
@@ -204,8 +204,8 @@ export default function HearingDetails() {
 
       <Card className="shadow-sm border-gray-200">
         <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
-          <Scale className="w-5 h-5 text-[#D4AF37]" />
-          <CardTitle className="text-lg text-[#133B2E]">ملخص الجلسة والقرار</CardTitle>
+          <Scale className="w-5 h-5 text-[#273c75]" />
+          <CardTitle className="text-lg text-[#192a56]">ملخص الجلسة والقرار</CardTitle>
         </CardHeader>
         <CardContent className="p-6 space-y-4">
           <InfoField label="ملخص الجلسة" value={hearing.requiredActions} />
@@ -216,8 +216,8 @@ export default function HearingDetails() {
 
       <Card className="shadow-sm border-gray-200">
         <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
-          <ScrollText className="w-5 h-5 text-[#D4AF37]" />
-          <CardTitle className="text-lg text-[#133B2E]">الحكم والمذكرة المعتمدة</CardTitle>
+          <ScrollText className="w-5 h-5 text-[#273c75]" />
+          <CardTitle className="text-lg text-[#192a56]">الحكم والمذكرة المعتمدة</CardTitle>
         </CardHeader>
         <CardContent className="p-6 space-y-4">
           <ArchiveBlock
@@ -246,8 +246,8 @@ export default function HearingDetails() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         <Card className="shadow-sm border-gray-200">
           <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
-            <FileText className="w-5 h-5 text-[#D4AF37]" />
-            <CardTitle className="text-lg text-[#133B2E]">محاضر الضبط</CardTitle>
+            <FileText className="w-5 h-5 text-[#273c75]" />
+            <CardTitle className="text-lg text-[#192a56]">محاضر الضبط</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <HearingMinutesSection hearing={hearing} onUpdated={handleHearingUpdate} />
@@ -257,7 +257,7 @@ export default function HearingDetails() {
         <Card className="shadow-sm border-gray-200">
           <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
             <Sparkles className="w-5 h-5 text-purple-600" />
-            <CardTitle className="text-lg text-[#133B2E]">تقرير الجلسة بالذكاء الاصطناعي</CardTitle>
+            <CardTitle className="text-lg text-[#192a56]">تقرير الجلسة بالذكاء الاصطناعي</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <HearingReportSection

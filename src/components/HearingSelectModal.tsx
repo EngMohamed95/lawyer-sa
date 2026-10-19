@@ -33,8 +33,8 @@ export function HearingSelectModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[650px]" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-[#133B2E] flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-[#D4AF37]" /> اعتماد المذكرة وإرفاقها بجلسة
+          <DialogTitle className="text-xl font-bold text-[#192a56] flex items-center gap-2">
+            <Calendar className="h-5 w-5 text-[#273c75]" /> اعتماد المذكرة وإرفاقها بجلسة
           </DialogTitle>
           <DialogDescription className="text-gray-500 mt-1">
             اختر الجلسة التي ترغب في إرفاق هذه المذكرة بها كملف PDF معتمد.
@@ -60,7 +60,7 @@ export function HearingSelectModal({
                     key={h.id}
                     className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
                       selectedHearingId === h.id
-                        ? "border-[#D4AF37] bg-[#133B2E]/5"
+                        ? "border-[#273c75] bg-[#192a56]/5"
                         : "border-gray-200 hover:bg-gray-50"
                     }`}
                   >
@@ -70,10 +70,10 @@ export function HearingSelectModal({
                       value={h.id}
                       checked={selectedHearingId === h.id}
                       onChange={() => setSelectedHearingId(h.id)}
-                      className="mt-1 accent-[#D4AF37]"
+                      className="mt-1 accent-[#273c75]"
                     />
                     <div className="flex-1">
-                      <p className="font-bold text-sm text-[#133B2E]">{dateStr}</p>
+                      <p className="font-bold text-sm text-[#192a56]">{dateStr}</p>
                       <p className="text-xs text-gray-500 mt-1">
                         {h.court || "المحكمة غير محددة"} {h.circuit ? `— دائرة: ${h.circuit}` : ""}
                       </p>
@@ -95,7 +95,7 @@ export function HearingSelectModal({
             إلغاء
           </Button>
           <Button
-            className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white flex items-center gap-2"
+            className="bg-[#192a56] hover:bg-[#192a56]/90 text-white flex items-center gap-2"
             onClick={handleConfirm}
             disabled={loading || hearings.length === 0 || !selectedHearingId}
           >

@@ -6,22 +6,22 @@ const FEATURES = [
   {
     title: "ذكاء اصطناعي قانوني",
     description: "يلخص القضايا ويحلل المستندات القانونية المعقدة بسرعة مع الحفاظ على السياق.",
-    icon: <Brain className="text-[#D4AF37]" size={32} />,
+    icon: <Brain className="text-[#273c75]" size={32} />,
   },
   {
     title: "إدارة شاملة للمكتب",
     description: "تحكم في العملاء والقضايا والجلسات والحسابات من لوحة واحدة واضحة.",
-    icon: <Gavel className="text-[#D4AF37]" size={32} />,
+    icon: <Gavel className="text-[#273c75]" size={32} />,
   },
   {
     title: "نظام SaaS متكامل",
     description: "مساحات عمل منفصلة وآمنة لكل محام مع دعم الفرق والمتدربين.",
-    icon: <Globe className="text-[#D4AF37]" size={32} />,
+    icon: <Globe className="text-[#273c75]" size={32} />,
   },
   {
     title: "أمان بيانات قوي",
     description: "تنظيم آمن للمستندات والبيانات الحساسة مع صلاحيات مناسبة لكل مستخدم.",
-    icon: <Lock className="text-[#D4AF37]" size={32} />,
+    icon: <Lock className="text-[#273c75]" size={32} />,
   },
 ];
 
@@ -36,15 +36,15 @@ function Badge({ children, className = "" }: { children: ReactNode; className?: 
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#133B2E] text-white font-['Tajawal']" dir="rtl">
-      <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-[#133B2E]/90 backdrop-blur-md">
+    <div className="min-h-screen bg-[#192a56] text-white font-['Tajawal']" dir="rtl">
+      <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-[#192a56]/90 backdrop-blur-md">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
           <img src="/logo.png" alt="LawyerOS" className="h-12 w-auto" />
           <div className="hidden items-center gap-8 text-sm font-medium md:flex">
-            <a href="#features" className="transition-colors hover:text-[#D4AF37]">المميزات</a>
-            <a href="#services" className="transition-colors hover:text-[#D4AF37]">الخدمات</a>
-            <a href="#ai" className="transition-colors hover:text-[#D4AF37]">الذكاء الاصطناعي</a>
-            <Link to="/login" className="rounded-full bg-[#D4AF37] px-6 py-2 font-bold text-[#133B2E] transition hover:bg-[#D4AF37]/90">
+            <a href="#features" className="transition-colors hover:text-[#273c75]">المميزات</a>
+            <a href="#services" className="transition-colors hover:text-[#273c75]">الخدمات</a>
+            <a href="#ai" className="transition-colors hover:text-[#273c75]">الذكاء الاصطناعي</a>
+            <Link to="/login" className="rounded-full bg-[#273c75] px-6 py-2 font-bold text-[#192a56] transition hover:bg-[#273c75]/90">
               دخول النظام
             </Link>
           </div>
@@ -52,21 +52,21 @@ export default function LandingPage() {
       </nav>
 
       <section className="relative overflow-hidden px-6 pb-20 pt-32 lg:pb-28 lg:pt-44">
-        <div className="absolute left-10 top-24 h-64 w-64 rounded-full bg-[#D4AF37]/10 blur-[100px]" />
+        <div className="absolute left-10 top-24 h-64 w-64 rounded-full bg-[#273c75]/10 blur-[100px]" />
         <div className="absolute bottom-10 right-10 h-80 w-80 rounded-full bg-blue-500/10 blur-[120px]" />
 
         <div className="relative z-10 mx-auto max-w-7xl text-center">
-          <Badge className="mb-6 border-[#D4AF37]/30 bg-[#D4AF37]/10 text-[#D4AF37]">
+          <Badge className="mb-6 border-[#273c75]/30 bg-[#273c75]/10 text-[#273c75]">
             جيل جديد من الإدارة القانونية
           </Badge>
           <h1 className="mx-auto max-w-5xl text-4xl font-black leading-tight md:text-6xl lg:text-7xl">
-            أدر مكتبك بذكاء مع قوة <span className="text-[#D4AF37]">الذكاء الاصطناعي</span>
+            أدر مكتبك بذكاء مع قوة <span className="text-[#273c75]">الذكاء الاصطناعي</span>
           </h1>
           <p className="mx-auto mt-8 max-w-3xl text-lg leading-relaxed text-gray-300 md:text-xl">
             منصة متكاملة لإدارة مكاتب المحاماة تساعدك على تنظيم القضايا، العملاء، الجلسات، المهام، والحسابات في مكان واحد.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Link to="/login" className="w-full rounded-2xl bg-[#D4AF37] px-10 py-5 text-center text-lg font-black text-[#133B2E] shadow-xl shadow-[#D4AF37]/20 transition hover:scale-105 sm:w-auto">
+            <Link to="/login" className="w-full rounded-2xl bg-[#273c75] px-10 py-5 text-center text-lg font-black text-[#192a56] shadow-xl shadow-[#273c75]/20 transition hover:scale-105 sm:w-auto">
               ابدأ تجربتك
             </Link>
             <a href="#features" className="w-full rounded-2xl border border-white/15 px-10 py-5 text-center text-lg font-bold text-white transition hover:bg-white/10 sm:w-auto">
@@ -92,8 +92,8 @@ export default function LandingPage() {
           </div>
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
             {FEATURES.map((feature) => (
-              <div key={feature.title} className="rounded-3xl border border-white/10 bg-white/5 p-8 transition hover:border-[#D4AF37]/40">
-                <div className="mb-6 w-fit rounded-2xl bg-[#D4AF37]/10 p-4">{feature.icon}</div>
+              <div key={feature.title} className="rounded-3xl border border-white/10 bg-white/5 p-8 transition hover:border-[#273c75]/40">
+                <div className="mb-6 w-fit rounded-2xl bg-[#273c75]/10 p-4">{feature.icon}</div>
                 <h3 className="mb-4 text-xl font-bold">{feature.title}</h3>
                 <p className="text-sm leading-relaxed text-gray-400">{feature.description}</p>
               </div>
@@ -117,7 +117,7 @@ export default function LandingPage() {
             <div className="mt-8 space-y-4">
               {["تلخيص القضايا المعقدة", "استخراج النقاط القانونية", "تحليل نتائج الجلسات", "مساعد قانوني متاح دائماً"].map((item) => (
                 <div key={item} className="flex items-center gap-3">
-                  <CheckCircle2 className="text-[#D4AF37]" size={20} />
+                  <CheckCircle2 className="text-[#273c75]" size={20} />
                   <span className="font-bold">{item}</span>
                 </div>
               ))}
@@ -129,8 +129,8 @@ export default function LandingPage() {
                 <Brain className="shrink-0 text-purple-300" />
                 <p className="text-sm">تم تحليل المستند واستخراج أهم النقاط القانونية خلال ثوان.</p>
               </div>
-              <div className="mr-8 flex gap-4 rounded-2xl border-r-4 border-[#D4AF37] bg-white/5 p-4">
-                <MessageSquare className="shrink-0 text-[#D4AF37]" />
+              <div className="mr-8 flex gap-4 rounded-2xl border-r-4 border-[#273c75] bg-white/5 p-4">
+                <MessageSquare className="shrink-0 text-[#273c75]" />
                 <p className="text-sm font-bold">اعرض لي التوصيات المناسبة لهذه القضية.</p>
               </div>
             </div>
@@ -142,11 +142,11 @@ export default function LandingPage() {
       <section id="services" className="px-6 py-24">
         <div className="mx-auto max-w-7xl">
           <div className="mb-20 text-center">
-            <Badge className="mb-6 border-[#D4AF37]/30 bg-[#D4AF37]/10 text-[#D4AF37]">
+            <Badge className="mb-6 border-[#273c75]/30 bg-[#273c75]/10 text-[#273c75]">
               داخل النظام
             </Badge>
             <h2 className="text-4xl font-black leading-tight md:text-5xl">
-              كل ما يحتاجه مكتبك <span className="text-[#D4AF37]">في مكان واحد</span>
+              كل ما يحتاجه مكتبك <span className="text-[#273c75]">في مكان واحد</span>
             </h2>
             <p className="mt-6 text-lg text-gray-400 max-w-2xl mx-auto">
               واجهة عربية احترافية مصممة خصيصاً للمحامين المصريين — من إدارة القضايا حتى تتبع الحسابات
@@ -156,7 +156,7 @@ export default function LandingPage() {
           {/* Service 1: Cases */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-24">
             <div>
-              <div className="inline-flex items-center gap-2 bg-[#D4AF37]/10 text-[#D4AF37] px-4 py-2 rounded-full text-sm font-bold mb-6">
+              <div className="inline-flex items-center gap-2 bg-[#273c75]/10 text-[#273c75] px-4 py-2 rounded-full text-sm font-bold mb-6">
                 ⚖️ إدارة القضايا
               </div>
               <h3 className="text-3xl font-black mb-6 leading-tight">
@@ -168,14 +168,14 @@ export default function LandingPage() {
               <ul className="space-y-3">
                 {["رقم القضية والمحكمة والدائرة", "ربط كل قضية بعميلها تلقائياً", "تصفية حسب الحالة: مفتوحة / مغلقة / معلقة", "عرض كامل لتفاصيل القضية والجلسات والمستندات"].map(item => (
                   <li key={item} className="flex items-start gap-3 text-gray-300">
-                    <CheckCircle2 size={18} className="text-[#D4AF37] mt-0.5 shrink-0" />
+                    <CheckCircle2 size={18} className="text-[#273c75] mt-0.5 shrink-0" />
                     {item}
                   </li>
                 ))}
               </ul>
             </div>
             <div className="relative">
-              <div className="absolute -inset-4 bg-[#D4AF37]/5 rounded-[40px] blur-2xl" />
+              <div className="absolute -inset-4 bg-[#273c75]/5 rounded-[40px] blur-2xl" />
               <img
                 src="/screenshots/cases.png"
                 alt="إدارة القضايا"
@@ -280,7 +280,7 @@ export default function LandingPage() {
       </section>
 
 
-      <footer className="border-t border-white/10 bg-[#133B2E] px-6 py-12">
+      <footer className="border-t border-white/10 bg-[#192a56] px-6 py-12">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 md:flex-row">
           <div className="flex items-center gap-4">
             <img src="/logo.png" alt="LawyerOS" className="h-10 w-auto" />

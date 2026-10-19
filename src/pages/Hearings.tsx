@@ -97,14 +97,14 @@ export default function Hearings() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">الجلسات</h1>
+          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">الجلسات</h1>
           <p className="text-gray-500 mt-1">جدول الجلسات والمواعيد القادمة</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="border-gray-300">
             <Download className="ml-2 h-4 w-4" /> تحميل رول الجلسات
           </Button>
-          <Button className="bg-[#D4AF37] hover:bg-[#B8962E] text-white" onClick={() => setIsAddModalOpen(true)}>
+          <Button className="bg-[#273c75] hover:bg-[#192a56] text-white" onClick={() => setIsAddModalOpen(true)}>
             <Plus className="ml-2 h-4 w-4" /> إضافة جلسة
           </Button>
         </div>

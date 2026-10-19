@@ -114,7 +114,7 @@ export default function CaseClaimSection({ title, placeholder, emptyText, value,
             <Textarea rows={6} autoFocus value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder} className="leading-relaxed" />
             <div className="flex justify-end gap-2">
               <Button size="sm" variant="outline" disabled={busy === "save"} onClick={() => { setText(value.text); setEditing(false); }}>إلغاء</Button>
-              <Button size="sm" disabled={busy === "save"} onClick={saveText} className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white">
+              <Button size="sm" disabled={busy === "save"} onClick={saveText} className="bg-[#192a56] hover:bg-[#192a56]/90 text-white">
                 {busy === "save" ? <Loader2 className="ml-1.5 h-4 w-4 animate-spin" /> : <Save className="ml-1.5 h-4 w-4" />} حفظ
               </Button>
             </div>

@@ -67,12 +67,12 @@ export default function TodayAgenda() {
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-6">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#D4AF37] text-[#133B2E] shadow-xs">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#273c75] text-[#192a56] shadow-xs">
               <CalendarDays size={20} />
             </div>
-            <CardTitle className="text-xl font-bold text-[#133B2E]">أجندة اليوم</CardTitle>
+            <CardTitle className="text-xl font-bold text-[#192a56]">أجندة اليوم</CardTitle>
           </div>
-          <Link to="/app/calendar" className="text-xs font-bold text-[#133B2E] hover:text-[#D4AF37] flex items-center gap-1">
+          <Link to="/app/calendar" className="text-xs font-bold text-[#192a56] hover:text-[#273c75] flex items-center gap-1">
             التقويم الكامل <ChevronLeft size={14} />
           </Link>
         </div>
@@ -95,7 +95,7 @@ export default function TodayAgenda() {
                         {e.allDay ? "اليوم" : timeLabel(e.start)}
                       </span>
                       <span className="flex-1 min-w-0">
-                        <span className="block text-sm font-bold text-[#133B2E] truncate">{e.title}</span>
+                        <span className="block text-sm font-bold text-[#192a56] truncate">{e.title}</span>
                         {e.subtitle && <span className="block text-xs text-slate-500 truncate">{e.subtitle}</span>}
                       </span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 shrink-0">

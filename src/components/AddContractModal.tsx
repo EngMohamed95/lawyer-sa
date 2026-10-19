@@ -161,19 +161,19 @@ export default function AddContractModal({
     }
   };
 
-  const field = "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/10 focus:border-[#133B2E] transition-all text-sm";
+  const field = "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#192a56]/10 focus:border-[#192a56] transition-all text-sm";
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
       <div className="bg-white rounded-3xl w-full max-w-3xl max-h-[92vh] overflow-y-auto shadow-2xl">
-        <div className="p-6 border-b flex justify-between items-center bg-[#133B2E] text-white sticky top-0 z-10">
+        <div className="p-6 border-b flex justify-between items-center bg-[#192a56] text-white sticky top-0 z-10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#D4AF37] rounded-xl flex items-center justify-center text-[#133B2E]">
+            <div className="w-10 h-10 bg-[#273c75] rounded-xl flex items-center justify-center text-[#192a56]">
               <FileSignature size={20} />
             </div>
             <div>
               <h2 className="text-xl font-bold">عقد جديد</h2>
-              <p className="text-xs text-[#D4AF37]">يُنشأ كمسودة ثم يمرّ بدورة المراجعة والاعتماد</p>
+              <p className="text-xs text-[#273c75]">يُنشأ كمسودة ثم يمرّ بدورة المراجعة والاعتماد</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full"><X size={20} /></button>
@@ -272,9 +272,9 @@ export default function AddContractModal({
 
           {Number(form.value) > 0 && (
             <div className="grid grid-cols-3 gap-3 p-4 rounded-2xl bg-gray-50 border border-gray-100 text-center">
-              <div><p className="text-xs text-gray-500">القيمة</p><p className="font-bold text-[#133B2E]">{Number(form.value).toLocaleString("ar-EG")}</p></div>
-              <div><p className="text-xs text-gray-500">الضريبة</p><p className="font-bold text-[#133B2E]">{totals.vatAmount.toLocaleString("ar-EG")}</p></div>
-              <div><p className="text-xs text-gray-500">الإجمالي</p><p className="font-black text-[#D4AF37]">{totals.totalValue.toLocaleString("ar-EG")} {currency}</p></div>
+              <div><p className="text-xs text-gray-500">القيمة</p><p className="font-bold text-[#192a56]">{Number(form.value).toLocaleString("ar-EG")}</p></div>
+              <div><p className="text-xs text-gray-500">الضريبة</p><p className="font-bold text-[#192a56]">{totals.vatAmount.toLocaleString("ar-EG")}</p></div>
+              <div><p className="text-xs text-gray-500">الإجمالي</p><p className="font-black text-[#273c75]">{totals.totalValue.toLocaleString("ar-EG")} {currency}</p></div>
             </div>
           )}
 
@@ -292,7 +292,7 @@ export default function AddContractModal({
 
           <div className="flex gap-3 pt-2">
             <Button type="submit" disabled={loading}
-              className="flex-1 py-6 bg-[#133B2E] text-[#D4AF37] font-bold rounded-2xl hover:bg-[#133B2E]/90">
+              className="flex-1 py-6 bg-[#192a56] text-[#273c75] font-bold rounded-2xl hover:bg-[#192a56]/90">
               <Save size={16} className="ml-2" />
               {loading ? "جاري الحفظ..." : "حفظ كمسودة"}
             </Button>

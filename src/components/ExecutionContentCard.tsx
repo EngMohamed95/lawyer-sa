@@ -9,7 +9,7 @@ function Item({ label, children, strong = false }: { label: string; children: Re
   return (
     <div className="rounded-lg border border-gray-100 bg-gray-50/60 px-4 py-3">
       <dt className="text-xs text-gray-500">{label}</dt>
-      <dd className={`mt-1 text-base ${strong ? "font-extrabold text-[#133B2E]" : "font-bold text-gray-900"}`}>{children || "—"}</dd>
+      <dd className={`mt-1 text-base ${strong ? "font-extrabold text-[#192a56]" : "font-bold text-gray-900"}`}>{children || "—"}</dd>
     </div>
   );
 }
@@ -22,11 +22,11 @@ export default function ExecutionContentCard({ caseData }: { caseData: any }) {
     <Card className="shadow-sm md:col-span-2">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg">مضمون الطلب</CardTitle>
-        {caseData.enforcementDeedType && <p className="text-base font-bold text-[#1a9a45]">{caseData.enforcementDeedType}</p>}
+        {caseData.enforcementDeedType && <p className="text-base font-bold text-[#273c75]">{caseData.enforcementDeedType}</p>}
       </CardHeader>
       <CardContent className="space-y-5">
         <div>
-          <h4 className="mb-2 text-sm font-bold text-[#1a9a45]">بيانات المبلغ</h4>
+          <h4 className="mb-2 text-sm font-bold text-[#273c75]">بيانات المبلغ</h4>
           <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <Item label="المبلغ المدون في السند / المحكوم به">{d.deedAmount && formatMoney(d.deedAmount)}</Item>
             <Item label="المبلغ المستلم">{formatMoney(d.receivedAmount || 0)}</Item>
@@ -35,7 +35,7 @@ export default function ExecutionContentCard({ caseData }: { caseData: any }) {
           </dl>
         </div>
         <div>
-          <h4 className="mb-2 text-sm font-bold text-[#1a9a45]">بيانات السند</h4>
+          <h4 className="mb-2 text-sm font-bold text-[#273c75]">بيانات السند</h4>
           <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <Item label="تاريخ تحرير السند">{d.deedDate && formatGregorian(d.deedDate)}</Item>
             <Item label="مكان تحرير / صدور السند">{d.deedPlace}</Item>

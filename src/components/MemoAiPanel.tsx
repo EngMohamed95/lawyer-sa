@@ -220,7 +220,7 @@ ${draft ? `\nنص المحرر الحالي:\n"""\n${draft.slice(0, 6000)}\n"""\
       <div className="px-4 py-3 border-b border-purple-100 flex items-center gap-2">
         <span className="h-8 w-8 rounded-lg bg-purple-600 text-white flex items-center justify-center"><Sparkles size={16} /></span>
         <div>
-          <h3 className="text-sm font-bold text-[#133B2E]">المساعد الذكي</h3>
+          <h3 className="text-sm font-bold text-[#192a56]">المساعد الذكي</h3>
           <p className="text-[11px] text-gray-500">النتائج تظهر هنا — أدرجها في المحرر متى شئت</p>
         </div>
       </div>
@@ -289,7 +289,7 @@ ${draft ? `\nنص المحرر الحالي:\n"""\n${draft.slice(0, 6000)}\n"""\
                     <Paperclip size={12} /> إرفاق ملفات
                   </button>
                   <button onClick={() => run(r.request, r.prompt)} disabled={disabled || !r.prompt}
-                    className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold text-[#133B2E] hover:bg-gray-100 disabled:opacity-50">
+                    className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold text-[#192a56] hover:bg-gray-100 disabled:opacity-50">
                     <RotateCcw size={12} /> إعادة الطلب بالمرفقات
                   </button>
                 </div>
@@ -300,7 +300,7 @@ ${draft ? `\nنص المحرر الحالي:\n"""\n${draft.slice(0, 6000)}\n"""\
                   dangerouslySetInnerHTML={{ __html: r.html }} />
                 <div className="flex gap-1 px-2 py-1.5 border-t border-gray-100">
                   <button onClick={() => onInsert(r.html)}
-                    className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold text-[#133B2E] hover:bg-gray-100">
+                    className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold text-[#192a56] hover:bg-gray-100">
                     <FilePlus2 size={12} /> إدراج في المحرر
                   </button>
                   <button onClick={() => onReplace(r.html)}

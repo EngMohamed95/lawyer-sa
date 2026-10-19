@@ -162,7 +162,7 @@ ${notes || "لا يوجد"}
             <div key={r.id} className="flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50/60">
               <div className="flex items-center gap-2 min-w-0">
                 <FileText className="h-4 w-4 text-purple-500 shrink-0" />
-                <span className="text-sm text-[#133B2E] font-medium truncate">{r.title}</span>
+                <span className="text-sm text-[#192a56] font-medium truncate">{r.title}</span>
                 <span className="text-[10px] text-gray-400 shrink-0">
                   {new Date(r.createdAt).toLocaleDateString("ar-EG")}
                 </span>
@@ -205,7 +205,7 @@ ${notes || "لا يوجد"}
         <div className="space-y-4 border-t border-gray-100 pt-4">
           {minutesFiles.length > 0 && (
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#133B2E]">اختر من محاضر الضبط المرفوعة</label>
+              <label className="text-sm font-bold text-[#192a56]">اختر من محاضر الضبط المرفوعة</label>
               <div className="flex flex-wrap gap-2">
                 {minutesFiles.map((f) => {
                   const checked = selectedMinutesIds.includes(f.id);
@@ -213,7 +213,7 @@ ${notes || "لا يوجد"}
                     <label
                       key={f.id}
                       className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs cursor-pointer border transition-all ${
-                        checked ? "bg-[#133B2E] text-white border-[#133B2E]" : "bg-white text-gray-600 border-gray-200"
+                        checked ? "bg-[#192a56] text-white border-[#192a56]" : "bg-white text-gray-600 border-gray-200"
                       }`}
                     >
                       <input type="checkbox" className="hidden" checked={checked} onChange={() => toggleMinutesFile(f.id)} />
@@ -226,7 +226,7 @@ ${notes || "لا يوجد"}
           )}
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#133B2E]">رفع ملفات إضافية (صور / PDF / Word)</label>
+            <label className="text-sm font-bold text-[#192a56]">رفع ملفات إضافية (صور / PDF / Word)</label>
             <div className="flex flex-wrap gap-2">
               {extraFiles.map((f, i) => (
                 <span key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs bg-gray-100 text-gray-700">
@@ -255,7 +255,7 @@ ${notes || "لا يوجد"}
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#133B2E]">ملاحظات إضافية (اختياري)</label>
+            <label className="text-sm font-bold text-[#192a56]">ملاحظات إضافية (اختياري)</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -285,7 +285,7 @@ ${notes || "لا يوجد"}
 
       {isEditing && !loading && (
         <div className="space-y-3 border-t border-gray-100 pt-4">
-          <label className="text-sm font-bold text-[#133B2E]">
+          <label className="text-sm font-bold text-[#192a56]">
             {editingReport ? "تعديل التقرير" : "معاينة التقرير المولّد — يمكنك التعديل عليه مباشرة"}
           </label>
           <RichTextEditor value={editingHtml} onChange={setEditingHtml} placeholder="محتوى التقرير..." />
@@ -313,7 +313,7 @@ ${notes || "لا يوجد"}
               type="button"
               disabled={saving}
               onClick={handleSaveReport}
-              className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white font-bold"
+              className="bg-[#192a56] hover:bg-[#192a56]/90 text-white font-bold"
             >
               {saving ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Save className="ml-2 h-4 w-4" />}
               حفظ في سجل الجلسة

@@ -343,7 +343,7 @@ export default function CaseDetails() {
         <div style="font-family: 'Tajawal', sans-serif; line-height: 1.8; direction: rtl; text-align: right; min-height: 100%; background:#fff;">
           ${renderMemoLetterheadHeader(office.officeProfile)}
           <div style="padding: 30px 40px;">
-            <h1 style="text-align: center; color: #133B2E; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; font-size: 22pt;">${selectedMemoForHearing.title}</h1>
+            <h1 style="text-align: center; color: #192a56; border-bottom: 2px solid #273c75; padding-bottom: 10px; font-size: 22pt;">${selectedMemoForHearing.title}</h1>
             <div style="color: #666; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 10pt;">
               قضية رقم: ${data.caseNumber || '---'} | تاريخ الاعتماد: ${new Date().toLocaleDateString('ar-EG')}
             </div>
@@ -392,7 +392,7 @@ export default function CaseDetails() {
         <body dir="rtl" style="font-family: 'Traditional Arabic', 'Tajawal', sans-serif; padding: 0; line-height: 1.8; text-align: right;">
           ${renderMemoLetterheadHeader(office.officeProfile)}
           <div style="padding: 40px;">
-            <h1 style="text-align: center; color: #133B2E; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; font-size: 22pt;">${selectedMemoForHearing.title}</h1>
+            <h1 style="text-align: center; color: #192a56; border-bottom: 2px solid #273c75; padding-bottom: 10px; font-size: 22pt;">${selectedMemoForHearing.title}</h1>
             <div style="color: #666; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 10pt;">
               قضية رقم: ${data.caseNumber || '---'} | تاريخ الاعتماد: ${new Date().toLocaleDateString('ar-EG')}
             </div>
@@ -955,14 +955,14 @@ export default function CaseDetails() {
 
       {/* Header */}
       <div className="flex flex-col gap-4">
-        <Link to="/app/cases" className="text-gray-500 hover:text-[#133B2E] inline-flex items-center text-sm font-medium transition-colors">
+        <Link to="/app/cases" className="text-gray-500 hover:text-[#192a56] inline-flex items-center text-sm font-medium transition-colors">
           <ChevronRight size={16} className="ml-1" />
           العودة للقضايا
         </Link>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-4">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold text-[#133B2E] tracking-tight">{data.title}</h1>
+              <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">{data.title}</h1>
               {getStatusBadge(data.status)}
             </div>
             <p className="text-gray-500 mt-1 flex items-center gap-2">
@@ -978,7 +978,7 @@ export default function CaseDetails() {
             <Button variant="outline" className="text-purple-600 border-purple-200 hover:bg-purple-50" onClick={() => setActiveAiTarget({ target: data, type: 'case' })}>
               <Sparkles className="ml-2 h-4 w-4" /> تلخيص شامل للذكاء الاصطناعي
             </Button>
-            <Button className="bg-[#D4AF37] hover:bg-[#B8962E] text-white" onClick={() => setIsEditCaseOpen(true)}>
+            <Button className="bg-[#273c75] hover:bg-[#192a56] text-white" onClick={() => setIsEditCaseOpen(true)}>
               <Edit className="ml-2 h-4 w-4" /> {isExecutionCase ? "تعديل بيانات الطلب" : "تعديل بيانات القضية"}
             </Button>
           </div>
@@ -1007,13 +1007,13 @@ export default function CaseDetails() {
               value="info" 
               className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
                 activeTab === "info"
-                  ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
-                  : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
+                  ? "!bg-[#192a56] !text-white shadow-md shadow-[#192a56]/25 border border-[#192a56]"
+                  : "bg-white text-[#192a56] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
               <div className="min-w-0">
                 <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "info" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>التفاصيل العامة</span>
-                <span className={`text-sm leading-tight font-bold block ${activeTab === "info" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{isExecutionCase ? "مضمون الطلب" : "موضوع الدعوى"}</span>
+                <span className={`text-sm leading-tight font-bold block ${activeTab === "info" ? "!text-white font-extrabold" : "text-[#192a56]"}`}>{isExecutionCase ? "مضمون الطلب" : "موضوع الدعوى"}</span>
               </div>
               <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "info" ? "!bg-white/20 !text-amber-300" : "bg-indigo-100/70 text-indigo-600"}`}>
                 <Scale size={16} />
@@ -1024,13 +1024,13 @@ export default function CaseDetails() {
               value="parties" 
               className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
                 activeTab === "parties"
-                  ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
-                  : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
+                  ? "!bg-[#192a56] !text-white shadow-md shadow-[#192a56]/25 border border-[#192a56]"
+                  : "bg-white text-[#192a56] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
               <div className="min-w-0">
                 <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "parties" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>أطراف الدعوى</span>
-                <span className={`text-lg leading-tight font-bold block ${activeTab === "parties" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{partiesOf(data).length}</span>
+                <span className={`text-lg leading-tight font-bold block ${activeTab === "parties" ? "!text-white font-extrabold" : "text-[#192a56]"}`}>{partiesOf(data).length}</span>
               </div>
               <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "parties" ? "!bg-white/20 !text-amber-300" : "bg-emerald-100/70 text-emerald-600"}`}>
                 <UsersRound size={16} />
@@ -1041,13 +1041,13 @@ export default function CaseDetails() {
               value="memos" 
               className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
                 activeTab === "memos"
-                  ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
-                  : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
+                  ? "!bg-[#192a56] !text-white shadow-md shadow-[#192a56]/25 border border-[#192a56]"
+                  : "bg-white text-[#192a56] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
               <div className="min-w-0">
                 <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "memos" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>المذكرات والصحف</span>
-                <span className={`text-lg leading-tight font-bold block ${activeTab === "memos" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.memos?.length || 0}</span>
+                <span className={`text-lg leading-tight font-bold block ${activeTab === "memos" ? "!text-white font-extrabold" : "text-[#192a56]"}`}>{data.memos?.length || 0}</span>
               </div>
               <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "memos" ? "!bg-white/20 !text-amber-300" : "bg-amber-100/70 text-amber-600"}`}>
                 <FileSignature size={16} />
@@ -1058,13 +1058,13 @@ export default function CaseDetails() {
               value="hearings" 
               className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
                 activeTab === "hearings"
-                  ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
-                  : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
+                  ? "!bg-[#192a56] !text-white shadow-md shadow-[#192a56]/25 border border-[#192a56]"
+                  : "bg-white text-[#192a56] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
               <div className="min-w-0">
                 <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "hearings" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>جلسات القضية</span>
-                <span className={`text-lg leading-tight font-bold block ${activeTab === "hearings" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.hearings.length}</span>
+                <span className={`text-lg leading-tight font-bold block ${activeTab === "hearings" ? "!text-white font-extrabold" : "text-[#192a56]"}`}>{data.hearings.length}</span>
               </div>
               <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "hearings" ? "!bg-white/20 !text-amber-300" : "bg-cyan-100/70 text-cyan-600"}`}>
                 <Calendar size={16} />
@@ -1075,13 +1075,13 @@ export default function CaseDetails() {
               value="judgment" 
               className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
                 activeTab === "judgment"
-                  ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
-                  : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
+                  ? "!bg-[#192a56] !text-white shadow-md shadow-[#192a56]/25 border border-[#192a56]"
+                  : "bg-white text-[#192a56] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
               <div className="min-w-0">
                 <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "judgment" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>الأحكام</span>
-                <span className={`text-lg leading-tight font-bold block ${activeTab === "judgment" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{judgmentsOf(data).length}</span>
+                <span className={`text-lg leading-tight font-bold block ${activeTab === "judgment" ? "!text-white font-extrabold" : "text-[#192a56]"}`}>{judgmentsOf(data).length}</span>
               </div>
               <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "judgment" ? "!bg-white/20 !text-amber-300" : "bg-emerald-100/70 text-emerald-600"}`}>
                 <Gavel size={16} />
@@ -1092,13 +1092,13 @@ export default function CaseDetails() {
               value="docs" 
               className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
                 activeTab === "docs"
-                  ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
-                  : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
+                  ? "!bg-[#192a56] !text-white shadow-md shadow-[#192a56]/25 border border-[#192a56]"
+                  : "bg-white text-[#192a56] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
               <div className="min-w-0">
                 <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "docs" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>المستندات</span>
-                <span className={`text-lg leading-tight font-bold block ${activeTab === "docs" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>{data.documents.length}</span>
+                <span className={`text-lg leading-tight font-bold block ${activeTab === "docs" ? "!text-white font-extrabold" : "text-[#192a56]"}`}>{data.documents.length}</span>
               </div>
               <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "docs" ? "!bg-white/20 !text-amber-300" : "bg-rose-100/70 text-rose-600"}`}>
                 <FileText size={16} />
@@ -1109,13 +1109,13 @@ export default function CaseDetails() {
               value="reports"
               className={`transition-all rounded-xl px-3 py-2 cursor-pointer text-right w-full flex items-center justify-between gap-2 min-w-0 ${
                 activeTab === "reports"
-                  ? "!bg-[#133B2E] !text-white shadow-md shadow-[#133B2E]/25 border border-[#133B2E]"
-                  : "bg-white text-[#133B2E] border border-slate-200/80 shadow-xs hover:shadow-md"
+                  ? "!bg-[#192a56] !text-white shadow-md shadow-[#192a56]/25 border border-[#192a56]"
+                  : "bg-white text-[#192a56] border border-slate-200/80 shadow-xs hover:shadow-md"
               }`}
             >
               <div className="min-w-0">
                 <span className={`text-[11px] font-semibold block mb-0.5 truncate ${activeTab === "reports" ? "!text-amber-300 font-bold" : "text-slate-400"}`}>التقارير</span>
-                <span className={`text-sm leading-tight font-bold block truncate ${activeTab === "reports" ? "!text-white font-extrabold" : "text-[#133B2E]"}`}>تقرير الحالة</span>
+                <span className={`text-sm leading-tight font-bold block truncate ${activeTab === "reports" ? "!text-white font-extrabold" : "text-[#192a56]"}`}>تقرير الحالة</span>
               </div>
               <div className={`p-1.5 rounded-lg flex items-center justify-center shrink-0 ${activeTab === "reports" ? "!bg-white/20 !text-amber-300" : "bg-teal-100/70 text-teal-700"}`}>
                 <FileBarChart size={16} />
@@ -1154,17 +1154,17 @@ export default function CaseDetails() {
                   )}
                   <div className="flex justify-between border-b pb-3 border-gray-100">
                     <span className="text-gray-500">الصفة</span>
-                    <span className="font-medium text-[#133B2E]">
+                    <span className="font-medium text-[#192a56]">
                       {clientRoleLabelOf(data)}
                     </span>
                   </div>
                   <div className="flex justify-between border-b pb-3 border-gray-100">
                     <span className="text-gray-500">{isExecutionCase ? "محكمة التنفيذ" : "المحكمة المرفوع أمامها"}</span>
-                    <span className="font-medium text-[#133B2E]">{data.courtName || "غير محدد"}</span>
+                    <span className="font-medium text-[#192a56]">{data.courtName || "غير محدد"}</span>
                   </div>
                   <div className="flex justify-between border-b pb-3 border-gray-100">
                     <span className="text-gray-500">الدائرة القضائية</span>
-                    <span className="font-medium text-[#133B2E]">{data.courtCircle || "غير محدد"}</span>
+                    <span className="font-medium text-[#192a56]">{data.courtCircle || "غير محدد"}</span>
                   </div>
                   <div className="flex justify-between border-b pb-3 border-gray-100">
                     <span className="text-gray-500">{isExecutionCase ? "تاريخ تقديم الطلب" : "تاريخ القضية"}</span>
@@ -1228,7 +1228,7 @@ export default function CaseDetails() {
               <Card className="shadow-sm md:col-span-2 border border-blue-200/60 overflow-hidden bg-white">
                 <CardHeader className="pb-4 bg-blue-50/20 border-b border-blue-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                   <div>
-                    <CardTitle className="text-lg text-[#133B2E] flex items-center gap-2">
+                    <CardTitle className="text-lg text-[#192a56] flex items-center gap-2">
                       <Scale className="text-blue-600 w-5 h-5" /> مسار سير إجراءات التقاضي في نظام ناجز
                     </CardTitle>
                     <CardDescription className="text-gray-500 text-xs">
@@ -1262,7 +1262,7 @@ export default function CaseDetails() {
                         className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-[#133B2E] text-sm">1. تقديم قيد الدعوى وإحالتها</span>
+                          <span className="font-bold text-[#192a56] text-sm">1. تقديم قيد الدعوى وإحالتها</span>
                           <span className="text-xs text-gray-500 font-medium">({litigationStepsList.filter(s => s.stage === "SUBMIT").filter(s => data.litigationSteps?.[s.id]).length}/8)</span>
                         </div>
                         {expandedStages.SUBMIT ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
@@ -1295,7 +1295,7 @@ export default function CaseDetails() {
                         className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-[#133B2E] text-sm">2. الترافع وتبادل المذكرات والجلسات</span>
+                          <span className="font-bold text-[#192a56] text-sm">2. الترافع وتبادل المذكرات والجلسات</span>
                           <span className="text-xs text-gray-500 font-medium">({litigationStepsList.filter(s => s.stage === "PLEADING").filter(s => data.litigationSteps?.[s.id]).length}/6)</span>
                         </div>
                         {expandedStages.PLEADING ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
@@ -1328,7 +1328,7 @@ export default function CaseDetails() {
                         className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-[#133B2E] text-sm">3. الأحكام والاعتراض والاستئناف</span>
+                          <span className="font-bold text-[#192a56] text-sm">3. الأحكام والاعتراض والاستئناف</span>
                           <span className="text-xs text-gray-500 font-medium">({litigationStepsList.filter(s => s.stage === "JUDGMENT").filter(s => data.litigationSteps?.[s.id]).length}/6)</span>
                         </div>
                         {expandedStages.JUDGMENT ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
@@ -1361,7 +1361,7 @@ export default function CaseDetails() {
                         className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="font-bold text-[#133B2E] text-sm">4. السند والتنفيذ والتحصيل</span>
+                          <span className="font-bold text-[#192a56] text-sm">4. السند والتنفيذ والتحصيل</span>
                           <span className="text-xs text-gray-500 font-medium">({litigationStepsList.filter(s => s.stage === "EXECUTION").filter(s => data.litigationSteps?.[s.id]).length}/5)</span>
                         </div>
                         {expandedStages.EXECUTION ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
@@ -1390,14 +1390,14 @@ export default function CaseDetails() {
 
                   {/* Special Scenarios Section */}
                   <div className="pt-4 border-t border-gray-100 space-y-3">
-                    <h4 className="text-sm font-bold text-[#133B2E] flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-[#192a56] flex items-center gap-2">
                       <AlertTriangle className="text-blue-500 w-4 h-4" /> حالات طارئة قد تطرأ أثناء سير القضية
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-blue-50/10 p-4 rounded-xl border border-blue-100/50">
                       {litigationScenariosList.map(item => (
                         <label 
                           key={item.id} 
-                          className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer transition select-none ${data.litigationScenarios?.[item.id] ? "bg-blue-100/30 text-[#133B2E] font-bold" : "hover:bg-gray-50 text-gray-600"}`}
+                          className={`flex items-start gap-2.5 p-2 rounded-lg cursor-pointer transition select-none ${data.litigationScenarios?.[item.id] ? "bg-blue-100/30 text-[#192a56] font-bold" : "hover:bg-gray-50 text-gray-600"}`}
                         >
                           <input 
                             type="checkbox"
@@ -1427,7 +1427,7 @@ export default function CaseDetails() {
                 <CardTitle className="text-lg">سجل الجلسات</CardTitle>
                 <CardDescription>الأحدث أولاً</CardDescription>
               </div>
-              <Button size="sm" className="bg-[#133B2E] hover:bg-[#133B2E]/90" onClick={() => setIsAddHearingOpen(true)}>
+              <Button size="sm" className="bg-[#192a56] hover:bg-[#192a56]/90" onClick={() => setIsAddHearingOpen(true)}>
                 <Plus className="ml-2 h-4 w-4" /> اضافة جلسة جديدة
               </Button>
             </CardHeader>
@@ -1448,7 +1448,7 @@ export default function CaseDetails() {
                       actions={
                         <button
                           onClick={() => { setSelectedHearing(h); setIsEditHearingOpen(true); }}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-gray-200 text-sm font-bold text-[#133B2E] hover:bg-gray-50 transition"
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-gray-200 text-sm font-bold text-[#192a56] hover:bg-gray-50 transition"
                         >
                           <Edit className="h-3.5 w-3.5" /> تعديل
                         </button>
@@ -1477,7 +1477,7 @@ export default function CaseDetails() {
                     setMemoType("LAWSUIT");
                     setMemoTitle("");
                     setMemoContent("");
-                  }} className="bg-[#D4AF37] hover:bg-[#B8962E] text-white">
+                  }} className="bg-[#273c75] hover:bg-[#192a56] text-white">
                     <FileSignature className="ml-2 h-4 w-4" /> كتابة مذكرة / صحيفة جديدة
                   </Button>
                 </div>
@@ -1496,7 +1496,7 @@ export default function CaseDetails() {
                     <Card key={memo.id} className="shadow-sm hover:shadow-md transition-shadow flex flex-col h-full">
                       <CardHeader className="pb-3 border-b border-gray-100">
                         <div className="flex justify-between items-start">
-                          <CardTitle className="text-lg text-[#133B2E] line-clamp-1" title={memo.title}>{memo.title}</CardTitle>
+                          <CardTitle className="text-lg text-[#192a56] line-clamp-1" title={memo.title}>{memo.title}</CardTitle>
                           <Badge variant="outline" className="bg-gray-50 text-[10px]">{memo.type === 'LAWSUIT' ? 'صحيفة دعوى' : memo.type === 'PLEADING' ? 'مرافعة' : 'مذكرة'}</Badge>
                         </div>
                         <div className="flex items-center gap-1.5 flex-wrap mt-2">
@@ -1522,7 +1522,7 @@ export default function CaseDetails() {
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="text-[#133B2E] hover:bg-white bg-white shadow-sm border border-gray-200"
+                            className="text-[#192a56] hover:bg-white bg-white shadow-sm border border-gray-200"
                             onClick={() => {
                               const printWindow = window.open('', '_blank');
                               const stamped = office.officialStampUrl && (memoStatus === "APPROVED" || memoStatus === "FILED");
@@ -1533,7 +1533,7 @@ export default function CaseDetails() {
                                       <title>${memo.title}</title>
                                       <style>
                                         body { font-family: 'Tajawal', serif; padding: 0; margin: 0; line-height: 1.8; }
-                                        h1 { text-align: center; color: #133B2E; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+                                        h1 { text-align: center; color: #192a56; border-bottom: 2px solid #273c75; padding-bottom: 10px; }
                                         .meta { color: #666; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
                                         .content { font-size: 14pt; text-align: justify; }
                                       </style>
@@ -1560,7 +1560,7 @@ export default function CaseDetails() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-[#133B2E] hover:bg-white bg-white shadow-sm border border-gray-200"
+                              className="text-[#192a56] hover:bg-white bg-white shadow-sm border border-gray-200"
                               title="فتح المذكرة وتعديل محتواها"
                               onClick={() => {
                                 setEditingMemoId(memo.id);
@@ -1644,7 +1644,7 @@ export default function CaseDetails() {
               <CardContent className="pt-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2 md:col-span-2">
-                    <label className="text-sm font-bold text-[#133B2E]">عنوان المذكرة / المستند</label>
+                    <label className="text-sm font-bold text-[#192a56]">عنوان الموضوع</label>
                     <Input 
                       placeholder="مثال: صحيفة دعوى تعويض، مذكرة دفاع..." 
                       className="text-lg bg-gray-50"
@@ -1653,7 +1653,7 @@ export default function CaseDetails() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-bold text-[#133B2E]">النوع</label>
+                    <label className="text-sm font-bold text-[#192a56]">النوع</label>
                     <select 
                       className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       value={memoType}
@@ -1714,7 +1714,7 @@ export default function CaseDetails() {
                               <title>${memoTitle}</title>
                               <style>
                                 body { font-family: 'Tajawal', serif; padding: 50px; line-height: 1.8; }
-                                h1 { text-align: center; color: #133B2E; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+                                h1 { text-align: center; color: #192a56; border-bottom: 2px solid #273c75; padding-bottom: 10px; }
                                 .meta { color: #666; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
                                 .content { font-size: 14pt; text-align: justify; }
                               </style>
@@ -1735,7 +1735,7 @@ export default function CaseDetails() {
                     <Download className="ml-2 h-4 w-4" /> حفظ وطباعة فورية
                   </Button>
                   <Button 
-                    className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white" 
+                    className="bg-[#192a56] hover:bg-[#192a56]/90 text-white" 
                     onClick={handleSaveMemo}
                     disabled={!memoTitle || !memoContent}
                   >

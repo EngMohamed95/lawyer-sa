@@ -167,7 +167,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-[#133B2E] font-['Tajawal']" dir="rtl">
+    <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-[#192a56] font-['Tajawal']" dir="rtl">
       {/* Background Image with Overlay */}
       <div 
         className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-transform duration-[20s] hover:scale-105"
@@ -176,12 +176,12 @@ export default function Login() {
         }}
       >
         {/* Adjusted overlay to make the image visible on the entire page */}
-        <div className="absolute inset-0 bg-[#133B2E]/60 backdrop-blur-[2px]"></div>
+        <div className="absolute inset-0 bg-[#192a56]/60 backdrop-blur-[2px]"></div>
       </div>
 
       {/* Decorative Elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#D4AF37]/20 blur-[120px] rounded-full"></div>
+        <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#273c75]/20 blur-[120px] rounded-full"></div>
         <div className="absolute bottom-[-10%] left-[-10%] w-[30%] h-[30%] bg-blue-500/20 blur-[100px] rounded-full"></div>
       </div>
 
@@ -189,10 +189,10 @@ export default function Login() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="relative z-10 w-full max-w-[1100px] flex flex-col md:flex-row bg-[#133B2E]/40 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden m-4"
+        className="relative z-10 w-full max-w-[1100px] flex flex-col md:flex-row bg-[#192a56]/40 backdrop-blur-2xl rounded-3xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden m-4"
       >
         {/* Left Side: Information/Branding */}
-        <div className="hidden md:flex md:w-1/2 p-12 flex-col justify-between relative overflow-hidden bg-gradient-to-bl from-[#133B2E]/50 to-transparent">
+        <div className="hidden md:flex md:w-1/2 p-12 flex-col justify-between relative overflow-hidden bg-gradient-to-bl from-[#192a56]/50 to-transparent">
             <div className="relative z-10">
                 <motion.div 
                     initial={{ scale: 0.8, opacity: 0 }}
@@ -212,7 +212,7 @@ export default function Login() {
                     className="text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight"
                 >
                     مرحباً بك في <br />
-                    <span className="text-[#D4AF37]">الجيل القادم</span> من <br />
+                    <span className="text-[#273c75]">الجيل القادم</span> من <br />
                     الإدارة القانونية
                 </motion.h1>
                 
@@ -229,13 +229,13 @@ export default function Login() {
             <div className="relative z-10 space-y-4">
                 <div className="flex items-center gap-4 text-gray-300">
                     <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                        <ShieldCheck size={18} className="text-[#D4AF37]" />
+                        <ShieldCheck size={18} className="text-[#273c75]" />
                     </div>
                     <span className="text-sm">نظام آمن ومشفر بالكامل لبياناتك</span>
                 </div>
                 <div className="flex items-center gap-4 text-gray-300">
                     <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                        <Gavel size={18} className="text-[#D4AF37]" />
+                        <Gavel size={18} className="text-[#273c75]" />
                     </div>
                     <span className="text-sm">إدارة احترافية للجلسات والمواعيد</span>
                 </div>
@@ -249,7 +249,7 @@ export default function Login() {
         <div className="w-full md:w-1/2 p-8 lg:p-16 bg-white flex flex-col justify-center">
           <div className="max-w-md mx-auto w-full">
             <div className="mb-10 text-center md:text-right">
-                <h2 className="text-3xl font-bold text-[#133B2E] mb-2">تسجيل الدخول</h2>
+                <h2 className="text-3xl font-bold text-[#192a56] mb-2">تسجيل الدخول</h2>
                 <p className="text-gray-500">الرجاء إدخال بياناتك للوصول إلى لوحة التحكم</p>
             </div>
 
@@ -271,7 +271,7 @@ export default function Login() {
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700 block mr-1">البريد الإلكتروني</label>
                 <div className="relative group">
-                  <User className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#133B2E] transition-colors" size={20} />
+                  <User className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#192a56] transition-colors" size={20} />
                   <input
                     type="email"
                     name="email"
@@ -279,7 +279,7 @@ export default function Login() {
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full pr-12 pl-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/20 focus:border-[#133B2E] transition-all"
+                    className="w-full pr-12 pl-4 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#192a56]/20 focus:border-[#192a56] transition-all"
                     placeholder="example@mail.com"
                   />
                 </div>
@@ -288,7 +288,7 @@ export default function Login() {
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700 block mr-1">كلمة المرور</label>
                 <div className="relative group">
-                  <Lock className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#133B2E] transition-colors" size={20} />
+                  <Lock className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#192a56] transition-colors" size={20} />
                   <input
                     type={showPassword ? "text" : "password"}
                     name="password"
@@ -296,13 +296,13 @@ export default function Login() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pr-12 pl-12 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#133B2E]/20 focus:border-[#133B2E] transition-all"
+                    className="w-full pr-12 pl-12 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#192a56]/20 focus:border-[#192a56] transition-all"
                     placeholder="••••••••"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#133B2E] transition-colors"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#192a56] transition-colors"
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
@@ -315,11 +315,11 @@ export default function Login() {
                     type="checkbox"
                     checked={rememberMe}
                     onChange={(event) => setRememberMe(event.target.checked)}
-                    className="w-5 h-5 rounded border-gray-300 text-[#133B2E] focus:ring-[#133B2E]"
+                    className="w-5 h-5 rounded border-gray-300 text-[#192a56] focus:ring-[#192a56]"
                   />
                   <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors">تذكرني</span>
                 </label>
-                <button type="button" className="text-sm font-semibold text-[#133B2E] hover:underline">
+                <button type="button" className="text-sm font-semibold text-[#192a56] hover:underline">
                   نسيت كلمة المرور؟
                 </button>
               </div>
@@ -327,13 +327,13 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-4 bg-[#133B2E] text-[#D4AF37] font-bold rounded-2xl shadow-xl shadow-[#133B2E]/20 hover:bg-[#133B2E]/90 active:scale-[0.98] transition-all flex items-center justify-center gap-3 relative overflow-hidden"
+                className="w-full py-4 bg-[#192a56] text-[#273c75] font-bold rounded-2xl shadow-xl shadow-[#192a56]/20 hover:bg-[#192a56]/90 active:scale-[0.98] transition-all flex items-center justify-center gap-3 relative overflow-hidden"
               >
                 {isLoading ? (
                   <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                    className="w-6 h-6 border-2 border-[#D4AF37]/30 border-t-[#D4AF37] rounded-full"
+                    className="w-6 h-6 border-2 border-[#273c75]/30 border-t-[#273c75] rounded-full"
                   />
                 ) : (
                   <>

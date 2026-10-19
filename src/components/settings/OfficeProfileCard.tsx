@@ -68,7 +68,7 @@ export default function OfficeProfileCard() {
   return (
     <div className="space-y-4 max-w-md">
       <div className="flex items-center gap-2">
-        <Building2 size={16} className="text-[#133B2E]" />
+        <Building2 size={16} className="text-[#192a56]" />
         <label className="text-sm font-bold text-gray-700">مطبوعات المكتب (الترويسة الرسمية)</label>
       </div>
       <p className="text-xs text-gray-500 leading-relaxed -mt-2">
@@ -88,7 +88,7 @@ export default function OfficeProfileCard() {
             <input ref={logoRef} type="file" accept="image/*" className="hidden"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleLogoFile(f); }} />
             <button type="button" disabled={uploadingLogo} onClick={() => logoRef.current?.click()}
-              className="flex items-center gap-2 px-4 py-2 bg-[#133B2E] text-[#D4AF37] font-bold rounded-xl text-xs hover:bg-[#133B2E]/90 transition disabled:opacity-50">
+              className="flex items-center gap-2 px-4 py-2 bg-[#192a56] text-[#273c75] font-bold rounded-xl text-xs hover:bg-[#192a56]/90 transition disabled:opacity-50">
               {uploadingLogo ? <Loader2 size={14} className="animate-spin" /> : <UploadCloud size={14} />}
               {profile.logoUrl ? "استبدال الشعار" : "رفع شعار المكتب"}
             </button>
@@ -100,50 +100,50 @@ export default function OfficeProfileCard() {
         <label className="text-xs font-bold text-gray-600">اسم المكتب</label>
         <input type="text" disabled={!canManage} value={profile.name}
           onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
-          className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#133B2E] text-sm disabled:bg-gray-50" />
+          className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#192a56] text-sm disabled:bg-gray-50" />
       </div>
       <div className="space-y-2">
         <label className="text-xs font-bold text-gray-600">اسم المكتب بالإنجليزية (اختياري)</label>
         <input type="text" dir="ltr" disabled={!canManage} value={profile.nameEn} placeholder="e.g. Al-Riyadh Law Firm"
           onChange={(e) => setProfile((p) => ({ ...p, nameEn: e.target.value }))}
-          className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#133B2E] text-sm disabled:bg-gray-50" />
+          className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#192a56] text-sm disabled:bg-gray-50" />
       </div>
       <div className="space-y-2">
         <label className="text-xs font-bold text-gray-600">العنوان</label>
         <input type="text" disabled={!canManage} value={profile.address}
           onChange={(e) => setProfile((p) => ({ ...p, address: e.target.value }))}
-          className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#133B2E] text-sm disabled:bg-gray-50" />
+          className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#192a56] text-sm disabled:bg-gray-50" />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <label className="text-xs font-bold text-gray-600">رقم الهاتف</label>
           <input type="text" dir="ltr" disabled={!canManage} value={profile.phone}
             onChange={(e) => setProfile((p) => ({ ...p, phone: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#133B2E] text-sm disabled:bg-gray-50" />
+            className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#192a56] text-sm disabled:bg-gray-50" />
         </div>
         <div className="space-y-2">
           <label className="text-xs font-bold text-gray-600">رقم هاتف آخر (اختياري)</label>
           <input type="text" dir="ltr" disabled={!canManage} value={profile.phone2}
             onChange={(e) => setProfile((p) => ({ ...p, phone2: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#133B2E] text-sm disabled:bg-gray-50" />
+            className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#192a56] text-sm disabled:bg-gray-50" />
         </div>
         <div className="space-y-2 col-span-2">
           <label className="text-xs font-bold text-gray-600">البريد الإلكتروني (اختياري)</label>
           <input type="email" dir="ltr" disabled={!canManage} value={profile.email}
             onChange={(e) => setProfile((p) => ({ ...p, email: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#133B2E] text-sm disabled:bg-gray-50" />
+            className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#192a56] text-sm disabled:bg-gray-50" />
         </div>
         <div className="space-y-2">
           <label className="text-xs font-bold text-gray-600">السجل التجاري</label>
           <input type="text" dir="ltr" disabled={!canManage} value={profile.crNumber}
             onChange={(e) => setProfile((p) => ({ ...p, crNumber: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#133B2E] text-sm disabled:bg-gray-50" />
+            className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#192a56] text-sm disabled:bg-gray-50" />
         </div>
         <div className="space-y-2">
           <label className="text-xs font-bold text-gray-600">رقم ترخيص المحاماة (اختياري)</label>
           <input type="text" dir="ltr" disabled={!canManage} value={profile.licenseNumber}
             onChange={(e) => setProfile((p) => ({ ...p, licenseNumber: e.target.value }))}
-            className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#133B2E] text-sm disabled:bg-gray-50" />
+            className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#192a56] text-sm disabled:bg-gray-50" />
         </div>
       </div>
 
@@ -159,7 +159,7 @@ export default function OfficeProfileCard() {
 
       {canManage && (
         <button onClick={handleSave} disabled={saving || !isDirty}
-          className="px-6 py-3 bg-[#133B2E] text-[#D4AF37] font-bold rounded-2xl text-sm hover:bg-[#133B2E]/90 transition disabled:opacity-40 disabled:cursor-not-allowed">
+          className="px-6 py-3 bg-[#192a56] text-[#273c75] font-bold rounded-2xl text-sm hover:bg-[#192a56]/90 transition disabled:opacity-40 disabled:cursor-not-allowed">
           {saving ? "جاري الحفظ..." : "حفظ بيانات المكتب"}
         </button>
       )}

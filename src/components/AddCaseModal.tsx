@@ -215,14 +215,14 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
 
   const isExec = caseTypeLabel(formData.type) === "تنفيذ";
   const P = partyLabels(isExec);
-  const label = "text-sm font-bold text-[#133B2E]";
+  const label = "text-sm font-bold text-[#192a56]";
   const canAssign = localStorage.getItem("userRole") === "LAWYER" || localStorage.getItem("userRole") === "SUPER_ADMIN";
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[820px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-[#133B2E]">{isExec ? "إضافة طلب تنفيذ" : "إضافة قضية جديدة"}</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-[#192a56]">{isExec ? "إضافة طلب تنفيذ" : "إضافة قضية جديدة"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -310,7 +310,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
                   onClick={() => setClientRole("PLAINTIFF")}
                   className={`flex-1 py-2 text-center text-sm font-bold rounded-lg transition-all ${
                     clientRole === "PLAINTIFF"
-                      ? "bg-[#133B2E] text-white shadow-sm"
+                      ? "bg-[#192a56] text-white shadow-sm"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -321,7 +321,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
                   onClick={() => setClientRole("DEFENDANT")}
                   className={`flex-1 py-2 text-center text-sm font-bold rounded-lg transition-all ${
                     clientRole === "DEFENDANT"
-                      ? "bg-[#133B2E] text-white shadow-sm"
+                      ? "bg-[#192a56] text-white shadow-sm"
                       : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
@@ -451,7 +451,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
 
           <DialogFooter className="mt-6">
             <Button type="button" variant="outline" onClick={onClose}>إلغاء</Button>
-            <Button type="submit" disabled={loading} className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white">
+            <Button type="submit" disabled={loading} className="bg-[#192a56] hover:bg-[#192a56]/90 text-white">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {caseTypeLabel(formData.type) === "تنفيذ" ? "حفظ الطلب" : "حفظ القضية"}
             </Button>

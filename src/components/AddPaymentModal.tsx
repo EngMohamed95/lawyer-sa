@@ -79,13 +79,13 @@ export function AddPaymentModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[750px]" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-[#133B2E]">تسجيل دفعة جديدة</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-[#192a56]">تسجيل دفعة جديدة</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-bold text-[#133B2E]">العميل *</label>
+              <label className="text-sm font-bold text-[#192a56]">العميل *</label>
               <select
                 required
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -100,7 +100,7 @@ export function AddPaymentModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-bold text-[#133B2E]">القضية</label>
+              <label className="text-sm font-bold text-[#192a56]">القضية</label>
               <select
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={formData.caseId}
@@ -114,7 +114,7 @@ export function AddPaymentModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#133B2E]">المبلغ *</label>
+              <label className="text-sm font-bold text-[#192a56]">المبلغ *</label>
               <Input
                 required
                 type="number"
@@ -129,7 +129,7 @@ export function AddPaymentModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#133B2E]">التاريخ</label>
+              <label className="text-sm font-bold text-[#192a56]">التاريخ</label>
               <Input
                 required
                 type="date"
@@ -139,7 +139,7 @@ export function AddPaymentModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-bold text-[#133B2E]">ملاحظات</label>
+              <label className="text-sm font-bold text-[#192a56]">ملاحظات</label>
               <Input
                 value={formData.notes}
                 onChange={e => setFormData({ ...formData, notes: e.target.value })}
@@ -150,7 +150,7 @@ export function AddPaymentModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
 
           <DialogFooter className="mt-6">
             <Button type="button" variant="outline" onClick={onClose}>إلغاء</Button>
-            <Button type="submit" disabled={loading} className="bg-[#133B2E] hover:bg-[#133B2E]/90 text-white">
+            <Button type="submit" disabled={loading} className="bg-[#192a56] hover:bg-[#192a56]/90 text-white">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               تسجيل الدفعة
             </Button>
