@@ -1661,7 +1661,8 @@ export default function CaseDetails() {
                     >
                       <option value="LAWSUIT">صحيفة دعوى</option>
                       <option value="MEMO">مذكرة رد / دفاع</option>
-                      <option value="PLEADING">مذكرة مرافعة</option>
+                      {/* أُزيلت من القائمة؛ تظهر فقط لمذكرة قديمة محفوظة بهذا النوع كي لا يتغيّر نوعها عند التعديل */}
+                      {memoType === "PLEADING" && <option value="PLEADING">مذكرة مرافعة</option>}
                     </select>
                   </div>
                 </div>
