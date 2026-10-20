@@ -3,6 +3,7 @@
  * «موعد المتابعة» يظهر في التقويم للطلبات التي لم يُبتّ فيها بعد.
  */
 
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { addDoc, collection, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { Archive, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
@@ -218,11 +219,11 @@ function RequestDialog({ isOpen, initial, isEdit, onClose, onSubmit }: {
             </div>
             <div className="space-y-2">
               <label className={label}>حالة الطلب</label>
-              <select className={select} value={form.status} onChange={(e) => set("status", e.target.value as RequestStatus)}>
+              <SearchableSelect className={select} value={form.status} onChange={(e) => set("status", e.target.value as RequestStatus)}>
                 {(Object.keys(REQUEST_STATUS_LABELS_AR) as RequestStatus[]).map((s) => (
                   <option key={s} value={s}>{REQUEST_STATUS_LABELS_AR[s]}</option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
             <div className="space-y-2">
               <label className={label}>تاريخ الطلب *</label>
@@ -234,11 +235,11 @@ function RequestDialog({ isOpen, initial, isEdit, onClose, onSubmit }: {
             </div>
             <div className="space-y-2">
               <label className={label}>الدرجة</label>
-              <select className={select} value={form.degree} onChange={(e) => set("degree", e.target.value as CourtDegree)}>
+              <SearchableSelect className={select} value={form.degree} onChange={(e) => set("degree", e.target.value as CourtDegree)}>
                 {(Object.keys(COURT_DEGREE_LABELS_AR) as CourtDegree[]).map((d) => (
                   <option key={d} value={d}>{COURT_DEGREE_LABELS_AR[d]}</option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
           </div>
           <p className="text-xs text-gray-500 -mt-1">تاريخ الطلب يظهر في التقويم، وموعد المتابعة يظهر كذلك ما دام الطلب مقدَّماً أو قيد الدراسة.</p>

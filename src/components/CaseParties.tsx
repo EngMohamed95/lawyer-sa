@@ -6,6 +6,7 @@
  * عند الحفظ تُحدَّث plaintiffName/defendantName أيضاً لأن المذكرات والجلسات تقرأ منها.
  */
 
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useState, type ReactNode } from "react";
 import { partyLabels } from "../lib/clientRole";
 import { Briefcase, Pencil, Plus, Trash2, UserRound, X, Check } from "lucide-react";
@@ -229,10 +230,10 @@ function PartyForm({ value, onChange, onSubmit, onCancel, saving, roleLabel }: {
         <input placeholder="الصفة (مثال: مباشر بدون محامي، أو اسم الوكيل)" className={input}
           value={value.representativeName || ""} onChange={(e) => onChange({ ...value, representativeName: e.target.value })} />
         <div className="grid grid-cols-2 gap-2">
-          <select className={input} value={value.representativeType || REPRESENTATIVE_TYPES[0]}
+          <SearchableSelect className={input} value={value.representativeType || REPRESENTATIVE_TYPES[0]}
             onChange={(e) => onChange({ ...value, representativeType: e.target.value })}>
             {REPRESENTATIVE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
+          </SearchableSelect>
           <input placeholder="رقم الرخصة / الوكالة" className={input}
             value={value.representativeNumber || ""} onChange={(e) => onChange({ ...value, representativeNumber: e.target.value })} />
         </div>

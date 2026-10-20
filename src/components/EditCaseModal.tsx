@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { FormEvent, useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
@@ -264,7 +265,7 @@ export function EditCaseModal({
                   + إضافة عميل جديد
                 </button>
               </div>
-              <select
+              <SearchableSelect
                 required
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={formData.clientId}
@@ -274,7 +275,7 @@ export function EditCaseModal({
                 {clients.map(c => (
                   <option key={c.id} value={c.id}>{c.fullName}</option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
 
             {isExec ? (
@@ -286,7 +287,7 @@ export function EditCaseModal({
             ) : (
               <div className="space-y-2">
                 <label className={label}>نوع القضية</label>
-                <select
+                <SearchableSelect
                   className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   value={formData.type}
                   onChange={e => setFormData({...formData, type: e.target.value})}
@@ -294,14 +295,13 @@ export function EditCaseModal({
                   {caseTypes.map(t => (
                     <option key={t} value={t}>{t}</option>
                   ))}
-                </select>
+                </SearchableSelect>
               </div>
             )}
 
             {isExec && (
               <ExecutionTypeFields
                 requestType={formData.enforcementRequestType}
-                deedType={formData.enforcementDeedType}
                 onChange={(patch) => setFormData({ ...formData, ...patch })}
               />
             )}

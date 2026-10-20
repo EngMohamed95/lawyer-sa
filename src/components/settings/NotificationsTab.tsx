@@ -3,6 +3,7 @@
  * مصفوفة قناة × حدث · ساعات الهدوء · وضع الملخّص.
  */
 
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useState } from "react";
 import { Bell, Save, AlertTriangle, CheckCircle2, Moon, Send } from "lucide-react";
 import { Button } from "../ui/button";
@@ -158,12 +159,12 @@ export default function NotificationsTab() {
       <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 space-y-3">
         <p className="text-sm font-bold text-gray-700">الملخّص الدوري</p>
         <div className="flex items-center gap-3 flex-wrap">
-          <select value={prefs.digestMode} className={field}
+          <SearchableSelect value={prefs.digestMode} className={field}
             onChange={(e) => setPrefs({ ...prefs, digestMode: e.target.value as NotificationPreferences["digestMode"] })}>
             <option value="OFF">بلا ملخّص</option>
             <option value="DAILY">ملخّص يومي</option>
             <option value="WEEKLY">ملخّص أسبوعي</option>
-          </select>
+          </SearchableSelect>
           {prefs.digestMode !== "OFF" && (
             <>
               <label className="text-sm text-gray-600">وقت الإرسال</label>

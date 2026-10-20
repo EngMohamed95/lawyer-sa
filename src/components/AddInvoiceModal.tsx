@@ -1,5 +1,6 @@
 /** إصدار فاتورة — الوثيقة §1.9. الضريبة تُحسب على مستوى البند. */
 
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useState } from "react";
 import { X, Receipt, AlertCircle, Save, Plus, Trash2 } from "lucide-react";
 import { addDoc, collection, getDocs, query, where } from "firebase/firestore";
@@ -231,18 +232,18 @@ export default function AddInvoiceModal({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">العميل *</label>
-              <select required value={form.clientId} className={field}
+              <SearchableSelect required value={form.clientId} className={field}
                 onChange={(e) => setForm({ ...form, clientId: e.target.value, caseId: "", contractId: "" })}>
                 <option value="">— اختر العميل —</option>
                 {clients.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-              </select>
+              </SearchableSelect>
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">
                 القضية <span className="font-normal text-gray-400">(اختياري)</span>
               </label>
-              <select value={form.caseId} className={field}
+              <SearchableSelect value={form.caseId} className={field}
                 onChange={(e) => setForm({ ...form, caseId: e.target.value })}>
                 <option value="">— بلا قضية —</option>
                 {casesForClient.map((c) => (
@@ -250,21 +251,21 @@ export default function AddInvoiceModal({
                     {c.caseNumber ? `${c.caseNumber} — ${c.label}` : c.label}
                   </option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
 
             <div className="space-y-2 md:col-span-2">
               <label className="text-sm font-bold text-gray-700">
                 العقد المرتبط <span className="font-normal text-gray-400">(المعتمدة فقط)</span>
               </label>
-              <select value={form.contractId} className={field}
+              <SearchableSelect value={form.contractId} className={field}
                 onChange={(e) => {
                   const c = contracts.find((x) => x.id === e.target.value);
                   setForm({ ...form, contractId: e.target.value, caseId: c?.caseId || form.caseId });
                 }}>
                 <option value="">— بلا عقد —</option>
                 {contractsForClient.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-              </select>
+              </SearchableSelect>
               {form.clientId && contractsForClient.length === 0 && (
                 <p className="text-xs text-gray-400">لا توجد عقود معتمدة لهذا العميل.</p>
               )}
@@ -350,11 +351,11 @@ export default function AddInvoiceModal({
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">نوع الخصم</label>
-              <select value={form.discountType} className={field}
+              <SearchableSelect value={form.discountType} className={field}
                 onChange={(e) => setForm({ ...form, discountType: e.target.value as DiscountType })}>
                 <option value="AMOUNT">مبلغ ثابت</option>
                 <option value="PERCENT">نسبة مئوية</option>
-              </select>
+              </SearchableSelect>
             </div>
           </div>
 

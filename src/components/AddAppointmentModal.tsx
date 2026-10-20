@@ -1,5 +1,6 @@
 /** إضافة موعد — الوثيقة §1.8. يحذّر من التعارض ولا يمنعه. */
 
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useMemo, useState } from "react";
 import { X, CalendarPlus, AlertTriangle, Save, Repeat, Video, MapPin } from "lucide-react";
 import { addDoc, collection } from "firebase/firestore";
@@ -211,10 +212,10 @@ export default function AddAppointmentModal({
 
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">النوع</label>
-              <select value={form.type} className={field}
+              <SearchableSelect value={form.type} className={field}
                 onChange={(e) => setForm({ ...form, type: e.target.value as AppointmentType })}>
                 {Object.entries(APPOINTMENT_TYPE_LABELS_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
+              </SearchableSelect>
             </div>
 
             <div className="space-y-2">
@@ -248,18 +249,18 @@ export default function AddAppointmentModal({
               <label className="text-sm font-bold text-gray-700">
                 العميل <span className="font-normal text-gray-400">(اختياري)</span>
               </label>
-              <select value={form.clientId} className={field}
+              <SearchableSelect value={form.clientId} className={field}
                 onChange={(e) => setForm({ ...form, clientId: e.target.value, caseId: "" })}>
                 <option value="">— بلا عميل —</option>
                 {clients.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-              </select>
+              </SearchableSelect>
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">
                 القضية <span className="font-normal text-gray-400">(اختياري)</span>
               </label>
-              <select value={form.caseId} className={field}
+              <SearchableSelect value={form.caseId} className={field}
                 onChange={(e) => setForm({ ...form, caseId: e.target.value })}>
                 <option value="">— بلا قضية —</option>
                 {casesForClient.map((c) => (
@@ -267,7 +268,7 @@ export default function AddAppointmentModal({
                     {c.caseNumber ? `${c.caseNumber} — ${c.label}` : c.label}
                   </option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
           </div>
 
@@ -296,11 +297,11 @@ export default function AddAppointmentModal({
               <Repeat size={15} /> التكرار
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <select value={form.repeat} className={field}
+              <SearchableSelect value={form.repeat} className={field}
                 onChange={(e) => setForm({ ...form, repeat: e.target.value as "" | RecurrenceFreq })}>
                 <option value="">بلا تكرار</option>
                 {Object.entries(RECURRENCE_LABELS_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
+              </SearchableSelect>
               {form.repeat && (
                 <>
                   <input type="number" min="1" max="12" value={form.interval} className={field} placeholder="كل"

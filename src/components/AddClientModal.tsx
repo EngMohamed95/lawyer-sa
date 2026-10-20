@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import React, { useState } from "react";
 import { collection, addDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
@@ -76,14 +77,14 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: { isOpen: boolean
             
             <div className="space-y-2">
               <label className="text-sm font-bold text-[#192a56]">النوع</label>
-              <select 
+              <SearchableSelect 
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={formData.clientType}
                 onChange={e => setFormData({...formData, clientType: e.target.value})}
               >
                 <option value="INDIVIDUAL">فرد</option>
                 <option value="COMPANY">شركة</option>
-              </select>
+              </SearchableSelect>
             </div>
 
             <div className="space-y-2">

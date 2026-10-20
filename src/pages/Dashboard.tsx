@@ -11,8 +11,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router";
 import DashboardCalendar from "../components/DashboardCalendar";
-import SupportDashboardCard from "../components/SupportDashboardCard";
-import SuggestionsDashboardCard from "../components/SuggestionsDashboardCard";
+import PlatformAdminDashboard from "../components/PlatformAdminDashboard";
 import {
   collection,
   collectionGroup,
@@ -53,7 +52,12 @@ type DashboardStats = {
   upcomingHearings: UpcomingHearing[];
 };
 
+/** مدير المنصة يرى لوحة المنصة الشاملة، وبقية المستخدمين يرون لوحة مكتبهم */
 export default function Dashboard() {
+  return localStorage.getItem("userRole") === "SUPER_ADMIN" ? <PlatformAdminDashboard /> : <OfficeDashboard />;
+}
+
+function OfficeDashboard() {
   const [stats, setStats] = useState<DashboardStats>({
     totalClients: 0,
     activeCases: 0,
@@ -226,7 +230,6 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {userRole === "SUPER_ADMIN" && <div className="grid gap-4 lg:grid-cols-2"><SuggestionsDashboardCard /><SupportDashboardCard /></div>}
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-[#192a56]">أهلا بك، {userName}</h1>

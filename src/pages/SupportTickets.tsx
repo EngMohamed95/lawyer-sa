@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import {
@@ -455,7 +456,7 @@ export default function SupportTickets() {
               <span className="absolute -top-2 right-4 bg-white px-1 text-xs text-[#192a56]/70">
                 تصفية حسب الحالة
               </span>
-              <select
+              <SearchableSelect
                 aria-label="تصفية حسب الحالة"
                 className={`${field} h-14`}
                 value={status}
@@ -473,13 +474,13 @@ export default function SupportTickets() {
                       : label}
                   </option>
                 ))}
-              </select>
+              </SearchableSelect>
             </label>
             <label className="relative">
               <span className="absolute -top-2 right-4 bg-white px-1 text-xs text-[#192a56]/70">
                 الأولوية
               </span>
-              <select
+              <SearchableSelect
                 aria-label="تصفية حسب الأولوية"
                 className={`${field} h-14`}
                 value={priority}
@@ -495,7 +496,7 @@ export default function SupportTickets() {
                     {label}
                   </option>
                 ))}
-              </select>
+              </SearchableSelect>
             </label>
           </div>
           <section aria-label="قائمة التذاكر" className="space-y-3">
@@ -784,7 +785,7 @@ export default function SupportTickets() {
                     >
                       تغيير الحالة
                     </label>
-                    <select
+                    <SearchableSelect
                       id="ticket-status"
                       disabled={busy}
                       className={field}
@@ -798,7 +799,7 @@ export default function SupportTickets() {
                           {key === "WAITING" ? "بانتظار رد المستخدم" : label}
                         </option>
                       ))}
-                    </select>
+                    </SearchableSelect>
                   </div>
                 )}
               </aside>
@@ -845,7 +846,7 @@ export default function SupportTickets() {
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <label className="text-sm font-medium">
                   التصنيف
-                  <select
+                  <SearchableSelect
                     className={`${field} mt-2`}
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
@@ -853,11 +854,11 @@ export default function SupportTickets() {
                     {SUPPORT_CATEGORIES.map((c) => (
                       <option key={c}>{c}</option>
                     ))}
-                  </select>
+                  </SearchableSelect>
                 </label>
                 <label className="text-sm font-medium">
                   الأولوية
-                  <select
+                  <SearchableSelect
                     className={`${field} mt-2`}
                     value={newPriority}
                     onChange={(e) =>
@@ -869,7 +870,7 @@ export default function SupportTickets() {
                         {label}
                       </option>
                     ))}
-                  </select>
+                  </SearchableSelect>
                 </label>
               </div>
               <label className="block text-sm font-medium">

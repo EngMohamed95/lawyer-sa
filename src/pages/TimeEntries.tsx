@@ -5,6 +5,7 @@
  * وغير المفوترة بعد تُحوَّل إلى بنود فاتورة بضغطة واحدة.
  */
 
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
@@ -246,7 +247,7 @@ export default function TimeEntries() {
       {rows.length > 0 && (
         <div className="flex items-center gap-2">
           <label className="text-sm font-bold text-gray-600">القضية:</label>
-          <select value={caseFilter} onChange={(e) => setCaseFilter(e.target.value)}
+          <SearchableSelect value={caseFilter} onChange={(e) => setCaseFilter(e.target.value)}
             className="px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-[#192a56]">
             <option value="ALL">كل القضايا</option>
             {cases.map((c) => (
@@ -254,7 +255,7 @@ export default function TimeEntries() {
                 {c.caseNumber ? `${c.caseNumber} — ${c.label}` : c.label}
               </option>
             ))}
-          </select>
+          </SearchableSelect>
         </div>
       )}
 
@@ -444,7 +445,7 @@ function AddTimeEntryModal({
 
           <div className="space-y-2">
             <label className="text-sm font-bold text-gray-700">القضية</label>
-            <select value={form.caseId} className={field}
+            <SearchableSelect value={form.caseId} className={field}
               onChange={(e) => setForm({ ...form, caseId: e.target.value })}>
               <option value="">— أعمال عامة —</option>
               {cases.map((c) => (
@@ -452,7 +453,7 @@ function AddTimeEntryModal({
                   {c.caseNumber ? `${c.caseNumber} — ${c.label}` : c.label}
                 </option>
               ))}
-            </select>
+            </SearchableSelect>
           </div>
 
           <div className="grid grid-cols-3 gap-3">

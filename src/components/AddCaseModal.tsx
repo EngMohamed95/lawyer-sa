@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
@@ -28,7 +29,7 @@ const defaultAssigned = () => {
   return assignedLawyersFields(id ? [id] : [], [{ id, name: localStorage.getItem("userName") || "" }]);
 };
 
-export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOpen: boolean, onClose: () => void, onSuccess: () => void, defaultType?: string }) {
+export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOpen: boolean, onClose: () => void, onSuccess: (newCaseId?: string) => void, defaultType?: string }) {
   const { caseTypes } = useOfficeLookups();
   const [loading, setLoading] = useState(false);
   const [clients, setClients] = useState<any[]>([]);
@@ -180,8 +181,8 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
-      await addDoc(collection(db, "cases"), data);
-      onSuccess();
+      const created = await addDoc(collection(db, "cases"), data);
+      onSuccess(created.id);
       onClose();
       setFormData({
         title: "",
@@ -258,7 +259,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
                   + إضافة عميل جديد
                 </button>
               </div>
-              <select
+              <SearchableSelect
                 required
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={formData.clientId}
@@ -268,7 +269,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
                 {clients.map(c => (
                   <option key={c.id} value={c.id}>{c.fullName}</option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
 
             {isExec ? (
@@ -280,7 +281,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
             ) : (
               <div className="space-y-2">
                 <label className={label}>نوع القضية</label>
-                <select
+                <SearchableSelect
                   className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   value={formData.type}
                   onChange={e => setFormData({...formData, type: e.target.value})}
@@ -288,14 +289,13 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
                   {caseTypes.map(t => (
                     <option key={t} value={t}>{t}</option>
                   ))}
-                </select>
+                </SearchableSelect>
               </div>
             )}
 
             {isExec && (
               <ExecutionTypeFields
                 requestType={formData.enforcementRequestType}
-                deedType={formData.enforcementDeedType}
                 onChange={(patch) => setFormData({ ...formData, ...patch })}
               />
             )}

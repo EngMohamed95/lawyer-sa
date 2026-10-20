@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquare, Send, X, Bot, User, Loader2, Sparkles, MinusCircle, Maximize2 } from "lucide-react";
@@ -418,7 +419,7 @@ ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionIns
                 <div className="p-3 bg-gray-50 border-b border-gray-100 space-y-2">
                   <div className="flex flex-col gap-1">
                     <label className="text-[11px] font-bold text-[#192a56]">القضية النشطة للتحليل الذكي:</label>
-                    <select
+                    <SearchableSelect
                       value={selectedCaseId}
                       onChange={(e) => setSelectedCaseId(e.target.value)}
                       className="text-xs bg-white border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-[#273c75] w-full text-ellipsis overflow-hidden"
@@ -434,7 +435,7 @@ ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionIns
                           </option>
                         );
                       })}
-                    </select>
+                    </SearchableSelect>
                   </div>
                   
                   {selectedCaseId && (

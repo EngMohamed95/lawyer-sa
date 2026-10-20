@@ -1,5 +1,6 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import React, { useEffect, useState } from "react";
-import { useParams, Link, useSearchParams } from "react-router";
+import { useParams, Link, useSearchParams, useLocation, Navigate } from "react-router";
 import { ChevronRight, UsersRound, Calendar, FileText, CheckSquare, Plus, Download, Edit, Save, Trash2, File, Scale, FileSignature, Sparkles, RefreshCw, UploadCloud, Chrome, Info, CheckCircle2, Loader2, ChevronDown, ChevronUp, AlertTriangle, Gavel, Eye, Landmark, Banknote, FileBarChart, Printer, MessageCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -15,7 +16,7 @@ import { EditHearingModal } from "../components/EditHearingModal";
 import HearingCard from "../components/HearingCard";
 import CaseParties, { partiesOf, type CaseParty } from "../components/CaseParties";
 import CaseRequests from "../components/CaseRequests";
-import MemoAiPanel from "../components/MemoAiPanel";
+import MemoAiPanel, { MemoAttachmentsField, type AiAttachment } from "../components/MemoAiPanel";
 import { clientRoleLabelOf } from "../lib/clientRole";
 import { formatGregorian } from "../lib/calendar";
 import ExecutionContentCard from "../components/ExecutionContentCard";
@@ -40,6 +41,7 @@ import Documents from "./Documents";
 import { usePermissions } from "../lib/usePermissions";
 import { useOfficeSettings } from "../lib/officeSettings";
 import { renderMemoLetterheadHeader, renderMemoLetterheadFooter } from "../lib/letterhead";
+import { buildMemoPrompt, MEMO_TYPE_LABELS } from "../lib/memoPrompt";
 import { writeAudit } from "../lib/audit";
 import {
   MEMO_STATUS_COLORS, MEMO_STATUS_LABELS_AR, memoActions, statusOf,
@@ -137,6 +139,7 @@ const getStatusBadge = (status: string) => {
 
 export default function CaseDetails() {
   const { id } = useParams();
+  const location = useLocation();
   const perms = usePermissions();
   const office = useOfficeSettings();
   const [data, setData] = useState<any>(null);
@@ -149,6 +152,10 @@ export default function CaseDetails() {
   const [memoTitle, setMemoTitle] = useState("");
   const [memoContent, setMemoContent] = useState("");
   const [memoType, setMemoType] = useState("LAWSUIT");
+  // مختصر ما يريده المحامي — يُحفظ مع المذكرة ويوجّه المساعد الذكي
+  const [memoBrief, setMemoBrief] = useState("");
+  // مرفقات المساعد الذكي — في الذاكرة فقط ولا تُحفظ مع المذكرة
+  const [memoAttachments, setMemoAttachments] = useState<AiAttachment[]>([]);
   // معرّف المذكرة قيد التعديل — null يعني إنشاء مذكرة جديدة
   const [editingMemoId, setEditingMemoId] = useState<string | null>(null);
 
@@ -246,60 +253,7 @@ export default function CaseDetails() {
     }
   };
 
-  /** برومبت صياغة المسودة الكاملة حسب نوع المذكرة — تستخدمه لوحة الذكاء الاصطناعي */
-  const buildMemoPrompt = (type: string, customData: any = data): string => {
-    const clientName = customData.client?.fullName || '..........';
-    const opponentName = customData.opponentName || '..........';
-    const courtName = customData.courtName || '..........';
-    const courtCircle = customData.courtCircle || '..........';
-    const caseSubject = customData.caseSubject || 'نزاع قضائي';
-    const caseSummary = customData.summary || 'نزاع قضائي بين الطرفين';
-
-    let prompt = `أنت مستشار قانوني ومحامٍ خبير في الأنظمة واللوائح القضائية السعودية والعربية.
-وظيفتك هي صياغة مسودة قانونية بأسلوب احترافي ورصين.
-بيانات القضية الحالية:
-- عنوان القضية: ${customData.title}
-- رقم القضية: ${customData.caseNumber}
-- المحكمة: ${courtName}
-- الدائرة القضائية: ${courtCircle}
-- المدعي: ${customData.plaintiffName || clientName}
-- المدعى عليه: ${customData.defendantName || opponentName}
-- موضوع القضية العام: ${caseSubject}
-- ملخص القضية: ${caseSummary}`;
-
-    if (type === "LAWSUIT") {
-      prompt += `\nالمطلوب: صياغة "صحيفة دعوى" (مذكرة ادعاء) مفصلة واحترافية.
-توجيهات الصياغة لصحيفة الدعوى:
-1. ابدأ بالبسملة والتحية والتوجه إلى فضيلة رئيس وأعضاء الدائرة القضائية الموقرين.
-2. اذكر أطراف الدعوى بوضوح (المدعي والمدعى عليه وصفاتهم).
-3. اعرض الوقائع بشكل متسلسل ومنطقي بناءً على موضوع القضية وملخصها.
-4. اذكر الأسانيد الشرعية والنظامية المناسبة للموضوع (حسب القوانين السارية).
-5. لخص الطلبات النهائية للمدعي بوضوح ودقة (مثل إلزام المدعى عليه بدفع المبالغ المستحقة، إلخ).
-6. اختم بعبارة "والله يحفظكم ويرعاكم، مقدمه لفضيلتكم..."
-7. صِغ المذكرة بلغة عربية فصحى قانونية بليغة وبصيغة HTML منسقة (مثل استخدام فقرات <p>، وعناوين <h3>، وقوائم <ul> <li>، ونصوص عريضة <strong>) بدون كود هيكلي كامل <html> أو <body>، فقط المحتوى الداخلي المنسق.`;
-    } else if (type === "MEMO") {
-      prompt += `\nالمطلوب: صياغة "مذكرة رد ودفاع" مفصلة واحترافية.
-توجيهات الصياغة لمذكرة الرد:
-1. ابدأ بالبسملة والتوجه إلى فضيلة رئيس وأعضاء الدائرة القضائية الموقرين.
-2. اذكر أطراف الدعوى وعلاقتهم بموضوع الرد.
-3. قم بالرد على وقائع الادعاء بأسلوب قانوني مفند ومقنع.
-4. اذكر الدفوع القانونية والأدلة المستندة إلى ملخص القضية ووقائعها.
-5. ادعم الدفوع بالأسانيد الشرعية والنظامية المناسبة.
-6. حدد الطلبات الختامية بوضوح (مثل: رد الدعوى، إلزام المدعي بالتعويض أو المصاريف القضائية، إلخ).
-7. اختم بعبارة مناسبة ومقدمه.
-8. صِغ المذكرة بلغة عربية فصحى قانونية بليغة وبصيغة HTML منسقة (مثل استخدام فقرات <p>، وعناوين <h3>، وقوائم <ul> <li>، ونصوص عريضة <strong>) بدون كود هيكلي كامل <html> أو <body>، فقط المحتوى الداخلي المنسق.`;
-    } else {
-      prompt += `\nالمطلوب: صياغة "مذكرة مرافعة ختامية" مفصلة واحترافية.
-توجيهات الصياغة لمذكرة المرافعة:
-1. ابدأ بالبسملة والتحية والتوجه للمحكمة الموقرة.
-2. لخص أسباب المرافعة والأسانيد القانونية المؤيدة لموكلنا.
-3. حدد الطلبات الختامية بوضوح.
-4. صِغ المذكرة بلغة عربية فصحى قانونية بليغة وبصيغة HTML منسقة (مثل استخدام فقرات <p>، وعناوين <h3>، وقوائم <ul> <li>، ونصوص عريضة <strong>) بدون كود هيكلي كامل <html> أو <body>، فقط المحتوى الداخلي المنسق.`;
-    }
-    return prompt;
-  };
-
-  const MEMO_TYPE_LABELS: Record<string, string> = { LAWSUIT: "صحيفة دعوى", MEMO: "مذكرة رد / دفاع", PLEADING: "مذكرة مرافعة" };
+  // برومبت المسودة الكاملة مشترك مع صفحة «كتابة مذكرة» — lib/memoPrompt
 
   /** عنوان افتراضي حين يُدرج نص من المساعد والعنوان فارغ */
   const ensureMemoTitle = () => {
@@ -782,6 +736,7 @@ export default function CaseDetails() {
           title: memoTitle,
           content: memoContent,
           type: memoType,
+          brief: memoBrief.trim() || deleteField(),
           status: "DRAFT" as MemoStatus,
           reviewedBy: deleteField(),
           approvedBy: deleteField(),
@@ -793,6 +748,7 @@ export default function CaseDetails() {
           title: memoTitle,
           content: memoContent,
           type: memoType,
+          ...(memoBrief.trim() ? { brief: memoBrief.trim() } : {}),
           status: "DRAFT" as MemoStatus,
           sharedWithClient: false,
           createdAt: new Date().toISOString(),
@@ -805,6 +761,8 @@ export default function CaseDetails() {
       setEditingMemoId(null);
       setMemoTitle("");
       setMemoContent("");
+      setMemoBrief("");
+      setMemoAttachments([]);
       fetchCaseData();
     } catch(err) {
       console.error(err);
@@ -868,6 +826,13 @@ export default function CaseDetails() {
   if (!data || data.error) return <div className="text-center py-20 text-red-500">{data?.error || "حدث خطأ أو لم يتم العثور على القضية"}</div>;
 
   const isExecutionCase = data.type === "تنفيذ" || data.type === "ENFORCEMENT";
+
+  // التنفيذ قسم مستقل: ملف التنفيذ يُفتح دائماً من /app/execution والقضية من /app/cases،
+  // أياً كان الرابط الذي جاء منه المستخدم (لوحة التحكم، الإشعارات، الجلسات...)
+  const sectionBase = isExecutionCase ? "/app/execution" : "/app/cases";
+  if (!location.pathname.startsWith(`${sectionBase}/`)) {
+    return <Navigate to={`${sectionBase}/${id}${location.search}`} replace />;
+  }
 
   return (
     <div className="space-y-6">
@@ -955,9 +920,9 @@ export default function CaseDetails() {
 
       {/* Header */}
       <div className="flex flex-col gap-4">
-        <Link to="/app/cases" className="text-gray-500 hover:text-[#192a56] inline-flex items-center text-sm font-medium transition-colors">
+        <Link to={sectionBase} className="text-gray-500 hover:text-[#192a56] inline-flex items-center text-sm font-medium transition-colors">
           <ChevronRight size={16} className="ml-1" />
-          العودة للقضايا
+          {isExecutionCase ? "العودة للتنفيذ" : "العودة للقضايا"}
         </Link>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-4">
           <div>
@@ -997,9 +962,11 @@ export default function CaseDetails() {
 
       <div className="print-content">
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as string)} className="w-full">
-        <div 
-          style={{ position: "sticky", top: 0, zIndex: 20 }} 
+      {/* التبويبات للقضايا فقط — ملف التنفيذ يعرض التفاصيل العامة بلا شريط تبويبات */}
+      <Tabs value={isExecutionCase ? "info" : activeTab} onValueChange={(v) => setActiveTab(v as string)} className="w-full">
+        {!isExecutionCase && (
+        <div
+          style={{ position: "sticky", top: 0, zIndex: 20 }}
           className="bg-[#F3F4F6]/95 backdrop-blur-md py-3 -mx-4 px-4 mb-6 border-b border-gray-200/50"
         >
           <TabsList className={`grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-2 border-none p-0 w-full h-auto bg-transparent`}>
@@ -1124,8 +1091,9 @@ export default function CaseDetails() {
 
           </TabsList>
         </div>
+        )}
 
-        <TabsContent value="info" className="mt-8 outline-none space-y-6">
+        <TabsContent value="info" className={`${isExecutionCase ? "mt-2" : "mt-8"} outline-none space-y-6`}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="shadow-sm md:col-span-2">
               <CardHeader className="pb-3">
@@ -1477,6 +1445,8 @@ export default function CaseDetails() {
                     setMemoType("LAWSUIT");
                     setMemoTitle("");
                     setMemoContent("");
+                    setMemoBrief("");
+                    setMemoAttachments([]);
                   }} className="bg-[#273c75] hover:bg-[#192a56] text-white">
                     <FileSignature className="ml-2 h-4 w-4" /> كتابة مذكرة / صحيفة جديدة
                   </Button>
@@ -1567,6 +1537,8 @@ export default function CaseDetails() {
                                 setMemoTitle(memo.title);
                                 setMemoType(memo.type || "LAWSUIT");
                                 setMemoContent(memo.content);
+                                setMemoBrief(memo.brief || "");
+                                setMemoAttachments([]);
                                 setIsWritingMemo(true);
                               }}
                             >
@@ -1644,7 +1616,7 @@ export default function CaseDetails() {
               <CardContent className="pt-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2 md:col-span-2">
-                    <label className="text-sm font-bold text-[#192a56]">عنوان الموضوع</label>
+                    <label className="text-sm font-bold text-[#192a56]">الموضوع</label>
                     <Input 
                       placeholder="مثال: صحيفة دعوى تعويض، مذكرة دفاع..." 
                       className="text-lg bg-gray-50"
@@ -1654,7 +1626,7 @@ export default function CaseDetails() {
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-[#192a56]">النوع</label>
-                    <select 
+                    <SearchableSelect 
                       className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       value={memoType}
                       onChange={e => setMemoType(e.target.value)}
@@ -1663,7 +1635,22 @@ export default function CaseDetails() {
                       <option value="MEMO">مذكرة رد / دفاع</option>
                       {/* أُزيلت من القائمة؛ تظهر فقط لمذكرة قديمة محفوظة بهذا النوع كي لا يتغيّر نوعها عند التعديل */}
                       {memoType === "PLEADING" && <option value="PLEADING">مذكرة مرافعة</option>}
-                    </select>
+                    </SearchableSelect>
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-sm font-bold text-[#192a56]">مختصر المطلوب</label>
+                    <textarea
+                      rows={3}
+                      placeholder="اكتب باختصار ما تريده من هذه المذكرة، مثل: المطالبة بباقي قيمة العقد مع التعويض عن التأخير..."
+                      className="w-full resize-y rounded-md border border-input bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      value={memoBrief}
+                      onChange={e => setMemoBrief(e.target.value)}
+                    />
+                    <p className="text-[11px] text-gray-400">يعتمد عليه المساعد الذكي عند الصياغة.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-[#192a56]">المرفقات</label>
+                    <MemoAttachmentsField attachments={memoAttachments} onChange={setMemoAttachments} />
                   </div>
                 </div>
                 
@@ -1690,7 +1677,10 @@ export default function CaseDetails() {
                     caseData={data}
                     memoTypeLabel={MEMO_TYPE_LABELS[memoType] || "مذكرة"}
                     editorHtml={memoContent}
-                    buildDraftPrompt={() => buildMemoPrompt(memoType)}
+                    brief={memoBrief}
+                    attachments={memoAttachments}
+                    onAttachmentsChange={setMemoAttachments}
+                    buildDraftPrompt={() => buildMemoPrompt(memoType, data, memoBrief)}
                     onInsert={(html) => { ensureMemoTitle(); setMemoContent((prev) => (prev ? `${prev}\n${html}` : html)); }}
                     onReplace={(html) => {
                       if (memoContent && !confirm("سيُستبدل محتوى المحرر بالكامل بهذا النص. متابعة؟")) return;

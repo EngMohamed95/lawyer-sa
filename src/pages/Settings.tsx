@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Shield, Bell, User, Lock, Palette, Globe, Settings as SettingsIcon, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, Sparkles, DollarSign, FileEdit, Link, Check, ScrollText, Trash2, ListChecks } from "lucide-react";
@@ -12,6 +13,7 @@ import PlatformAiSettingsTab from "../components/settings/PlatformAiSettingsTab"
 import AuditLog from "./AuditLog";
 import RecycleBin from "./RecycleBin";
 import { usePermissions } from "../lib/usePermissions";
+import { roleLabel } from "../lib/roles";
 
 function ChangePasswordForm() {
   const [form, setForm]         = useState({ current: "", newPass: "", confirm: "" });
@@ -363,8 +365,11 @@ export default function SettingsPage() {
     }
   };
 
-  const tabs = [
-    { id: "general",       name: "عام",              icon: <Globe size={20} /> },
+  // الإعدادات الكاملة لمدير المكتب (ومدير المنصة)؛ غيرهما يرى تبويب الأمان فقط
+  const canManageSettings = perms.role === "LAWYER" || perms.role === "SUPER_ADMIN";
+
+  const allTabs = [
+    { id: "general",      name: "عام",              icon: <Globe size={20} /> },
     { id: "profile",       name: "الملف الشخصي",     icon: <User size={20} /> },
     { id: "security",      name: "الأمان",            icon: <Lock size={20} /> },
     { id: "integrations",  name: "الربط والأنظمة",     icon: <SettingsIcon size={20} /> },
@@ -378,17 +383,20 @@ export default function SettingsPage() {
     // إعدادات الذكاء الاصطناعي على مستوى المنصة كلها — لمدير المنصة فقط، لا تظهر لأي مكتب
     { id: "ai-platform",   name: "الذكاء الاصطناعي",  icon: <Sparkles size={20} />, hidden: perms.role !== "SUPER_ADMIN" },
   ].filter(t => !(t as { hidden?: boolean }).hidden);
+  const tabs = canManageSettings ? allTabs : allTabs.filter(t => t.id === "security");
 
   return (
     <div className="space-y-6 font-['Tajawal']" dir="rtl">
       <div>
-        <h1 className="text-2xl font-black text-[#192a56]">الإعدادات</h1>
-        <p className="text-gray-500 mt-1 text-sm">إدارة حسابك وإعدادات الأمان والأنظمة</p>
+        <h1 className="text-2xl font-black text-[#192a56]">{canManageSettings ? "الإعدادات" : "تغيير كلمة المرور"}</h1>
+        <p className="text-gray-500 mt-1 text-sm">
+          {canManageSettings ? "إدارة حسابك وإعدادات الأمان والأنظمة" : "حدّث كلمة مرور حسابك"}
+        </p>
       </div>
 
       <div className="flex flex-col md:flex-row gap-6">
-        {/* Sidebar */}
-        <div className="w-full md:w-56 space-y-1">
+        {/* Sidebar — لا داعي لها عند وجود تبويب واحد */}
+        <div className={`w-full md:w-56 space-y-1 ${tabs.length > 1 ? "" : "hidden"}`}>
           {tabs.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm ${
@@ -424,7 +432,7 @@ export default function SettingsPage() {
                       <p className="font-black text-[#192a56]">{userName}</p>
                       <p className="text-sm text-gray-500">{auth.currentUser?.email || userEmail}</p>
                       <p className="text-xs text-gray-400 mt-0.5">
-                        {userRole === "SUPER_ADMIN" ? "مدير النظام" : userRole === "LAWYER" ? "محامي" : "متدرب"}
+                        {roleLabel(userRole)}
                       </p>
                     </div>
                   </div>
@@ -522,7 +530,7 @@ export default function SettingsPage() {
                       <CardContent className="p-4 space-y-4">
                         <div className="space-y-2">
                           <label className="text-xs font-bold text-gray-700">آلية الربط مع ناجز</label>
-                          <select
+                          <SearchableSelect
                             value={sysSettings.najizMode}
                             onChange={e => setSysSettings({ ...sysSettings, najizMode: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#192a56]"
@@ -531,7 +539,7 @@ export default function SettingsPage() {
                             <option value="SMART_IMPORT">الرفع والاستيراد اليدوي الذكي (PDF / HTML)</option>
                             <option value="OFFICIAL_API">الربط المباشر الموثق (Official MOJ API)</option>
                             <option value="DISABLED">إيقاف التكامل والربط</option>
-                          </select>
+                          </SearchableSelect>
                         </div>
 
                         {sysSettings.najizMode === "OFFICIAL_API" && (
@@ -562,7 +570,7 @@ export default function SettingsPage() {
                         {sysSettings.najizMode !== "DISABLED" && (
                           <div className="space-y-2">
                             <label className="text-xs font-bold text-gray-700">تردد مزامنة البيانات وتحديث القضايا</label>
-                            <select
+                            <SearchableSelect
                               value={sysSettings.najizSyncFreq}
                               onChange={e => setSysSettings({ ...sysSettings, najizSyncFreq: e.target.value })}
                               className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#192a56]"
@@ -571,7 +579,7 @@ export default function SettingsPage() {
                               <option value="DAILY">يومياً (موصى به)</option>
                               <option value="WEEKLY">أسبوعياً</option>
                               <option value="MANUAL">تحديث يدوي فقط</option>
-                            </select>
+                            </SearchableSelect>
                           </div>
                         )}
                       </CardContent>
@@ -587,7 +595,7 @@ export default function SettingsPage() {
                       <CardContent className="p-4 space-y-4">
                         <div className="space-y-2">
                           <label className="text-xs font-bold text-gray-700">العملة الافتراضية للنظام</label>
-                          <select
+                          <SearchableSelect
                             value={sysSettings.currency}
                             onChange={e => {
                               const cur = e.target.value;
@@ -600,7 +608,7 @@ export default function SettingsPage() {
                             <option value="SAR">الريال السعودي (ر.س) - السعودية</option>
                             <option value="EGP">الجنيه المصري (ج.م) - مصر</option>
                             <option value="USD">الدولار الأمريكي ($)</option>
-                          </select>
+                          </SearchableSelect>
                         </div>
 
                         <div className="space-y-2">
@@ -645,7 +653,7 @@ export default function SettingsPage() {
                       <CardContent className="p-4 space-y-4">
                         <div className="space-y-2">
                           <label className="text-xs font-bold text-gray-700">منصة التوقيع المعتمدة</label>
-                          <select
+                          <SearchableSelect
                             value={sysSettings.eSignatureMode}
                             onChange={e => setSysSettings({ ...sysSettings, eSignatureMode: e.target.value })}
                             className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#192a56]"
@@ -653,7 +661,7 @@ export default function SettingsPage() {
                             <option value="OTP_NATIVE">نظام التوقيع الداخلي (رسالة التحقق OTP عبر الجوال)</option>
                             <option value="DOCUSIGN">التكامل مع منصة DocuSign العالمية</option>
                             <option value="ADOBE_SIGN">التكامل مع منصة Adobe Sign</option>
-                          </select>
+                          </SearchableSelect>
                         </div>
                         <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded-xl leading-relaxed">
                           {sysSettings.eSignatureMode === "OTP_NATIVE" ? (

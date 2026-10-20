@@ -3,6 +3,7 @@
  * ثلاثة تبويبات: الحسابات · الطلبات · الرسائل.
  */
 
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
@@ -417,10 +418,10 @@ function InviteModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
           )}
           <div className="space-y-2">
             <label className="text-sm font-bold text-gray-700">العميل *</label>
-            <select required value={clientId} className={field} onChange={(e) => setClientId(e.target.value)}>
+            <SearchableSelect required value={clientId} className={field} onChange={(e) => setClientId(e.target.value)}>
               <option value="">— اختر العميل —</option>
               {clients.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-            </select>
+            </SearchableSelect>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-bold text-gray-700">البريد الإلكتروني *</label>

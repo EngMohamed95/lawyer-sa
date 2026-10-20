@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { FormEvent, useEffect, useState } from "react";
 import type { Query, DocumentData } from "firebase/firestore";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
@@ -132,7 +133,7 @@ export function EditTaskModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-bold text-[#192a56]">مسؤول التنفيذ</label>
-                <select
+                <SearchableSelect
                   value={formData.assignedTo}
                   onChange={(e) => setFormData({ ...formData, assignedTo: e.target.value })}
                   className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -141,7 +142,7 @@ export function EditTaskModal({
                   {users.map((u: any) => (
                     <option key={u.id} value={u.id}>{u.name}</option>
                   ))}
-                </select>
+                </SearchableSelect>
               </div>
 
               <div className="space-y-2">
@@ -158,7 +159,7 @@ export function EditTaskModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-bold text-[#192a56]">الأولوية</label>
-                <select
+                <SearchableSelect
                   value={formData.priority}
                   onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
                   className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -168,11 +169,11 @@ export function EditTaskModal({
                       {option.label}
                     </option>
                   ))}
-                </select>
+                </SearchableSelect>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold text-[#192a56]">الحالة</label>
-                <select
+                <SearchableSelect
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
@@ -182,7 +183,7 @@ export function EditTaskModal({
                       {option.label}
                     </option>
                   ))}
-                </select>
+                </SearchableSelect>
               </div>
             </div>
           </div>

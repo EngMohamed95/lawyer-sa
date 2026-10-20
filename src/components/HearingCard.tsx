@@ -4,7 +4,7 @@
  */
 
 import type { ReactNode } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Gavel } from "lucide-react";
 import { formatGregorian } from "../lib/calendar";
 
@@ -45,11 +45,20 @@ export default function HearingCard({ h, caseId, showCase = true, actions }: {
   showCase?: boolean;
   actions?: ReactNode;
 }) {
+  const navigate = useNavigate();
   const status = hearingStatus(h.hearingDate);
   const title = showCase ? (h.caseTitle || "جلسة") : "جلسة";
+  const href = `/app/hearings/${caseId}/${h.id}`;
+
+  // الضغط في أي مكان بالبطاقة يفتح الجلسة — عدا الأزرار والروابط، وعدا تحديد نص للنسخ
+  const openHearing = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("a, button, input, select, textarea, [role=dialog]")) return;
+    if (window.getSelection()?.toString()) return;
+    navigate(href);
+  };
 
   return (
-    <div className={`flex flex-col bg-white rounded-lg border-2 transition hover:shadow-md ${
+    <div onClick={openHearing} className={`flex cursor-pointer flex-col bg-white rounded-lg border-2 transition hover:shadow-md ${
       status === "today" ? "border-amber-300" : "border-[#c9d1e6]"
     }`}>
       <div className="flex items-start justify-between gap-3 px-4 pt-4">
@@ -82,7 +91,7 @@ export default function HearingCard({ h, caseId, showCase = true, actions }: {
 
       <div className="flex items-center justify-between gap-2 border-t border-gray-100 px-4 py-2.5">
         <div className="flex items-center gap-1.5">
-          <Link to={`/app/hearings/${caseId}/${h.id}`}
+          <Link to={href}
             className="px-5 py-1.5 rounded-md bg-[#273c75] hover:bg-[#192a56] text-white text-sm font-bold transition">
             عرض
           </Link>

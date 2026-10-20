@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Outlet, Link, useLocation, Navigate, useNavigate } from "react-router";
-import { LayoutDashboard, Users, Briefcase, Calendar, CheckSquare, FileText, Settings, Bell, Search, Menu, Calculator, GraduationCap, BarChart, LogOut, Shield, CreditCard, Loader2, BookOpen, Sparkles, ChevronDown, ScrollText, Trash2, FileSignature, ReceiptText, Handshake, Timer, CalendarDays, Gavel, Headset, Lightbulb } from "lucide-react";
+import { LayoutDashboard, Users, Briefcase, Calendar, CheckSquare, Settings, Bell, Search, Menu, Calculator, GraduationCap, BarChart, LogOut, Shield, CreditCard, Loader2, BookOpen, Sparkles, ChevronDown, ScrollText, Trash2, FileSignature, ReceiptText, Handshake, Timer, CalendarDays, Gavel, Headset, Lightbulb, Lock, Tag, Layers, UserCog } from "lucide-react";
 import { useState, lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
 import { collection, getDocs, query, where, collectionGroup, limit } from "firebase/firestore";
 import { db } from "./lib/firebase";
@@ -37,6 +37,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Clients = lazy(() => import("./pages/Clients"));
 const Cases = lazy(() => import("./pages/Cases"));
 const CaseDetails = lazy(() => import("./pages/CaseDetails"));
+const MemoWriter = lazy(() => import("./pages/MemoWriter"));
 const Hearings = lazy(() => import("./pages/Hearings"));
 const HearingDetails = lazy(() => import("./pages/HearingDetails"));
 const Tasks = lazy(() => import("./pages/Tasks"));
@@ -47,6 +48,9 @@ const Reports = lazy(() => import("./pages/Reports"));
 const SettingsPage = lazy(() => import("./pages/Settings"));
 const Lawyers = lazy(() => import("./pages/Lawyers"));
 const SubscriptionRequests = lazy(() => import("./pages/SubscriptionRequests"));
+const SubscriptionPlans = lazy(() => import("./pages/SubscriptionPlans"));
+const OfficeSubscriptions = lazy(() => import("./pages/OfficeSubscriptions"));
+const PlatformAdmins = lazy(() => import("./pages/PlatformAdmins"));
 const SubscribePage = lazy(() => import("./pages/SubscribePage"));
 const LegalLibrary = lazy(() => import("./pages/LegalLibrary"));
 const OfficeLawyers = lazy(() => import("./pages/OfficeLawyers"));
@@ -63,6 +67,11 @@ const TimeEntries = lazy(() => import("./pages/TimeEntries"));
 const AiChat = lazy(() => import("./pages/AiChat"));
 const SupportTickets = lazy(() => import("./pages/SupportTickets"));
 const Suggestions = lazy(() => import("./pages/Suggestions"));
+
+/** صفحات إدارة المنصة لمدير المنصة وحده — وقواعد Firestore تحميها على الخادم أيضاً */
+function PlatformOnly({ children }: { children: ReactNode }) {
+  return localStorage.getItem("userRole") === "SUPER_ADMIN" ? <>{children}</> : <Navigate to="/app/dashboard" replace />;
+}
 
 function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const location = useLocation();
@@ -89,10 +98,25 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
   // العقود والفواتير والأتعاب والساعات لصاحب المكتب (LAWYER) وحده
   const isOfficeOwner = perms.role === "LAWYER";
 
+  // الإعدادات الكاملة لمدير المكتب (ومدير المنصة)؛ غيرهما يرى تغيير كلمة المرور فقط
+  const canManageSettings = isOfficeOwner || perms.role === "SUPER_ADMIN";
+
   const navItems: NavItem[] = [
     { name: "لوحة التحكم", path: "/app/dashboard", icon: <LayoutDashboard size={20} /> },
     { name: "المحامين", path: "/app/lawyers", icon: <Shield size={20} />, hidden: !perms.can("platform.manage") },
-    { name: "الاشتراكات", path: "/app/subscriptions", icon: <CreditCard size={20} />, hidden: !perms.can("platform.manage") },
+    // ── إدارة المنصة: الباقات واشتراكات المكاتب والمدفوعات وفريق الإدارة ──
+    {
+      name: "إدارة الاشتراكات",
+      path: "/app/subscription-plans",
+      icon: <Tag size={20} />,
+      hidden: !perms.can("platform.manage"),
+      children: [
+        { name: "باقات الاشتراك والأسعار", path: "/app/subscription-plans", icon: <Layers size={18} />, hidden: !perms.can("platform.manage") },
+        { name: "اشتراكات وكوتات المحامين", path: "/app/office-subscriptions", icon: <Users size={18} />, hidden: !perms.can("platform.manage") },
+      ],
+    },
+    { name: "سجل المدفوعات والعمليات", path: "/app/subscriptions", icon: <CreditCard size={20} />, hidden: !perms.can("platform.manage") },
+    { name: "فريق مديري المنصة", path: "/app/platform-admins", icon: <UserCog size={20} />, hidden: !perms.can("platform.manage") },
 
     // ── العمل القضائي: القضية هي الجذر، وتحتها ما يتفرّع عنها ──
     // شرط الإخفاء لكل عنصر لم يتغيّر حرفاً واحداً؛ التغيير في الترتيب فقط.
@@ -110,12 +134,14 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
       ],
     },
 
-    // التنفيذ: مظلة منفصلة في القائمة، لكنها تبقى قضايا عادية (type: "تنفيذ")
-    // حتى تُبنى وحدة تنفيذ مستقلة عن القضايا لاحقاً.
-    { name: "التنفيذ", path: "/app/cases?type=تنفيذ", icon: <Gavel size={20} />, hidden: !perms.can("case.update") },
+    // التنفيذ قسم مستقل بمساره /app/execution — قائمته وتفاصيله لا تمر بالقضايا.
+    // بياناته ما زالت في مجموعة cases (type: "تنفيذ").
+    { name: "التنفيذ", path: "/app/execution", icon: <Gavel size={20} />, hidden: !perms.can("case.update") },
 
-    // المستندات عنصر مستقل في القائمة لا تحت القضايا
-    { name: "المستندات", path: "/app/documents", icon: <FileText size={20} />, hidden: !perms.can("document.manage") || paidRoleOnBasic },
+    // نفس نموذج المذكرات في صفحة القضية، مع اختيار القضية التي تُحفظ تبعها
+    { name: "كتابة مذكرة", path: "/app/memo-writer", icon: <FileSignature size={20} />, hidden: !perms.canCreate("memo.manage") },
+
+    // المستندات أُزيلت من القائمة الجانبية — مسار /app/documents ما زال يعمل
 
     { name: "العقود", path: "/app/contracts", icon: <FileSignature size={20} />, hidden: !perms.can("contract.manage") || !isOfficeOwner },
 
@@ -155,7 +181,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
     },
     { name: "المساعد الذكي", path: "/app/ai-chat", icon: <Sparkles size={20} />, hidden: !perms.can("ai.use") || !isPremium },
     { name: "المكتبة القانونية", path: "/app/library", icon: <BookOpen size={20} />, hidden: !perms.can("library.view") },
-    { name: "المقترحات وتطوير النظام", path: "/app/suggestions", icon: <Lightbulb size={20} /> },
+    { name: "المقترحات والتطوير", path: "/app/suggestions", icon: <Lightbulb size={20} /> },
     { name: "الدعم الفني والمساعدة", path: "/app/support/tickets", icon: <Headset size={20} /> },
 
     // ── إدارة النظام ──
@@ -216,7 +242,8 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
               // بعض العناصر (مثل "التنفيذ") تحمل معامل بحث ضمن مسارها؛ المقارنة
               // بالمسار الكامل (pathname + search) تُبقي التمييز صحيحاً للجميع.
               const fullPath = location.pathname + location.search;
-              const isActive = fullPath === item.path || (item.path === "/app/support/tickets" && location.pathname.startsWith("/app/support/tickets/"));
+              // صفحات التفاصيل تُبقي قسمها مضيئاً: /app/execution/:id ← التنفيذ، /app/cases/:id ← القضايا
+              const isActive = fullPath === item.path || location.pathname.startsWith(`${item.path}/`);
 
               // لا قائمة فرعية ← عنصر عادي كما كان تماماً
               if (kids.length === 0) {
@@ -294,8 +321,8 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
             onClick={onClose}
             className="flex items-center gap-3 text-gray-300 hover:text-white transition-colors w-full px-2 py-2"
           >
-            <Settings size={20} />
-            <span className="font-medium">الإعدادات</span>
+            {canManageSettings ? <Settings size={20} /> : <Lock size={20} />}
+            <span className="font-medium">{canManageSettings ? "الإعدادات" : "تغيير كلمة المرور"}</span>
           </Link>
           <button 
             onClick={handleLogout}
@@ -829,10 +856,13 @@ export default function App() {
             <Route path="support/tickets" element={<SupportTickets />} />
             <Route path="support/tickets/:ticketId" element={<SupportTickets />} />
             <Route path="suggestions" element={<Suggestions />} />
-            <Route path="lawyers" element={<Lawyers />} />
+            <Route path="lawyers" element={<PlatformOnly><Lawyers /></PlatformOnly>} />
             <Route path="clients" element={<Clients />} />
-            <Route path="cases" element={<Cases />} />
+            <Route path="cases" element={<Cases key="cases" />} />
             <Route path="cases/:id" element={<CaseDetails />} />
+            <Route path="execution" element={<Cases key="execution" section="execution" />} />
+            <Route path="execution/:id" element={<CaseDetails />} />
+            <Route path="memo-writer" element={<MemoWriter />} />
             <Route path="hearings" element={<Hearings />} />
             <Route path="hearings/:caseId/:hearingId" element={<HearingDetails />} />
             <Route path="tasks" element={<Tasks />} />
@@ -853,7 +883,10 @@ export default function App() {
             <Route path="ai-chat" element={<AiChat />} />
             <Route path="reports" element={<Reports />} />
             <Route path="library" element={<LegalLibrary />} />
-            <Route path="subscriptions" element={<SubscriptionRequests />} />
+            <Route path="subscriptions" element={<PlatformOnly><SubscriptionRequests /></PlatformOnly>} />
+            <Route path="subscription-plans" element={<PlatformOnly><SubscriptionPlans /></PlatformOnly>} />
+            <Route path="office-subscriptions" element={<PlatformOnly><OfficeSubscriptions /></PlatformOnly>} />
+            <Route path="platform-admins" element={<PlatformOnly><PlatformAdmins /></PlatformOnly>} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Routes>

@@ -117,6 +117,24 @@ export default function Login() {
           plan = "PREMIUM";
       }
       
+      // مدير المنصة المعطَّل من «فريق مديري المنصة» لا يدخل
+      if (role === "SUPER_ADMIN" && userData?.status === "DISABLED") {
+        await auth.signOut();
+        throw new Error("هذا الحساب الإداري معطّل. تواصل مع المدير العام للمنصة.");
+      }
+
+      // المكتب الذي عطّله مدير المنصة (status: DISABLED) لا يدخل — لا مالكه ولا فريقه
+      if (role !== "SUPER_ADMIN") {
+        const officeId = role === "LAWYER" ? firebaseUser.uid : userData?.lawyerId;
+        const officeData = role === "LAWYER"
+          ? userData
+          : officeId ? (await getDoc(doc(db, "users", officeId)).catch(() => null))?.data() : null;
+        if (officeData?.status === "DISABLED") {
+          await auth.signOut();
+          throw new Error("هذا الحساب موقوف من إدارة المنصة. تواصل مع الدعم الفني لإعادة تفعيله.");
+        }
+      }
+
       // Check subscription expiry
       if (role === "LAWYER" && userData?.subscriptionExpiry) {
         const expiry = new Date(userData.subscriptionExpiry);
@@ -127,6 +145,12 @@ export default function Login() {
             .catch((updateError) => console.warn("تعذر تحديث حالة الاشتراك:", updateError));
         }
         localStorage.setItem("subscriptionExpiry", userData.subscriptionExpiry);
+      }
+
+      // آخر دخول — يظهر في «فريق مديري المنصة»؛ فشله لا يمنع الدخول
+      {
+        const { updateDoc: touchDoc, doc: userRef } = await import("firebase/firestore");
+        void touchDoc(userRef(db, "users", firebaseUser.uid), { lastLoginAt: new Date().toISOString() }).catch(() => {});
       }
 
       localStorage.setItem("isAuthenticated", "true");

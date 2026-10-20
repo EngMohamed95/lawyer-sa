@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Plus, Search, File, Download, Folder, ChevronLeft, Home, User, Briefcase, Eye, Edit3, Trash2, Sparkles, FileSpreadsheet, Upload, FileCode, CheckCircle, AlertTriangle, Loader2, Bold, Italic, Underline, AlignRight, AlignCenter, AlignLeft, List, Heading1, Heading2, RotateCcw, Columns, Rows, FolderPlus, ChevronDown, Save } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
@@ -1240,11 +1241,11 @@ export default function Documents({
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-bold">النوع</label>
-                <select className="w-full p-2 border rounded-md" value={editingDoc.type} onChange={e => setEditingDoc({...editingDoc, type: e.target.value})}>
+                <SearchableSelect className="w-full p-2 border rounded-md" value={editingDoc.type} onChange={e => setEditingDoc({...editingDoc, type: e.target.value})}>
                   {documentTypes.map(t => (
                     <option key={t.value} value={t.value}>{t.label}</option>
                   ))}
-                </select>
+                </SearchableSelect>
               </div>
               <Button type="submit" className="w-full bg-[#273c75] text-white py-6 rounded-2xl mt-4 font-bold">حفظ التعديلات</Button>
             </form>
@@ -1818,7 +1819,7 @@ export default function Documents({
                           مجلد جديد
                         </button>
                       </label>
-                      <select
+                      <SearchableSelect
                         className="w-full p-2.5 border rounded-md text-sm border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#192a56]/10"
                         value={editingCustomTemplateData?.folderId || ""}
                         onChange={(e) =>
@@ -1834,7 +1835,7 @@ export default function Documents({
                             {f.name}
                           </option>
                         ))}
-                      </select>
+                      </SearchableSelect>
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-gray-700">وصف قصير</label>

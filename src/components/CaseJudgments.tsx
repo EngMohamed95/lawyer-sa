@@ -6,6 +6,7 @@
  * لكل حكم يبقيان مساويين لأول مرفق لنفس السبب.
  */
 
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { AlertCircle, Eye, Gavel, Loader2, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import { formatGregorian } from "../lib/calendar";
@@ -351,11 +352,11 @@ function JudgmentForm({ isOpen, initial, isEdit, onClose, onSubmit }: {
             </div>
             <div className="space-y-2">
               <label className={label}>الدرجة</label>
-              <select className={select} value={form.degree} onChange={(e) => set("degree", e.target.value as CourtDegree)}>
+              <SearchableSelect className={select} value={form.degree} onChange={(e) => set("degree", e.target.value as CourtDegree)}>
                 {(Object.keys(COURT_DEGREE_LABELS_AR) as CourtDegree[]).map((d) => (
                   <option key={d} value={d}>{COURT_DEGREE_LABELS_AR[d]}</option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
             {!form.isFinal && (
               <div className="space-y-2">

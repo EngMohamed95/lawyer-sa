@@ -11,7 +11,7 @@ import { collection, getDocs, query, where, limit } from "firebase/firestore";
 import type { Query, DocumentData } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { Pagination } from "../components/ui/Pagination";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { formatHijri } from "../lib/calendar";
 import { clientRoleLabelOf } from "../lib/clientRole";
 import { caseTypeLabel } from "../lib/caseTypes";
@@ -246,7 +246,7 @@ function ExecutionRows({ cases, onEdit }: { cases: any[]; onEdit: (c: any) => vo
         const debtors = debtorNamesOf(c);
         return (
           <div key={c.id} className={`${EXECUTION_COLS} px-4 py-3 rounded-lg bg-white border border-gray-100 shadow-xs hover:shadow-sm transition`}>
-            <Link to={`/app/cases/${c.id}`} dir="ltr" style={{ textAlign: "right" }}
+            <Link to={`/app/execution/${c.id}`} dir="ltr" style={{ textAlign: "right" }}
               className="text-base font-bold text-gray-900 hover:text-[#273c75] truncate">
               {c.caseNumber || "-"}
             </Link>
@@ -266,7 +266,7 @@ function ExecutionRows({ cases, onEdit }: { cases: any[]; onEdit: (c: any) => vo
                 className="px-3 py-1.5 rounded-md border border-[#273c75] text-sm font-bold text-[#192a56] hover:bg-amber-50 transition">
                 تعديل
               </button>
-              <Link to={`/app/cases/${c.id}`}
+              <Link to={`/app/execution/${c.id}`}
                 className="px-3 py-1.5 rounded-md border border-gray-300 text-sm font-bold text-gray-800 hover:bg-gray-50 transition">
                 تفاصيل
               </Link>
@@ -278,7 +278,10 @@ function ExecutionRows({ cases, onEdit }: { cases: any[]; onEdit: (c: any) => vo
   );
 }
 
-export default function Cases() {
+/** التنفيذ قسم مستقل عن القضايا — ويشمل النوع القديم ENFORCEMENT */
+const isExecutionType = (type: unknown) => type === "تنفيذ" || type === "ENFORCEMENT";
+
+export default function Cases({ section = "cases" }: { section?: "cases" | "execution" }) {
   const [cases, setCases] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeAiCase, setActiveAiCase] = useState<any>(null);
@@ -292,11 +295,10 @@ export default function Cases() {
   const listRef = useRef<HTMLDivElement>(null);
   const PAGE_SIZE = 20;
 
-  // ?type= يأتي من "التنفيذ" في القائمة الجانبية — يفتح الصفحة مُرشَّحة على
-  // قضايا التنفيذ فقط. قضايا التنفيذ لا تزال قضايا عادية (type: "تنفيذ")
-  // إلى أن تُبنى وحدة تنفيذ مستقلة.
+  // التنفيذ له مساره المستقل /app/execution — وقضاياه لا تظهر في قائمة القضايا.
+  // بياناته ما زالت في مجموعة cases نفسها (type: "تنفيذ")، فالفصل في العرض والتنقل.
   const [params, setParams] = useSearchParams();
-  const typeFilter = params.get("type");
+  const typeFilter = section === "execution" ? "تنفيذ" : params.get("type");
 
   const userRole = localStorage.getItem("userRole");
   const lawyerId = localStorage.getItem("lawyerId");
@@ -400,11 +402,12 @@ export default function Cases() {
     }
   };
 
-  const isExecutionView = typeFilter === "تنفيذ";
-  const executionCases = isExecutionView ? cases.filter(c => c.type === "تنفيذ") : [];
+  const isExecutionView = section === "execution";
+  const executionCases = isExecutionView ? cases.filter(c => isExecutionType(c.type)) : [];
 
   const filteredCases = Array.isArray(cases) ? cases.filter(c => {
-    if (typeFilter && c.type !== typeFilter) return false;
+    if (isExecutionView ? !isExecutionType(c.type) : isExecutionType(c.type)) return false;
+    if (!isExecutionView && typeFilter && c.type !== typeFilter) return false;
     if (isExecutionView && !matchesExecution(c, execFilter, execCapacity)) return false;
     const s = (search || "").toLowerCase();
     return (
@@ -417,6 +420,9 @@ export default function Cases() {
 
   const pagedCases = filteredCases.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  // الرابط القديم للتنفيذ (/app/cases?type=تنفيذ) — محفوظ في المفضلة أو الإشعارات
+  if (section === "cases" && params.get("type") === "تنفيذ") return <Navigate to="/app/execution" replace />;
+
   return (
     <div className="space-y-6 font-['Tajawal']" dir="rtl">
       <AiSummarizerModal 
@@ -428,8 +434,8 @@ export default function Cases() {
 
       <AddCaseModal 
         isOpen={isAddCaseOpen} 
-        onClose={() => setIsAddCaseOpen(false)} 
-        onSuccess={fetchCases}
+        onClose={() => setIsAddCaseOpen(false)}
+        onSuccess={() => fetchCases()}
         defaultType={typeFilter || undefined}
       />
 

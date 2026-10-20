@@ -6,6 +6,7 @@
  * لا يُكتب يدوياً حتى لا يتناقض الحقل مع النموذج المختار.
  */
 
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
@@ -431,18 +432,18 @@ function AddFeeAgreementModal({ onClose, onDone }: { onClose: () => void; onDone
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">العميل *</label>
-              <select required value={form.clientId} className={field}
+              <SearchableSelect required value={form.clientId} className={field}
                 onChange={(e) => setForm({ ...form, clientId: e.target.value, caseId: "" })}>
                 <option value="">— اختر العميل —</option>
                 {clients.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-              </select>
+              </SearchableSelect>
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">
                 القضية <span className="font-normal text-gray-400">(اختياري)</span>
               </label>
-              <select value={form.caseId} className={field}
+              <SearchableSelect value={form.caseId} className={field}
                 onChange={(e) => setForm({ ...form, caseId: e.target.value })}>
                 <option value="">— اتفاقية عامة —</option>
                 {casesForClient.map((c) => (
@@ -450,15 +451,15 @@ function AddFeeAgreementModal({ onClose, onDone }: { onClose: () => void; onDone
                     {c.caseNumber ? `${c.caseNumber} — ${c.label}` : c.label}
                   </option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
 
             <div className="space-y-2 md:col-span-2">
               <label className="text-sm font-bold text-gray-700">نموذج الأتعاب *</label>
-              <select value={form.model} className={field}
+              <SearchableSelect value={form.model} className={field}
                 onChange={(e) => setForm({ ...form, model: e.target.value as FeeModel })}>
                 {Object.entries(FEE_MODEL_LABELS_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
+              </SearchableSelect>
             </div>
 
             {needs(["FIXED", "MIXED"]) && (

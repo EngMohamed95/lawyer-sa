@@ -1,5 +1,6 @@
 /** إنشاء عقد جديد — الوثيقة §1.5 */
 
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useState } from "react";
 import { X, FileSignature, AlertCircle, Save } from "lucide-react";
 import { addDoc, collection } from "firebase/firestore";
@@ -195,19 +196,19 @@ export default function AddContractModal({
 
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">نوع العقد</label>
-              <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as ContractType })} className={field}>
+              <SearchableSelect value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as ContractType })} className={field}>
                 {Object.entries(CONTRACT_TYPE_LABELS_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
+              </SearchableSelect>
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">العميل *</label>
-              <select required value={form.clientId} disabled={lockCase}
+              <SearchableSelect required value={form.clientId} disabled={lockCase}
                 onChange={(e) => setForm({ ...form, clientId: e.target.value, caseId: "" })}
                 className={`${field} ${lockCase ? "opacity-60 cursor-not-allowed" : ""}`}>
                 <option value="">— اختر العميل —</option>
                 {clients.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-              </select>
+              </SearchableSelect>
               {clients.length === 0 && <p className="text-xs text-amber-600">لا يوجد عملاء — أضف عميلاً أولاً</p>}
             </div>
 
@@ -215,7 +216,7 @@ export default function AddContractModal({
               <label className="text-sm font-bold text-gray-700">
                 القضية المرتبطة <span className="font-normal text-gray-400">(اختياري)</span>
               </label>
-              <select value={form.caseId} disabled={lockCase}
+              <SearchableSelect value={form.caseId} disabled={lockCase}
                 onChange={(e) => setForm({ ...form, caseId: e.target.value })}
                 className={`${field} ${lockCase ? "opacity-60 cursor-not-allowed" : ""}`}>
                 <option value="">— بلا قضية (عقد عام) —</option>
@@ -224,7 +225,7 @@ export default function AddContractModal({
                     {c.caseNumber ? `${c.caseNumber} — ${c.label}` : c.label}
                   </option>
                 ))}
-              </select>
+              </SearchableSelect>
               <p className="text-xs text-gray-400">
                 {lockCase
                   ? "العقد سيُربط بهذه القضية تلقائياً."
@@ -258,9 +259,9 @@ export default function AddContractModal({
 
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">التجديد</label>
-              <select value={form.renewalType} onChange={(e) => setForm({ ...form, renewalType: e.target.value as RenewalType })} className={field}>
+              <SearchableSelect value={form.renewalType} onChange={(e) => setForm({ ...form, renewalType: e.target.value as RenewalType })} className={field}>
                 {Object.entries(RENEWAL_LABELS_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
+              </SearchableSelect>
             </div>
 
             <div className="space-y-2">

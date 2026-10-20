@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
@@ -254,7 +255,7 @@ export function AddDocumentModal({ isOpen, onClose, onSuccess, caseId, clientId,
 
             <div className="space-y-2">
               <label className="text-sm font-bold text-[#192a56]">النوع</label>
-              <select
+              <SearchableSelect
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 value={formData.type}
                 onChange={e => setFormData({ ...formData, type: e.target.value })}
@@ -262,7 +263,7 @@ export function AddDocumentModal({ isOpen, onClose, onSuccess, caseId, clientId,
                 {documentTypes.map(t => (
                   <option key={t.value} value={t.value}>{t.label}</option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
 
             <div className="space-y-2">
@@ -278,7 +279,7 @@ export function AddDocumentModal({ isOpen, onClose, onSuccess, caseId, clientId,
               <>
                 <div className="space-y-2 md:col-span-2">
                   <label className="text-sm font-bold text-[#192a56]">التصنيف الأمني</label>
-                  <select
+                  <SearchableSelect
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                     value={confidentiality}
                     onChange={e => setConfidentiality(e.target.value as Confidentiality)}
@@ -286,7 +287,7 @@ export function AddDocumentModal({ isOpen, onClose, onSuccess, caseId, clientId,
                     {levels.map(c => (
                       <option key={c} value={c}>{CONFIDENTIALITY_LABELS_AR[c]}</option>
                     ))}
-                  </select>
+                  </SearchableSelect>
                   <p className="text-xs text-gray-400">
                     يحدّد من يرى المستند داخل المكتب. يمكن تعديله لاحقاً من زر الصلاحيات.
                   </p>

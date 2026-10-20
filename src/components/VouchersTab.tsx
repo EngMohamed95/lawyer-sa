@@ -5,6 +5,7 @@
  * للقراءة. سندات الصرف تُنشأ من هنا مباشرة.
  */
 
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { Plus, Banknote, Scale, RefreshCw, AlertTriangle, X, Trash2 } from "lucide-react";
@@ -339,17 +340,17 @@ function AddVoucherModal({ onClose, onDone }: { onClose: () => void; onDone: () 
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">البند</label>
-              <select value={form.category} className={field}
+              <SearchableSelect value={form.category} className={field}
                 onChange={(e) => setForm({ ...form, category: e.target.value as VoucherCategory })}>
                 {Object.entries(VOUCHER_CATEGORY_LABELS_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
+              </SearchableSelect>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">طريقة الصرف</label>
-              <select value={form.method} className={field}
+              <SearchableSelect value={form.method} className={field}
                 onChange={(e) => setForm({ ...form, method: e.target.value as PaymentMethod })}>
                 {Object.entries(PAYMENT_METHOD_LABELS_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
+              </SearchableSelect>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">التاريخ</label>
@@ -362,7 +363,7 @@ function AddVoucherModal({ onClose, onDone }: { onClose: () => void; onDone: () 
             <label className="text-sm font-bold text-gray-700">
               القضية <span className="font-normal text-gray-400">(اختياري)</span>
             </label>
-            <select value={form.caseId} className={field}
+            <SearchableSelect value={form.caseId} className={field}
               onChange={(e) => setForm({ ...form, caseId: e.target.value })}>
               <option value="">— مصروف عام —</option>
               {cases.map((c) => (
@@ -370,7 +371,7 @@ function AddVoucherModal({ onClose, onDone }: { onClose: () => void; onDone: () 
                   {c.caseNumber ? `${c.caseNumber} — ${c.label}` : c.label}
                 </option>
               ))}
-            </select>
+            </SearchableSelect>
           </div>
 
           <div className="space-y-2">

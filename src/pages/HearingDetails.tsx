@@ -243,7 +243,8 @@ export default function HearingDetails() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      {/* تقرير الجلسة بعرض الصفحة كاملاً — المحرر ولوحة المساعد بجوار بعض كما في كتابة المذكرة */}
+      <div className="space-y-6">
         <Card className="shadow-sm border-gray-200">
           <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
             <FileText className="w-5 h-5 text-[#273c75]" />
@@ -257,7 +258,7 @@ export default function HearingDetails() {
         <Card className="shadow-sm border-gray-200">
           <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
             <Sparkles className="w-5 h-5 text-purple-600" />
-            <CardTitle className="text-lg text-[#192a56]">تقرير الجلسة بالذكاء الاصطناعي</CardTitle>
+            <CardTitle className="text-lg text-[#192a56]">تقرير الجلسة</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <HearingReportSection

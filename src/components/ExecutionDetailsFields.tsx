@@ -3,8 +3,9 @@
  * (بيانات المبلغ وبيانات السند) كما في ناجز.
  */
 
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
-  EXECUTION_DEED_TYPES, EXECUTION_REQUEST_TYPES, MATURITY_STATUSES, formatMoney, remainingAmount,
+  EXECUTION_REQUEST_TYPES, MATURITY_STATUSES, formatMoney, remainingAmount,
   type ExecutionDetails,
 } from "../lib/execution";
 import { Input } from "./ui/input";
@@ -18,28 +19,19 @@ export const SectionTitle = ({ children }: { children: string }) => (
   </div>
 );
 
-export function ExecutionTypeFields({ requestType, deedType, onChange }: {
+// حقل «نوع السند» أُزيل من النموذج؛ القيم المحفوظة سابقاً تبقى كما هي في القضايا القديمة
+export function ExecutionTypeFields({ requestType, onChange }: {
   requestType: string;
-  deedType: string;
-  onChange: (patch: { enforcementRequestType?: string; enforcementDeedType?: string }) => void;
+  onChange: (patch: { enforcementRequestType?: string }) => void;
 }) {
   return (
-    <>
-      <div className="space-y-2">
-        <label className={label}>نوع الطلب *</label>
-        <select required className={select} value={requestType} onChange={(e) => onChange({ enforcementRequestType: e.target.value })}>
-          <option value="">— اختر —</option>
-          {EXECUTION_REQUEST_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
-      </div>
-      <div className="space-y-2">
-        <label className={label}>نوع السند *</label>
-        <select required className={select} value={deedType} onChange={(e) => onChange({ enforcementDeedType: e.target.value })}>
-          <option value="">— اختر —</option>
-          {EXECUTION_DEED_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-        </select>
-      </div>
-    </>
+    <div className="space-y-2">
+      <label className={label}>نوع الطلب *</label>
+      <SearchableSelect required className={select} value={requestType} onChange={(e) => onChange({ enforcementRequestType: e.target.value })}>
+        <option value="">— اختر —</option>
+        {EXECUTION_REQUEST_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+      </SearchableSelect>
+    </div>
   );
 }
 
@@ -90,9 +82,9 @@ export function ExecutionContentFields({ value, onChange }: {
       </div>
       <div className="space-y-2">
         <label className={label}>حالة الاستحقاق</label>
-        <select className={select} value={value.maturityStatus} onChange={(e) => set("maturityStatus", e.target.value)}>
+        <SearchableSelect className={select} value={value.maturityStatus} onChange={(e) => set("maturityStatus", e.target.value)}>
           {MATURITY_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-        </select>
+        </SearchableSelect>
       </div>
     </>
   );

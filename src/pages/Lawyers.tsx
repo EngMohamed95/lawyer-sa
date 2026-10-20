@@ -1,11 +1,11 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useState } from "react";
-import { Plus, Edit, Trash2, RefreshCw, Calendar, AlertTriangle, CheckCircle, Clock, XCircle, KeyRound, Eye, EyeOff, AtSign } from "lucide-react";
-import { Card, CardContent } from "../components/ui/card";
+import { Plus, Edit, Trash2, RefreshCw, AlertTriangle, CheckCircle, Clock, XCircle, KeyRound, Eye, EyeOff, AtSign, Ban, Briefcase, Building2, Search, Users, ArrowUpDown } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
-import { collection, getDocs, query, where, doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db, firebaseConfig } from "../lib/firebase";
 import { initializeApp, deleteApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
@@ -57,6 +57,28 @@ function SubscriptionBadge({ expiry, billing }: { expiry?: string; billing?: str
   );
 }
 
+type LawyerFilter = "ALL" | "ACTIVE" | "DISABLED" | "EXPIRING" | "EXPIRED";
+
+const FILTERS: { id: LawyerFilter; label: string; icon: React.ReactNode; on: string; off: string }[] = [
+  { id: "ALL",      label: "الكل",          icon: null,                     on: "border-[#273c75] bg-[#273c75] text-white",  off: "border-slate-200 text-slate-600 hover:bg-slate-50" },
+  { id: "ACTIVE",   label: "نشط فقط",       icon: <CheckCircle size={13} />, on: "border-emerald-600 bg-emerald-600 text-white", off: "border-emerald-200 text-emerald-700 hover:bg-emerald-50" },
+  { id: "DISABLED", label: "معطل فقط",      icon: <Ban size={13} />,         on: "border-red-600 bg-red-600 text-white",         off: "border-red-200 text-red-600 hover:bg-red-50" },
+  { id: "EXPIRING", label: "قارب الانتهاء", icon: <Clock size={13} />,       on: "border-amber-500 bg-amber-500 text-white",     off: "border-amber-200 text-amber-700 hover:bg-amber-50" },
+  { id: "EXPIRED",  label: "اشتراك منتهي",  icon: <XCircle size={13} />,     on: "border-slate-600 bg-slate-600 text-white",     off: "border-slate-200 text-slate-600 hover:bg-slate-50" },
+];
+
+function matchesFilter(l: any, f: LawyerFilter): boolean {
+  const days = getDaysRemaining(l.subscriptionExpiry);
+  if (f === "ACTIVE") return l.status !== "DISABLED";
+  if (f === "DISABLED") return l.status === "DISABLED";
+  if (f === "EXPIRING") return days !== null && days > 0 && days <= 7;
+  if (f === "EXPIRED") return days !== null && days <= 0;
+  return true;
+}
+
+/** أدوار فريق المكتب — تُحسب في عمود «الفريق» */
+const NON_TEAM_ROLES = new Set(["LAWYER", "SUPER_ADMIN", "CLIENT"]);
+
 export default function Lawyers() {
   const [lawyers, setLawyers]             = useState<any[]>([]);
   const [loading, setLoading]             = useState(true);
@@ -70,6 +92,11 @@ export default function Lawyers() {
   const [showPass, setShowPass]           = useState(false);
   const [credLoading, setCredLoading]     = useState(false);
   const [sortBy, setSortBy]               = useState<"expiry" | "name">("expiry");
+  const [search, setSearch]               = useState("");
+  const [filter, setFilter]               = useState<LawyerFilter>("ALL");
+  const [statusBusyId, setStatusBusyId]   = useState<string | null>(null);
+  // حجم نشاط كل مكتب: العملاء والقضايا وأعضاء الفريق
+  const [counts, setCounts]               = useState<Record<string, { clients: number; cases: number; team: number }>>({});
 
   const [newLawyer, setNewLawyer] = useState({
     name: "", email: "", password: "", phone: "", officeName: "",
@@ -79,8 +106,23 @@ export default function Lawyers() {
   const fetchLawyers = async () => {
     setLoading(true);
     try {
-      const snap = await getDocs(query(collection(db, "users"), where("role", "==", "LAWYER")));
-      setLawyers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const [usersSnap, casesSnap, clientsSnap] = await Promise.all([
+        getDocs(collection(db, "users")),
+        getDocs(collection(db, "cases")).catch(() => null),
+        getDocs(collection(db, "clients")).catch(() => null),
+      ]);
+      const next: Record<string, { clients: number; cases: number; team: number }> = {};
+      const bump = (id: unknown, key: "clients" | "cases" | "team") => {
+        if (typeof id !== "string" || !id) return;
+        next[id] = next[id] || { clients: 0, cases: 0, team: 0 };
+        next[id][key]++;
+      };
+      const all = usersSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+      all.forEach(u => { if (!NON_TEAM_ROLES.has(u.role)) bump(u.lawyerId, "team"); });
+      casesSnap?.docs.forEach(d => bump(d.data().lawyerId, "cases"));
+      clientsSnap?.docs.forEach(d => bump(d.data().lawyerId, "clients"));
+      setCounts(next);
+      setLawyers(all.filter(u => u.role === "LAWYER"));
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   };
@@ -95,10 +137,28 @@ export default function Lawyers() {
     return da - db_;
   });
 
-  // Summary stats
-  const expired   = lawyers.filter(l => (getDaysRemaining(l.subscriptionExpiry) ?? 1) <= 0).length;
-  const expiring  = lawyers.filter(l => { const d = getDaysRemaining(l.subscriptionExpiry); return d !== null && d > 0 && d <= 7; }).length;
-  const active    = lawyers.filter(l => (getDaysRemaining(l.subscriptionExpiry) ?? 0) > 7).length;
+  // البحث والتصفية
+  const q = search.trim().toLowerCase();
+  const visible = sorted.filter(l => matchesFilter(l, filter) && (!q ||
+    [l.name, l.officeName, l.email, l.phone].some(v => String(v || "").toLowerCase().includes(q))));
+
+  // الإحصاءات
+  const disabledCount = lawyers.filter(l => l.status === "DISABLED").length;
+  const activeCount   = lawyers.length - disabledCount;
+  const totalCases    = lawyers.reduce((s, l) => s + (counts[l.id]?.cases || 0), 0);
+
+  /** تفعيل/تعطيل الحساب — المكتب المعطّل لا يستطيع مالكه ولا فريقه تسجيل الدخول */
+  const toggleStatus = async (lawyer: any) => {
+    const disabling = lawyer.status !== "DISABLED";
+    if (disabling && !confirm(`تعطيل حساب «${lawyer.officeName || lawyer.name}»؟ لن يتمكن المحامي ولا فريق مكتبه من تسجيل الدخول حتى إعادة التفعيل.`)) return;
+    setStatusBusyId(lawyer.id);
+    try {
+      const status = disabling ? "DISABLED" : "ACTIVE";
+      await updateDoc(doc(db, "users", lawyer.id), { status });
+      setLawyers(prev => prev.map(l => (l.id === lawyer.id ? { ...l, status } : l)));
+    } catch (err: any) { alert("خطأ: " + err.message); }
+    finally { setStatusBusyId(null); }
+  };
 
   const handleAddLawyer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -234,124 +294,159 @@ export default function Lawyers() {
   };
 
   return (
-    <div className="space-y-6 font-['Tajawal']" dir="rtl">
+    <div className="space-y-6 font-['Tajawal'] text-[#192a56]" dir="rtl">
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-[#192a56]">إدارة المشتركين</h1>
-          <p className="text-gray-500 mt-1 text-sm">متابعة الاشتراكات والتجديدات</p>
+      {/* الترويسة */}
+      <div className="flex flex-col gap-4 rounded-2xl bg-gradient-to-l from-[#192a56] to-[#273c75] p-6 text-white shadow-lg sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-4">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/10"><Building2 size={26} /></span>
+          <div>
+            <h1 className="text-2xl font-black sm:text-3xl">سجل المحامين والمكاتب المشتركة</h1>
+            <p className="mt-1 text-sm text-white/70">استعرض جميع حسابات المكاتب المسجلة في المنصة، تابع حجم نشاطها واشتراكاتها، وفعّل أو أوقف الحسابات.</p>
+          </div>
         </div>
-        <Button onClick={() => setIsAddModalOpen(true)} className="bg-[#192a56] hover:bg-[#192a56]/90 text-[#273c75] px-6 py-5 rounded-2xl font-bold">
-          <Plus className="ml-2 h-4 w-4" /> إضافة مشترك جديد
-        </Button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-green-50 border border-green-100 rounded-2xl p-4 text-center">
-          <p className="text-2xl font-black text-green-600">{active}</p>
-          <p className="text-xs font-bold text-green-500 mt-1">اشتراك نشط</p>
-        </div>
-        <div className="bg-yellow-50 border border-yellow-100 rounded-2xl p-4 text-center">
-          <p className="text-2xl font-black text-yellow-600">{expiring}</p>
-          <p className="text-xs font-bold text-yellow-500 mt-1">قارب الانتهاء</p>
-        </div>
-        <div className="bg-red-50 border border-red-100 rounded-2xl p-4 text-center">
-          <p className="text-2xl font-black text-red-600">{expired}</p>
-          <p className="text-xs font-bold text-red-500 mt-1">اشتراك منتهي</p>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <button type="button" onClick={fetchLawyers} disabled={loading}
+            className="flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-[#192a56] transition hover:bg-blue-50 disabled:opacity-60">
+            <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> تحديث البيانات
+          </button>
+          <button type="button" onClick={() => setIsAddModalOpen(true)}
+            className="flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/20">
+            <Plus size={16} /> إضافة مشترك جديد
+          </button>
         </div>
       </div>
 
-      {/* Sort */}
-      <div className="flex items-center gap-3">
-        <span className="text-sm text-gray-500 font-bold">ترتيب حسب:</span>
-        <button onClick={() => setSortBy("expiry")}
-          className={`px-4 py-1.5 rounded-full text-sm font-bold transition ${sortBy === "expiry" ? "bg-[#192a56] text-[#273c75]" : "bg-gray-100 text-gray-600"}`}>
-          أقرب انتهاء
-        </button>
-        <button onClick={() => setSortBy("name")}
-          className={`px-4 py-1.5 rounded-full text-sm font-bold transition ${sortBy === "name" ? "bg-[#192a56] text-[#273c75]" : "bg-gray-100 text-gray-600"}`}>
-          الاسم
-        </button>
-        <button onClick={fetchLawyers} className="mr-auto flex items-center gap-1 text-sm text-gray-500 hover:text-[#192a56]">
-          <RefreshCw size={14} /> تحديث
-        </button>
+      {/* البطاقات */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {[
+          { title: "إجمالي المشتركين", value: lawyers.length, icon: <Users size={22} />, iconClass: "bg-indigo-100/70 text-indigo-600" },
+          { title: "الحسابات النشطة", value: activeCount, icon: <CheckCircle size={22} />, iconClass: "bg-emerald-100/70 text-emerald-600" },
+          { title: "الحسابات المعطلة", value: disabledCount, icon: <Ban size={22} />, iconClass: "bg-red-100/70 text-red-600" },
+          { title: "إجمالي القضايا المسجلة", value: totalCases, icon: <Briefcase size={22} />, iconClass: "bg-cyan-100/70 text-cyan-600" },
+        ].map((c) => (
+          <div key={c.title} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-md transition-all hover:shadow-lg">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="mb-2 text-xs font-semibold text-slate-400">{c.title}</p>
+                <p className="text-3xl font-bold tracking-tight">{c.value.toLocaleString("en-US")}</p>
+              </div>
+              <span className={`flex shrink-0 items-center justify-center rounded-2xl p-3.5 ${c.iconClass}`}>{c.icon}</span>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Table */}
-      <Card className="shadow-sm border-gray-100">
-        <CardContent className="p-0 overflow-x-auto">
+      {/* البحث والتصفية */}
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-md lg:flex-row lg:items-center">
+        <div className="relative flex-1">
+          <Search size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} className="bg-slate-50 pr-9"
+            placeholder="ابحث باسم المحامي، المكتب، البريد الإلكتروني، أو رقم الهاتف..." />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {FILTERS.map((f) => {
+            const count = lawyers.filter((l) => matchesFilter(l, f.id)).length;
+            const on = filter === f.id;
+            return (
+              <button key={f.id} type="button" onClick={() => setFilter(f.id)}
+                className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition ${on ? f.on : f.off}`}>
+                {f.icon} {f.label} ({count})
+              </button>
+            );
+          })}
+          <span className="mx-1 hidden h-6 w-px bg-slate-200 lg:block" />
+          <button type="button" onClick={() => setSortBy(sortBy === "expiry" ? "name" : "expiry")}
+            className="flex items-center gap-1.5 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50">
+            <ArrowUpDown size={13} /> {sortBy === "expiry" ? "الترتيب: أقرب انتهاء" : "الترتيب: الاسم"}
+          </button>
+        </div>
+      </div>
+
+      {/* الجدول */}
+      <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-md">
+        <div className="overflow-x-auto">
           <Table>
-            <TableHeader className="bg-gray-50">
+            <TableHeader className="bg-slate-50">
               <TableRow>
                 <TableHead className="text-right font-bold text-[#192a56]">المحامي</TableHead>
-                <TableHead className="text-right font-bold text-[#192a56] hidden sm:table-cell">الباقة</TableHead>
+                <TableHead className="text-right font-bold text-[#192a56]">الباقة / الاشتراك</TableHead>
+                <TableHead className="text-right font-bold text-[#192a56] hidden md:table-cell">بيانات التواصل</TableHead>
+                <TableHead className="text-center font-bold text-[#192a56] hidden lg:table-cell">العملاء</TableHead>
+                <TableHead className="text-center font-bold text-[#192a56] hidden lg:table-cell">القضايا</TableHead>
+                <TableHead className="text-center font-bold text-[#192a56] hidden lg:table-cell">الفريق</TableHead>
                 <TableHead className="text-right font-bold text-[#192a56]">المتبقي</TableHead>
-                <TableHead className="text-right font-bold text-[#192a56] hidden md:table-cell">تاريخ الانتهاء</TableHead>
-                <TableHead className="text-right font-bold text-[#192a56] hidden lg:table-cell">النوع</TableHead>
+                <TableHead className="text-center font-bold text-[#192a56]">حالة الحساب</TableHead>
                 <TableHead className="text-center font-bold text-[#192a56]">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-10 text-gray-400">جاري التحميل...</TableCell></TableRow>
-              ) : sorted.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-10 text-gray-400">لا يوجد مشتركين</TableCell></TableRow>
-              ) : sorted.map(lawyer => {
+                <TableRow><TableCell colSpan={9} className="text-center py-10 text-gray-400">جاري التحميل...</TableCell></TableRow>
+              ) : visible.length === 0 ? (
+                <TableRow><TableCell colSpan={9} className="text-center py-10 text-gray-400">{lawyers.length ? "لا توجد نتائج مطابقة" : "لا يوجد مشتركين"}</TableCell></TableRow>
+              ) : visible.map(lawyer => {
                 const days     = getDaysRemaining(lawyer.subscriptionExpiry);
-                const rowBg    = days !== null && days <= 0 ? "bg-red-50/50" : days !== null && days <= 7 ? "bg-orange-50/50" : "";
                 const planInfo = PLANS.find(p => p.id === lawyer.plan);
+                const disabled = lawyer.status === "DISABLED";
+                const c        = counts[lawyer.id] || { clients: 0, cases: 0, team: 0 };
                 return (
-                  <TableRow key={lawyer.id} className={`hover:bg-gray-50 transition-colors ${rowBg}`}>
+                  <TableRow key={lawyer.id} className={`hover:bg-slate-50 transition-colors ${disabled ? "bg-slate-50/70" : days !== null && days <= 0 ? "bg-red-50/40" : ""}`}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-[#192a56] rounded-full flex items-center justify-center text-[#273c75] font-black text-sm">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#273c75] text-sm font-black text-white">
                           {(lawyer.name || "?").charAt(0)}
                         </div>
-                        <div>
-                          <p className="font-bold text-[#192a56] text-sm">{lawyer.name}</p>
-                          <p className="text-xs text-gray-400">{lawyer.email}</p>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold text-[#192a56]">{lawyer.name || "—"}</p>
+                          <p className="truncate text-xs text-slate-500">{lawyer.officeName || "بدون اسم مكتب"}</p>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      <Badge className={planInfo?.color || "bg-gray-100 text-gray-600"}>
-                        {planInfo?.name || "غير محدد"}
-                      </Badge>
+                    <TableCell>
+                      <Badge className={planInfo?.color || "bg-gray-100 text-gray-600"}>{planInfo?.name || "غير محدد"}</Badge>
+                      <p className="mt-1 text-[11px] text-slate-400">
+                        {lawyer.subscriptionBilling === "annual" ? "سنوي" : lawyer.subscriptionBilling === "monthly" ? "شهري" : "—"}
+                        {lawyer.subscriptionExpiry ? ` • ينتهي ${new Date(lawyer.subscriptionExpiry).toLocaleDateString("ar-EG-u-nu-latn")}` : ""}
+                      </p>
                     </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <p className="text-sm text-[#192a56]" dir="ltr" style={{ textAlign: "right" }}>{lawyer.email || "—"}</p>
+                      <p className="text-xs text-slate-400" dir="ltr" style={{ textAlign: "right" }}>{lawyer.phone || "بدون هاتف"}</p>
+                    </TableCell>
+                    {[c.clients, c.cases, c.team].map((n, i) => (
+                      <TableCell key={i} className="hidden text-center lg:table-cell">
+                        <span className={`inline-flex h-8 min-w-8 items-center justify-center rounded-full border px-2 text-xs font-bold tabular-nums ${["border-blue-200 text-blue-700", "border-amber-200 text-amber-700", "border-emerald-200 text-emerald-700"][i]}`}>{n}</span>
+                      </TableCell>
+                    ))}
                     <TableCell>
                       <SubscriptionBadge expiry={lawyer.subscriptionExpiry} billing={lawyer.subscriptionBilling} />
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {lawyer.subscriptionExpiry ? (
-                        <span className="flex items-center gap-1 text-xs text-gray-500">
-                          <Calendar size={12} />
-                          {new Date(lawyer.subscriptionExpiry).toLocaleDateString("ar-EG")}
-                        </span>
-                      ) : <span className="text-xs text-gray-300">—</span>}
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <span className="text-xs text-gray-500">
-                        {lawyer.subscriptionBilling === "annual" ? "سنوي" : lawyer.subscriptionBilling === "monthly" ? "شهري" : "—"}
+                    <TableCell className="text-center">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${disabled ? "bg-red-100 text-red-600" : "bg-emerald-100 text-emerald-700"}`}>
+                        {disabled ? <Ban size={12} /> : <CheckCircle size={12} />} {disabled ? "معطل" : "نشط"}
                       </span>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-center gap-1 flex-wrap">
+                        <button onClick={() => toggleStatus(lawyer)} disabled={statusBusyId === lawyer.id}
+                          className={`flex items-center gap-1 rounded-xl border px-3 py-1.5 text-xs font-bold transition disabled:opacity-50 ${disabled ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "border-red-200 text-red-600 hover:bg-red-50"}`}>
+                          {disabled ? <CheckCircle size={12} /> : <Ban size={12} />} {disabled ? "تفعيل" : "تعطيل"}
+                        </button>
                         <button onClick={() => { setRenewLawyer(lawyer); setRenewMonths(lawyer.subscriptionBilling === "annual" ? 12 : 1); }}
                           className="flex items-center gap-1 bg-green-500 hover:bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition">
                           <RefreshCw size={12} /> تجديد
                         </button>
-                        <button onClick={() => { setCredLawyer(lawyer); setCredForm({ email: "", password: "" }); setShowPass(false); }}
-                          className="flex items-center gap-1 bg-[#273c75] hover:bg-[#192a56] text-[#192a56] text-xs font-bold px-3 py-1.5 rounded-xl transition">
-                          <KeyRound size={12} /> بيانات الدخول
+                        <button onClick={() => { setCredLawyer(lawyer); setCredForm({ email: "", password: "" }); setShowPass(false); }} title="بيانات الدخول"
+                          className="flex items-center gap-1 border border-slate-200 text-[#273c75] hover:bg-slate-50 text-xs font-bold px-2.5 py-1.5 rounded-xl transition">
+                          <KeyRound size={12} />
                         </button>
-                        <button onClick={() => setEditingLawyer(lawyer)}
-                          className="flex items-center gap-1 border border-blue-200 text-blue-600 hover:bg-blue-50 text-xs font-bold px-3 py-1.5 rounded-xl transition">
-                          <Edit size={12} /> تعديل
+                        <button onClick={() => setEditingLawyer(lawyer)} title="تعديل"
+                          className="flex items-center gap-1 border border-blue-200 text-blue-600 hover:bg-blue-50 text-xs font-bold px-2.5 py-1.5 rounded-xl transition">
+                          <Edit size={12} />
                         </button>
-                        <button onClick={() => handleDeleteLawyer(lawyer.id)}
-                          className="flex items-center gap-1 border border-red-200 text-red-500 hover:bg-red-50 text-xs font-bold px-3 py-1.5 rounded-xl transition">
+                        <button onClick={() => handleDeleteLawyer(lawyer.id)} title="حذف"
+                          className="flex items-center gap-1 border border-red-200 text-red-500 hover:bg-red-50 text-xs font-bold px-2.5 py-1.5 rounded-xl transition">
                           <Trash2 size={12} />
                         </button>
                       </div>
@@ -361,8 +456,8 @@ export default function Lawyers() {
               })}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* ========== RENEW MODAL ========== */}
       {renewLawyer && (
@@ -597,16 +692,16 @@ export default function Lawyers() {
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-gray-600">الباقة</label>
-                <select className="w-full p-2 border rounded-xl text-sm" value={editingLawyer.plan} onChange={e => setEditingLawyer({ ...editingLawyer, plan: e.target.value })}>
+                <SearchableSelect className="w-full p-2 border rounded-xl text-sm" value={editingLawyer.plan} onChange={e => setEditingLawyer({ ...editingLawyer, plan: e.target.value })}>
                   {PLANS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
+                </SearchableSelect>
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-bold text-gray-600">الحالة</label>
-                <select className="w-full p-2 border rounded-xl text-sm" value={editingLawyer.status} onChange={e => setEditingLawyer({ ...editingLawyer, status: e.target.value })}>
+                <SearchableSelect className="w-full p-2 border rounded-xl text-sm" value={editingLawyer.status} onChange={e => setEditingLawyer({ ...editingLawyer, status: e.target.value })}>
                   <option value="ACTIVE">نشط</option>
                   <option value="DISABLED">معطل</option>
-                </select>
+                </SearchableSelect>
               </div>
               <Button type="submit" disabled={actionLoading} className="w-full bg-blue-600 text-white font-black py-5 rounded-2xl">
                 {actionLoading ? "جاري الحفظ..." : "حفظ التعديلات"}

@@ -5,6 +5,7 @@
  * لشرح السبب الأمني).
  */
 
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useState } from "react";
 import { Sparkles, AlertCircle, Check, ShieldAlert, KeyRound } from "lucide-react";
 import {
@@ -78,7 +79,7 @@ export default function PlatformAiSettingsTab() {
 
       <div className="space-y-2">
         <label className="text-xs font-bold text-gray-700">مزوّد خدمة الذكاء الاصطناعي</label>
-        <select
+        <SearchableSelect
           value={draft.provider}
           onChange={(e) => {
             const provider = e.target.value as PlatformAiSettings["provider"];
@@ -89,12 +90,12 @@ export default function PlatformAiSettingsTab() {
         >
           <option value="GEMINI">Google Gemini API (مستحسن للأبحاث والملفات الضخمة)</option>
           <option value="GROQ">Groq API (أداء فائق السرعة)</option>
-        </select>
+        </SearchableSelect>
       </div>
 
       <div className="space-y-2">
         <label className="text-xs font-bold text-gray-700">النموذج النشط (Active Model)</label>
-        <select
+        <SearchableSelect
           value={draft.model}
           onChange={(e) => setDraft((d) => ({ ...d, model: e.target.value }))}
           className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#192a56]"
@@ -112,7 +113,7 @@ export default function PlatformAiSettingsTab() {
               <option value="mixtral-8x7b-32768">Mixtral 8x7B</option>
             </>
           )}
-        </select>
+        </SearchableSelect>
       </div>
 
       <div className="space-y-2 pt-2">

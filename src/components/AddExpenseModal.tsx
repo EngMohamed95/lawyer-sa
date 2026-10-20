@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
@@ -79,7 +80,7 @@ export function AddExpenseModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
           <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-bold text-[#192a56]">القضية المرتبطة *</label>
-              <select
+              <SearchableSelect
                 required
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={formData.caseId}
@@ -89,13 +90,13 @@ export function AddExpenseModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
                 {cases.map(c => (
                   <option key={c.id} value={c.id}>{c.title} ({c.caseNumber})</option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-bold text-[#192a56]">نوع المصروف *</label>
-                <select
+                <SearchableSelect
                   required
                   className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   value={formData.type}
@@ -104,7 +105,7 @@ export function AddExpenseModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
                   {expenseCategories.map(c => (
                     <option key={c.value} value={c.value}>{c.label}</option>
                   ))}
-                </select>
+                </SearchableSelect>
               </div>
 
               <div className="space-y-2">

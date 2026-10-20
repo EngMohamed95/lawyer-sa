@@ -5,6 +5,7 @@
  * تسجيل سند قبض هنا يُنقص المتبقي ويُحدّث الحالة تلقائياً (AC-5).
  */
 
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import {
@@ -605,9 +606,9 @@ function RecordPaymentModal({
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">طريقة الدفع</label>
-              <select value={method} className={field} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
+              <SearchableSelect value={method} className={field} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
                 {Object.entries(PAYMENT_METHOD_LABELS_AR).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
+              </SearchableSelect>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold text-gray-700">التاريخ</label>

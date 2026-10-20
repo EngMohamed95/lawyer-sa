@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
@@ -255,7 +256,7 @@ export function AddHearingModal({
           {!caseId && (
             <div className="space-y-2">
               <label className="text-sm font-bold text-[#192a56]">القضية *</label>
-              <select 
+              <SearchableSelect 
                 required
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={formData.selectedCaseId}
@@ -271,7 +272,7 @@ export function AddHearingModal({
                 {cases.map(c => (
                   <option key={c.id} value={c.id}>{c.caseNumber} - {c.title}</option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
           )}
 

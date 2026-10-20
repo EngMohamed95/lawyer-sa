@@ -8,7 +8,7 @@
  * يطلبه صراحةً بدل أن يختلق وقائع.
  */
 
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import {
   Check, Copy, FilePlus2, FileText, Loader2, Paperclip, Replace, RotateCcw, SendHorizontal, Sparkles, Trash2, X,
 } from "lucide-react";
@@ -25,7 +25,7 @@ interface AiResult {
   needsFiles?: boolean;
 }
 
-interface AiAttachment {
+export interface AiAttachment {
   id: string;
   name: string;
   size: number;
@@ -84,6 +84,75 @@ async function toAttachment(file: File): Promise<AiAttachment> {
   throw new Error(`نوع الملف «${file.name}» غير مدعوم — المدعوم: PDF، صور، Word (docx)، نص`);
 }
 
+/** يقرأ الملفات المختارة ويضيفها للقائمة مع احترام حدَّي العدد والحجم */
+export async function addAttachmentFiles(current: AiAttachment[], files: FileList | File[]): Promise<{ next: AiAttachment[]; error?: string }> {
+  const next = [...current];
+  try {
+    for (const file of Array.from(files)) {
+      if (next.length >= MAX_FILES) throw new Error(`الحد الأقصى ${MAX_FILES} مرفقات في المرة الواحدة.`);
+      const total = next.reduce((s, a) => s + a.size, 0) + file.size;
+      if (total > MAX_TOTAL_BYTES) throw new Error(`حجم المرفقات يتجاوز ${formatSize(MAX_TOTAL_BYTES)} — احذف بعضها أو أرفق ملفات أصغر.`);
+      next.push(await toAttachment(file));
+    }
+    return { next };
+  } catch (err: any) {
+    return { next, error: err?.message || "تعذّر قراءة الملف." };
+  }
+}
+
+/** حقل المرفقات في نموذج المذكرة — نفس القائمة التي يقرؤها المساعد الذكي مع كل طلب */
+export function MemoAttachmentsField({ attachments, onChange, extra }: {
+  attachments: AiAttachment[];
+  onChange: (next: AiAttachment[]) => void;
+  /** محتوى إضافي تحت الزر — مثل اختيار ملفات مرفوعة سابقاً */
+  extra?: ReactNode;
+}) {
+  const [reading, setReading] = useState(false);
+  const [error, setError] = useState("");
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const addFiles = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setReading(true);
+    setError("");
+    const { next, error } = await addAttachmentFiles(attachments, files);
+    onChange(next);
+    if (error) setError(error);
+    setReading(false);
+    if (fileInput.current) fileInput.current.value = "";
+  };
+
+  return (
+    <div className="space-y-2">
+      <input ref={fileInput} type="file" multiple accept={ACCEPT} className="hidden" onChange={(e) => addFiles(e.target.files)} />
+      <button type="button" onClick={() => fileInput.current?.click()} disabled={reading}
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-md border border-dashed border-purple-300 bg-gray-50 text-purple-700 hover:bg-purple-50 text-sm font-bold transition disabled:opacity-50">
+        {reading ? <Loader2 size={15} className="animate-spin" /> : <Paperclip size={15} />}
+        إضافة مرفقات
+      </button>
+      {extra}
+      {attachments.length > 0 ? (
+        <div className="space-y-1.5">
+          {attachments.map((a) => (
+            <div key={a.id} className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs">
+              <FileText size={13} className="shrink-0 text-purple-600" />
+              <span className="flex-1 truncate font-medium text-gray-800" title={a.name}>{a.name}</span>
+              <span className="shrink-0 text-[10px] text-gray-400">{formatSize(a.size)}</span>
+              <button type="button" onClick={() => onChange(attachments.filter((x) => x.id !== a.id))}
+                aria-label={`إزالة ${a.name}`} title="إزالة" className="shrink-0 text-gray-400 hover:text-red-500">
+                <X size={13} />
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-[11px] text-gray-400">PDF، صور، Word، نص — حتى {MAX_FILES} ملفات و{formatSize(MAX_TOTAL_BYTES)}. يعتمد عليها المساعد الذكي.</p>
+      )}
+      {error && <p className="text-xs text-red-600">{error}</p>}
+    </div>
+  );
+}
+
 async function askAi(prompt: string, attachments: AiAttachment[]): Promise<string> {
   const settings = readAiSettings();
   const textParts = attachments
@@ -112,10 +181,15 @@ ${names.length
     : "لا توجد مستندات مرفقة مع هذا الطلب."}
 إذا كان غياب مستند بعينه (مثل صك الحكم، العقد، السند، الوكالة، محضر الجلسة) يمنع صياغة المطلوب صياغةً صحيحة، فلا تختلق أي وقائع أو أرقام أو تواريخ، بل ابدأ ردك بالسطر ${NEED_FILES_MARKER} ثم قائمة <ul> بالمستندات المطلوبة وسبب الحاجة لكل منها، ولا تكتب شيئاً غيرها. أما إن كانت المعلومات المتاحة كافية فصِغ المطلوب مباشرة.`;
 
-export default function MemoAiPanel({ caseData, memoTypeLabel, editorHtml, buildDraftPrompt, onInsert, onReplace }: {
+export default function MemoAiPanel({ caseData, memoTypeLabel, editorHtml, brief, attachments, onAttachmentsChange, buildDraftPrompt, onInsert, onReplace }: {
   caseData: any;
   memoTypeLabel: string;
   editorHtml: string;
+  /** مختصر ما يريده المحامي من المذكرة — من نموذج المذكرة */
+  brief: string;
+  /** المرفقات مملوكة لنموذج المذكرة؛ اللوحة تقرؤها وتضيف إليها */
+  attachments: AiAttachment[];
+  onAttachmentsChange: (next: AiAttachment[]) => void;
   /** برومبت المسودة الكاملة لنوع المذكرة الحالي */
   buildDraftPrompt: () => string;
   onInsert: (html: string) => void;
@@ -123,7 +197,6 @@ export default function MemoAiPanel({ caseData, memoTypeLabel, editorHtml, build
 }) {
   const [input, setInput] = useState("");
   const [results, setResults] = useState<AiResult[]>([]);
-  const [attachments, setAttachments] = useState<AiAttachment[]>([]);
   const [busy, setBusy] = useState(false);
   const [reading, setReading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -138,7 +211,7 @@ export default function MemoAiPanel({ caseData, memoTypeLabel, editorHtml, build
 - المدعى عليه: ${caseData?.defendantName || caseData?.opponentName || "-"}
 - صفة موكلنا: ${caseData?.clientRole === "DEFENDANT" ? "مدعى عليه" : "مدعي"}
 - الموضوع: ${caseData?.caseSubject || "-"}
-- الملخص: ${caseData?.summary || "-"}`;
+- الملخص: ${caseData?.summary || "-"}${brief.trim() ? `\n- مختصر ما يريده المحامي من هذه المذكرة: ${brief.trim()}` : ""}`;
 
   const pushError = (request: string, message: string) =>
     setResults((r) => [{ id: Math.random().toString(36).slice(2), request, prompt: "", html: message, error: true }, ...r]);
@@ -146,21 +219,11 @@ export default function MemoAiPanel({ caseData, memoTypeLabel, editorHtml, build
   const addFiles = async (files: FileList | null) => {
     if (!files?.length) return;
     setReading(true);
-    const next = [...attachments];
-    try {
-      for (const file of Array.from(files)) {
-        if (next.length >= MAX_FILES) throw new Error(`الحد الأقصى ${MAX_FILES} مرفقات في المرة الواحدة.`);
-        const total = next.reduce((s, a) => s + a.size, 0) + file.size;
-        if (total > MAX_TOTAL_BYTES) throw new Error(`حجم المرفقات يتجاوز ${formatSize(MAX_TOTAL_BYTES)} — احذف بعضها أو أرفق ملفات أصغر.`);
-        next.push(await toAttachment(file));
-      }
-    } catch (err: any) {
-      pushError("إرفاق ملفات", err?.message || "تعذّر قراءة الملف.");
-    } finally {
-      setAttachments(next);
-      setReading(false);
-      if (fileInput.current) fileInput.current.value = "";
-    }
+    const { next, error } = await addAttachmentFiles(attachments, files);
+    onAttachmentsChange(next);
+    if (error) pushError("إرفاق ملفات", error);
+    setReading(false);
+    if (fileInput.current) fileInput.current.value = "";
   };
 
   const run = async (request: string, prompt: string) => {
@@ -231,29 +294,11 @@ ${draft ? `\nنص المحرر الحالي:\n"""\n${draft.slice(0, 6000)}\n"""\
           <Sparkles size={15} /> صياغة {memoTypeLabel} كاملة
         </button>
 
-        {/* مرفقات يعتمد عليها المساعد */}
-        <button onClick={() => fileInput.current?.click()} disabled={disabled}
-          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-purple-300 bg-white text-purple-700 hover:bg-purple-50 text-xs font-bold transition disabled:opacity-50">
-          {reading ? <Loader2 size={14} className="animate-spin" /> : <Paperclip size={14} />}
-          إرفاق مستندات يعتمد عليها المساعد
-        </button>
-        {attachments.length > 0 ? (
-          <div className="space-y-1.5">
-            {attachments.map((a) => (
-              <div key={a.id} className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs">
-                <FileText size={13} className="shrink-0 text-purple-600" />
-                <span className="flex-1 truncate font-medium text-gray-800" title={a.name}>{a.name}</span>
-                <span className="shrink-0 text-[10px] text-gray-400">{formatSize(a.size)}</span>
-                <button onClick={() => setAttachments((all) => all.filter((x) => x.id !== a.id))} disabled={busy}
-                  aria-label={`إزالة ${a.name}`} title="إزالة" className="shrink-0 text-gray-400 hover:text-red-500">
-                  <X size={13} />
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-[10px] text-gray-400">PDF، صور، Word، نص — حتى {MAX_FILES} ملفات و{formatSize(MAX_TOTAL_BYTES)}</p>
-        )}
+        {/* المرفقات وقائمتها في نموذج المذكرة أعلاه — هنا مؤشر فقط */}
+        <p className="flex items-center justify-center gap-1.5 text-[11px] text-gray-500">
+          {reading ? <Loader2 size={12} className="animate-spin" /> : <Paperclip size={12} />}
+          {attachments.length ? `يعتمد على ${attachments.length} مرفق من نموذج المذكرة` : "لا مرفقات — أضفها من حقل «المرفقات» أعلاه"}
+        </p>
       </div>
 
       <div ref={listRef} className="flex-1 overflow-y-auto p-3 space-y-3 min-h-[200px]">

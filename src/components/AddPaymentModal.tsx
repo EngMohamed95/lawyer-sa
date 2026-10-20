@@ -1,3 +1,4 @@
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useState, useEffect } from "react";
 import type { Query, DocumentData } from "firebase/firestore";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
@@ -86,7 +87,7 @@ export function AddPaymentModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 md:col-span-2">
               <label className="text-sm font-bold text-[#192a56]">العميل *</label>
-              <select
+              <SearchableSelect
                 required
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={formData.clientId}
@@ -96,12 +97,12 @@ export function AddPaymentModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
                 {clients.map(client => (
                   <option key={client.id} value={client.id}>{client.fullName}</option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
 
             <div className="space-y-2 md:col-span-2">
               <label className="text-sm font-bold text-[#192a56]">القضية</label>
-              <select
+              <SearchableSelect
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={formData.caseId}
                 onChange={e => setFormData({ ...formData, caseId: e.target.value })}
@@ -110,7 +111,7 @@ export function AddPaymentModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
                 {filteredCases.map(caseItem => (
                   <option key={caseItem.id} value={caseItem.id}>{caseItem.title}</option>
                 ))}
-              </select>
+              </SearchableSelect>
             </div>
 
             <div className="space-y-2">
