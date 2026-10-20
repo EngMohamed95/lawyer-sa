@@ -175,6 +175,70 @@ export function renderMemoLetterheadFooter(profile: OfficeProfile, opts: { stamp
   `;
 }
 
+/**
+ * طباعة مذكرة بترويسة المكتب وتذييله على كل صفحة.
+ * الترويسة والتذييل fixed فيتكرران في كل صفحة مطبوعة، وفراغات thead/tfoot بنفس
+ * ارتفاعهما تمنع تداخلهما مع النص. @page بلا هوامش يخفي تاريخ المتصفح وعنوانه،
+ * و print-color-adjust يطبع خطوط الترويسة الملونة (خلفيات) كما تظهر.
+ */
+export function printMemoDocument(opts: {
+  title: string;
+  meta?: string;
+  contentHtml: string;
+  profile: OfficeProfile;
+  stampUrl?: string | null;
+}): void {
+  const w = window.open("", "_blank");
+  if (!w) return;
+  w.document.write(`<!doctype html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="utf-8" />
+<title>${escapeHtml(opts.title)}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" />
+<style>
+  @page { size: A4; margin: 0; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #fff; }
+  body { font-family: 'Tajawal', serif; line-height: 1.8; color: #111; }
+  .lh-header { position: fixed; top: 0; left: 0; right: 0; }
+  .lh-footer { position: fixed; bottom: 0; left: 0; right: 0; }
+  table.lh-page { width: 100%; border-collapse: collapse; }
+  table.lh-page > tbody > tr > td { padding: 18px 50px; }
+  h1.lh-title { text-align: center; color: #192a56; border-bottom: 2px solid #273c75; padding-bottom: 10px; margin: 0 0 12px; font-size: 20pt; }
+  .lh-meta { color: #666; margin-bottom: 24px; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 10pt; }
+  .lh-content { font-size: 14pt; text-align: justify; }
+  .lh-content img { max-width: 100%; }
+  @media screen { body { max-width: 210mm; margin: 0 auto; box-shadow: 0 0 12px rgba(0,0,0,.15); } }
+</style>
+</head>
+<body>
+  <div class="lh-header">${renderMemoLetterheadHeader(opts.profile)}</div>
+  <div class="lh-footer">${renderMemoLetterheadFooter(opts.profile, { stampUrl: opts.stampUrl ?? null })}</div>
+  <table class="lh-page">
+    <thead><tr><td><div id="lh-head-space"></div></td></tr></thead>
+    <tfoot><tr><td><div id="lh-foot-space"></div></td></tr></tfoot>
+    <tbody><tr><td>
+      <h1 class="lh-title">${escapeHtml(opts.title)}</h1>
+      ${opts.meta ? `<div class="lh-meta">${escapeHtml(opts.meta)}</div>` : ""}
+      <div class="lh-content">${opts.contentHtml}</div>
+    </td></tr></tbody>
+  </table>
+  <script>
+    window.onload = function () {
+      var ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+      ready.then(function () {
+        document.getElementById('lh-head-space').style.height = document.querySelector('.lh-header').offsetHeight + 'px';
+        document.getElementById('lh-foot-space').style.height = document.querySelector('.lh-footer').offsetHeight + 'px';
+        setTimeout(function () { window.print(); window.close(); }, 150);
+      });
+    };
+  </script>
+</body>
+</html>`);
+  w.document.close();
+}
+
 /** نسخة متوافقة مع Word (جداول فقط، بلا Flexbox) — لتصدير .doc حصراً */
 export function renderLetterheadHeaderWordSafe(profile: OfficeProfile, opts: LetterheadHeaderOptions = {}): string {
   const logoCell = profile.logoUrl

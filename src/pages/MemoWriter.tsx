@@ -20,7 +20,7 @@ import { db } from "../lib/firebase";
 import { visibleCasesQuery } from "../lib/caseAccess";
 import { usePermissions } from "../lib/usePermissions";
 import { useOfficeSettings } from "../lib/officeSettings";
-import { renderMemoLetterheadHeader, renderMemoLetterheadFooter } from "../lib/letterhead";
+import { renderMemoLetterheadHeader, renderMemoLetterheadFooter, printMemoDocument } from "../lib/letterhead";
 import { buildMemoPrompt, MEMO_TYPE_LABELS } from "../lib/memoPrompt";
 import type { MemoStatus } from "../lib/memoWorkflow";
 
@@ -141,29 +141,12 @@ export default function MemoWriter() {
     const content = memoContent;
     const caseNumber = caseData?.caseNumber || "";
     if (!(await handleSaveMemo())) return;
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(`
-        <html dir="rtl">
-          <head>
-            <title>${title}</title>
-            <style>
-              body { font-family: 'Tajawal', serif; padding: 50px; line-height: 1.8; }
-              h1 { text-align: center; color: #192a56; border-bottom: 2px solid #273c75; padding-bottom: 10px; }
-              .meta { color: #666; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-              .content { font-size: 14pt; text-align: justify; }
-            </style>
-          </head>
-          <body>
-            <h1>${title}</h1>
-            <div class="meta">قضية رقم: ${caseNumber} | تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</div>
-            <div class="content">${content}</div>
-            <script>window.onload = function() { window.print(); window.close(); }</script>
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-    }
+    printMemoDocument({
+      title,
+      meta: `قضية رقم: ${caseNumber || "---"} | تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}`,
+      contentHtml: content,
+      profile: office.officeProfile,
+    });
   };
 
   if (!perms.canCreate("memo.manage")) {

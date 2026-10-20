@@ -40,7 +40,7 @@ import { db } from "../lib/firebase";
 import Documents from "./Documents";
 import { usePermissions } from "../lib/usePermissions";
 import { useOfficeSettings } from "../lib/officeSettings";
-import { renderMemoLetterheadHeader, renderMemoLetterheadFooter } from "../lib/letterhead";
+import { renderMemoLetterheadHeader, renderMemoLetterheadFooter, printMemoDocument } from "../lib/letterhead";
 import { buildMemoPrompt, MEMO_TYPE_LABELS } from "../lib/memoPrompt";
 import { writeAudit } from "../lib/audit";
 import {
@@ -1494,34 +1494,14 @@ export default function CaseDetails() {
                             size="sm" 
                             className="text-[#192a56] hover:bg-white bg-white shadow-sm border border-gray-200"
                             onClick={() => {
-                              const printWindow = window.open('', '_blank');
                               const stamped = office.officialStampUrl && (memoStatus === "APPROVED" || memoStatus === "FILED");
-                              if (printWindow) {
-                                printWindow.document.write(`
-                                  <html dir="rtl">
-                                    <head>
-                                      <title>${memo.title}</title>
-                                      <style>
-                                        body { font-family: 'Tajawal', serif; padding: 0; margin: 0; line-height: 1.8; }
-                                        h1 { text-align: center; color: #192a56; border-bottom: 2px solid #273c75; padding-bottom: 10px; }
-                                        .meta { color: #666; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-                                        .content { font-size: 14pt; text-align: justify; }
-                                      </style>
-                                    </head>
-                                    <body>
-                                      ${renderMemoLetterheadHeader(office.officeProfile)}
-                                      <div style="padding: 40px 50px;">
-                                        <h1>${memo.title}</h1>
-                                        <div class="meta">قضية رقم: ${data.caseNumber} | تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</div>
-                                        <div class="content">${memo.content}</div>
-                                      </div>
-                                      ${renderMemoLetterheadFooter(office.officeProfile, { stampUrl: stamped ? office.officialStampUrl : null })}
-                                      <script>window.onload = function() { window.print(); window.close(); }</script>
-                                    </body>
-                                  </html>
-                                `);
-                                printWindow.document.close();
-                              }
+                              printMemoDocument({
+                                title: memo.title,
+                                meta: `قضية رقم: ${data.caseNumber || "---"} | تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}`,
+                                contentHtml: memo.content,
+                                profile: office.officeProfile,
+                                stampUrl: stamped ? office.officialStampUrl : null,
+                              });
                             }}
                           >
                             طباعة
@@ -1695,30 +1675,15 @@ export default function CaseDetails() {
                   <Button 
                     className="bg-blue-600 hover:bg-blue-700 text-white" 
                     onClick={async () => {
+                      // نلتقط القيم قبل الحفظ لأن الحفظ يفرّغ النموذج
+                      const title = memoTitle, content = memoContent;
                       await handleSaveMemo();
-                      const printWindow = window.open('', '_blank');
-                      if (printWindow) {
-                        printWindow.document.write(`
-                          <html dir="rtl">
-                            <head>
-                              <title>${memoTitle}</title>
-                              <style>
-                                body { font-family: 'Tajawal', serif; padding: 50px; line-height: 1.8; }
-                                h1 { text-align: center; color: #192a56; border-bottom: 2px solid #273c75; padding-bottom: 10px; }
-                                .meta { color: #666; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-                                .content { font-size: 14pt; text-align: justify; }
-                              </style>
-                            </head>
-                            <body>
-                              <h1>${memoTitle}</h1>
-                              <div class="meta">قضية رقم: ${data.caseNumber} | تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}</div>
-                              <div class="content">${memoContent}</div>
-                              <script>window.onload = function() { window.print(); window.close(); }</script>
-                            </body>
-                          </html>
-                        `);
-                        printWindow.document.close();
-                      }
+                      printMemoDocument({
+                        title,
+                        meta: `قضية رقم: ${data.caseNumber || "---"} | تاريخ الطباعة: ${new Date().toLocaleDateString('ar-EG')}`,
+                        contentHtml: content,
+                        profile: office.officeProfile,
+                      });
                     }}
                     disabled={!memoTitle || !memoContent}
                   >
