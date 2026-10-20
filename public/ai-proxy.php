@@ -22,6 +22,8 @@ const RATE_LIMIT_PER_MINUTE = 20;
 const MAX_BODY_BYTES = 20 * 1024 * 1024;
 /** نماذج احتياطية عند ضغط مؤقت على النموذج المطلوب — نفس القائمة في src/server/api.ts */
 const GEMINI_FALLBACK_MODELS = ['gemini-flash-lite-latest', 'gemini-3.5-flash'];
+/** حد «التفكير» قبل الكتابة — يكفي لصياغة قانونية منظمة ويُبقي الرد خلال ثوانٍ معدودة */
+const THINKING_BUDGET = 1024;
 const CERTS_URL ='https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com';
 
 function fail(int $status, string $message): void {
@@ -214,18 +216,24 @@ if ($provider === 'GEMINI') {
     @set_time_limit(0);
     @ini_set('zlib.output_compression', '0');
 
+    // «التفكير» غير المحدود في نماذج Gemini الحديثة يجعل صياغة مذكرة كاملة تتجاوز الدقيقة،
+    // فتقطعها الاستضافة. نحدّه بميزانية صغيرة — والنموذج الذي يرفض الإعداد يُعاد بدونه.
+    $withThinking = $generationConfig;
+    if (!isset($withThinking['thinkingConfig'])) $withThinking['thinkingConfig'] = ['thinkingBudget' => THINKING_BUDGET];
+    $payloadFor = function (array $cfg) use ($contents) {
+        return json_encode(['contents' => $contents, 'generationConfig' => $cfg], JSON_UNESCAPED_UNICODE);
+    };
+
     // ضغط مؤقت على نموذج Google (503/429/500) — نعيد المحاولة بنماذج احتياطية
-    $payload = json_encode(['contents' => $contents, 'generationConfig' => $generationConfig], JSON_UNESCAPED_UNICODE);
     $models = array_values(array_unique(array_merge([$modelName], GEMINI_FALLBACK_MODELS)));
     foreach ($models as $i => $m) {
         if ($i > 0) usleep(800000);
-        [$status, , $body] = http_request(
-            'POST',
-            "https://generativelanguage.googleapis.com/v1beta/models/$m:generateContent",
-            ['Content-Type: application/json', "x-goog-api-key: $key"],
-            $payload,
-            true
-        );
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/$m:generateContent";
+        $headers = ['Content-Type: application/json', "x-goog-api-key: $key"];
+        [$status, , $body] = http_request('POST', $url, $headers, $payloadFor($withThinking), true);
+        if ($status === 400 && stripos($body, 'thinking') !== false) {
+            [$status, , $body] = http_request('POST', $url, $headers, $payloadFor($generationConfig), true);
+        }
         if (!in_array($status, [429, 500, 503], true)) break;
     }
     if ($status === 0 || json_decode($body) === null) {

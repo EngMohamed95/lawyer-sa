@@ -125,11 +125,17 @@ export async function callGemini(
 ): Promise<string> {
   const body = { contents, generationConfig };
 
-  const res = await fetch(apiUrl("/api/ai/generate"), {
-    method: "POST",
-    headers: await authHeaders(),
-    body: JSON.stringify({ provider: "GEMINI", model: settings.model, ...body }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(apiUrl("/api/ai/generate"), {
+      method: "POST",
+      headers: await authHeaders(),
+      body: JSON.stringify({ provider: "GEMINI", model: settings.model, ...body }),
+    });
+  } catch {
+    // «Failed to fetch»: انقطع الاتصال قبل وصول الرد (غالباً صياغة طويلة جداً)
+    throw new Error("انقطع الاتصال بالخادم قبل اكتمال الصياغة. أعد المحاولة، أو اطلب جزءاً من المذكرة أو قلّل المرفقات.");
+  }
 
   if (res.status === 401) {
     throw new Error("انتهت جلستك. سجّل الدخول من جديد ثم أعد المحاولة.");

@@ -119,20 +119,22 @@ router.post("/ai/generate", rateLimit(20), async (req, res) => {
       }
 
       const modelName = typeof model === "string" && model ? model : "gemini-flash-latest";
-      const body = JSON.stringify({
-        contents,
-        generationConfig: generationConfig ?? { temperature: 0.7, maxOutputTokens: 2048 },
-      });
+      const baseConfig = generationConfig ?? { temperature: 0.7, maxOutputTokens: 2048 };
+      // نفس ما في ai-proxy.php: حدّ «التفكير» يُبقي الصياغة الطويلة سريعة، ويُعاد بدونه إن رُفض
+      const withThinking = baseConfig.thinkingConfig ? baseConfig : { ...baseConfig, thinkingConfig: { thinkingBudget: 1024 } };
+      const bodyFor = (cfg: unknown) => JSON.stringify({ contents, generationConfig: cfg });
 
       // ضغط مؤقت على نموذج Google (503/429/500) — نعيد المحاولة بنماذج احتياطية
       const models = [modelName, ...GEMINI_FALLBACK_MODELS.filter((m) => m !== modelName)];
       let upstream: Response | null = null;
       for (let i = 0; i < models.length; i++) {
         if (i > 0) await new Promise((r) => setTimeout(r, 800));
-        upstream = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(models[i])}:generateContent`,
-          { method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body },
-        );
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(models[i])}:generateContent`;
+        const init = (cfg: unknown) => ({ method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": key }, body: bodyFor(cfg) });
+        upstream = await fetch(url, init(withThinking));
+        if (upstream.status === 400 && /thinking/i.test(await upstream.clone().text())) {
+          upstream = await fetch(url, init(baseConfig));
+        }
         if (!GEMINI_RETRYABLE.has(upstream.status)) break;
       }
 
