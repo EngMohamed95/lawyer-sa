@@ -25,7 +25,8 @@ const GEMINI_FALLBACK_MODELS = ['gemini-flash-lite-latest', 'gemini-3.5-flash'];
 const CERTS_URL ='https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com';
 
 function fail(int $status, string $message): void {
-    http_response_code($status);
+    // بعد بدء إبقاء الاتصال حياً تكون الحالة 200 قد أُرسلت — الخطأ يصل في الجسم
+    if (empty($GLOBALS['keepalive_started'])) http_response_code($status);
     echo json_encode(['error' => $message], JSON_UNESCAPED_UNICODE);
     exit;
 }
@@ -35,8 +36,34 @@ function b64url_decode(string $s): string {
     return $decoded === false ? '' : $decoded;
 }
 
+/**
+ * إبقاء الاتصال حياً أثناء انتظار ردود الذكاء الاصطناعي الطويلة.
+ *
+ * الخادم الأمامي (nginx) يقطع الطلب بـ 504 إن لم يصله شيء خلال ~60 ثانية، وصياغة
+ * مذكرة كاملة بمرفقاتها قد تتجاوز ذلك. بعد KEEPALIVE_AFTER ثانية نرسل الحالة 200
+ * ثم مسافة كل KEEPALIVE_EVERY ثوانٍ — المسافات قبل JSON لا تؤثر على تحليله،
+ * والأخطاء بعدها تصل في الجسم { error: ... } فتعرضها الواجهة كما هي.
+ */
+const KEEPALIVE_AFTER = 8;
+const KEEPALIVE_EVERY = 5;
+$GLOBALS['keepalive_started'] = false;
+
+function keepalive_tick(float $startedAt, float &$lastPing): void {
+    $now = microtime(true);
+    if ($now - $startedAt < KEEPALIVE_AFTER || $now - $lastPing < KEEPALIVE_EVERY) return;
+    if (!$GLOBALS['keepalive_started']) {
+        $GLOBALS['keepalive_started'] = true;
+        http_response_code(200);
+        header('X-Accel-Buffering: no');
+        while (ob_get_level() > 0) @ob_end_flush();
+    }
+    echo ' ';
+    @flush();
+    $lastPing = $now;
+}
+
 /** طلب HTTP يرجع [الحالة, الترويسات, الجسم] — curl إن وُجد، وإلا streams */
-function http_request(string $method, string $url, array $headers = [], ?string $body = null): array {
+function http_request(string $method, string $url, array $headers = [], ?string $body = null, bool $keepalive = false): array {
     if (function_exists('curl_init')) {
         $ch = curl_init($url);
         $respHeaders = [];
@@ -44,7 +71,7 @@ function http_request(string $method, string $url, array $headers = [], ?string 
             CURLOPT_CUSTOMREQUEST => $method,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_TIMEOUT => 120,
+            CURLOPT_TIMEOUT => $keepalive ? 170 : 120,
             CURLOPT_CONNECTTIMEOUT => 15,
             CURLOPT_HEADERFUNCTION => function ($ch, $line) use (&$respHeaders) {
                 $parts = explode(':', $line, 2);
@@ -52,6 +79,15 @@ function http_request(string $method, string $url, array $headers = [], ?string 
                 return strlen($line);
             },
         ]);
+        if ($keepalive) {
+            $startedAt = microtime(true);
+            $lastPing = 0.0;
+            curl_setopt($ch, CURLOPT_NOPROGRESS, false);
+            curl_setopt($ch, CURLOPT_XFERINFOFUNCTION, function () use ($startedAt, &$lastPing) {
+                keepalive_tick($startedAt, $lastPing);
+                return 0;
+            });
+        }
         if ($body !== null) curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
         $resp = curl_exec($ch);
         $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
@@ -175,6 +211,8 @@ if ($provider === 'GEMINI') {
     $modelName = is_string($model) && $model !== '' ? $model : 'gemini-flash-latest';
     if (!preg_match('/^[A-Za-z0-9._-]{1,80}$/', $modelName)) fail(400, 'اسم النموذج غير صالح.');
     $generationConfig = is_array($req['generationConfig'] ?? null) ? $req['generationConfig'] : ['temperature' => 0.7, 'maxOutputTokens' => 2048];
+    @set_time_limit(0);
+    @ini_set('zlib.output_compression', '0');
 
     // ضغط مؤقت على نموذج Google (503/429/500) — نعيد المحاولة بنماذج احتياطية
     $payload = json_encode(['contents' => $contents, 'generationConfig' => $generationConfig], JSON_UNESCAPED_UNICODE);
@@ -185,12 +223,15 @@ if ($provider === 'GEMINI') {
             'POST',
             "https://generativelanguage.googleapis.com/v1beta/models/$m:generateContent",
             ['Content-Type: application/json', "x-goog-api-key: $key"],
-            $payload
+            $payload,
+            true
         );
         if (!in_array($status, [429, 500, 503], true)) break;
     }
-    if ($status === 0 || json_decode($body) === null) fail(502, 'تعذّر تنفيذ طلب الذكاء الاصطناعي.');
-    http_response_code($status >= 200 && $status < 300 ? 200 : $status);
+    if ($status === 0 || json_decode($body) === null) {
+        fail(504, 'استغرقت الصياغة وقتاً أطول من المسموح. أعد المحاولة، أو قلّل المرفقات أو اطلب جزءاً من المذكرة.');
+    }
+    if (empty($GLOBALS['keepalive_started'])) http_response_code($status >= 200 && $status < 300 ? 200 : $status);
     echo $body;
     exit;
 }

@@ -59,6 +59,25 @@ export interface GenerationConfig {
   maxOutputTokens?: number;
 }
 
+/**
+ * أخطاء البوابة (502/503/504): غالباً انتهاء مهلة الخادم الأمامي أثناء صياغة طويلة،
+ * ويرد بصفحة HTML لا تفيد المستخدم — نعرض رسالة الخادم إن كانت JSON وإلا سبباً واضحاً.
+ */
+async function gatewayError(res: Response): Promise<Error | null> {
+  if (![502, 503, 504].includes(res.status)) return null;
+  const text = await res.text().catch(() => "");
+  try {
+    const msg = (JSON.parse(text) as { error?: string | { message?: string } })?.error;
+    const m = typeof msg === "string" ? msg : msg?.message;
+    if (m) return new Error(m);
+  } catch { /* صفحة HTML من الخادم الأمامي */ }
+  return new Error(
+    res.status === 504
+      ? "استغرقت الصياغة وقتاً أطول من المسموح على الخادم. أعد المحاولة، أو قلّل المرفقات أو اطلب جزءاً من المذكرة."
+      : "خدمة الذكاء الاصطناعي مشغولة مؤقتاً. أعد المحاولة بعد قليل.",
+  );
+}
+
 /** رسالة موحّدة حين لا يوجد خادم يستقبل النداء */
 const NO_SERVER_MESSAGE =
   "خدمة الذكاء الاصطناعي غير متاحة حالياً على الخادم. أعد المحاولة بعد قليل، " +
@@ -121,6 +140,8 @@ export async function callGemini(
   if (res.status === 429) {
     throw new Error("تجاوزت حد الطلبات المسموح. انتظر قليلاً ثم أعد المحاولة.");
   }
+  const gateway = await gatewayError(res);
+  if (gateway) throw gateway;
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
     throw new Error(`تعذّر الاتصال بخدمة الذكاء الاصطناعي (${res.status}). ${detail.slice(0, 160)}`);
@@ -148,6 +169,8 @@ export async function callGroq(
   if (res.status === 501) {
     throw new Error("خدمة الذكاء الاصطناعي غير مُهيّأة على الخادم. تواصل مع مدير المنصة.");
   }
+  const gateway = await gatewayError(res);
+  if (gateway) throw gateway;
   if (!res.ok) throw new Error(`تعذّر الاتصال بالخدمة (${res.status}).`);
   const data = (await readJsonOrExplain(res)) as {
     error?: { message?: string };
