@@ -386,12 +386,12 @@ ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionIns
             initial={{ opacity: 0, scale: 0.8, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 20 }}
-            className={`bg-white border border-gray-200 shadow-2xl rounded-3xl overflow-hidden flex flex-col transition-all duration-300 ${isMinimized ? 'h-16 w-72' : 'h-[560px] w-[350px] sm:w-[400px]'}`}
+            className={`bg-surface border border-gray-200 shadow-2xl rounded-3xl overflow-hidden flex flex-col transition-all duration-300 ${isMinimized ? 'h-16 w-72' : 'h-[560px] w-[350px] sm:w-[400px]'}`}
           >
-            <div className="bg-[#192a56] p-4 text-white flex items-center justify-between">
+            <div className="bg-navy p-4 text-white flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-[#273c75] rounded-full flex items-center justify-center">
-                  <Bot size={18} className="text-[#192a56]" />
+                <div className="w-8 h-8 bg-navy-2 rounded-full flex items-center justify-center">
+                  <Bot size={18} className="text-ink" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold">المساعد القانوني الذكي</h3>
@@ -418,11 +418,11 @@ ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionIns
               <>
                 <div className="p-3 bg-gray-50 border-b border-gray-100 space-y-2">
                   <div className="flex flex-col gap-1">
-                    <label className="text-[11px] font-bold text-[#192a56]">القضية النشطة للتحليل الذكي:</label>
+                    <label className="text-[11px] font-bold text-ink">القضية النشطة للتحليل الذكي:</label>
                     <SearchableSelect
                       value={selectedCaseId}
                       onChange={(e) => setSelectedCaseId(e.target.value)}
-                      className="text-xs bg-white border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-[#273c75] w-full text-ellipsis overflow-hidden"
+                      className="text-xs bg-surface border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:border-edge-2 w-full text-ellipsis overflow-hidden"
                     >
                       <option value="">-- اختر قضية لحلها وتحليلها --</option>
                       {cases.map((c) => {
@@ -473,8 +473,8 @@ ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionIns
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-start' : 'justify-end'}`}>
                       <div className={`max-w-[85%] p-3 rounded-2xl text-sm shadow-sm ${
                         msg.role === 'user' 
-                        ? 'bg-white text-[#192a56] border border-gray-100' 
-                        : 'bg-[#192a56] text-white rounded-br-none'
+                        ? 'bg-surface text-ink border border-gray-100' 
+                        : 'bg-navy text-white rounded-br-none'
                       }`}>
                         {msg.content}
                       </div>
@@ -482,7 +482,7 @@ ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionIns
                   ))}
                   {isLoading && (
                     <div className="flex justify-end">
-                      <div className="bg-[#192a56] text-white p-3 rounded-2xl rounded-br-none flex items-center gap-2 text-sm shadow-sm">
+                      <div className="bg-navy text-white p-3 rounded-2xl rounded-br-none flex items-center gap-2 text-sm shadow-sm">
                         <Loader2 size={14} className="animate-spin" />
                         جاري التفكير...
                       </div>
@@ -490,7 +490,7 @@ ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionIns
                   )}
                 </div>
 
-                <div className="p-4 bg-white border-t flex gap-2">
+                <div className="p-4 bg-surface border-t flex gap-2">
                   <Input 
                     placeholder="اكتب سؤالك هنا..." 
                     className="rounded-xl border-gray-200"
@@ -499,7 +499,7 @@ ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionIns
                     onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                   />
                   {/* () => handleSend() وليس handleSend مباشرة — وإلا مرّر React كائن الحدث كـ customMsg وأُرسل بدل نص السؤال */}
-                  <Button onClick={() => handleSend()} className="bg-[#273c75] hover:bg-[#192a56] text-[#192a56] rounded-xl px-3">
+                  <Button onClick={() => handleSend()} className="bg-navy-2 hover:bg-navy text-ink rounded-xl px-3">
                     <Send size={18} />
                   </Button>
                 </div>
@@ -514,11 +514,11 @@ ${actionInstruction ? `\nتوجيه خاص للطلب الحالي:\n${actionIns
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => setIsOpen(true)}
-          className="w-16 h-16 bg-[#192a56] text-[#273c75] rounded-full shadow-2xl flex items-center justify-center border-4 border-white relative group"
+          className="w-16 h-16 bg-navy text-ink-2 rounded-full shadow-2xl flex items-center justify-center border-4 border-white relative group"
         >
           <Sparkles size={28} />
           <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">AI</span>
-          <div className="absolute right-20 bg-[#192a56] text-white text-xs py-2 px-4 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+          <div className="absolute right-20 bg-navy text-white text-xs py-2 px-4 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
             تحدث مع المساعد الذكي
           </div>
         </motion.button>

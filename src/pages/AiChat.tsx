@@ -263,13 +263,13 @@ export default function AiChat() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-130px)] rounded-3xl overflow-hidden border border-gray-200 bg-white shadow-sm font-['Tajawal']" dir="rtl">
+    <div className="flex h-[calc(100vh-130px)] rounded-3xl overflow-hidden border border-gray-200 bg-surface shadow-sm font-['Tajawal']" dir="rtl">
       
       {/* Sidebar: Conversation History (Right Panel) */}
       <div className="w-80 border-l border-gray-200 bg-gray-50/50 flex flex-col h-full">
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-[#192a56] text-white">
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-navy text-white">
           <div className="flex items-center gap-2">
-            <Bot size={20} className="text-[#273c75]" />
+            <Bot size={20} className="text-ink-2" />
             <span className="font-bold text-sm">سجل الاستشارات الذكية</span>
           </div>
           <button 
@@ -284,7 +284,7 @@ export default function AiChat() {
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
           {loadingHistory ? (
             <div className="text-center py-10 text-xs text-gray-500 flex flex-col items-center gap-2">
-              <Loader2 className="animate-spin text-[#192a56]" size={18} />
+              <Loader2 className="animate-spin text-ink" size={18} />
               <span>جاري تحميل سجل المحادثات...</span>
             </div>
           ) : conversations.length === 0 ? (
@@ -298,12 +298,12 @@ export default function AiChat() {
                 onClick={() => handleSelectConversation(convo.id)}
                 className={`group p-3 rounded-2xl cursor-pointer transition-all flex items-center justify-between gap-2 border ${
                   activeId === convo.id 
-                    ? "bg-[#192a56] text-white border-transparent shadow-sm" 
-                    : "bg-white text-gray-700 hover:bg-gray-100/50 border-gray-100"
+                    ? "bg-navy text-white border-transparent shadow-sm" 
+                    : "bg-surface text-gray-700 hover:bg-gray-100/50 border-gray-100"
                 }`}
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <MessageSquare size={16} className={activeId === convo.id ? "text-[#273c75]" : "text-gray-400"} />
+                  <MessageSquare size={16} className={activeId === convo.id ? "text-ink-2" : "text-gray-400"} />
                   <div className="text-right min-w-0">
                     <p className="text-xs font-semibold truncate leading-normal">{convo.title || "محادثة قانونية"}</p>
                     <p className={`text-[9px] mt-0.5 ${activeId === convo.id ? "text-gray-300" : "text-gray-400"}`}>
@@ -327,17 +327,17 @@ export default function AiChat() {
       </div>
 
       {/* Main Panel: Chat Window (Left Panel) */}
-      <div className="flex-1 flex flex-col h-full bg-white relative">
+      <div className="flex-1 flex flex-col h-full bg-surface relative">
         
         {/* Welcome / Suggestions Screen when there's no active convo or messages are empty */}
         {messages.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center max-w-2xl mx-auto space-y-8 overflow-y-auto">
-            <div className="w-16 h-16 bg-[#192a56] text-[#273c75] rounded-3xl flex items-center justify-center shadow-xl shadow-[#192a56]/10 animate-pulse">
+            <div className="w-16 h-16 bg-navy text-ink-2 rounded-3xl flex items-center justify-center shadow-xl shadow-navy/10 animate-pulse">
               <Sparkles size={32} />
             </div>
             
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-[#192a56]">مرحباً بك في المساعد القانوني الذكي</h2>
+              <h2 className="text-2xl font-bold text-ink">مرحباً بك في المساعد القانوني الذكي</h2>
               <p className="text-gray-500 text-sm leading-relaxed">
                 اطرح سؤالك القانوني مباشرة: استشارة نظامية، شرح إجراء، صياغة صحيفة أو مذكرة أو عقد، أو مراجعة دفوع. المساعد مخصص للشؤون القانونية فقط.
               </p>
@@ -348,7 +348,7 @@ export default function AiChat() {
             {/* Topbar of Active Convo */}
             <div className="p-4 border-b border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-gray-50/50">
               <div>
-                <h3 className="font-bold text-[#192a56] text-sm">محادثة: {conversations.find(c => c.id === activeId)?.title || "مستمرة"}</h3>
+                <h3 className="font-bold text-ink text-sm">محادثة: {conversations.find(c => c.id === activeId)?.title || "مستمرة"}</h3>
                 <p className="text-[10px] text-gray-400 mt-0.5">مساعد قانوني عام — للأسئلة والشؤون القانونية فقط</p>
               </div>
             </div>
@@ -361,7 +361,7 @@ export default function AiChat() {
                     
                     {/* Avatar Icon */}
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
-                      msg.role === 'user' ? 'bg-gray-100 text-[#192a56]' : 'bg-[#192a56] text-white'
+                      msg.role === 'user' ? 'bg-gray-100 text-ink' : 'bg-navy text-white'
                     }`}>
                       {msg.role === 'user' ? <User size={16} /> : <Bot size={16} />}
                     </div>
@@ -369,14 +369,14 @@ export default function AiChat() {
                     {/* Chat Bubble */}
                     <div className={`p-4 rounded-2xl text-sm leading-relaxed shadow-sm whitespace-pre-wrap ${
                       msg.role === 'user' 
-                        ? 'bg-white text-[#192a56] border border-gray-150 rounded-tr-none' 
-                        : 'bg-[#192a56] text-white rounded-tl-none'
+                        ? 'bg-surface text-ink border border-gray-150 rounded-tr-none' 
+                        : 'bg-navy text-white rounded-tl-none'
                     }`}>
                       {msg.content}
                       {!!msg.files?.length && (
                         <div className="mt-3 flex flex-wrap gap-2 border-t border-gray-200/70 pt-3">
                           {msg.files.map((name) => (
-                            <span key={name} className="inline-flex max-w-full items-center gap-1.5 rounded-lg bg-[#273c75]/15 px-2.5 py-1 text-[11px] font-semibold text-[#192a56]">
+                            <span key={name} className="inline-flex max-w-full items-center gap-1.5 rounded-lg bg-navy-2/15 px-2.5 py-1 text-[11px] font-semibold text-ink">
                               <FileText size={13} className="shrink-0" />
                               <span className="truncate">{name}</span>
                             </span>
@@ -391,11 +391,11 @@ export default function AiChat() {
               {isLoading && (
                 <div className="flex justify-end animate-pulse">
                   <div className="flex items-start gap-3 max-w-[75%] flex-row-reverse">
-                    <div className="w-9 h-9 rounded-xl bg-[#192a56] text-white flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-navy text-white flex items-center justify-center shrink-0">
                       <Bot size={16} />
                     </div>
-                    <div className="bg-[#192a56] text-white p-4 rounded-2xl rounded-tl-none flex items-center gap-2.5 text-sm shadow-sm">
-                      <Loader2 size={16} className="animate-spin text-[#273c75]" />
+                    <div className="bg-navy text-white p-4 rounded-2xl rounded-tl-none flex items-center gap-2.5 text-sm shadow-sm">
+                      <Loader2 size={16} className="animate-spin text-ink-2" />
                       <span>جاري إعداد الإجابة...</span>
                     </div>
                   </div>
@@ -406,12 +406,12 @@ export default function AiChat() {
         )}
 
         {/* Bottom Input Area */}
-        <div className="border-t border-gray-200 bg-white p-4">
+        <div className="border-t border-gray-200 bg-surface p-4">
           {!!attachments.length && (
             <div className="mb-3 flex flex-wrap gap-2" aria-label="المرفقات المختارة">
               {attachments.map((file) => (
-                <div key={file.id} className="flex max-w-full items-center gap-2 rounded-xl border border-[#273c75]/35 bg-[#273c75]/10 px-3 py-2 text-xs text-[#192a56]">
-                  <FileText size={15} className="shrink-0 text-[#192a56]" />
+                <div key={file.id} className="flex max-w-full items-center gap-2 rounded-xl border border-edge-2/35 bg-navy-2/10 px-3 py-2 text-xs text-ink">
+                  <FileText size={15} className="shrink-0 text-ink" />
                   <div className="min-w-0">
                     <p className="max-w-52 truncate font-bold">{file.name}</p>
                     <p className="text-[10px] text-gray-500">{formatSize(file.size)}</p>
@@ -446,7 +446,7 @@ export default function AiChat() {
               type="button"
               onClick={() => fileInput.current?.click()}
               disabled={isLoading || reading || attachments.length >= AI_MAX_FILES}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-gray-200 bg-gray-50 text-[#192a56] transition hover:border-[#273c75] hover:bg-[#273c75]/10 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-gray-200 bg-gray-50 text-ink transition hover:border-edge-2 hover:bg-navy-2/10 disabled:cursor-not-allowed disabled:opacity-50"
               title={`إرفاق ملفات PDF أو Word أو صور أو نص — حتى ${AI_MAX_FILES} ملفات بإجمالي ${formatSize(AI_MAX_TOTAL_BYTES)}`}
               aria-label="إضافة مرفقات"
             >
@@ -454,7 +454,7 @@ export default function AiChat() {
             </button>
             <Input
               placeholder={attachments.length ? "اكتب طلبك عن المرفقات أو أرسلها مباشرة..." : "اكتب استشارتك القانونية أو سؤالك هنا..."}
-              className="h-12 rounded-2xl border-gray-200 text-sm focus-visible:border-[#192a56] focus-visible:ring-[#192a56]/20"
+              className="h-12 rounded-2xl border-gray-200 text-sm focus-visible:border-edge focus-visible:ring-edge/20"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -468,7 +468,7 @@ export default function AiChat() {
             <Button
               onClick={() => void handleSend()}
               disabled={isLoading || reading || (!input.trim() && !attachments.some((file) => !announced.includes(file.id)))}
-              className="h-12 shrink-0 rounded-2xl bg-[#273c75] px-6 font-bold text-[#192a56] transition-all hover:bg-[#192a56] active:scale-[0.97]"
+              className="h-12 shrink-0 rounded-2xl bg-navy-2 px-6 font-bold text-ink transition-all hover:bg-navy active:scale-[0.97]"
             >
               <Send size={18} className="ml-2" />
               <span>إرسال</span>

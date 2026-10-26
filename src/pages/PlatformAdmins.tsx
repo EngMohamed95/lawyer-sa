@@ -116,7 +116,7 @@ export default function PlatformAdmins() {
   };
 
   return (
-    <div className="space-y-6 font-['Tajawal'] text-[#192a56]" dir="rtl">
+    <div className="space-y-6 font-['Tajawal'] text-ink" dir="rtl">
       <AdminHeader
         icon={<UserCog size={26} />}
         title="فريق مديري المنصة (SaaS Admins)"
@@ -126,7 +126,7 @@ export default function PlatformAdmins() {
 
       <div className={`${adminPanel} overflow-hidden`}>
         {loading ? (
-          <div className="flex justify-center py-12"><Loader2 className="animate-spin text-[#273c75]" /></div>
+          <div className="flex justify-center py-12"><Loader2 className="animate-spin text-ink-2" /></div>
         ) : admins.length === 0 ? (
           <p className="py-12 text-center text-sm text-slate-400">لا يوجد مديرون.</p>
         ) : (
@@ -197,7 +197,7 @@ export default function PlatformAdmins() {
               </div>
             </div>
             <p className="rounded-xl bg-amber-50 p-3 text-xs text-amber-800">المدير الجديد يملك صلاحيات المنصة كاملة (كل المكاتب والاشتراكات والدعم).</p>
-            <button type="submit" disabled={saving} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#273c75] py-3 font-bold text-white hover:bg-[#192a56] disabled:opacity-50">
+            <button type="submit" disabled={saving} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-navy-2 py-3 font-bold text-white hover:bg-navy disabled:opacity-50">
               {saving && <Loader2 size={16} className="animate-spin" />} إنشاء الحساب
             </button>
           </form>
@@ -216,7 +216,7 @@ export default function PlatformAdmins() {
               </SearchableSelect>
             </div>
             <p className="text-xs text-slate-400">كلمة المرور يغيّرها المدير بنفسه من «الإعدادات»، والبريد الإلكتروني من لوحة Firebase Authentication.</p>
-            <button type="submit" disabled={saving} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#273c75] py-3 font-bold text-white hover:bg-[#192a56] disabled:opacity-50">
+            <button type="submit" disabled={saving} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-navy-2 py-3 font-bold text-white hover:bg-navy disabled:opacity-50">
               {saving && <Loader2 size={16} className="animate-spin" />} حفظ التعديلات
             </button>
           </form>

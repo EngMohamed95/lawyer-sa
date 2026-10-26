@@ -134,7 +134,7 @@ export function MemoAttachmentsField({ attachments, onChange, extra }: {
       {attachments.length > 0 ? (
         <div className="space-y-1.5">
           {attachments.map((a) => (
-            <div key={a.id} className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs">
+            <div key={a.id} className="flex items-center gap-2 rounded-lg border border-gray-200 bg-surface px-2 py-1.5 text-xs">
               <FileText size={13} className="shrink-0 text-purple-600" />
               <span className="flex-1 truncate font-medium text-gray-800" title={a.name}>{a.name}</span>
               <span className="shrink-0 text-[10px] text-gray-400">{formatSize(a.size)}</span>
@@ -277,13 +277,13 @@ ${draft ? `\nنص المحرر الحالي:\n"""\n${draft.slice(0, 6000)}\n"""\
   const disabled = busy || reading;
 
   return (
-    <aside className="flex flex-col rounded-2xl border border-purple-100 bg-gradient-to-b from-purple-50/60 to-white overflow-hidden lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]">
+    <aside className="flex flex-col rounded-2xl border border-purple-100 bg-gradient-to-b from-purple-50/60 to-surface overflow-hidden lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)]">
       <input ref={fileInput} type="file" multiple accept={ACCEPT} className="hidden" onChange={(e) => addFiles(e.target.files)} />
 
       <div className="px-4 py-3 border-b border-purple-100 flex items-center gap-2">
         <span className="h-8 w-8 rounded-lg bg-purple-600 text-white flex items-center justify-center"><Sparkles size={16} /></span>
         <div>
-          <h3 className="text-sm font-bold text-[#192a56]">المساعد الذكي</h3>
+          <h3 className="text-sm font-bold text-ink">المساعد الذكي</h3>
           <p className="text-[11px] text-gray-500">النتائج تظهر هنا — أدرجها في المحرر متى شئت</p>
         </div>
       </div>
@@ -303,7 +303,7 @@ ${draft ? `\nنص المحرر الحالي:\n"""\n${draft.slice(0, 6000)}\n"""\
 
       <div ref={listRef} className="flex-1 overflow-y-auto p-3 space-y-3 min-h-[200px]">
         {busy && (
-          <div className="flex items-center gap-2 text-xs text-purple-700 bg-white border border-purple-100 rounded-xl p-3">
+          <div className="flex items-center gap-2 text-xs text-purple-700 bg-surface border border-purple-100 rounded-xl p-3">
             <Loader2 size={14} className="animate-spin" /> {attachments.length ? "جاري قراءة المرفقات والصياغة..." : "جاري الصياغة..."}
           </div>
         )}
@@ -313,7 +313,7 @@ ${draft ? `\nنص المحرر الحالي:\n"""\n${draft.slice(0, 6000)}\n"""\
           </p>
         )}
         {results.map((r) => (
-          <div key={r.id} className={`rounded-xl border bg-white overflow-hidden ${r.error ? "border-red-200" : r.needsFiles ? "border-amber-300" : "border-gray-200"}`}>
+          <div key={r.id} className={`rounded-xl border bg-surface overflow-hidden ${r.error ? "border-red-200" : r.needsFiles ? "border-amber-300" : "border-gray-200"}`}>
             <div className={`flex items-center justify-between gap-2 px-3 py-1.5 border-b ${r.needsFiles ? "bg-amber-50 border-amber-100" : "bg-gray-50 border-gray-100"}`}>
               <span className="text-[11px] font-bold text-gray-600 truncate">{r.request}</span>
               <button onClick={() => setResults((all) => all.filter((x) => x.id !== r.id))} title="حذف"
@@ -334,7 +334,7 @@ ${draft ? `\nنص المحرر الحالي:\n"""\n${draft.slice(0, 6000)}\n"""\
                     <Paperclip size={12} /> إرفاق ملفات
                   </button>
                   <button onClick={() => run(r.request, r.prompt)} disabled={disabled || !r.prompt}
-                    className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold text-[#192a56] hover:bg-gray-100 disabled:opacity-50">
+                    className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold text-ink hover:bg-gray-100 disabled:opacity-50">
                     <RotateCcw size={12} /> إعادة الطلب بالمرفقات
                   </button>
                 </div>
@@ -345,7 +345,7 @@ ${draft ? `\nنص المحرر الحالي:\n"""\n${draft.slice(0, 6000)}\n"""\
                   dangerouslySetInnerHTML={{ __html: r.html }} />
                 <div className="flex gap-1 px-2 py-1.5 border-t border-gray-100">
                   <button onClick={() => onInsert(r.html)}
-                    className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold text-[#192a56] hover:bg-gray-100">
+                    className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold text-ink hover:bg-gray-100">
                     <FilePlus2 size={12} /> إدراج في المحرر
                   </button>
                   <button onClick={() => onReplace(r.html)}
@@ -363,7 +363,7 @@ ${draft ? `\nنص المحرر الحالي:\n"""\n${draft.slice(0, 6000)}\n"""\
         ))}
       </div>
 
-      <form onSubmit={(e) => { e.preventDefault(); submit(); }} className="p-3 border-t border-purple-100 bg-white">
+      <form onSubmit={(e) => { e.preventDefault(); submit(); }} className="p-3 border-t border-purple-100 bg-surface">
         <div className="flex items-end gap-2">
           <textarea value={input} onChange={(e) => setInput(e.target.value)} rows={2}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}

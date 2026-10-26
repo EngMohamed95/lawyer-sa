@@ -66,9 +66,9 @@ const getBorderInlineStyle = (style: string) => {
 
 const getBorderClassName = (style: string) => {
   switch (style) {
-    case 'solid': return 'border-4 border-[#192a56] p-8 m-2 shadow-inner';
-    case 'double': return 'border-8 border-double border-[#192a56] p-8 m-2 shadow-inner';
-    case 'gold': return 'border-8 border-double border-[#273c75] p-8 m-2 shadow-inner';
+    case 'solid': return 'border-4 border-edge p-8 m-2 shadow-inner';
+    case 'double': return 'border-8 border-double border-edge p-8 m-2 shadow-inner';
+    case 'gold': return 'border-8 border-double border-edge-2 p-8 m-2 shadow-inner';
     default: return 'p-8';
   }
 };
@@ -178,13 +178,13 @@ export default function RichTextEditor({ value, onChange, placeholder, headerHtm
   };
 
   return (
-    <div className="border border-gray-200 rounded-3xl overflow-hidden bg-white shadow-sm focus-within:ring-2 focus-within:ring-[#192a56]/10 transition-all font-sans" dir="rtl">
+    <div className="border border-gray-200 rounded-3xl overflow-hidden bg-surface shadow-sm focus-within:ring-2 focus-within:ring-edge/10 transition-all font-sans" dir="rtl">
       
       {/* Table Insertion Modal */}
       {showTableModal && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
-            <div className="p-5 border-b bg-[#192a56] text-white flex justify-between items-center">
+          <div className="bg-surface rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div className="p-5 border-b bg-navy text-white flex justify-between items-center">
               <h2 className="text-base font-bold flex items-center gap-2">
                 <Table size={18} />
                 إدراج جدول جديد
@@ -216,7 +216,7 @@ export default function RichTextEditor({ value, onChange, placeholder, headerHtm
               </div>
               <div className="flex gap-2 pt-2">
                 <Button type="button" variant="outline" className="flex-1 py-5 rounded-xl text-xs" onClick={() => setShowTableModal(false)}>إلغاء</Button>
-                <Button type="submit" className="flex-1 bg-[#273c75] hover:bg-[#273c75]/90 text-white py-5 rounded-xl font-bold text-xs">إدراج الجدول</Button>
+                <Button type="submit" className="flex-1 bg-navy-2 hover:bg-navy-2/90 text-white py-5 rounded-xl font-bold text-xs">إدراج الجدول</Button>
               </div>
             </form>
           </div>
@@ -227,11 +227,11 @@ export default function RichTextEditor({ value, onChange, placeholder, headerHtm
       <div className="flex flex-wrap items-center gap-1.5 p-3 bg-gray-50/80 border-b border-gray-200/60 print:hidden text-gray-600 select-none">
         
         {/* Font Family Select */}
-        <div className="flex items-center gap-1 bg-white border rounded-xl px-2 py-1 shadow-sm shrink-0">
+        <div className="flex items-center gap-1 bg-surface border rounded-xl px-2 py-1 shadow-sm shrink-0">
           <Type size={14} className="text-gray-400" />
           <select 
             onChange={(e) => execCommand("fontName", e.target.value)}
-            className="text-xs bg-transparent border-none outline-none font-bold text-[#192a56] py-0.5 cursor-pointer max-w-[120px]"
+            className="text-xs bg-transparent border-none outline-none font-bold text-ink py-0.5 cursor-pointer max-w-[120px]"
             title="نوع الخط"
             defaultValue=""
           >
@@ -243,10 +243,10 @@ export default function RichTextEditor({ value, onChange, placeholder, headerHtm
         </div>
 
         {/* Font Size Select */}
-        <div className="flex items-center bg-white border rounded-xl px-2 py-1 shadow-sm shrink-0">
+        <div className="flex items-center bg-surface border rounded-xl px-2 py-1 shadow-sm shrink-0">
           <select 
             onChange={(e) => execCommand("fontSize", e.target.value)}
-            className="text-xs bg-transparent border-none outline-none font-bold text-[#192a56] py-0.5 cursor-pointer"
+            className="text-xs bg-transparent border-none outline-none font-bold text-ink py-0.5 cursor-pointer"
             title="حجم الخط"
             defaultValue="3"
           >
@@ -261,11 +261,11 @@ export default function RichTextEditor({ value, onChange, placeholder, headerHtm
         </div>
 
         {/* Line Spacing */}
-        <div className="flex items-center bg-white border rounded-xl px-2 py-1 shadow-sm shrink-0">
+        <div className="flex items-center bg-surface border rounded-xl px-2 py-1 shadow-sm shrink-0">
           <ArrowUpDown size={14} className="text-gray-400 ml-1" />
           <select 
             onChange={(e) => handleLineHeightChange(e.target.value)}
-            className="text-xs bg-transparent border-none outline-none font-bold text-[#192a56] py-0.5 cursor-pointer"
+            className="text-xs bg-transparent border-none outline-none font-bold text-ink py-0.5 cursor-pointer"
             title="تباعد الأسطر"
             defaultValue="1.5"
           >
@@ -276,12 +276,12 @@ export default function RichTextEditor({ value, onChange, placeholder, headerHtm
         </div>
 
         {/* Page Borders */}
-        <div className="flex items-center bg-white border rounded-xl px-2 py-1 shadow-sm shrink-0">
+        <div className="flex items-center bg-surface border rounded-xl px-2 py-1 shadow-sm shrink-0">
           <Settings2 size={14} className="text-gray-400 ml-1" />
           <select 
             value={borderStyle}
             onChange={(e) => updateBorder(e.target.value as any)}
-            className="text-xs bg-transparent border-none outline-none font-bold text-[#192a56] py-0.5 cursor-pointer"
+            className="text-xs bg-transparent border-none outline-none font-bold text-ink py-0.5 cursor-pointer"
             title="إطار الصفحة"
           >
             {BORDER_STYLES.map(b => (
@@ -293,7 +293,7 @@ export default function RichTextEditor({ value, onChange, placeholder, headerHtm
         <div className="w-px h-6 bg-gray-200/80 mx-1 shrink-0" />
 
         {/* Font Styling Buttons */}
-        <div className="flex bg-white border rounded-xl p-0.5 shadow-sm shrink-0">
+        <div className="flex bg-surface border rounded-xl p-0.5 shadow-sm shrink-0">
           <Button
             type="button"
             variant="ghost"
@@ -327,7 +327,7 @@ export default function RichTextEditor({ value, onChange, placeholder, headerHtm
         </div>
 
         {/* Color Pickers Dropdowns */}
-        <div className="flex bg-white border rounded-xl p-0.5 shadow-sm shrink-0">
+        <div className="flex bg-surface border rounded-xl p-0.5 shadow-sm shrink-0">
           
           {/* Text Color Selection */}
           <div className="relative group/color flex items-center">
@@ -340,7 +340,7 @@ export default function RichTextEditor({ value, onChange, placeholder, headerHtm
             >
               <Palette size={15} />
             </Button>
-            <div className="absolute right-0 top-full mt-1 hidden group-hover/color:grid grid-cols-4 gap-1 p-2 bg-white border rounded-xl shadow-lg z-50 min-w-[100px]">
+            <div className="absolute right-0 top-full mt-1 hidden group-hover/color:grid grid-cols-4 gap-1 p-2 bg-surface border rounded-xl shadow-lg z-50 min-w-[100px]">
               {COLORS.map(c => (
                 <button
                   key={c.name}
@@ -365,7 +365,7 @@ export default function RichTextEditor({ value, onChange, placeholder, headerHtm
             >
               <Sparkles size={15} className="text-amber-500 fill-amber-500/20" />
             </Button>
-            <div className="absolute right-0 top-full mt-1 hidden group-hover/highlight:grid grid-cols-3 gap-1 p-2 bg-white border rounded-xl shadow-lg z-50 min-w-[110px]">
+            <div className="absolute right-0 top-full mt-1 hidden group-hover/highlight:grid grid-cols-3 gap-1 p-2 bg-surface border rounded-xl shadow-lg z-50 min-w-[110px]">
               {HIGHLIGHT_COLORS.map(c => (
                 <button
                   key={c.name}
@@ -383,7 +383,7 @@ export default function RichTextEditor({ value, onChange, placeholder, headerHtm
         </div>
 
         {/* Alignment Options */}
-        <div className="flex bg-white border rounded-xl p-0.5 shadow-sm shrink-0">
+        <div className="flex bg-surface border rounded-xl p-0.5 shadow-sm shrink-0">
           <Button
             type="button"
             variant="ghost"
@@ -417,7 +417,7 @@ export default function RichTextEditor({ value, onChange, placeholder, headerHtm
         </div>
 
         {/* Lists */}
-        <div className="flex bg-white border rounded-xl p-0.5 shadow-sm shrink-0">
+        <div className="flex bg-surface border rounded-xl p-0.5 shadow-sm shrink-0">
           <Button
             type="button"
             variant="ghost"
@@ -441,13 +441,13 @@ export default function RichTextEditor({ value, onChange, placeholder, headerHtm
         </div>
 
         {/* Extra Actions */}
-        <div className="flex bg-white border rounded-xl p-0.5 shadow-sm shrink-0">
+        <div className="flex bg-surface border rounded-xl p-0.5 shadow-sm shrink-0">
           {/* Table Button */}
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 hover:bg-gray-100 text-[#192a56]"
+            className="h-8 w-8 p-0 hover:bg-gray-100 text-ink"
             onClick={() => setShowTableModal(true)}
             title="إدراج جدول"
           >
@@ -473,7 +473,7 @@ export default function RichTextEditor({ value, onChange, placeholder, headerHtm
       <div className="p-4 bg-gray-50/30 overflow-x-auto min-h-[550px]">
         {/* مع ترويسة/تذييل: الإطار يلفّ الورقة كلها بلا حشوة، والحشوة على منطقة الكتابة فقط.
             بدونهما: السلوك الأصلي كما هو (الإطار والحشوة على منطقة الكتابة) */}
-        <div className={framed ? `bg-white rounded-2xl shadow-sm overflow-hidden ${getBorderClassName(borderStyle).replace(/\bp-8\b/, "")}` : ""}>
+        <div className={framed ? `los-paper bg-surface rounded-2xl shadow-sm overflow-hidden ${getBorderClassName(borderStyle).replace(/\bp-8\b/, "")}` : ""}>
           {/* الترويسة — للمعاينة فقط، خارج المنطقة القابلة للتحرير */}
           {headerHtml && <div className="select-none" contentEditable={false} dangerouslySetInnerHTML={{ __html: headerHtml }} />}
 
@@ -482,7 +482,7 @@ export default function RichTextEditor({ value, onChange, placeholder, headerHtm
             ref={editorRef}
             contentEditable
             onInput={handleInput}
-            className={`${framed ? "min-h-[420px] px-9 py-6" : `min-h-[500px] rounded-2xl shadow-sm ${getBorderClassName(borderStyle)}`} outline-none focus:outline-none bg-white text-sm leading-relaxed text-gray-800 dir-rtl prose prose-slate max-w-none transition-all duration-300`}
+            className={`${framed ? "min-h-[420px] px-9 py-6" : `min-h-[500px] rounded-2xl shadow-sm ${getBorderClassName(borderStyle)}`} los-paper outline-none focus:outline-none bg-surface text-sm leading-relaxed text-gray-800 dir-rtl prose prose-slate max-w-none transition-all duration-300`}
             // div لا يقبل السمة placeholder — الصيغة الصحيحة لمحرّر contentEditable هي data-placeholder
             data-placeholder={placeholder}
             style={{ direction: 'rtl', textAlign: 'right', fontFamily: "'Tajawal', sans-serif" }}

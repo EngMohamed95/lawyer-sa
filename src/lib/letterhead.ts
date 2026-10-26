@@ -106,25 +106,43 @@ export function renderLetterheadFooter(profile: OfficeProfile, opts: LetterheadF
 const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
 
+export interface MemoLetterheadOptions {
+  /** معاينة الإعدادات: كل قيمة عنصر قابل للكتابة يحمل اسم حقله في data-field */
+  editable?: boolean;
+}
+
+export type EditableField = Exclude<keyof OfficeProfile, "logoUrl">;
+
+function memoField(profile: OfficeProfile, key: EditableField, edit: boolean, placeholder: string): string {
+  const v = escapeHtml(profile[key] || "");
+  return edit
+    ? `<span data-field="${key}" data-placeholder="${escapeHtml(placeholder)}" contenteditable="plaintext-only" spellcheck="false">${v}</span>`
+    : v;
+}
+
 /**
  * ترويسة رسمية للمذكرات والصحف المقدَّمة للمحاكم: خلفية بيضاء، الاسم العربي يميناً،
  * الشعار في الوسط، الاسم الإنجليزي ووسائل التواصل يساراً، وخط مزدوج ذهبي/أخضر.
  * جداول فقط — فتظهر متطابقة في المحرر والطباعة و PDF و Word.
  */
-export function renderMemoLetterheadHeader(profile: OfficeProfile): string {
-  const name = escapeHtml(profile.name || "مكتب المحاماة");
-  const logo = profile.logoUrl
+export function renderMemoLetterheadHeader(profile: OfficeProfile, opts: MemoLetterheadOptions = {}): string {
+  const edit = !!opts.editable;
+  const f = (key: EditableField, placeholder: string) => memoField(profile, key, edit, placeholder);
+  const name = edit ? f("name", "اسم المكتب") : escapeHtml(profile.name || "مكتب المحاماة");
+  const logoInner = profile.logoUrl
     ? `<img src="${escapeHtml(profile.logoUrl)}" alt="شعار المكتب" width="80" height="80" style="width:80px; height:80px; object-fit:contain; display:block; margin:0 auto;" />`
     : `<div style="width:68px; height:68px; line-height:64px; margin:0 auto; border:2px solid ${BRAND_GOLD}; border-radius:50%; text-align:center; font-size:26pt; font-weight:bold; color:${BRAND_DARK}; font-family:'Amiri',serif;">${escapeHtml(initial(profile))}</div>`;
+  const logo = edit ? `<div data-field="logo" title="اضغط لتغيير الشعار" style="cursor:pointer;">${logoInner}</div>` : logoInner;
 
+  // في وضع التحرير تظهر كل السطور حتى الفارغة، ليُكتب فيها مباشرة
   const arLines = [
-    profile.licenseNumber && `ترخيص مزاولة المحاماة رقم: ${escapeHtml(profile.licenseNumber)}`,
-    profile.crNumber && `السجل التجاري: ${escapeHtml(profile.crNumber)}`,
+    (edit || profile.licenseNumber) && `ترخيص مزاولة المحاماة رقم: ${f("licenseNumber", "رقم الترخيص")}`,
+    (edit || profile.crNumber) && `السجل التجاري: ${f("crNumber", "رقم السجل")}`,
   ].filter(Boolean);
   const enLines = [
-    profile.phone && `Tel: ${escapeHtml(profile.phone)}`,
-    profile.phone2 && `Tel: ${escapeHtml(profile.phone2)}`,
-    profile.email && escapeHtml(profile.email),
+    (edit || profile.phone) && `Tel: ${f("phone", "phone")}`,
+    (edit || profile.phone2) && `Tel: ${f("phone2", "another phone")}`,
+    (edit || profile.email) && f("email", "email@example.com"),
   ].filter(Boolean);
 
   return `
@@ -137,7 +155,7 @@ export function renderMemoLetterheadHeader(profile: OfficeProfile): string {
           </td>
           <td style="width:20%; vertical-align:middle; text-align:center;">${logo}</td>
           <td style="width:40%; vertical-align:middle; text-align:left; direction:ltr;">
-            ${profile.nameEn ? `<div style="font-size:13pt; font-weight:bold; color:${BRAND_DARK}; font-family:Georgia,'Times New Roman',serif; letter-spacing:0.5px; line-height:1.3;">${escapeHtml(profile.nameEn)}</div>` : ""}
+            ${edit || profile.nameEn ? `<div style="font-size:13pt; font-weight:bold; color:${BRAND_DARK}; font-family:Georgia,'Times New Roman',serif; letter-spacing:0.5px; line-height:1.3;">${f("nameEn", "Office name in English")}</div>` : ""}
             ${enLines.map((l) => `<div style="font-size:8.5pt; color:#666; margin-top:2px; font-family:Arial,sans-serif;">${l}</div>`).join("")}
           </td>
         </tr>
@@ -149,14 +167,18 @@ export function renderMemoLetterheadHeader(profile: OfficeProfile): string {
 }
 
 /** تذييل رسمي للمذكرات: خط مزدوج، ثم العنوان والهواتف والبريد والسجل في سطر واحد، وختم اختياري */
-export function renderMemoLetterheadFooter(profile: OfficeProfile, opts: { stampUrl?: string | null } = {}): string {
+export function renderMemoLetterheadFooter(profile: OfficeProfile, opts: { stampUrl?: string | null } & MemoLetterheadOptions = {}): string {
+  const edit = !!opts.editable;
+  const f = (key: EditableField, placeholder: string) => memoField(profile, key, edit, placeholder);
   // الأرقام في كتلة واحدة باتجاه LTR — وإلا عكس اتجاه RTL ترتيبها حول الفاصل
-  const phones = [profile.phone, profile.phone2].filter(Boolean).map((p) => escapeHtml(p));
+  const phones = edit
+    ? [f("phone", "phone"), f("phone2", "another phone")]
+    : [profile.phone, profile.phone2].filter(Boolean).map((p) => escapeHtml(p));
   const parts = [
-    profile.address && escapeHtml(profile.address),
+    (edit || profile.address) && f("address", "عنوان المكتب"),
     phones.length && `هاتف: <span dir="ltr" style="unicode-bidi:isolate;">${phones.join(" / ")}</span>`,
-    profile.email && `<span dir="ltr">${escapeHtml(profile.email)}</span>`,
-    profile.crNumber && `س.ت: ${escapeHtml(profile.crNumber)}`,
+    (edit || profile.email) && `<span dir="ltr">${f("email", "email@example.com")}</span>`,
+    (edit || profile.crNumber) && `س.ت: ${f("crNumber", "رقم السجل")}`,
   ].filter(Boolean);
 
   return `

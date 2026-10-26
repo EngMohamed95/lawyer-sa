@@ -75,13 +75,13 @@ export default function NotificationsTab() {
 
   if (loading) return <div className="p-8 text-center text-sm text-gray-400">جاري التحميل...</div>;
 
-  const field = "px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-[#192a56] text-sm";
+  const field = "px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-edge text-sm";
 
   return (
     <div className="space-y-6" dir="rtl">
       <div className="flex items-center gap-2">
-        <Bell className="w-5 h-5 text-[#273c75]" />
-        <h3 className="font-bold text-lg text-[#192a56]">تفضيلات التنبيهات</h3>
+        <Bell className="w-5 h-5 text-ink-2" />
+        <h3 className="font-bold text-lg text-ink">تفضيلات التنبيهات</h3>
       </div>
 
       {err && (
@@ -99,9 +99,9 @@ export default function NotificationsTab() {
         <table className="w-full text-sm min-w-[560px]">
           <thead className="bg-gray-50">
             <tr>
-              <th className="text-right font-bold text-[#192a56] px-4 py-3">الحدث</th>
+              <th className="text-right font-bold text-ink px-4 py-3">الحدث</th>
               {CHANNELS.map((c) => (
-                <th key={c} className="font-bold text-[#192a56] px-3 py-3 text-center whitespace-nowrap">
+                <th key={c} className="font-bold text-ink px-3 py-3 text-center whitespace-nowrap">
                   {CHANNEL_LABELS_AR[c]}
                   {!CHANNEL_READY[c] && (
                     <span className="block text-[10px] font-normal text-amber-600">قريباً</span>
@@ -118,7 +118,7 @@ export default function NotificationsTab() {
                   <td key={c} className="px-3 py-2.5 text-center">
                     <input type="checkbox" checked={isOn(e, c)} onChange={() => toggle(e, c)}
                       disabled={!CHANNEL_READY[c]}
-                      className="w-4 h-4 accent-[#192a56] disabled:opacity-30"
+                      className="w-4 h-4 accent-ink disabled:opacity-30"
                       title={CHANNEL_READY[c] ? "" : "هذه القناة تحتاج تفعيل المزوّد"} />
                   </td>
                 ))}
@@ -134,7 +134,7 @@ export default function NotificationsTab() {
 
       <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 space-y-3">
         <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={prefs.quietHours.enabled} className="w-5 h-5 accent-[#192a56]"
+          <input type="checkbox" checked={prefs.quietHours.enabled} className="w-5 h-5 accent-ink"
             onChange={(e) => setPrefs({ ...prefs, quietHours: { ...prefs.quietHours, enabled: e.target.checked } })} />
           <span className="text-sm font-bold text-gray-700 flex items-center gap-1">
             <Moon size={15} /> ساعات الهدوء
@@ -182,7 +182,7 @@ export default function NotificationsTab() {
 
       <div className="flex gap-3">
         <Button onClick={save} disabled={busy}
-          className="bg-[#192a56] hover:bg-[#192a56]/90 text-[#273c75] font-bold rounded-xl px-6">
+          className="bg-navy hover:bg-navy/90 text-ink-2 font-bold rounded-xl px-6">
           <Save size={16} className="ml-2" /> {busy ? "جاري الحفظ..." : "حفظ التفضيلات"}
         </Button>
         <Button variant="outline" onClick={testRun} disabled={busy}

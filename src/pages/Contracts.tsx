@@ -173,7 +173,7 @@ export default function Contracts() {
         <div className="w-14 h-14 rounded-full bg-red-50 text-red-500 flex items-center justify-center">
           <ShieldAlert size={26} />
         </div>
-        <h2 className="text-xl font-bold text-[#192a56]">لا تملك صلاحية الوصول للعقود</h2>
+        <h2 className="text-xl font-bold text-ink">لا تملك صلاحية الوصول للعقود</h2>
         <p className="text-sm text-gray-500">راجع مدير المكتب لمنحك الصلاحية.</p>
       </div>
     );
@@ -187,7 +187,7 @@ export default function Contracts() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">العقود</h1>
+          <h1 className="text-3xl font-bold text-ink tracking-tight">العقود</h1>
           <p className="text-gray-500 mt-1 text-sm">
             إنشاء العقود ومراجعتها واعتمادها ومتابعة تجديدها — {rows.length} عقد
           </p>
@@ -197,7 +197,7 @@ export default function Contracts() {
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
           </Button>
           {canCreateContract(perms.role) && (
-            <Button onClick={() => setIsAddOpen(true)} className="bg-[#192a56] hover:bg-[#192a56]/90 text-white shadow-lg">
+            <Button onClick={() => setIsAddOpen(true)} className="bg-navy hover:bg-navy/90 text-white shadow-lg">
               <Plus className="ml-2 h-4 w-4" /> عقد جديد
             </Button>
           )}
@@ -241,27 +241,27 @@ export default function Contracts() {
       {rows.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <button onClick={() => setStatusFilter("ALL")}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${statusFilter === "ALL" ? "bg-[#192a56] text-[#273c75] border-[#192a56]" : "bg-white text-gray-600 border-gray-200"}`}>
+            className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${statusFilter === "ALL" ? "bg-navy text-ink-2 border-edge" : "bg-surface text-gray-600 border-gray-200"}`}>
             الكل ({rows.length})
           </button>
           {[...counts.entries()].map(([s, n]) => (
             <button key={s} onClick={() => setStatusFilter(statusFilter === s ? "ALL" : s)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${statusFilter === s ? "bg-[#192a56] text-[#273c75] border-[#192a56]" : "bg-white text-gray-600 border-gray-200"}`}>
+              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${statusFilter === s ? "bg-navy text-ink-2 border-edge" : "bg-surface text-gray-600 border-gray-200"}`}>
               {CONTRACT_STATUS_LABELS_AR[s]} ({n})
             </button>
           ))}
           <div className="relative mr-auto">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="بحث بالرقم أو العنوان أو العميل..."
-              className="pr-9 pl-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:border-[#192a56] w-full sm:w-64 bg-white" />
+              className="pr-9 pl-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:border-edge w-full sm:w-64 bg-surface" />
           </div>
         </div>
       )}
 
       <Card className="shadow-sm border-gray-200">
         <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
-          <FileSignature className="w-5 h-5 text-[#273c75]" />
-          <h2 className="font-bold text-lg text-[#192a56]">
+          <FileSignature className="w-5 h-5 text-ink-2" />
+          <h2 className="font-bold text-lg text-ink">
             قائمة العقود <span className="text-sm font-normal text-gray-400">({filtered.length})</span>
           </h2>
         </CardHeader>
@@ -299,7 +299,7 @@ export default function Contracts() {
                             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">ينتهي خلال {days} يوم</span>
                           )}
                         </div>
-                        <p className="font-bold text-[#192a56] mt-1">{c.title}</p>
+                        <p className="font-bold text-ink mt-1">{c.title}</p>
                         <p className="text-xs text-gray-500 mt-0.5">
                           {CONTRACT_TYPE_LABELS_AR[c.type]} · {c.clientName || "بلا عميل"}
                           {c.totalValue ? ` · ${c.totalValue.toLocaleString("ar-EG")} ${currency}` : ""}
@@ -385,10 +385,10 @@ export default function Contracts() {
       {preview && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl"
           onClick={() => setPreview(null)}>
-          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[88vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 border-b bg-[#192a56] text-white flex justify-between items-center sticky top-0">
+          <div className="bg-surface rounded-3xl w-full max-w-2xl max-h-[88vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="p-6 border-b bg-navy text-white flex justify-between items-center sticky top-0">
               <div>
-                <p className="font-mono text-xs text-[#273c75]" dir="ltr">{preview.contractNumber}</p>
+                <p className="font-mono text-xs text-ink-2" dir="ltr">{preview.contractNumber}</p>
                 <h2 className="text-xl font-bold">{preview.title}</h2>
               </div>
               <button onClick={() => setPreview(null)} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full">✕</button>
@@ -405,7 +405,7 @@ export default function Contracts() {
                 ].map(([k, v]) => (
                   <div key={k} className="bg-gray-50 rounded-xl p-3">
                     <p className="text-xs text-gray-500">{k}</p>
-                    <p className="font-bold text-[#192a56]">{v}</p>
+                    <p className="font-bold text-ink">{v}</p>
                   </div>
                 ))}
               </div>
@@ -437,7 +437,7 @@ export default function Contracts() {
                 <p className="text-xs text-rose-700 bg-rose-50 p-3 rounded-xl">سبب الرفض: {preview.rejectionReason}</p>
               )}
               <div>
-                <p className="font-bold text-[#192a56] mb-2">بنود العقد</p>
+                <p className="font-bold text-ink mb-2">بنود العقد</p>
                 <div className="bg-gray-50 rounded-xl p-4 whitespace-pre-wrap leading-relaxed text-gray-700">
                   {preview.content || "— لم تُكتب البنود بعد —"}
                 </div>

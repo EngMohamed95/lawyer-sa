@@ -54,13 +54,13 @@ export default function ExecutionOverview({ cases, filter, capacity, onFilter, o
   const countOf = (key: ExecutionFilter) => cases.filter((c) => matchesExecution(c, key, capacity)).length;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 divide-y divide-gray-100">
+    <div className="bg-surface rounded-2xl border border-gray-200 divide-y divide-gray-100">
       <section className="p-6 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-bold text-gray-900">إحصائيات عامة لطلبات التنفيذ</h2>
           <div className="flex gap-2">
             <button onClick={onShowDetails}
-              className="px-5 py-2 rounded-md bg-[#273c75] hover:bg-[#192a56] text-white text-sm font-bold transition">
+              className="px-5 py-2 rounded-md bg-navy-2 hover:bg-navy text-white text-sm font-bold transition">
               عرض التفاصيل
             </button>
             <button onClick={onExport}
@@ -78,12 +78,12 @@ export default function ExecutionOverview({ cases, filter, capacity, onFilter, o
                 title={s.note}
                 className={`group flex items-center gap-3 rounded-xl p-2 text-right transition ${active ? "bg-green-50" : "hover:bg-gray-50"}`}>
                 <span className={`h-14 w-14 shrink-0 rounded-full border-2 flex items-center justify-center transition ${
-                  active ? "border-[#273c75] text-[#273c75]" : "border-gray-700 text-gray-700 group-hover:border-[#273c75]"
+                  active ? "border-edge-2 text-ink-2" : "border-gray-700 text-gray-700 group-hover:border-edge-2"
                 }`}>
                   {s.icon}
                 </span>
                 <span className="min-w-0">
-                  <span className={`block text-lg font-bold ${s.key === "OVERDUE" && countOf(s.key) > 0 ? "text-red-600" : "text-[#273c75]"}`}>
+                  <span className={`block text-lg font-bold ${s.key === "OVERDUE" && countOf(s.key) > 0 ? "text-red-600" : "text-ink-2"}`}>
                     {countOf(s.key)}
                   </span>
                   <span className="block text-xs text-gray-600 leading-snug">{s.label}</span>
@@ -104,7 +104,7 @@ export default function ExecutionOverview({ cases, filter, capacity, onFilter, o
           {([["ANY", "الكل"], ["REQUESTER", "طالب تنفيذ"], ["DEBTOR", "منفذ ضده"]] as [ExecutionCapacity, string][]).map(([v, label]) => (
             <label key={v} className="flex items-center gap-2 cursor-pointer">
               <input type="radio" name="execution-capacity" checked={capacity === v} onChange={() => onCapacity(v)}
-                className="h-5 w-5 accent-[#273c75]" />
+                className="h-5 w-5 accent-ink-2" />
               {label}
             </label>
           ))}

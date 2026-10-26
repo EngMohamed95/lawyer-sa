@@ -63,7 +63,7 @@ export default function OfficeStampCard() {
   return (
     <div className="space-y-3 max-w-md">
       <div className="flex items-center gap-2">
-        <Stamp size={16} className="text-[#192a56]" />
+        <Stamp size={16} className="text-ink" />
         <label className="text-sm font-bold text-gray-700">ختم المكتب الرسمي</label>
       </div>
       <p className="text-xs text-gray-500 leading-relaxed">
@@ -72,9 +72,9 @@ export default function OfficeStampCard() {
 
       <div className="flex items-center gap-4 p-4 border border-gray-200 rounded-2xl bg-gray-50/50">
         {office.officialStampUrl ? (
-          <img src={office.officialStampUrl} alt="ختم المكتب" className="w-20 h-20 object-contain bg-white rounded-xl border border-gray-200 p-1" />
+          <img src={office.officialStampUrl} alt="ختم المكتب" className="w-20 h-20 object-contain bg-surface rounded-xl border border-gray-200 p-1" />
         ) : (
-          <div className="w-20 h-20 flex items-center justify-center bg-white rounded-xl border border-dashed border-gray-300 text-gray-300">
+          <div className="w-20 h-20 flex items-center justify-center bg-surface rounded-xl border border-dashed border-gray-300 text-gray-300">
             <Stamp size={28} />
           </div>
         )}
@@ -92,7 +92,7 @@ export default function OfficeStampCard() {
               type="button"
               disabled={uploading}
               onClick={() => fileRef.current?.click()}
-              className="flex items-center gap-2 px-4 py-2 bg-[#192a56] text-[#273c75] font-bold rounded-xl text-xs hover:bg-[#192a56]/90 transition disabled:opacity-50"
+              className="flex items-center gap-2 px-4 py-2 bg-navy text-ink-2 font-bold rounded-xl text-xs hover:bg-navy/90 transition disabled:opacity-50"
             >
               {uploading ? <Loader2 size={14} className="animate-spin" /> : <UploadCloud size={14} />}
               {office.officialStampUrl ? "استبدال الختم" : "رفع صورة الختم"}

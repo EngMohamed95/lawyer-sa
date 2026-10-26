@@ -22,7 +22,7 @@ const PLANS = [
     monthlyPrice: 500,
     annualPrice: 5000,
     features: ["كل مميزات الأساسية", "المهام والمستندات", "الحسابات والتقارير", "إدارة المتدربين"],
-    color: "border-[#273c75]",
+    color: "border-edge-2",
     badge: "الأكثر طلباً",
   },
   {
@@ -97,8 +97,8 @@ export default function SubscribePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#192a56] text-white font-['Tajawal']" dir="rtl">
-      <nav className="border-b border-white/10 bg-[#192a56]/90 backdrop-blur-md px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-navy text-white font-['Tajawal']" dir="rtl">
+      <nav className="border-b border-white/10 bg-navy/90 backdrop-blur-md px-6 py-4 flex items-center justify-between">
         <Link to="/">
           <img src="/logo.png" alt="LawyerOS" className="h-10 w-auto" />
         </Link>
@@ -116,13 +116,13 @@ export default function SubscribePage() {
           <div className="inline-flex items-center bg-white/10 rounded-2xl p-1 mt-8">
             <button
               onClick={() => setBilling("monthly")}
-              className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${billing === "monthly" ? "bg-[#273c75] text-[#192a56]" : "text-gray-300"}`}
+              className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${billing === "monthly" ? "bg-navy-2 text-ink" : "text-gray-300"}`}
             >
               شهري
             </button>
             <button
               onClick={() => setBilling("annual")}
-              className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${billing === "annual" ? "bg-[#273c75] text-[#192a56]" : "text-gray-300"}`}
+              className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${billing === "annual" ? "bg-navy-2 text-ink" : "text-gray-300"}`}
             >
               سنوي
               <span className="mr-2 bg-green-500/20 text-green-400 text-xs px-2 py-0.5 rounded-full">وفر 17%</span>
@@ -144,7 +144,7 @@ export default function SubscribePage() {
               سيتواصل معك فريقنا خلال 24 ساعة لتأكيد الاشتراك وتفعيل حسابك.
             </p>
             <div className="bg-white/5 rounded-2xl p-6 text-right space-y-2 mb-8">
-              <p className="text-sm font-bold text-[#273c75] mb-3">تفاصيل الدفع:</p>
+              <p className="text-sm font-bold text-ink-2 mb-3">تفاصيل الدفع:</p>
               <p className="text-sm text-gray-300">الباقة: <span className="text-white font-bold">{PLAN_NAMES[selectedPlan]}</span></p>
               <p className="text-sm text-gray-300">المبلغ: <span className="text-white font-bold">{amount} ج.م / {billing === "monthly" ? "شهر" : "سنة"}</span></p>
               <p className="text-sm text-gray-300 mt-4">يمكنك الدفع عبر:</p>
@@ -166,11 +166,11 @@ export default function SubscribePage() {
                 key={plan.key}
                 whileHover={{ y: -4 }}
                 className={`relative rounded-[28px] border-2 p-8 bg-white/5 transition-all ${
-                  plan.badge ? "border-[#273c75] scale-105 shadow-xl shadow-[#273c75]/10" : plan.color
-                } ${selectedPlan === plan.key ? "ring-2 ring-[#273c75] ring-offset-2 ring-offset-[#192a56]" : ""}`}
+                  plan.badge ? "border-edge-2 scale-105 shadow-xl shadow-navy-2/10" : plan.color
+                } ${selectedPlan === plan.key ? "ring-2 ring-edge-2 ring-offset-2 ring-offset-edge" : ""}`}
               >
                 {plan.badge && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-[#273c75] text-[#192a56] text-xs font-black px-4 py-1.5 rounded-full whitespace-nowrap">
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-navy-2 text-ink text-xs font-black px-4 py-1.5 rounded-full whitespace-nowrap">
                     {plan.badge}
                   </div>
                 )}
@@ -191,7 +191,7 @@ export default function SubscribePage() {
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((f) => (
                     <li key={f} className="flex items-center gap-2 text-sm text-gray-300">
-                      <CheckCircle2 size={16} className="text-[#273c75] shrink-0" />
+                      <CheckCircle2 size={16} className="text-ink-2 shrink-0" />
                       {f}
                     </li>
                   ))}
@@ -200,7 +200,7 @@ export default function SubscribePage() {
                   onClick={() => handleSelectPlan(plan.key)}
                   className={`w-full py-3 rounded-2xl font-black text-sm transition ${
                     plan.badge
-                      ? "bg-[#273c75] text-[#192a56] hover:bg-[#192a56]"
+                      ? "bg-navy-2 text-ink hover:bg-navy"
                       : "bg-white/10 text-white hover:bg-white/20"
                   }`}
                 >
@@ -219,12 +219,12 @@ export default function SubscribePage() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-[#192a56] border border-white/20 rounded-3xl p-8 w-full max-w-md shadow-2xl"
+              className="bg-navy border border-white/20 rounded-3xl p-8 w-full max-w-md shadow-2xl"
             >
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-xl font-black">تفاصيل الاشتراك</h2>
-                  <p className="text-sm text-[#273c75] font-bold mt-1">
+                  <p className="text-sm text-ink-2 font-bold mt-1">
                     {chosen.name} — {amount} ج.م / {billing === "monthly" ? "شهر" : "سنة"}
                   </p>
                 </div>
@@ -241,7 +241,7 @@ export default function SubscribePage() {
                     placeholder="الاسم الكامل"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl pr-10 pl-4 py-3 text-sm focus:outline-none focus:border-[#273c75] text-white placeholder-gray-500"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl pr-10 pl-4 py-3 text-sm focus:outline-none focus:border-edge-2 text-white placeholder-gray-500"
                   />
                 </div>
                 <div className="relative">
@@ -251,7 +251,7 @@ export default function SubscribePage() {
                     placeholder="رقم الهاتف (واتساب)"
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl pr-10 pl-4 py-3 text-sm focus:outline-none focus:border-[#273c75] text-white placeholder-gray-500"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl pr-10 pl-4 py-3 text-sm focus:outline-none focus:border-edge-2 text-white placeholder-gray-500"
                   />
                 </div>
                 <div className="relative">
@@ -262,13 +262,13 @@ export default function SubscribePage() {
                     placeholder="البريد الإلكتروني"
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl pr-10 pl-4 py-3 text-sm focus:outline-none focus:border-[#273c75] text-white placeholder-gray-500"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl pr-10 pl-4 py-3 text-sm focus:outline-none focus:border-edge-2 text-white placeholder-gray-500"
                   />
                 </div>
 
                 <div className="bg-white/5 rounded-2xl p-4 text-sm text-gray-400">
                   <p className="flex items-center gap-2 mb-1">
-                    <CreditCard size={14} className="text-[#273c75]" />
+                    <CreditCard size={14} className="text-ink-2" />
                     <span className="font-bold text-white">طريقة الدفع</span>
                   </p>
                   <p>فودافون كاش / إنستاباي: <span className="text-white font-bold">01094040671</span></p>
@@ -278,7 +278,7 @@ export default function SubscribePage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-[#273c75] hover:bg-[#192a56] text-[#192a56] font-black py-4 rounded-2xl transition flex items-center justify-center gap-2"
+                  className="w-full bg-navy-2 hover:bg-navy text-ink font-black py-4 rounded-2xl transition flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? (
                     <Loader2 size={18} className="animate-spin" />

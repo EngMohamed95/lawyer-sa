@@ -63,14 +63,14 @@ export function ReceiptsTab({ currencySymbol }: { currencySymbol: string }) {
         </Button>
       </div>
       <Table>
-        <TableHeader className="bg-white">
+        <TableHeader className="bg-surface">
           <TableRow>
-            <TableHead className="text-right font-bold text-[#192a56]">الرقم</TableHead>
-            <TableHead className="text-right font-bold text-[#192a56]">التاريخ</TableHead>
-            <TableHead className="text-right font-bold text-[#192a56]">العميل / الفاتورة</TableHead>
-            <TableHead className="text-right font-bold text-[#192a56]">المبلغ</TableHead>
-            <TableHead className="text-right font-bold text-[#192a56] hidden sm:table-cell">الطريقة</TableHead>
-            <TableHead className="text-right font-bold text-[#192a56] hidden md:table-cell">المرجع</TableHead>
+            <TableHead className="text-right font-bold text-ink">الرقم</TableHead>
+            <TableHead className="text-right font-bold text-ink">التاريخ</TableHead>
+            <TableHead className="text-right font-bold text-ink">العميل / الفاتورة</TableHead>
+            <TableHead className="text-right font-bold text-ink">المبلغ</TableHead>
+            <TableHead className="text-right font-bold text-ink hidden sm:table-cell">الطريقة</TableHead>
+            <TableHead className="text-right font-bold text-ink hidden md:table-cell">المرجع</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -87,7 +87,7 @@ export function ReceiptsTab({ currencySymbol }: { currencySymbol: string }) {
               <TableCell className="font-mono text-xs text-gray-500" dir="ltr">{r.receiptNumber}</TableCell>
               <TableCell dir="ltr" className="text-right">{r.date}</TableCell>
               <TableCell>
-                <div className="font-semibold text-[#192a56]">{r.clientName || "—"}</div>
+                <div className="font-semibold text-ink">{r.clientName || "—"}</div>
                 {r.invoiceNumber && (
                   <Link to="/app/invoices" className="text-xs text-indigo-600 hover:underline font-mono" dir="ltr">
                     {r.invoiceNumber}
@@ -167,7 +167,7 @@ export function VouchersTab({ currencySymbol }: { currencySymbol: string }) {
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
           </Button>
           {canManage && (
-            <Button size="sm" onClick={() => setIsAddOpen(true)} className="bg-[#192a56] hover:bg-[#192a56]/90 text-white rounded-xl">
+            <Button size="sm" onClick={() => setIsAddOpen(true)} className="bg-navy hover:bg-navy/90 text-white rounded-xl">
               <Plus size={14} className="ml-1" /> سند صرف
             </Button>
           )}
@@ -175,14 +175,14 @@ export function VouchersTab({ currencySymbol }: { currencySymbol: string }) {
       </div>
 
       <Table>
-        <TableHeader className="bg-white">
+        <TableHeader className="bg-surface">
           <TableRow>
-            <TableHead className="text-right font-bold text-[#192a56]">الرقم</TableHead>
-            <TableHead className="text-right font-bold text-[#192a56]">التاريخ</TableHead>
-            <TableHead className="text-right font-bold text-[#192a56]">المستفيد / البند</TableHead>
-            <TableHead className="text-right font-bold text-[#192a56]">المبلغ</TableHead>
-            <TableHead className="text-right font-bold text-[#192a56] hidden sm:table-cell">الطريقة</TableHead>
-            {canManage && <TableHead className="text-center font-bold text-[#192a56]">إجراءات</TableHead>}
+            <TableHead className="text-right font-bold text-ink">الرقم</TableHead>
+            <TableHead className="text-right font-bold text-ink">التاريخ</TableHead>
+            <TableHead className="text-right font-bold text-ink">المستفيد / البند</TableHead>
+            <TableHead className="text-right font-bold text-ink">المبلغ</TableHead>
+            <TableHead className="text-right font-bold text-ink hidden sm:table-cell">الطريقة</TableHead>
+            {canManage && <TableHead className="text-center font-bold text-ink">إجراءات</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -199,7 +199,7 @@ export function VouchersTab({ currencySymbol }: { currencySymbol: string }) {
               <TableCell className="font-mono text-xs text-gray-500" dir="ltr">{v.voucherNumber}</TableCell>
               <TableCell dir="ltr" className="text-right">{v.date}</TableCell>
               <TableCell>
-                <div className="font-semibold text-[#192a56]">{v.payeeName}</div>
+                <div className="font-semibold text-ink">{v.payeeName}</div>
                 <div className="text-xs text-gray-500">{VOUCHER_CATEGORY_LABELS_AR[v.category] ?? v.category}</div>
                 {v.caseId && (
                   <Link to={`/app/cases/${v.caseId}`}
@@ -301,19 +301,19 @@ function AddVoucherModal({ onClose, onDone }: { onClose: () => void; onDone: () 
     } finally { setBusy(false); }
   };
 
-  const field = "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#192a56] text-sm";
+  const field = "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:border-edge text-sm";
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl" onClick={onClose}>
-      <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="p-6 border-b bg-[#192a56] text-white flex justify-between items-center sticky top-0">
+      <div className="bg-surface rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="p-6 border-b bg-navy text-white flex justify-between items-center sticky top-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#273c75] rounded-xl flex items-center justify-center text-[#192a56]">
+            <div className="w-10 h-10 bg-navy-2 rounded-xl flex items-center justify-center text-ink">
               <Banknote size={20} />
             </div>
             <div>
               <h2 className="text-xl font-bold">سند صرف</h2>
-              <p className="text-xs text-[#273c75]">يُرقَّم تلقائياً VCH-YYYY-NNNN</p>
+              <p className="text-xs text-ink-2">يُرقَّم تلقائياً VCH-YYYY-NNNN</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full"><X size={20} /></button>
@@ -382,7 +382,7 @@ function AddVoucherModal({ onClose, onDone }: { onClose: () => void; onDone: () 
 
           <div className="flex gap-3">
             <Button type="submit" disabled={busy}
-              className="flex-1 py-6 bg-[#192a56] text-[#273c75] font-bold rounded-2xl hover:bg-[#192a56]/90">
+              className="flex-1 py-6 bg-navy text-ink-2 font-bold rounded-2xl hover:bg-navy/90">
               {busy ? "جاري الحفظ..." : "حفظ السند"}
             </Button>
             <Button type="button" variant="outline" onClick={onClose}

@@ -110,19 +110,19 @@ export default function DocumentPermissionsModal({ document: d, path, onClose, o
     } finally { setBusy(false); }
   };
 
-  const field = "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#192a56] text-sm";
+  const field = "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:border-edge text-sm";
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl" onClick={onClose}>
-      <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="p-6 border-b bg-[#192a56] text-white flex justify-between items-center sticky top-0 z-10">
+      <div className="bg-surface rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="p-6 border-b bg-navy text-white flex justify-between items-center sticky top-0 z-10">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 bg-[#273c75] rounded-xl flex items-center justify-center text-[#192a56] shrink-0">
+            <div className="w-10 h-10 bg-navy-2 rounded-xl flex items-center justify-center text-ink shrink-0">
               <ShieldCheck size={20} />
             </div>
             <div className="min-w-0">
               <h2 className="text-lg font-bold truncate">صلاحيات المستند</h2>
-              <p className="text-xs text-[#273c75] truncate">{d.name || "مستند"}</p>
+              <p className="text-xs text-ink-2 truncate">{d.name || "مستند"}</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full shrink-0"><X size={20} /></button>
@@ -149,10 +149,10 @@ export default function DocumentPermissionsModal({ document: d, path, onClose, o
                 return (
                   <label key={c}
                     className={`flex items-center gap-3 p-3 rounded-2xl border cursor-pointer transition ${
-                      level === c ? CONFIDENTIALITY_COLORS[c] + " ring-2 ring-offset-1 ring-[#192a56]/20" : "bg-white border-gray-200 hover:bg-gray-50"
+                      level === c ? CONFIDENTIALITY_COLORS[c] + " ring-2 ring-offset-1 ring-edge/20" : "bg-surface border-gray-200 hover:bg-gray-50"
                     } ${!allowed || !canManage ? "opacity-50 cursor-not-allowed" : ""}`}>
                     <input type="radio" name="conf" checked={level === c} disabled={!allowed || !canManage}
-                      onChange={() => setLevel(c)} className="w-4 h-4 accent-[#192a56]" />
+                      onChange={() => setLevel(c)} className="w-4 h-4 accent-ink" />
                     <span className="text-sm font-bold">{CONFIDENTIALITY_LABELS_AR[c]}</span>
                   </label>
                 );
@@ -171,7 +171,7 @@ export default function DocumentPermissionsModal({ document: d, path, onClose, o
               {ROLES_CREATABLE_BY_OFFICE.map((r) => (
                 <button key={r} type="button" disabled={!canManage} onClick={() => toggleRole(r)}
                   className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${
-                    roles.includes(r) ? "bg-[#192a56] text-[#273c75] border-[#192a56]" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                    roles.includes(r) ? "bg-navy text-ink-2 border-edge" : "bg-surface text-gray-600 border-gray-200 hover:bg-gray-50"
                   } ${!canManage ? "opacity-50 cursor-not-allowed" : ""}`}>
                   {roleLabel(r)}
                 </button>
@@ -185,9 +185,9 @@ export default function DocumentPermissionsModal({ document: d, path, onClose, o
           <div className={`p-4 rounded-2xl border ${shared ? "bg-blue-50 border-blue-200" : "bg-gray-50 border-gray-100"}`}>
             <label className="flex items-start gap-3 cursor-pointer">
               <input type="checkbox" checked={shared} disabled={!canManage}
-                onChange={(e) => setShared(e.target.checked)} className="w-5 h-5 accent-[#192a56] mt-0.5" />
+                onChange={(e) => setShared(e.target.checked)} className="w-5 h-5 accent-ink mt-0.5" />
               <span>
-                <span className="block text-sm font-bold text-[#192a56]">مشاركة مع العميل</span>
+                <span className="block text-sm font-bold text-ink">مشاركة مع العميل</span>
                 <span className="block text-xs text-gray-600 mt-0.5">
                   العميل لا يرى إلا المستندات المفعّل لها هذا الخيار — بصرف النظر عن التصنيف.
                 </span>
@@ -210,7 +210,7 @@ export default function DocumentPermissionsModal({ document: d, path, onClose, o
 
           <div className="flex flex-wrap gap-3 pt-2 border-t">
             <Button onClick={save} disabled={busy || !canManage}
-              className="flex-1 py-6 bg-[#192a56] text-[#273c75] font-bold rounded-2xl hover:bg-[#192a56]/90">
+              className="flex-1 py-6 bg-navy text-ink-2 font-bold rounded-2xl hover:bg-navy/90">
               <Save size={16} className="ml-2" /> {busy ? "جاري الحفظ..." : "حفظ"}
             </Button>
             <Button variant="outline" onClick={toggleArchive} disabled={busy || !canManage}

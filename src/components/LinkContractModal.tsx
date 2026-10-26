@@ -97,16 +97,16 @@ export default function LinkContractModal({
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl"
       onClick={onClose}>
-      <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[88vh] overflow-y-auto shadow-2xl"
+      <div className="bg-surface rounded-3xl w-full max-w-2xl max-h-[88vh] overflow-y-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}>
-        <div className="p-6 border-b bg-[#192a56] text-white flex justify-between items-center sticky top-0 z-10">
+        <div className="p-6 border-b bg-navy text-white flex justify-between items-center sticky top-0 z-10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#273c75] rounded-xl flex items-center justify-center text-[#192a56]">
+            <div className="w-10 h-10 bg-navy-2 rounded-xl flex items-center justify-center text-ink">
               <Link2 size={20} />
             </div>
             <div>
               <h2 className="text-xl font-bold">ربط عقد موجود</h2>
-              <p className="text-xs text-[#273c75]">
+              <p className="text-xs text-ink-2">
                 عقود هذا العميل غير المرتبطة بأي قضية — اختر ما ينتمي لـ «{caseTitle}»
               </p>
             </div>
@@ -126,7 +126,7 @@ export default function LinkContractModal({
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
               <input value={search} onChange={(e) => setSearch(e.target.value)}
                 placeholder="بحث بالرقم أو العنوان..."
-                className="w-full pr-9 pl-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-[#192a56]" />
+                className="w-full pr-9 pl-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-edge" />
             </div>
           )}
 
@@ -150,14 +150,14 @@ export default function LinkContractModal({
                         {CONTRACT_STATUS_LABELS_AR[c.status as ContractStatus] ?? String(c.status ?? "")}
                       </span>
                     </div>
-                    <p className="font-bold text-[#192a56] mt-1 truncate">{String(c.title ?? "عقد")}</p>
+                    <p className="font-bold text-ink mt-1 truncate">{String(c.title ?? "عقد")}</p>
                     <p className="text-xs text-gray-500 mt-0.5">
                       {CONTRACT_TYPE_LABELS_AR[c.type as ContractType] ?? String(c.type ?? "")}
                       {Number(c.totalValue) ? ` · ${Number(c.totalValue).toLocaleString("ar-EG")} ${String(c.currency ?? "SAR")}` : ""}
                     </p>
                   </div>
                   <Button size="sm" disabled={busy === c.id} onClick={() => void link(c)}
-                    className="bg-[#192a56] hover:bg-[#192a56]/90 text-white rounded-xl shrink-0">
+                    className="bg-navy hover:bg-navy/90 text-white rounded-xl shrink-0">
                     <Link2 size={14} className="ml-1" /> {busy === c.id ? "جارٍ..." : "ربط"}
                   </Button>
                 </li>

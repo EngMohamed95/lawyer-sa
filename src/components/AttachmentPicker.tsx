@@ -68,7 +68,7 @@ export function AttachmentSearch({ value, onChange }: { value: string; onChange:
     <div className="relative w-full sm:w-72">
       <Search size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
       <input value={value} onChange={(e) => onChange(e.target.value)} placeholder="ابحث في المرفقات بالاسم أو التاريخ..."
-        className="h-9 w-full rounded-lg border border-gray-200 bg-white pr-9 pl-8 text-sm focus:outline-none focus:border-[#273c75] focus:ring-1 focus:ring-[#273c75]" />
+        className="h-9 w-full rounded-lg border border-gray-200 bg-surface pr-9 pl-8 text-sm focus:outline-none focus:border-edge-2 focus:ring-1 focus:ring-edge-2" />
       {value && (
         <button onClick={() => onChange("")} aria-label="مسح البحث"
           className="absolute left-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-gray-400 hover:text-gray-600">
@@ -111,7 +111,7 @@ export function AttachmentPicker({ label = "المرفقات", hint, existing, o
   numbered?: boolean;
 }) {
   const input = useRef<HTMLInputElement>(null);
-  const field = "h-8 rounded-md border border-gray-300 bg-white px-2 text-xs focus:outline-none focus:border-[#273c75]";
+  const field = "h-8 rounded-md border border-gray-300 bg-surface px-2 text-xs focus:outline-none focus:border-edge-2";
 
   const editExisting = (i: number, patch: Partial<Attachment>) =>
     onExistingChange(existing.map((a, j) => (j === i ? { ...a, ...patch } : a)));
@@ -121,7 +121,7 @@ export function AttachmentPicker({ label = "المرفقات", hint, existing, o
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-bold text-[#192a56]">{label}</label>
+        <label className="text-sm font-bold text-ink">{label}</label>
         <input ref={input} type="file" multiple className="hidden"
           onChange={(e) => {
             const picked = Array.from(e.target.files ?? []).map((file) => ({ file, name: baseName(file.name), date: todayKey() }));
@@ -139,7 +139,7 @@ export function AttachmentPicker({ label = "المرفقات", hint, existing, o
             <span>اسم المرفق</span><span>التاريخ</span><span />
           </div>
           {existing.map((a, i) => (
-            <div key={a.url} className="grid grid-cols-[1fr_9rem_1.5rem] items-center gap-2 rounded-lg border border-gray-200 bg-white p-1.5">
+            <div key={a.url} className="grid grid-cols-[1fr_9rem_1.5rem] items-center gap-2 rounded-lg border border-gray-200 bg-surface p-1.5">
               <div className="flex min-w-0 items-center gap-1.5">
                 {numbered && <span className="w-5 shrink-0 text-center text-xs font-bold text-gray-500">{i + 1}</span>}
                 <a href={a.url} target="_blank" rel="noreferrer" title="فتح الملف" className="shrink-0 text-green-600 hover:text-green-800">

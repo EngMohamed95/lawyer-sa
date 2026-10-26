@@ -161,7 +161,7 @@ ${selectedDocsContext}
         {!result && !loading && (
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#192a56]">نوع المذكرة المطلوبة</label>
+              <label className="text-sm font-bold text-ink">نوع المذكرة المطلوبة</label>
               <div className="grid grid-cols-2 gap-3">
                 <button
                   type="button"
@@ -181,7 +181,7 @@ ${selectedDocsContext}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#192a56]">
+              <label className="text-sm font-bold text-ink">
                 {draftType === "LAWSUIT" ? "موضوع الدعوى وطلبات المدعي الأساسية" : "نقاط الرد والدفوع الأساسية"}
               </label>
               <textarea
@@ -195,7 +195,7 @@ ${selectedDocsContext}
 
             {draftType === "MEMO" && (
               <div className="space-y-2">
-                <label className="text-sm font-bold text-[#192a56] flex items-center gap-1.5">
+                <label className="text-sm font-bold text-ink flex items-center gap-1.5">
                   <FileText className="w-4 h-4 text-purple-600" />
                   مرفقات ومستندات القضية (اختر لتحليلها بالـ AI)
                 </label>
@@ -254,9 +254,9 @@ ${selectedDocsContext}
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-[#192a56]">معاينة المسودة المولدة</label>
+              <label className="text-xs font-bold text-ink">معاينة المسودة المولدة</label>
               <div 
-                className="bg-white border border-gray-200 p-5 rounded-lg max-h-96 overflow-y-auto text-sm leading-relaxed font-serif text-gray-800 shadow-inner"
+                className="los-paper bg-surface border border-gray-200 p-5 rounded-lg max-h-96 overflow-y-auto text-sm leading-relaxed font-serif text-gray-800 shadow-inner"
                 dangerouslySetInnerHTML={{ __html: result }}
               />
             </div>

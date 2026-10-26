@@ -62,12 +62,12 @@ export default function CaseRequests({ caseId, caseData, requests, onChanged }: 
   const shown = sorted.filter((r) => matchesAttachmentSearch(r.attachments ?? [], search));
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
+    <div className="bg-surface rounded-2xl border border-gray-200 p-6 space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-bold text-[#273c75]">الطلبات</h2>
+        <h2 className="text-xl font-bold text-ink-2">الطلبات</h2>
         <div className="flex flex-wrap items-center gap-2">
           {sorted.length > 0 && <AttachmentSearch value={search} onChange={setSearch} />}
-          <Button size="sm" className="bg-[#192a56] hover:bg-[#192a56]/90" onClick={openAdd}>
+          <Button size="sm" className="bg-navy hover:bg-navy/90" onClick={openAdd}>
             <Plus className="ml-2 h-4 w-4" /> إضافة طلب
           </Button>
         </div>
@@ -109,7 +109,7 @@ export default function CaseRequests({ caseId, caseData, requests, onChanged }: 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="min-w-0">
-      <dt className="text-xs text-[#273c75]">{label}</dt>
+      <dt className="text-xs text-ink-2">{label}</dt>
       <dd className="text-sm font-medium text-gray-900 truncate">{children}</dd>
     </div>
   );
@@ -120,10 +120,10 @@ function RequestCard({ r, search, onEdit, onDelete }: { r: CaseRequest; search: 
   const files = r.attachments ?? [];
 
   return (
-    <div className="bg-white rounded-xl border border-[#c9d1e6] border-r-[5px] border-r-[#273c75] transition hover:shadow-md">
+    <div className="bg-surface rounded-xl border border-indigo-200 border-r-[5px] border-r-edge-2 transition hover:shadow-md">
       <div className="flex items-start justify-between gap-3 px-4 pt-3.5">
         <div className="flex items-center gap-2.5 min-w-0">
-          <span className="h-8 w-8 shrink-0 rounded-md bg-[#273c75] text-white flex items-center justify-center">
+          <span className="h-8 w-8 shrink-0 rounded-md bg-navy-2 text-white flex items-center justify-center">
             <Archive size={16} />
           </span>
           <h3 className="text-base font-bold text-gray-900 leading-snug truncate">{r.type || "طلب"}</h3>
@@ -133,7 +133,7 @@ function RequestCard({ r, search, onEdit, onDelete }: { r: CaseRequest; search: 
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           <button onClick={onEdit}
-            className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-gray-200 text-sm font-bold text-[#192a56] hover:bg-gray-50 transition">
+            className="flex items-center gap-1.5 px-3 h-8 rounded-lg border border-gray-200 text-sm font-bold text-ink hover:bg-gray-50 transition">
             <Pencil size={14} /> تعديل
           </button>
           <button onClick={onDelete}
@@ -177,8 +177,8 @@ function RequestDialog({ isOpen, initial, isEdit, onClose, onSubmit }: {
   useEffect(() => { if (isOpen) { setForm(initial); setNewFiles([]); } }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setForm((f) => ({ ...f, [k]: v }));
-  const label = "text-sm font-bold text-[#192a56]";
-  const select = "w-full h-9 px-3 rounded-md border border-gray-300 text-sm bg-white";
+  const label = "text-sm font-bold text-ink";
+  const select = "w-full h-9 px-3 rounded-md border border-gray-300 text-sm bg-surface";
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -200,7 +200,7 @@ function RequestDialog({ isOpen, initial, isEdit, onClose, onSubmit }: {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-[#192a56]">{isEdit ? "تعديل الطلب" : "إضافة طلب"}</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-ink">{isEdit ? "تعديل الطلب" : "إضافة طلب"}</DialogTitle>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4 py-2">
           <div className="space-y-2">
@@ -260,7 +260,7 @@ function RequestDialog({ isOpen, initial, isEdit, onClose, onSubmit }: {
 
           <DialogFooter className="mt-4">
             <Button type="button" variant="outline" onClick={onClose}>إلغاء</Button>
-            <Button type="submit" disabled={saving} className="bg-[#192a56] hover:bg-[#192a56]/90 text-white">
+            <Button type="submit" disabled={saving} className="bg-navy hover:bg-navy/90 text-white">
               {saving && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
               {saving && newFiles.length ? "جاري رفع المرفقات..." : isEdit ? "حفظ التعديلات" : "إضافة الطلب"}
             </Button>

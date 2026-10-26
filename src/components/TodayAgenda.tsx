@@ -63,16 +63,16 @@ export default function TodayAgenda() {
   if (!canView) return null;
 
   return (
-    <Card className="overflow-hidden border border-slate-200/80 bg-white shadow-xs rounded-2xl" dir="rtl">
+    <Card className="overflow-hidden border border-slate-200/80 bg-surface shadow-xs rounded-2xl" dir="rtl">
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 p-6">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#273c75] text-[#192a56] shadow-xs">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-navy-2 text-ink shadow-xs">
               <CalendarDays size={20} />
             </div>
-            <CardTitle className="text-xl font-bold text-[#192a56]">أجندة اليوم</CardTitle>
+            <CardTitle className="text-xl font-bold text-ink">أجندة اليوم</CardTitle>
           </div>
-          <Link to="/app/calendar" className="text-xs font-bold text-[#192a56] hover:text-[#273c75] flex items-center gap-1">
+          <Link to="/app/calendar" className="text-xs font-bold text-ink hover:text-ink-2 flex items-center gap-1">
             التقويم الكامل <ChevronLeft size={14} />
           </Link>
         </div>
@@ -95,7 +95,7 @@ export default function TodayAgenda() {
                         {e.allDay ? "اليوم" : timeLabel(e.start)}
                       </span>
                       <span className="flex-1 min-w-0">
-                        <span className="block text-sm font-bold text-[#192a56] truncate">{e.title}</span>
+                        <span className="block text-sm font-bold text-ink truncate">{e.title}</span>
                         {e.subtitle && <span className="block text-xs text-slate-500 truncate">{e.subtitle}</span>}
                       </span>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 shrink-0">
@@ -116,7 +116,7 @@ export default function TodayAgenda() {
                   {soon.map((e) => (
                     <li key={e.id}>
                       <Link to={e.href || "/app/calendar"}
-                        className="flex items-center gap-3 px-5 py-2 hover:bg-white/70 transition">
+                        className="flex items-center gap-3 px-5 py-2 hover:bg-surface/70 transition">
                         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${SOURCE_DOT[e.source]}`} />
                         <span className="text-[11px] text-slate-400 w-24 shrink-0">
                           {new Date(e.start).toLocaleDateString("ar-EG", { weekday: "short", day: "numeric", month: "short" })}

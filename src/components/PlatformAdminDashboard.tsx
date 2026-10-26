@@ -6,7 +6,7 @@
  * التجميع يتم في المتصفح من مجموعات Firestore القائمة — بلا حقول أو فهارس جديدة.
  */
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import {
   Activity, BarChart3, Briefcase, Building2, Gavel, Headset, Lightbulb, PieChart, RefreshCw,
@@ -17,11 +17,7 @@ import { db } from "../lib/firebase";
 import { SUPPORT_PRIORITIES } from "../lib/support";
 import { SUGGESTION_STATUSES } from "../lib/suggestions";
 import { caseTypeLabel } from "../lib/caseTypes";
-
-// ألوان الرسوم — مُتحقَّق منها على السطح الأبيض (تمييز عمى الألوان والتباين)؛
-// القيم ظاهرة دائماً بجوار الرسم فلا يعتمد التمييز على اللون وحده
-const SERIES = ["#2a78d6", "#eb6834", "#1baf7a"];
-const OTHER = "#94a3b8";
+import { DistributionCard, OTHER, SERIES, StatCard, fmt, panel, toSlices, type Slice } from "./DashboardCharts";
 
 const PLAN_NAMES: Record<string, string> = { BASIC: "الأساسية", PROFESSIONAL: "الاحترافية", PREMIUM: "الشركات" };
 const OFFICE_ROLES_EXCLUDED = new Set(["LAWYER", "SUPER_ADMIN", "CLIENT"]);
@@ -39,7 +35,6 @@ interface Office {
 
 interface TicketRow { id: string; subject: string; priority: string; status: string; requesterName: string; createdAt: Date | null }
 interface SuggestionRow { id: string; title: string; status: string; requesterName: string; category: string; createdAt: Date | null }
-interface Slice { label: string; value: number; color: string }
 
 export interface PlatformData {
   offices: Office[];
@@ -71,18 +66,8 @@ const toDate = (v: any): Date | null => {
   return Number.isNaN(d.getTime()) ? null : d;
 };
 
-// أرقام لاتينية كبقية النظام
-const fmt = (n: number) => n.toLocaleString("en-US");
 const fmtDate = (d: Date | null) =>
   d ? `${d.toLocaleDateString("ar-EG-u-nu-latn", { year: "numeric", month: "2-digit", day: "2-digit" })} ${d.toLocaleTimeString("ar-EG-u-nu-latn", { hour: "2-digit", minute: "2-digit" })}` : "";
-
-/** أكبر ثلاث فئات بألوانها الثابتة، والباقي يُجمع في «أخرى» */
-function toSlices(counts: Map<string, number>): Slice[] {
-  const sorted = [...counts.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
-  const top = sorted.slice(0, 3).map(([label, value], i) => ({ label, value, color: SERIES[i] }));
-  const rest = sorted.slice(3).reduce((s, [, v]) => s + v, 0);
-  return rest > 0 ? [...top, { label: "أخرى", value: rest, color: OTHER }] : top;
-}
 
 async function loadPlatformData(): Promise<PlatformData> {
   const now = Date.now();
@@ -212,100 +197,6 @@ async function loadPlatformData(): Promise<PlatformData> {
 
 /* ─────────────────────────── مكوّنات العرض ─────────────────────────── */
 
-const panel = "rounded-2xl border border-slate-100 bg-white text-[#192a56] shadow-md";
-
-function StatCard({ title, value, sub, icon, iconClass }: { title: string; value: string; sub: string; icon: ReactNode; iconClass: string }) {
-  return (
-    <div className={`${panel} p-5 transition-all hover:shadow-lg`}>
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="mb-2 text-xs font-semibold text-slate-400">{title}</p>
-          <p className="text-3xl font-bold tracking-tight text-[#192a56]">{value}</p>
-          <p className="mt-1 truncate text-xs text-slate-500">{sub}</p>
-        </div>
-        <span className={`flex shrink-0 items-center justify-center rounded-2xl p-3.5 ${iconClass}`}>{icon}</span>
-      </div>
-    </div>
-  );
-}
-
-/** دونات بفجوة 2px بين الأجزاء؛ المرور على جزء أو بند في المفتاح يعرض قيمته في المنتصف */
-function Donut({ slices, unit }: { slices: Slice[]; unit: string }) {
-  const [hover, setHover] = useState<number | null>(null);
-  const total = slices.reduce((s, x) => s + x.value, 0);
-  const r = 62, c = 2 * Math.PI * r, gap = slices.length > 1 ? 2 : 0;
-  let offset = 0;
-  const shown = hover !== null ? slices[hover] : null;
-
-  if (total === 0) return <p className="py-12 text-center text-sm text-slate-400">لا توجد بيانات بعد</p>;
-
-  return (
-    <div className="flex flex-col items-center gap-5 sm:flex-row sm:justify-center">
-      <svg viewBox="0 0 160 160" className="h-44 w-44 shrink-0" role="img" aria-label={slices.map((s) => `${s.label}: ${s.value}`).join("، ")}>
-        <g transform="rotate(-90 80 80)">
-        <circle cx="80" cy="80" r={r} fill="none" stroke="#eef1f6" strokeWidth="18" />
-        {slices.map((s, i) => {
-          const len = (s.value / total) * c;
-          const dash = Math.max(len - gap, 0.5);
-          const el = (
-            <circle key={s.label} cx="80" cy="80" r={r} fill="none" stroke={s.color} strokeWidth={hover === i ? 22 : 18}
-              strokeDasharray={`${dash} ${c - dash}`} strokeDashoffset={-offset}
-              className="cursor-pointer transition-[stroke-width]"
-              onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}>
-              <title>{`${s.label}: ${fmt(s.value)} ${unit} (${Math.round((s.value / total) * 100)}%)`}</title>
-            </circle>
-          );
-          offset += len;
-          return el;
-        })}
-        </g>
-        <g>
-          <text x="80" y="76" textAnchor="middle" className="fill-[#192a56] text-[22px] font-black">{fmt(shown ? shown.value : total)}</text>
-          <text x="80" y="98" textAnchor="middle" className="fill-slate-500 text-[11px]">{shown ? shown.label : `إجمالي ${unit}`}</text>
-        </g>
-      </svg>
-      <ul className="w-full max-w-[14rem] space-y-1.5 text-sm">
-        {slices.map((s, i) => (
-          <li key={s.label} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
-            className={`flex items-center justify-between gap-3 rounded-lg px-2 py-1 ${hover === i ? "bg-slate-100" : ""}`}>
-            <span className="flex min-w-0 items-center gap-2">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ background: s.color }} />
-              <span className="truncate text-slate-600">{s.label}</span>
-            </span>
-            <span className="shrink-0 font-bold tabular-nums text-[#192a56]">{fmt(s.value)} <span className="text-xs font-normal text-slate-400">({Math.round((s.value / total) * 100)}%)</span></span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function DistributionCard({ title, icon, badge, views }: {
-  title: string; icon: ReactNode; badge: string;
-  views: { key: string; label: string; slices: Slice[]; unit: string }[];
-}) {
-  const [view, setView] = useState(views[0].key);
-  const current = views.find((v) => v.key === view) || views[0];
-  return (
-    <div className="rounded-2xl border border-slate-100 bg-slate-50/70 p-5">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h3 className="flex items-center gap-2 font-bold">{icon}{title}</h3>
-        <span className="rounded-full bg-[#273c75] px-3 py-0.5 text-xs font-bold text-white">{badge}</span>
-      </div>
-      {/* الكحلي inline لا class: قاعدة index.css تُبيّض النص الكحلي داخل bg-[#192a56] فيختفي الزر المختار */}
-      <div className="mb-5 grid grid-cols-2 gap-2 rounded-xl p-1.5" style={{ background: "#192a56" }}>
-        {views.map((v) => (
-          <button key={v.key} type="button" onClick={() => setView(v.key)}
-            className={`rounded-lg px-3 py-2 text-sm font-bold transition ${view === v.key ? "bg-white text-[#192a56] shadow-sm" : "text-white/80 hover:bg-white/10"}`}>
-            {v.label}
-          </button>
-        ))}
-      </div>
-      <Donut slices={current.slices} unit={current.unit} />
-    </div>
-  );
-}
-
 const officeLabel = (o: Office) => o.officeName || o.name;
 
 export default function PlatformAdminDashboard() {
@@ -357,7 +248,7 @@ export function PlatformAdminView({ data, loading, error, onReload }: {
   if (loading && !data) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#192a56] border-t-transparent" />
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-edge border-t-transparent" />
       </div>
     );
   }
@@ -366,9 +257,9 @@ export function PlatformAdminView({ data, loading, error, onReload }: {
   const maxCases = Math.max(1, ...(data?.topOffices.map((t) => t.cases) ?? [1]));
 
   return (
-    <div className="space-y-6 font-['Tajawal'] text-[#192a56]" dir="rtl">
+    <div className="space-y-6 font-['Tajawal'] text-ink" dir="rtl">
       {/* الترويسة */}
-      <div className="flex flex-col gap-4 rounded-2xl bg-gradient-to-l from-[#192a56] to-[#273c75] p-6 text-white shadow-lg sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-2xl bg-gradient-to-l from-navy to-navy-2 p-6 text-white shadow-lg sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/10"><ShieldCheck size={28} /></span>
           <div>
@@ -377,7 +268,7 @@ export function PlatformAdminView({ data, loading, error, onReload }: {
           </div>
         </div>
         <button type="button" onClick={onReload} disabled={loading}
-          className="flex shrink-0 items-center gap-2 self-start rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-[#192a56] transition hover:bg-blue-50 disabled:opacity-60 sm:self-auto">
+          className="flex shrink-0 items-center gap-2 self-start rounded-xl bg-surface px-4 py-2.5 text-sm font-bold text-ink transition hover:bg-blue-50 disabled:opacity-60 sm:self-auto">
           <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> تحديث الإحصائيات
         </button>
       </div>
@@ -401,7 +292,7 @@ export function PlatformAdminView({ data, loading, error, onReload }: {
 
         {/* حجم النشاط */}
         <div className={`${panel} p-5`}>
-          <h2 className="mb-4 flex items-center gap-2 text-lg font-bold"><BarChart3 size={20} className="text-[#273c75]" /> حجم النشاط القانوني عبر المكاتب المشتركة</h2>
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-bold"><BarChart3 size={20} className="text-ink-2" /> حجم النشاط القانوني عبر المكاتب المشتركة</h2>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
             {[
               { label: "القضايا المسجلة", value: data.casesCount, icon: <Briefcase size={16} /> },
@@ -422,17 +313,17 @@ export function PlatformAdminView({ data, loading, error, onReload }: {
         <div className={`${panel} p-5`}>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="flex items-center gap-2 text-lg font-bold"><PieChart size={20} className="text-[#273c75]" /> مؤشر توزيع المكاتب والقضايا</h2>
+              <h2 className="flex items-center gap-2 text-lg font-bold"><PieChart size={20} className="text-ink-2" /> مؤشر توزيع المكاتب والقضايا</h2>
               <p className="mt-1 text-xs text-slate-500">تحليل لباقات المكاتب المشتركة وأنواع القضايا المسجلة على المنصة</p>
             </div>
           </div>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <DistributionCard title="مؤشر المكاتب المشتركة" icon={<Building2 size={18} className="text-[#273c75]" />} badge={`${fmt(data.offices.length)} مكتب`}
+            <DistributionCard title="مؤشر المكاتب المشتركة" icon={<Building2 size={18} className="text-ink-2" />} badge={`${fmt(data.offices.length)} مكتب`}
               views={[
                 { key: "plan", label: "حسب الباقة", slices: planSlices, unit: "مكتب" },
                 { key: "billing", label: "حسب مدة الاشتراك", slices: billingSlices, unit: "مكتب" },
               ]} />
-            <DistributionCard title="مؤشر القضايا المسجلة" icon={<Briefcase size={18} className="text-[#273c75]" />} badge={`${fmt(data.casesCount + data.executionCount)} قضية`}
+            <DistributionCard title="مؤشر القضايا المسجلة" icon={<Briefcase size={18} className="text-ink-2" />} badge={`${fmt(data.casesCount + data.executionCount)} قضية`}
               views={[
                 { key: "type", label: "حسب النوع", slices: data.caseTypes, unit: "قضية" },
                 { key: "status", label: "حسب الحالة", slices: data.caseStatus, unit: "قضية" },
@@ -445,13 +336,13 @@ export function PlatformAdminView({ data, loading, error, onReload }: {
           <div className={`${panel} p-5`}>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-lg font-bold"><Trophy size={20} className="text-amber-500" /> أفضل 5 مكاتب إنجازاً للقضايا</h2>
-              <Link to="/app/lawyers" className="text-xs font-bold text-[#273c75] hover:underline">سجل المحامين</Link>
+              <Link to="/app/lawyers" className="text-xs font-bold text-ink-2 hover:underline">سجل المحامين</Link>
             </div>
             {data.topOffices.length === 0 ? <p className="py-8 text-center text-sm text-slate-400">لا توجد مكاتب بعد.</p> : (
               <div className="divide-y divide-slate-100">
                 {data.topOffices.map((t, i) => (
                   <div key={t.office.id} className="flex items-center gap-4 py-3">
-                    <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg font-black ${i === 0 ? "bg-amber-500 text-white" : i < 3 ? "bg-[#273c75] text-white" : "bg-slate-100 text-[#192a56]"}`}>{i + 1}</span>
+                    <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg font-black ${i === 0 ? "bg-amber-500 text-[#451a03]" : i < 3 ? "bg-navy-2 text-white" : "bg-slate-100 text-ink"}`}>{i + 1}</span>
                     <div className="min-w-0 flex-1">
                       <p className="flex items-center gap-2 truncate font-bold">
                         <span className="truncate">{officeLabel(t.office)}</span>
@@ -463,7 +354,7 @@ export function PlatformAdminView({ data, loading, error, onReload }: {
                     </div>
                     <div className="w-36 shrink-0">
                       <p className="mb-1 flex justify-between text-xs text-slate-400"><span>القضايا:</span><span className="font-bold tabular-nums">{fmt(t.cases)}</span></p>
-                      <div className="h-1.5 rounded-full bg-slate-100"><div className="h-1.5 rounded-full bg-[#273c75]" style={{ width: `${(t.cases / maxCases) * 100}%` }} /></div>
+                      <div className="h-1.5 rounded-full bg-slate-100"><div className="h-1.5 rounded-full bg-navy-2" style={{ width: `${(t.cases / maxCases) * 100}%` }} /></div>
                     </div>
                   </div>
                 ))}
@@ -480,7 +371,7 @@ export function PlatformAdminView({ data, loading, error, onReload }: {
               <div className="divide-y divide-slate-100">
                 {data.activeOffices.map((t, i) => (
                   <div key={t.office.id} className="flex items-center gap-3 py-3">
-                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${i === 0 ? "bg-[#192a56] text-white" : "bg-slate-100 text-[#192a56]"}`}>{i + 1}</span>
+                    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${i === 0 ? "bg-navy text-white" : "bg-slate-100 text-ink"}`}>{i + 1}</span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate font-bold">{officeLabel(t.office)}</p>
                       <p className="truncate text-xs text-slate-500">{fmt(t.clients)} عميل جديد • {PLAN_NAMES[t.office.plan] || "بدون باقة"}</p>
@@ -498,7 +389,7 @@ export function PlatformAdminView({ data, loading, error, onReload }: {
           <div className={`${panel} p-5`}>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-lg font-bold"><Headset size={20} className="text-amber-500" /> تذاكر تحتاج متابعة عاجلة</h2>
-              <Link to="/app/support/tickets" className="text-xs font-bold text-[#273c75] hover:underline">عرض الكل</Link>
+              <Link to="/app/support/tickets" className="text-xs font-bold text-ink-2 hover:underline">عرض الكل</Link>
             </div>
             {data.urgentList.length === 0 ? <p className="py-8 text-center text-sm text-slate-400">لا توجد تذاكر مفتوحة حالياً.</p> : (
               <div className="divide-y divide-slate-100">
@@ -520,7 +411,7 @@ export function PlatformAdminView({ data, loading, error, onReload }: {
           <div className={`${panel} p-5`}>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="flex items-center gap-2 text-lg font-bold"><Lightbulb size={20} className="text-cyan-600" /> أحدث مقترحات المستخدمين</h2>
-              <Link to="/app/suggestions" className="text-xs font-bold text-[#273c75] hover:underline">عرض الكل</Link>
+              <Link to="/app/suggestions" className="text-xs font-bold text-ink-2 hover:underline">عرض الكل</Link>
             </div>
             {data.latestSuggestions.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-8 text-sm text-slate-500"><Lightbulb size={28} className="text-cyan-600" /> لا توجد مقترحات جديدة حالياً.</div>

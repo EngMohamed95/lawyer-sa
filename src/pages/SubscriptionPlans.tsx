@@ -82,7 +82,7 @@ export default function SubscriptionPlans() {
   const pricesCount = plans.reduce((s, p) => s + CURRENCIES.filter((c) => p.prices[c.code] > 0).length, 0);
 
   return (
-    <div className="space-y-6 font-['Tajawal'] text-[#192a56]" dir="rtl">
+    <div className="space-y-6 font-['Tajawal'] text-ink" dir="rtl">
       <AdminHeader
         icon={<Tag size={26} />}
         title="إدارة باقات الاشتراك والأسعار"
@@ -108,21 +108,21 @@ export default function SubscriptionPlans() {
       <div className={`${adminPanel} overflow-hidden`}>
         <h2 className="border-b border-slate-100 p-5 text-lg font-bold">قائمة باقات المنصة وتفاصيل الاشتراك والأسعار</h2>
         {loading ? (
-          <div className="flex justify-center py-12"><Loader2 className="animate-spin text-[#273c75]" /></div>
+          <div className="flex justify-center py-12"><Loader2 className="animate-spin text-ink-2" /></div>
         ) : plans.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-12 text-center">
-            <Sparkles size={32} className="text-[#273c75]" />
+            <Sparkles size={32} className="text-ink-2" />
             <p className="font-bold">لا توجد باقات بعد</p>
             <p className="max-w-md text-sm text-slate-500">ابدأ بالباقات الافتراضية ({DEFAULT_PLANS.map((p) => p.name).join("، ")}) بنفس أسعار النظام الحالية، ثم عدّلها كما تريد.</p>
             <button type="button" onClick={seed} disabled={saving || !!error}
-              className="mt-2 flex items-center gap-2 rounded-xl bg-[#273c75] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#192a56] disabled:opacity-50">
+              className="mt-2 flex items-center gap-2 rounded-xl bg-navy-2 px-5 py-2.5 text-sm font-bold text-white hover:bg-navy disabled:opacity-50">
               {saving ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />} إنشاء الباقات الافتراضية
             </button>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-right text-[#192a56]">
+              <thead className="bg-slate-50 text-right text-ink">
                 <tr>
                   {["الباقة", "المدة", "حدود الاشتراك", "الأسعار والعملات", "مستوى المزايا", "الحالة", "الإجراءات"].map((h) => (
                     <th key={h} className="whitespace-nowrap px-4 py-3 font-bold">{h}</th>
@@ -142,7 +142,7 @@ export default function SubscriptionPlans() {
                         <span dir="ltr">{p.nameEn}</span>
                       </p>
                     </td>
-                    <td className="whitespace-nowrap px-4 py-4 text-[#273c75]">
+                    <td className="whitespace-nowrap px-4 py-4 text-ink-2">
                       {p.billing === "trial" ? `${p.durationDays} يوم تجريبي` : BILLING_LABELS[p.billing]}
                     </td>
                     <td className="px-4 py-4 text-xs leading-6">
@@ -164,7 +164,7 @@ export default function SubscriptionPlans() {
                       <button type="button" role="switch" aria-checked={p.active} onClick={() => toggle(p)} disabled={busyId === p.id}
                         title={p.active ? "إيقاف الباقة" : "تفعيل الباقة"}
                         className={`relative h-6 w-11 rounded-full transition ${p.active ? "bg-emerald-500" : "bg-slate-300"} disabled:opacity-50`}>
-                        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${p.active ? "left-0.5" : "left-[1.375rem]"}`} />
+                        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow transition-all ${p.active ? "left-0.5" : "left-[1.375rem]"}`} />
                       </button>
                     </td>
                     <td className="px-4 py-4">
@@ -254,7 +254,7 @@ export default function SubscriptionPlans() {
 
             <div className="flex gap-3">
               <button type="submit" disabled={saving}
-                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#273c75] py-3 font-bold text-white hover:bg-[#192a56] disabled:opacity-50">
+                className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-navy-2 py-3 font-bold text-white hover:bg-navy disabled:opacity-50">
                 {saving && <Loader2 size={16} className="animate-spin" />} حفظ الباقة
               </button>
               <button type="button" onClick={() => setEditing(null)} className="rounded-2xl bg-slate-100 px-6 py-3 font-bold text-slate-700 hover:bg-slate-200">إلغاء</button>

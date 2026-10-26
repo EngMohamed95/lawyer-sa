@@ -60,7 +60,7 @@ export const ROLE_DESCRIPTIONS_AR: Record<Role, string> = {
 /** لون الشارة لكل دور */
 export const ROLE_COLORS: Record<Role, string> = {
   SUPER_ADMIN: "bg-purple-100 text-purple-800 border-purple-200",
-  LAWYER: "bg-[#192a56]/10 text-[#192a56] border-[#192a56]/20",
+  LAWYER: "bg-navy/10 text-ink border-edge/20",
   PARTNER: "bg-amber-100 text-amber-800 border-amber-200",
   OFFICE_LAWYER: "bg-blue-100 text-blue-800 border-blue-200",
   CONSULTANT: "bg-indigo-100 text-indigo-800 border-indigo-200",

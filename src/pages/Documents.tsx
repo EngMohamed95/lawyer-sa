@@ -1229,8 +1229,8 @@ export default function Documents({
       {/* Edit Modal */}
       {editingDoc && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
-            <div className="p-6 border-b bg-[#192a56] text-white flex justify-between items-center">
+          <div className="bg-surface rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div className="p-6 border-b bg-navy text-white flex justify-between items-center">
               <h2 className="text-xl font-bold">تعديل بيانات المستند</h2>
               <button onClick={() => setEditingDoc(null)} className="text-white hover:opacity-70">✕</button>
             </div>
@@ -1247,7 +1247,7 @@ export default function Documents({
                   ))}
                 </SearchableSelect>
               </div>
-              <Button type="submit" className="w-full bg-[#273c75] text-white py-6 rounded-2xl mt-4 font-bold">حفظ التعديلات</Button>
+              <Button type="submit" className="w-full bg-navy-2 text-white py-6 rounded-2xl mt-4 font-bold">حفظ التعديلات</Button>
             </form>
           </div>
         </div>
@@ -1256,8 +1256,8 @@ export default function Documents({
       {/* Folder Management Modal */}
       {isFolderModalOpen && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
-            <div className="p-6 border-b bg-[#192a56] text-white flex justify-between items-center">
+          <div className="bg-surface rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+            <div className="p-6 border-b bg-navy text-white flex justify-between items-center">
               <h2 className="text-xl font-bold">
                 {folderModalMode === "CREATE" ? "إنشاء مجلد جديد" : "تعديل اسم المجلد"}
               </h2>
@@ -1281,7 +1281,7 @@ export default function Documents({
                   }
                   placeholder="مثال: عقود الشركات، صحف الدعاوى..."
                   required
-                  className="border-gray-200 focus:ring-[#192a56]/10 text-sm"
+                  className="border-gray-200 focus:ring-edge/10 text-sm"
                 />
               </div>
               <div className="flex gap-3 mt-6">
@@ -1298,7 +1298,7 @@ export default function Documents({
                 </Button>
                 <Button
                   type="submit"
-                  className="flex-1 bg-[#273c75] hover:bg-[#273c75]/90 text-white py-6 rounded-2xl font-bold"
+                  className="flex-1 bg-navy-2 hover:bg-navy-2/90 text-white py-6 rounded-2xl font-bold"
                 >
                   حفظ
                 </Button>
@@ -1343,18 +1343,18 @@ export default function Documents({
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-5">
         <div>
-          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">إدارة ملفات Word & Excel</h1>
+          <h1 className="text-3xl font-bold text-ink tracking-tight">إدارة ملفات Word & Excel</h1>
           <p className="text-gray-500 mt-1">أنشئ عقود Word، صمم جداول Excel، أو تصفح خزانة مستنداتك الذكية</p>
         </div>
         
         {/* Modern Horizontal Navigation Tabs */}
-        <div className="flex bg-white p-1 rounded-2xl border gap-1 w-full sm:w-auto self-stretch shrink-0 shadow-sm">
+        <div className="flex bg-surface p-1 rounded-2xl border gap-1 w-full sm:w-auto self-stretch shrink-0 shadow-sm">
           <button
             onClick={() => setActiveTab('ARCHIVE')}
             className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all ${
               activeTab === 'ARCHIVE'
-                ? "bg-[#192a56] text-white shadow-md"
-                : "text-[#192a56] hover:bg-gray-100"
+                ? "bg-navy text-white shadow-md"
+                : "text-ink hover:bg-gray-100"
             }`}
           >
             <Folder size={18} />
@@ -1365,8 +1365,8 @@ export default function Documents({
             onClick={() => setActiveTab('WORD_GENERATOR')}
             className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all ${
               activeTab === 'WORD_GENERATOR'
-                ? "bg-[#192a56] text-white shadow-md"
-                : "text-[#192a56] hover:bg-gray-100"
+                ? "bg-navy text-white shadow-md"
+                : "text-ink hover:bg-gray-100"
             }`}
           >
             <FileCode size={18} />
@@ -1377,8 +1377,8 @@ export default function Documents({
             onClick={() => setActiveTab('EXCEL_IMPORTER')}
             className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold transition-all ${
               activeTab === 'EXCEL_IMPORTER'
-                ? "bg-[#192a56] text-white shadow-md"
-                : "text-[#192a56] hover:bg-gray-100"
+                ? "bg-navy text-white shadow-md"
+                : "text-ink hover:bg-gray-100"
             }`}
           >
             <FileSpreadsheet size={18} />
@@ -1390,25 +1390,25 @@ export default function Documents({
       {/* TAB 1: ARCHIVE DRAWER (Original view but upgraded preview) */}
       {activeTab === 'ARCHIVE' && (
         <div className="space-y-6">
-          <div className="flex items-center gap-2 text-sm text-gray-500 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-2 text-sm text-gray-500 bg-surface p-4 rounded-2xl border border-gray-100 shadow-sm">
             {embeddedCaseId ? (
-              <span className="text-[#273c75] font-bold flex items-center gap-1"><Briefcase size={16} /> أرشيف مستندات القضية الحالية</span>
+              <span className="text-ink-2 font-bold flex items-center gap-1"><Briefcase size={16} /> أرشيف مستندات القضية الحالية</span>
             ) : (
               <>
-                <button onClick={() => setNavigation({ mode: 'CLIENTS', clientId: null, caseId: null })} className={`flex items-center gap-1 hover:text-[#192a56] transition-colors ${navigation.mode === 'CLIENTS' ? 'text-[#273c75] font-bold' : ''}`}><Home size={16} /> الرئيسية</button>
-                {navigation.clientId && <><ChevronLeft size={14} className="text-gray-300" /><button onClick={() => setNavigation({ ...navigation, mode: 'CASES', caseId: null })} className={`flex items-center gap-1 hover:text-[#192a56] transition-colors ${navigation.mode === 'CASES' ? 'text-[#273c75] font-bold' : ''}`}><User size={16} /> {selectedClient?.fullName}</button></>}
-                {navigation.caseId && <><ChevronLeft size={14} className="text-gray-300" /><span className="text-[#273c75] font-bold flex items-center gap-1"><Briefcase size={16} /> {selectedCase?.title}</span></>}
+                <button onClick={() => setNavigation({ mode: 'CLIENTS', clientId: null, caseId: null })} className={`flex items-center gap-1 hover:text-ink transition-colors ${navigation.mode === 'CLIENTS' ? 'text-ink-2 font-bold' : ''}`}><Home size={16} /> الرئيسية</button>
+                {navigation.clientId && <><ChevronLeft size={14} className="text-gray-300" /><button onClick={() => setNavigation({ ...navigation, mode: 'CASES', caseId: null })} className={`flex items-center gap-1 hover:text-ink transition-colors ${navigation.mode === 'CASES' ? 'text-ink-2 font-bold' : ''}`}><User size={16} /> {selectedClient?.fullName}</button></>}
+                {navigation.caseId && <><ChevronLeft size={14} className="text-gray-300" /><span className="text-ink-2 font-bold flex items-center gap-1"><Briefcase size={16} /> {selectedCase?.title}</span></>}
               </>
             )}
           </div>
 
-          <Card className="shadow-sm border-gray-200 overflow-hidden bg-white">
+          <Card className="shadow-sm border-gray-200 overflow-hidden bg-surface">
             <CardHeader className="border-b bg-gray-50/50 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center space-x-2 space-x-reverse relative w-full sm:w-96">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   placeholder={navigation.mode === 'DOCS' ? "بحث بالاسم أو الوسم أو المحتوى..." : "بحث بالاسم..."}
-                  className="pl-4 pr-10 bg-white border-gray-200 focus:ring-[#192a56]/10"
+                  className="pl-4 pr-10 bg-surface border-gray-200 focus:ring-edge/10"
                   value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
               <div className="flex items-center gap-2 self-end sm:self-auto flex-wrap">
@@ -1416,13 +1416,13 @@ export default function Documents({
                   <div className="flex gap-1">
                     <button onClick={() => setShowArchived(false)}
                       className={`px-3 py-2 rounded-xl text-xs font-bold border transition ${
-                        !showArchived ? "bg-[#192a56] text-[#273c75] border-[#192a56]" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                        !showArchived ? "bg-navy text-ink-2 border-edge" : "bg-surface text-gray-600 border-gray-200 hover:bg-gray-50"
                       }`}>
                       النشطة
                     </button>
                     <button onClick={() => setShowArchived(true)}
                       className={`px-3 py-2 rounded-xl text-xs font-bold border transition ${
-                        showArchived ? "bg-[#192a56] text-[#273c75] border-[#192a56]" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                        showArchived ? "bg-navy text-ink-2 border-edge" : "bg-surface text-gray-600 border-gray-200 hover:bg-gray-50"
                       }`}>
                       الأرشيف ({archivedCount})
                     </button>
@@ -1431,14 +1431,14 @@ export default function Documents({
                 {navigation.mode === 'DOCS' && !showArchived && (
                   <Button
                     onClick={() => setIsAddDocModalOpen(true)}
-                    className="bg-[#192a56] hover:bg-[#192a56]/90 text-white font-bold py-5 px-5 rounded-2xl flex items-center gap-2 shadow-lg shadow-[#192a56]/15 active:scale-[0.98] transition-transform text-xs"
+                    className="bg-navy hover:bg-navy/90 text-white font-bold py-5 px-5 rounded-2xl flex items-center gap-2 shadow-lg shadow-navy/15 active:scale-[0.98] transition-transform text-xs"
                   >
                     <Upload size={14} />
                     رفع مستند للملف
                   </Button>
                 )}
                 {navigation.mode !== 'CLIENTS' && (
-                  <Button variant="ghost" onClick={goBack} className="text-gray-500 hover:text-[#192a56] font-bold">
+                  <Button variant="ghost" onClick={goBack} className="text-gray-500 hover:text-ink font-bold">
                     عودة للخلف <ChevronLeft size={16} className="mr-1 rotate-180" />
                   </Button>
                 )}
@@ -1455,7 +1455,7 @@ export default function Documents({
               )}
               {loading ? (
                 <div className="text-center py-20 text-gray-500 font-bold flex flex-col items-center justify-center gap-3">
-                  <Loader2 className="h-8 w-8 text-[#192a56] animate-spin" />
+                  <Loader2 className="h-8 w-8 text-ink animate-spin" />
                   جاري تحميل الخزانة...
                 </div>
               ) : currentItems.length === 0 ? (
@@ -1468,16 +1468,16 @@ export default function Documents({
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
                   {navigation.mode === 'CLIENTS' && currentItems.map((client) => (
-                    <button key={client.id} onClick={() => setNavigation({ mode: 'CASES', clientId: client.id, caseId: null })} className="flex flex-col items-center gap-3 p-5 rounded-2xl hover:bg-blue-50/60 transition-all border border-transparent hover:border-blue-100 group shadow-sm bg-white hover:shadow">
+                    <button key={client.id} onClick={() => setNavigation({ mode: 'CASES', clientId: client.id, caseId: null })} className="flex flex-col items-center gap-3 p-5 rounded-2xl hover:bg-blue-50/60 transition-all border border-transparent hover:border-blue-100 group shadow-sm bg-surface hover:shadow">
                       <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-all shadow-inner"><User size={30} /></div>
-                      <span className="text-sm font-bold text-[#192a56] text-center line-clamp-2">{client.fullName}</span>
+                      <span className="text-sm font-bold text-ink text-center line-clamp-2">{client.fullName}</span>
                     </button>
                   ))}
 
                   {navigation.mode === 'CASES' && currentItems.map((c) => (
-                    <button key={c.id} onClick={() => setNavigation({ mode: 'DOCS', clientId: navigation.clientId, caseId: c.id })} className="flex flex-col items-center gap-3 p-5 rounded-2xl hover:bg-amber-50/60 transition-all border border-transparent hover:border-amber-100 group shadow-sm bg-white hover:shadow">
+                    <button key={c.id} onClick={() => setNavigation({ mode: 'DOCS', clientId: navigation.clientId, caseId: c.id })} className="flex flex-col items-center gap-3 p-5 rounded-2xl hover:bg-amber-50/60 transition-all border border-transparent hover:border-amber-100 group shadow-sm bg-surface hover:shadow">
                       <div className="w-16 h-16 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-all shadow-inner"><Briefcase size={30} /></div>
-                      <span className="text-sm font-bold text-[#192a56] text-center line-clamp-2">{c.title}</span>
+                      <span className="text-sm font-bold text-ink text-center line-clamp-2">{c.title}</span>
                     </button>
                   ))}
 
@@ -1486,15 +1486,15 @@ export default function Documents({
                       <Table>
                         <TableHeader className="bg-gray-50">
                           <TableRow>
-                            <TableHead className="text-right font-bold text-[#192a56]">اسم المستند</TableHead>
-                            <TableHead className="text-right font-bold text-[#192a56] hidden md:table-cell">النوع</TableHead>
-                            <TableHead className="text-center font-bold text-[#192a56]">الإجراءات</TableHead>
+                            <TableHead className="text-right font-bold text-ink">اسم المستند</TableHead>
+                            <TableHead className="text-right font-bold text-ink hidden md:table-cell">النوع</TableHead>
+                            <TableHead className="text-center font-bold text-ink">الإجراءات</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {currentItems.map((d) => (
                             <TableRow key={d.id} className="hover:bg-gray-50/50 transition-colors">
-                              <TableCell className="font-medium text-[#192a56]">
+                              <TableCell className="font-medium text-ink">
                                 <div className="flex items-center gap-3">
                                   <div className="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center text-gray-500 shrink-0">
                                     <File size={18} />
@@ -1531,7 +1531,7 @@ export default function Documents({
                                 </div>
                               </TableCell>
                               <TableCell className="hidden md:table-cell">
-                                <Badge variant="outline" className="bg-white">
+                                <Badge variant="outline" className="bg-surface">
                                   {d.type === "POWER_OF_ATTORNEY" ? "توكيل"
                                     : d.type === "CONTRACT" ? "عقد"
                                     : d.type === "EVIDENCE" ? "دليل إثبات"
@@ -1569,7 +1569,7 @@ export default function Documents({
                                       </Button>
                                       <a href={d.fileUrl || d.url} download target="_blank" rel="noreferrer"
                                         onClick={() => { void logDocumentAccess(d, "DOWNLOAD", aclContext); }}>
-                                        <Button variant="ghost" size="icon" className="h-9 w-9 text-[#273c75] hover:bg-amber-50" title="تحميل الملف">
+                                        <Button variant="ghost" size="icon" className="h-9 w-9 text-ink-2 hover:bg-amber-50" title="تحميل الملف">
                                           <Download className="h-4.5 w-4.5" />
                                         </Button>
                                       </a>
@@ -1629,7 +1629,7 @@ export default function Documents({
             <button
               onClick={() => setWordSubTab('TEMPLATES')}
               className={`flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                wordSubTab === 'TEMPLATES' ? "bg-white text-[#192a56] shadow-sm" : "text-gray-500 hover:text-[#192a56]"
+                wordSubTab === 'TEMPLATES' ? "bg-surface text-ink shadow-sm" : "text-gray-500 hover:text-ink"
               }`}
             >
               <FileCode size={14} />
@@ -1638,7 +1638,7 @@ export default function Documents({
             <button
               onClick={() => setWordSubTab('CUSTOM_TEMPLATES')}
               className={`flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                wordSubTab === 'CUSTOM_TEMPLATES' ? "bg-white text-[#192a56] shadow-sm" : "text-gray-500 hover:text-[#192a56]"
+                wordSubTab === 'CUSTOM_TEMPLATES' ? "bg-surface text-ink shadow-sm" : "text-gray-500 hover:text-ink"
               }`}
             >
               <Folder size={14} />
@@ -1647,7 +1647,7 @@ export default function Documents({
             <button
               onClick={() => setWordSubTab('FREE_EDITOR')}
               className={`flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                wordSubTab === 'FREE_EDITOR' ? "bg-white text-[#192a56] shadow-sm" : "text-gray-500 hover:text-[#192a56]"
+                wordSubTab === 'FREE_EDITOR' ? "bg-surface text-ink shadow-sm" : "text-gray-500 hover:text-ink"
               }`}
             >
               <Edit3 size={14} />
@@ -1669,11 +1669,11 @@ export default function Documents({
                       onClick={() => setSelectedTemplateId(template.id)}
                       className={`w-full text-right p-4 rounded-2xl transition-all border flex flex-col gap-1 ${
                         selectedTemplateId === template.id
-                          ? "bg-white border-[#273c75] shadow-md ring-2 ring-[#273c75]/10"
-                          : "bg-white/80 hover:bg-white border-gray-200/60"
+                          ? "bg-surface border-edge-2 shadow-md ring-2 ring-edge-2/10"
+                          : "bg-surface/80 hover:bg-surface border-gray-200/60"
                       }`}
                     >
-                      <span className="font-bold text-sm text-[#192a56]">{template.name}</span>
+                      <span className="font-bold text-sm text-ink">{template.name}</span>
                       <span className="text-xs text-gray-500 line-clamp-1">{template.description}</span>
                       <Badge variant="outline" className="w-fit text-[9px] mt-1 bg-gray-50 font-normal">{template.category}</Badge>
                     </button>
@@ -1682,9 +1682,9 @@ export default function Documents({
               </div>
 
               {/* Interactive Form Fields */}
-              <div className="lg:col-span-4 bg-white border rounded-3xl p-6 shadow-sm space-y-4 self-stretch">
+              <div className="lg:col-span-4 bg-surface border rounded-3xl p-6 shadow-sm space-y-4 self-stretch">
                 <div>
-                  <h3 className="text-lg font-bold text-[#192a56]">بيانات الصياغة</h3>
+                  <h3 className="text-lg font-bold text-ink">بيانات الصياغة</h3>
                   <p className="text-xs text-gray-500 mt-1">املأ الحقول لتحديث المستند فوراً في نافذة المعاينة</p>
                 </div>
                 
@@ -1693,12 +1693,12 @@ export default function Documents({
                     <div key={field.key} className="space-y-1.5">
                       <label className="text-xs font-bold text-gray-700 flex items-center justify-between">
                         {field.label}
-                        {field.key === "lawyerName" && <Badge className="bg-[#273c75] text-white text-[9px]">أنت</Badge>}
+                        {field.key === "lawyerName" && <Badge className="bg-navy-2 text-white text-[9px]">أنت</Badge>}
                       </label>
                       <Input
                         type={field.type || "text"}
                         placeholder={field.placeholder}
-                        className="border-gray-200 focus:ring-[#192a56]/10 text-sm"
+                        className="border-gray-200 focus:ring-edge/10 text-sm"
                         value={templateValues[field.key] || ""}
                         onChange={e => setTemplateValues({ ...templateValues, [field.key]: e.target.value })}
                       />
@@ -1716,7 +1716,7 @@ export default function Documents({
                   </Button>
                   <Button
                     onClick={() => handleSaveGeneratedDoc(activeTemplate?.name || "مستند", activeTemplate?.generateHtml(templateValues) || "")}
-                    className="w-full bg-[#192a56] hover:bg-[#192a56]/90 text-white font-bold py-6 rounded-2xl flex items-center justify-center gap-2 shadow-lg active:scale-[0.99] transition-transform"
+                    className="w-full bg-navy hover:bg-navy/90 text-white font-bold py-6 rounded-2xl flex items-center justify-center gap-2 shadow-lg active:scale-[0.99] transition-transform"
                   >
                     <Save size={18} />
                     حفظ في الأرشيف / القضية
@@ -1731,12 +1731,12 @@ export default function Documents({
                   <span className="text-[10px] bg-amber-50 text-amber-700 font-bold px-2.5 py-1 rounded-full border border-amber-200">النوع: ملف وورد متوافق</span>
                 </div>
                 
-                <div className="bg-white border shadow-md rounded-3xl p-8 min-h-[60vh] max-h-[80vh] overflow-y-auto font-serif leading-relaxed text-gray-800 text-justify word-preview-pane relative">
+                <div className="los-paper bg-surface border shadow-md rounded-3xl p-8 min-h-[60vh] max-h-[80vh] overflow-y-auto font-serif leading-relaxed text-gray-800 text-justify word-preview-pane relative">
                   
                   {/* Lawyer Letterhead Header */}
-                  <div className="flex justify-between items-center border-b-2 border-[#273c75] pb-4 mb-6 text-xs text-gray-500 font-['Tajawal'] font-bold">
+                  <div className="flex justify-between items-center border-b-2 border-edge-2 pb-4 mb-6 text-xs text-gray-500 font-['Tajawal'] font-bold">
                     <div className="text-right">
-                      <p className="text-sm text-[#192a56]">مكتب المحاماة والاستشارات القانونية</p>
+                      <p className="text-sm text-ink">مكتب المحاماة والاستشارات القانونية</p>
                       <p className="text-[10px] text-gray-400 font-normal">صيغة إلكترونية ذكية</p>
                     </div>
                     <div className="w-12 h-12 flex items-center justify-center border border-amber-200 rounded-full p-2 bg-amber-50/50">
@@ -1761,10 +1761,10 @@ export default function Documents({
             <div className="animate-in fade-in duration-300">
               {isEditingCustomTemplate ? (
                 /* Custom Template WYSIWYG Editor Mode */
-                <Card className="shadow-md border-gray-200 p-6 bg-white rounded-3xl space-y-6">
+                <Card className="shadow-md border-gray-200 p-6 bg-surface rounded-3xl space-y-6">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b pb-4 gap-4">
                     <div>
-                      <h2 className="text-xl font-bold text-[#192a56]">
+                      <h2 className="text-xl font-bold text-ink">
                         {editingCustomTemplateData?.id ? "تعديل النموذج الخاص" : "إنشاء نموذج قانوني جديد"}
                       </h2>
                       <p className="text-sm text-gray-500 mt-1">اكتب وصمم هيكل النموذج وضع علامات الحقول التفاعلية بسهولة</p>
@@ -1801,7 +1801,7 @@ export default function Documents({
                           })
                         }
                         placeholder="مثال: عقد تقديم خدمات برمجية"
-                        className="border-gray-200 focus:ring-[#192a56]/10 text-sm"
+                        className="border-gray-200 focus:ring-edge/10 text-sm"
                       />
                     </div>
                     <div className="space-y-2">
@@ -1813,14 +1813,14 @@ export default function Documents({
                             setFolderModalData({ name: "" });
                             setIsFolderModalOpen(true);
                           }}
-                          className="text-[#273c75] hover:text-[#273c75]/80 text-[10px] font-bold flex items-center gap-1"
+                          className="text-ink-2 hover:text-ink-2/80 text-[10px] font-bold flex items-center gap-1"
                         >
                           <FolderPlus size={12} />
                           مجلد جديد
                         </button>
                       </label>
                       <SearchableSelect
-                        className="w-full p-2.5 border rounded-md text-sm border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#192a56]/10"
+                        className="w-full p-2.5 border rounded-md text-sm border-gray-200 focus:outline-none focus:ring-2 focus:ring-edge/10"
                         value={editingCustomTemplateData?.folderId || ""}
                         onChange={(e) =>
                           setEditingCustomTemplateData({
@@ -1848,22 +1848,22 @@ export default function Documents({
                           })
                         }
                         placeholder="وصف مختصر لمجال استخدام هذا النموذج..."
-                        className="border-gray-200 focus:ring-[#192a56]/10 text-sm"
+                        className="border-gray-200 focus:ring-edge/10 text-sm"
                       />
                     </div>
                   </div>
 
                   <div className="p-4 bg-amber-50/50 text-amber-800 rounded-2xl border border-amber-100 flex items-start gap-3">
-                    <Sparkles className="h-5 w-5 text-[#273c75] shrink-0 mt-0.5" />
+                    <Sparkles className="h-5 w-5 text-ink-2 shrink-0 mt-0.5" />
                     <div>
                       <p className="text-xs font-bold">طريقة كتابة المتغيرات (الحقول التفاعلية):</p>
                       <p className="text-[11px] text-amber-700 mt-1 leading-relaxed">
                         ضع أي كلمة تريد تعبئتها ديناميكياً بين قوسين مزدوجين، مثل:{" "}
-                        <span className="font-mono bg-white px-1.5 py-0.5 rounded border border-amber-200 font-bold font-sans">
+                        <span className="font-mono bg-surface px-1.5 py-0.5 rounded border border-amber-200 font-bold font-sans">
                           {"{{اسم_العميل}}"}
                         </span>{" "}
                         أو{" "}
-                        <span className="font-mono bg-white px-1.5 py-0.5 rounded border border-amber-200 font-bold font-sans">
+                        <span className="font-mono bg-surface px-1.5 py-0.5 rounded border border-amber-200 font-bold font-sans">
                           {"{{رقم_الهاتف}}"}
                         </span>
                         . سيقوم النظام عند فتح القالب بقراءتها تلقائياً وتوليد حقول إدخال في الشريط الجانبي لتعبئة النموذج بسرعة فائقة!
@@ -1898,7 +1898,7 @@ export default function Documents({
                           setFolderModalData({ name: "" });
                           setIsFolderModalOpen(true);
                         }}
-                        className="text-xs font-bold text-[#192a56] hover:text-[#273c75] flex items-center gap-1 bg-white px-3 py-1.5 rounded-xl border shadow-sm transition-colors shrink-0"
+                        className="text-xs font-bold text-ink hover:text-ink-2 flex items-center gap-1 bg-surface px-3 py-1.5 rounded-xl border shadow-sm transition-colors shrink-0"
                       >
                         <FolderPlus size={14} />
                         مجلد جديد
@@ -1924,7 +1924,7 @@ export default function Documents({
                         });
                         setIsEditingCustomTemplate(true);
                       }}
-                      className="w-full bg-[#192a56] hover:bg-[#192a56]/90 text-white font-bold py-6 rounded-2xl flex items-center justify-center gap-2 shadow-sm"
+                      className="w-full bg-navy hover:bg-navy/90 text-white font-bold py-6 rounded-2xl flex items-center justify-center gap-2 shadow-sm"
                     >
                       <Plus size={16} />
                       إضافة قالب مخصص جديد
@@ -1932,7 +1932,7 @@ export default function Documents({
 
                     <div className="space-y-2.5 max-h-[70vh] overflow-y-auto pr-1">
                       {folders.length === 0 ? (
-                        <div className="text-center py-10 bg-white/60 rounded-2xl border border-gray-100 p-4">
+                        <div className="text-center py-10 bg-surface/60 rounded-2xl border border-gray-100 p-4">
                           <Folder className="h-8 w-8 text-gray-200 mx-auto mb-2" />
                           <p className="text-xs text-gray-400 font-normal">لا توجد مجلدات حالياً. انقر على "مجلد جديد" للبدء.</p>
                         </div>
@@ -1946,7 +1946,7 @@ export default function Documents({
                           return (
                             <div
                               key={folder.id}
-                              className="bg-white border border-gray-200/50 rounded-2xl overflow-hidden shadow-sm hover:shadow transition-shadow"
+                              className="bg-surface border border-gray-200/50 rounded-2xl overflow-hidden shadow-sm hover:shadow transition-shadow"
                             >
                               {/* Folder Header */}
                               <div className="flex items-center justify-between p-3 bg-gray-50/50 border-b border-gray-100">
@@ -1957,7 +1957,7 @@ export default function Documents({
                                       [folder.id]: !isExpanded,
                                     })
                                   }
-                                  className="flex items-center gap-2 flex-1 text-right text-sm font-bold text-[#192a56] hover:opacity-80"
+                                  className="flex items-center gap-2 flex-1 text-right text-sm font-bold text-ink hover:opacity-80"
                                 >
                                   <ChevronDown
                                     size={16}
@@ -1996,7 +1996,7 @@ export default function Documents({
 
                               {/* Folder Templates List */}
                               {isExpanded && (
-                                <div className="p-2 space-y-1 bg-white animate-in slide-in-from-top duration-200">
+                                <div className="p-2 space-y-1 bg-surface animate-in slide-in-from-top duration-200">
                                   {folderTemplates.length === 0 ? (
                                     <div className="text-[10px] text-gray-400 text-center py-4 select-none">
                                       المجلد فارغ
@@ -2017,7 +2017,7 @@ export default function Documents({
                                           }
                                           className="flex-1 text-right min-w-0"
                                         >
-                                          <div className="font-bold text-xs text-[#192a56] truncate">
+                                          <div className="font-bold text-xs text-ink truncate">
                                             {template.name}
                                           </div>
                                           {template.description && (
@@ -2027,7 +2027,7 @@ export default function Documents({
                                           )}
                                         </button>
 
-                                        <div className="hidden group-hover:flex items-center gap-1 shrink-0 bg-white shadow-sm border rounded-lg p-0.5 absolute left-2 top-1/2 -translate-y-1/2 print:hidden z-10">
+                                        <div className="hidden group-hover:flex items-center gap-1 shrink-0 bg-surface shadow-sm border rounded-lg p-0.5 absolute left-2 top-1/2 -translate-y-1/2 print:hidden z-10">
                                           <button
                                             onClick={() => {
                                               setEditingCustomTemplateData({
@@ -2070,14 +2070,14 @@ export default function Documents({
                   </div>
 
                   {/* Interactive Dynamic Form Fields */}
-                  <div className="lg:col-span-4 bg-white border rounded-3xl p-6 shadow-sm space-y-4 self-stretch min-h-[400px] flex flex-col justify-between">
+                  <div className="lg:col-span-4 bg-surface border rounded-3xl p-6 shadow-sm space-y-4 self-stretch min-h-[400px] flex flex-col justify-between">
                     {activeCustomTemplate ? (
                       <div className="space-y-4 h-full flex flex-col justify-between">
                         <div className="space-y-4">
                           <div>
-                            <h3 className="text-lg font-bold text-[#192a56] flex items-center gap-2">
+                            <h3 className="text-lg font-bold text-ink flex items-center gap-2">
                               <span>صياغة:</span>
-                              <span className="text-[#273c75] font-extrabold">{activeCustomTemplate.name}</span>
+                              <span className="text-ink-2 font-extrabold">{activeCustomTemplate.name}</span>
                             </h3>
                             <p className="text-xs text-gray-500 mt-1">
                               {activeCustomTemplate.description || "أدخل الحقول المحددة أدناه لتحديث المستند فوراً."}
@@ -2098,7 +2098,7 @@ export default function Documents({
                                   <Input
                                     type="text"
                                     placeholder={`اكتب ${fieldKey.replace(/_/g, " ")}...`}
-                                    className="border-gray-200 focus:ring-[#192a56]/10 text-sm"
+                                    className="border-gray-200 focus:ring-edge/10 text-sm"
                                     value={customTemplateValues[fieldKey] || ""}
                                     onChange={(e) =>
                                       setCustomTemplateValues({
@@ -2139,7 +2139,7 @@ export default function Documents({
                                 )
                               )
                             }
-                            className="w-full bg-[#192a56] hover:bg-[#192a56]/90 text-white font-bold py-6 rounded-2xl flex items-center justify-center gap-2 shadow-lg active:scale-[0.99] transition-transform"
+                            className="w-full bg-navy hover:bg-navy/90 text-white font-bold py-6 rounded-2xl flex items-center justify-center gap-2 shadow-lg active:scale-[0.99] transition-transform"
                           >
                             <Save size={18} />
                             حفظ في الأرشيف / القضية
@@ -2166,11 +2166,11 @@ export default function Documents({
                       </span>
                     </div>
 
-                    <div className="bg-white border shadow-md rounded-3xl p-8 min-h-[60vh] max-h-[80vh] overflow-y-auto font-serif leading-relaxed text-gray-800 text-justify word-preview-pane relative">
+                    <div className="los-paper bg-surface border shadow-md rounded-3xl p-8 min-h-[60vh] max-h-[80vh] overflow-y-auto font-serif leading-relaxed text-gray-800 text-justify word-preview-pane relative">
                       {/* Lawyer Letterhead Header */}
-                      <div className="flex justify-between items-center border-b-2 border-[#273c75] pb-4 mb-6 text-xs text-gray-500 font-['Tajawal'] font-bold select-none">
+                      <div className="flex justify-between items-center border-b-2 border-edge-2 pb-4 mb-6 text-xs text-gray-500 font-['Tajawal'] font-bold select-none">
                         <div className="text-right font-['Tajawal']">
-                          <p className="text-sm text-[#192a56]">مكتب المحاماة والاستشارات القانونية</p>
+                          <p className="text-sm text-ink">مكتب المحاماة والاستشارات القانونية</p>
                           <p className="text-[10px] text-gray-400 font-normal">صيغة إلكترونية ذكية</p>
                         </div>
                         <div className="w-12 h-12 flex items-center justify-center border border-amber-200 rounded-full p-2 bg-amber-50/50">
@@ -2222,13 +2222,13 @@ export default function Documents({
             <div className="max-w-4xl mx-auto space-y-4 animate-in fade-in duration-300">
               
               {/* Document Title input */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 border rounded-3xl shadow-sm">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-surface p-4 border rounded-3xl shadow-sm">
                 <div className="space-y-1 w-full sm:w-auto">
                   <label className="text-xs font-bold text-gray-400">عنوان المستند المصدر:</label>
                   <Input
                     value={freeDocTitle}
                     onChange={e => setFreeDocTitle(e.target.value)}
-                    className="border-gray-200 font-bold text-sm bg-gray-50 focus:bg-white focus:ring-[#192a56]/10 w-full sm:w-80"
+                    className="border-gray-200 font-bold text-sm bg-gray-50 focus:bg-surface focus:ring-edge/10 w-full sm:w-80"
                     placeholder="اكتب عنوان الملف..."
                   />
                 </div>
@@ -2241,7 +2241,7 @@ export default function Documents({
                   </Button>
                   <Button
                     onClick={() => handleSaveGeneratedDoc(freeDocTitle, freeEditorContent)}
-                    className="bg-[#192a56] hover:bg-[#192a56]/90 text-white font-bold py-6 px-8 rounded-2xl shadow-lg active:scale-[0.98] flex-1 sm:flex-initial"
+                    className="bg-navy hover:bg-navy/90 text-white font-bold py-6 px-8 rounded-2xl shadow-lg active:scale-[0.98] flex-1 sm:flex-initial"
                   >
                     <Save className="ml-2 h-5 w-5" /> حفظ في الأرشيف / القضية
                   </Button>
@@ -2269,7 +2269,7 @@ export default function Documents({
             <button
               onClick={() => setExcelSubTab('IMPORTER')}
               className={`flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                excelSubTab === 'IMPORTER' ? "bg-white text-[#192a56] shadow-sm" : "text-gray-500 hover:text-[#192a56]"
+                excelSubTab === 'IMPORTER' ? "bg-surface text-ink shadow-sm" : "text-gray-500 hover:text-ink"
               }`}
             >
               <Upload size={14} />
@@ -2278,7 +2278,7 @@ export default function Documents({
             <button
               onClick={() => setExcelSubTab('FREE_SPREADSHEET')}
               className={`flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                excelSubTab === 'FREE_SPREADSHEET' ? "bg-white text-[#192a56] shadow-sm" : "text-gray-500 hover:text-[#192a56]"
+                excelSubTab === 'FREE_SPREADSHEET' ? "bg-surface text-ink shadow-sm" : "text-gray-500 hover:text-ink"
               }`}
             >
               <FileSpreadsheet size={14} />
@@ -2306,7 +2306,7 @@ export default function Documents({
                   <CardContent className="space-y-4">
                     <div className="p-4 bg-gray-50 border rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
                       <div className="space-y-1 text-center sm:text-right">
-                        <p className="text-sm font-bold text-[#192a56]">نموذج العملاء الجماعي (.xlsx)</p>
+                        <p className="text-sm font-bold text-ink">نموذج العملاء الجماعي (.xlsx)</p>
                         <p className="text-xs text-gray-500">لرفع قائمة العملاء بالاسم والهواتف والهويات</p>
                       </div>
                       <Button
@@ -2319,7 +2319,7 @@ export default function Documents({
                     
                     <div className="p-4 bg-gray-50 border rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
                       <div className="space-y-1 text-center sm:text-right">
-                        <p className="text-sm font-bold text-[#192a56]">نموذج القضايا والسجلات (.xlsx)</p>
+                        <p className="text-sm font-bold text-ink">نموذج القضايا والسجلات (.xlsx)</p>
                         <p className="text-xs text-gray-500">لرفع سجلات القضايا وربطها تلقائياً بالعملاء</p>
                       </div>
                       <Button
@@ -2336,7 +2336,7 @@ export default function Documents({
                 <Card className="shadow-sm border-gray-200">
                   <CardHeader>
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-[#192a56] text-white rounded-xl shrink-0"><Upload size={20} /></div>
+                      <div className="p-2 bg-navy text-white rounded-xl shrink-0"><Upload size={20} /></div>
                       <div>
                         <CardTitle className="text-lg">الخطوة الثانية: رفع وفحص جدول إكسل</CardTitle>
                         <CardDescription>اختر نوع البيانات المرفوعة ثم اسحب الملف إلى منطقة الرفع</CardDescription>
@@ -2352,7 +2352,7 @@ export default function Documents({
                         <button
                           onClick={() => { setImportType('CLIENTS'); setExcelData([]); setExcelFileName(""); setExcelError(""); setImportSuccessMessage(""); }}
                           className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${
-                            importType === 'CLIENTS' ? "bg-white text-[#192a56] shadow-sm" : "text-gray-500 hover:text-[#192a56]"
+                            importType === 'CLIENTS' ? "bg-surface text-ink shadow-sm" : "text-gray-500 hover:text-ink"
                           }`}
                         >
                           استيراد قائمة عملاء
@@ -2360,7 +2360,7 @@ export default function Documents({
                         <button
                           onClick={() => { setImportType('CASES'); setExcelData([]); setExcelFileName(""); setExcelError(""); setImportSuccessMessage(""); }}
                           className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all ${
-                            importType === 'CASES' ? "bg-white text-[#192a56] shadow-sm" : "text-gray-500 hover:text-[#192a56]"
+                            importType === 'CASES' ? "bg-surface text-ink shadow-sm" : "text-gray-500 hover:text-ink"
                           }`}
                         >
                           استيراد سجل قضايا ومحاكم
@@ -2369,14 +2369,14 @@ export default function Documents({
                     </div>
 
                     {/* Drag and Drop File Zone */}
-                    <div className="relative border-2 border-dashed border-gray-200 hover:border-[#273c75] bg-gray-50/30 hover:bg-amber-50/10 rounded-2xl p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center min-h-[140px] group">
+                    <div className="relative border-2 border-dashed border-gray-200 hover:border-edge-2 bg-gray-50/30 hover:bg-amber-50/10 rounded-2xl p-6 text-center transition-all cursor-pointer flex flex-col items-center justify-center min-h-[140px] group">
                       <input
                         type="file"
                         accept=".xlsx, .xls"
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                         onChange={handleExcelUpload}
                       />
-                      <FileSpreadsheet className="h-10 w-10 text-gray-300 group-hover:text-[#273c75] mb-2 transition-colors" />
+                      <FileSpreadsheet className="h-10 w-10 text-gray-300 group-hover:text-ink-2 mb-2 transition-colors" />
                       {excelFileName ? (
                         <div className="space-y-1">
                           <p className="text-sm font-bold text-green-700">{excelFileName}</p>
@@ -2384,7 +2384,7 @@ export default function Documents({
                         </div>
                       ) : (
                         <div className="space-y-1">
-                          <p className="text-sm font-bold text-[#192a56]">اسحب وأفلت جدول إكسل هنا</p>
+                          <p className="text-sm font-bold text-ink">اسحب وأفلت جدول إكسل هنا</p>
                           <p className="text-xs text-gray-400">أو تصفح الملفات من جهازك الشخصي</p>
                         </div>
                       )}
@@ -2430,12 +2430,12 @@ export default function Documents({
                 <Card className="shadow-md border-gray-200 overflow-hidden animate-in fade-in duration-300">
                   <CardHeader className="border-b bg-gray-50/50 pb-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div>
-                      <CardTitle className="text-lg text-[#192a56]">جدول فحص وتدقيق السجلات ({excelParsedCount})</CardTitle>
+                      <CardTitle className="text-lg text-ink">جدول فحص وتدقيق السجلات ({excelParsedCount})</CardTitle>
                       <CardDescription>تأكد من صحة الحقول المكتشفة أدناه قبل الحفظ النهائي في النظام</CardDescription>
                     </div>
                     <Button
                       onClick={handleBulkImport}
-                      className="bg-[#192a56] hover:bg-[#192a56]/90 text-white font-bold py-6 px-8 rounded-2xl shadow-lg shadow-[#192a56]/20 active:scale-[0.98] transition-transform self-stretch sm:self-auto"
+                      className="bg-navy hover:bg-navy/90 text-white font-bold py-6 px-8 rounded-2xl shadow-lg shadow-navy/20 active:scale-[0.98] transition-transform self-stretch sm:self-auto"
                     >
                       حفظ البيانات في النظام وتأكيد الاستيراد
                     </Button>
@@ -2447,19 +2447,19 @@ export default function Documents({
                           <TableHead className="w-12 text-center font-bold text-gray-500">#</TableHead>
                           {importType === 'CLIENTS' ? (
                             <>
-                              <TableHead className="text-right font-bold text-[#192a56]">الاسم الكامل</TableHead>
-                              <TableHead className="text-right font-bold text-[#192a56]">النوع</TableHead>
-                              <TableHead className="text-right font-bold text-[#192a56]">الهاتف</TableHead>
-                              <TableHead className="text-right font-bold text-[#192a56]">الهوية/الضريبي</TableHead>
-                              <TableHead className="text-right font-bold text-[#192a56]">العنوان</TableHead>
+                              <TableHead className="text-right font-bold text-ink">الاسم الكامل</TableHead>
+                              <TableHead className="text-right font-bold text-ink">النوع</TableHead>
+                              <TableHead className="text-right font-bold text-ink">الهاتف</TableHead>
+                              <TableHead className="text-right font-bold text-ink">الهوية/الضريبي</TableHead>
+                              <TableHead className="text-right font-bold text-ink">العنوان</TableHead>
                             </>
                           ) : (
                             <>
-                              <TableHead className="text-right font-bold text-[#192a56]">عنوان القضية</TableHead>
-                              <TableHead className="text-right font-bold text-[#192a56]">رقم القضية</TableHead>
-                              <TableHead className="text-right font-bold text-[#192a56]">اسم العميل (الرابط)</TableHead>
-                              <TableHead className="text-right font-bold text-[#192a56]">نوع القضية</TableHead>
-                              <TableHead className="text-right font-bold text-[#192a56]">المحكمة المرفوعة</TableHead>
+                              <TableHead className="text-right font-bold text-ink">عنوان القضية</TableHead>
+                              <TableHead className="text-right font-bold text-ink">رقم القضية</TableHead>
+                              <TableHead className="text-right font-bold text-ink">اسم العميل (الرابط)</TableHead>
+                              <TableHead className="text-right font-bold text-ink">نوع القضية</TableHead>
+                              <TableHead className="text-right font-bold text-ink">المحكمة المرفوعة</TableHead>
                             </>
                           )}
                           <TableHead className="text-center font-bold text-gray-500 w-28">الحالة</TableHead>
@@ -2471,7 +2471,7 @@ export default function Documents({
                             <TableCell className="text-center font-mono text-xs text-gray-400">{index + 1}</TableCell>
                             {importType === 'CLIENTS' ? (
                               <>
-                                <TableCell className="font-bold text-[#192a56]">{row["الاسم الكامل"] || "-"}</TableCell>
+                                <TableCell className="font-bold text-ink">{row["الاسم الكامل"] || "-"}</TableCell>
                                 <TableCell>{row["النوع (فرد/شركة)"] || "فرد"}</TableCell>
                                 <TableCell className="font-mono text-sm">{row["الهاتف"] || "-"}</TableCell>
                                 <TableCell className="font-mono text-sm">{row["الهوية_الرقم الضريبي"] || "-"}</TableCell>
@@ -2479,9 +2479,9 @@ export default function Documents({
                               </>
                             ) : (
                               <>
-                                <TableCell className="font-bold text-[#192a56]">{row["عنوان القضية"] || "-"}</TableCell>
+                                <TableCell className="font-bold text-ink">{row["عنوان القضية"] || "-"}</TableCell>
                                 <TableCell className="font-mono text-sm">{row["رقم القضية"] || "-"}</TableCell>
-                                <TableCell className="text-[#273c75] font-bold">{row["اسم العميل"] || "-"}</TableCell>
+                                <TableCell className="text-ink-2 font-bold">{row["اسم العميل"] || "-"}</TableCell>
                                 <TableCell>{row["نوع القضية"] || "-"}</TableCell>
                                 <TableCell className="truncate max-w-xs">{row["المحكمة"] || "-"}</TableCell>
                               </>
@@ -2505,13 +2505,13 @@ export default function Documents({
             <div className="space-y-6 animate-in fade-in duration-300">
               
               {/* Custom Title & Actions Header */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-4 border rounded-3xl shadow-sm">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-surface p-4 border rounded-3xl shadow-sm">
                 <div className="space-y-1 w-full sm:w-auto">
                   <label className="text-xs font-bold text-gray-400">عنوان ورقة العمل المصدرة:</label>
                   <Input
                     value={freeExcelTitle}
                     onChange={e => setFreeExcelTitle(e.target.value)}
-                    className="border-gray-200 font-bold text-sm bg-gray-50 focus:bg-white focus:ring-[#192a56]/10 w-full sm:w-80"
+                    className="border-gray-200 font-bold text-sm bg-gray-50 focus:bg-surface focus:ring-edge/10 w-full sm:w-80"
                     placeholder="اكتب عنوان جدول البيانات..."
                   />
                 </div>
@@ -2534,7 +2534,7 @@ export default function Documents({
                   </Button>
                   <Button
                     onClick={handleSaveFreeExcel}
-                    className="bg-[#192a56] hover:bg-[#192a56]/90 text-white font-bold py-6 px-6 rounded-2xl shadow-lg active:scale-[0.98] flex-1 sm:flex-initial"
+                    className="bg-navy hover:bg-navy/90 text-white font-bold py-6 px-6 rounded-2xl shadow-lg active:scale-[0.98] flex-1 sm:flex-initial"
                   >
                     <Save className="ml-2 h-5 w-5" /> حفظ في الأرشيف / القضية
                   </Button>
@@ -2542,7 +2542,7 @@ export default function Documents({
               </div>
 
               {/* Grid Canvas */}
-              <Card className="shadow-md border-gray-200 overflow-hidden bg-white rounded-3xl">
+              <Card className="shadow-md border-gray-200 overflow-hidden bg-surface rounded-3xl">
                 <div className="overflow-auto max-h-[60vh] border-b">
                   <table className="w-full border-collapse text-right text-sm">
                     <thead>
@@ -2553,7 +2553,7 @@ export default function Documents({
                             <input
                               value={header}
                               onChange={e => handleHeaderChange(cIndex, e.target.value)}
-                              className="w-full h-11 px-3 py-2 bg-gray-100 focus:bg-white text-right font-bold text-[#192a56] outline-none border-none focus:ring-2 focus:ring-[#273c75]/50"
+                              className="w-full h-11 px-3 py-2 bg-gray-100 focus:bg-surface text-right font-bold text-ink outline-none border-none focus:ring-2 focus:ring-edge-2/50"
                               placeholder={`عمود ${cIndex + 1}`}
                             />
                           </th>
@@ -2569,7 +2569,7 @@ export default function Documents({
                               <input
                                 value={cellValue}
                                 onChange={e => handleCellChange(rIndex, cIndex, e.target.value)}
-                                className="w-full h-10 px-3 bg-transparent outline-none border-none focus:bg-white focus:ring-2 focus:ring-[#192a56]/10 text-right text-gray-700"
+                                className="w-full h-10 px-3 bg-transparent outline-none border-none focus:bg-surface focus:ring-2 focus:ring-edge/10 text-right text-gray-700"
                                 placeholder="..."
                               />
                             </td>

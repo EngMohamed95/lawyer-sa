@@ -114,7 +114,7 @@ export default function CaseClaimSection({ title, placeholder, emptyText, value,
             <Textarea rows={6} autoFocus value={text} onChange={(e) => setText(e.target.value)} placeholder={placeholder} className="leading-relaxed" />
             <div className="flex justify-end gap-2">
               <Button size="sm" variant="outline" disabled={busy === "save"} onClick={() => { setText(value.text); setEditing(false); }}>إلغاء</Button>
-              <Button size="sm" disabled={busy === "save"} onClick={saveText} className="bg-[#192a56] hover:bg-[#192a56]/90 text-white">
+              <Button size="sm" disabled={busy === "save"} onClick={saveText} className="bg-navy hover:bg-navy/90 text-white">
                 {busy === "save" ? <Loader2 className="ml-1.5 h-4 w-4 animate-spin" /> : <Save className="ml-1.5 h-4 w-4" />} حفظ
               </Button>
             </div>
@@ -128,7 +128,7 @@ export default function CaseClaimSection({ title, placeholder, emptyText, value,
         {value.attachments.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {value.attachments.map((a) => (
-              <span key={a.url} className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-gray-200 bg-white py-1.5 pr-2.5 pl-1.5 text-sm">
+              <span key={a.url} className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-gray-200 bg-surface py-1.5 pr-2.5 pl-1.5 text-sm">
                 <File size={14} className="shrink-0 text-green-600" />
                 <a href={a.url} target="_blank" rel="noreferrer" className="truncate font-medium text-blue-600 hover:underline">{a.name}</a>
                 <button onClick={() => removeFile(a)} aria-label={`حذف ${a.name}`} title="حذف المرفق"

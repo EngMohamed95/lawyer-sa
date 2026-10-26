@@ -9,6 +9,7 @@ import ListsTab from "../components/settings/ListsTab";
 import NotificationsTab from "../components/settings/NotificationsTab";
 import OfficeStampCard from "../components/settings/OfficeStampCard";
 import OfficeProfileCard from "../components/settings/OfficeProfileCard";
+import AppearanceTab from "../components/settings/AppearanceTab";
 import PlatformAiSettingsTab from "../components/settings/PlatformAiSettingsTab";
 import AuditLog from "./AuditLog";
 import RecycleBin from "./RecycleBin";
@@ -98,7 +99,7 @@ function ChangePasswordForm() {
             value={form.current}
             onChange={e => setForm({ ...form, current: e.target.value })}
             placeholder="••••••••"
-            className="w-full pr-4 pl-12 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#192a56] focus:ring-2 focus:ring-[#192a56]/10 text-sm"
+            className="w-full pr-4 pl-12 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-edge focus:ring-2 focus:ring-edge/10 text-sm"
           />
           <button type="button" onClick={() => toggle("current")}
             className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -116,7 +117,7 @@ function ChangePasswordForm() {
             value={form.newPass}
             onChange={e => setForm({ ...form, newPass: e.target.value })}
             placeholder="••••••••"
-            className="w-full pr-4 pl-12 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#192a56] focus:ring-2 focus:ring-[#192a56]/10 text-sm"
+            className="w-full pr-4 pl-12 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-edge focus:ring-2 focus:ring-edge/10 text-sm"
           />
           <button type="button" onClick={() => toggle("newPass")}
             className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -149,7 +150,7 @@ function ChangePasswordForm() {
             className={`w-full pr-4 pl-12 py-3 border rounded-2xl focus:outline-none focus:ring-2 text-sm transition-colors ${
               form.confirm && form.newPass !== form.confirm
                 ? "border-red-300 focus:border-red-400 focus:ring-red-100"
-                : "border-gray-200 focus:border-[#192a56] focus:ring-[#192a56]/10"
+                : "border-gray-200 focus:border-edge focus:ring-edge/10"
             }`}
           />
           <button type="button" onClick={() => toggle("confirm")}
@@ -168,7 +169,7 @@ function ChangePasswordForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-[#192a56] hover:bg-[#192a56]/90 text-[#273c75] font-black py-3 rounded-2xl transition flex items-center justify-center gap-2"
+        className="w-full bg-navy hover:bg-navy/90 text-ink-2 font-black py-3 rounded-2xl transition flex items-center justify-center gap-2"
       >
         {loading ? <><Loader2 size={18} className="animate-spin" /> جاري التغيير...</> : "تغيير كلمة المرور"}
       </button>
@@ -388,7 +389,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 font-['Tajawal']" dir="rtl">
       <div>
-        <h1 className="text-2xl font-black text-[#192a56]">{canManageSettings ? "الإعدادات" : "تغيير كلمة المرور"}</h1>
+        <h1 className="text-2xl font-black text-ink">{canManageSettings ? "الإعدادات" : "تغيير كلمة المرور"}</h1>
         <p className="text-gray-500 mt-1 text-sm">
           {canManageSettings ? "إدارة حسابك وإعدادات الأمان والأنظمة" : "حدّث كلمة مرور حسابك"}
         </p>
@@ -401,8 +402,8 @@ export default function SettingsPage() {
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm ${
                 activeTab === tab.id
-                  ? "bg-[#192a56] text-[#273c75] shadow-lg font-bold"
-                  : "text-gray-600 hover:bg-white hover:text-[#192a56]"
+                  ? "bg-navy text-ink-2 shadow-lg font-bold"
+                  : "text-gray-600 hover:bg-surface hover:text-ink"
               }`}>
               {tab.icon}
               <span className="font-medium">{tab.name}</span>
@@ -414,7 +415,7 @@ export default function SettingsPage() {
         <div className="flex-1">
           <Card className="shadow-sm border-gray-100">
             <CardHeader className="border-b border-gray-50">
-              <CardTitle className="text-lg font-black text-[#192a56]">
+              <CardTitle className="text-lg font-black text-ink">
                 {tabs.find(t => t.id === activeTab)?.name}
               </CardTitle>
             </CardHeader>
@@ -425,11 +426,11 @@ export default function SettingsPage() {
                 <div className="space-y-8">
                   {/* User info */}
                   <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-2xl">
-                    <div className="w-12 h-12 bg-[#192a56] rounded-full flex items-center justify-center text-[#273c75] font-black text-lg">
+                    <div className="w-12 h-12 bg-navy rounded-full flex items-center justify-center text-ink-2 font-black text-lg">
                       {userName.charAt(0)}
                     </div>
                     <div>
-                      <p className="font-black text-[#192a56]">{userName}</p>
+                      <p className="font-black text-ink">{userName}</p>
                       <p className="text-sm text-gray-500">{auth.currentUser?.email || userEmail}</p>
                       <p className="text-xs text-gray-400 mt-0.5">
                         {roleLabel(userRole)}
@@ -438,7 +439,7 @@ export default function SettingsPage() {
                   </div>
 
                   <div>
-                    <h3 className="text-base font-black text-[#192a56] mb-1">تغيير كلمة المرور</h3>
+                    <h3 className="text-base font-black text-ink mb-1">تغيير كلمة المرور</h3>
                     <p className="text-sm text-gray-500 mb-6">
                       يجب إدخال كلمة المرور الحالية أولاً للتحقق من هويتك قبل تغييرها.
                     </p>
@@ -469,7 +470,7 @@ export default function SettingsPage() {
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-gray-700">الاسم</label>
                     <input defaultValue={userName}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#192a56] text-sm" />
+                      className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:border-edge text-sm" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-gray-700">البريد الإلكتروني</label>
@@ -477,7 +478,7 @@ export default function SettingsPage() {
                       className="w-full px-4 py-3 border border-gray-200 rounded-2xl bg-gray-50 text-sm text-gray-500 cursor-not-allowed" />
                     <p className="text-xs text-gray-400">لتغيير البريد الإلكتروني تواصل مع المدير</p>
                   </div>
-                  <button className="px-6 py-3 bg-[#192a56] text-[#273c75] font-bold rounded-2xl text-sm hover:bg-[#192a56]/90 transition">
+                  <button className="px-6 py-3 bg-navy text-ink-2 font-bold rounded-2xl text-sm hover:bg-navy/90 transition">
                     حفظ التغييرات
                   </button>
                 </div>
@@ -491,6 +492,8 @@ export default function SettingsPage() {
 
               {/* تبويب التنبيهات — كان فارغاً */}
               {activeTab === "notifications" && <NotificationsTab />}
+
+              {activeTab === "appearance" && <AppearanceTab />}
 
               {/* نُقلا من القائمة الجانبية — نفس المكوّنين بلا تغيير في منطقهما */}
               {activeTab === "audit" && <AuditLog embedded />}
@@ -523,8 +526,8 @@ export default function SettingsPage() {
                     {/* Najiz Section */}
                     <Card className="shadow-sm border border-gray-100">
                       <CardHeader className="pb-3 bg-gray-50/50">
-                        <CardTitle className="text-base font-bold text-[#192a56] flex items-center gap-2">
-                          <Link size={18} className="text-[#273c75]" /> تكامل منصة ناجز (وزارة العدل)
+                        <CardTitle className="text-base font-bold text-ink flex items-center gap-2">
+                          <Link size={18} className="text-ink-2" /> تكامل منصة ناجز (وزارة العدل)
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="p-4 space-y-4">
@@ -533,7 +536,7 @@ export default function SettingsPage() {
                           <SearchableSelect
                             value={sysSettings.najizMode}
                             onChange={e => setSysSettings({ ...sysSettings, najizMode: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#192a56]"
+                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-edge"
                           >
                             <option value="CHROME_EXTENSION">سحب تلقائي عبر إضافة المتصفح (Chrome Extension)</option>
                             <option value="SMART_IMPORT">الرفع والاستيراد اليدوي الذكي (PDF / HTML)</option>
@@ -551,7 +554,7 @@ export default function SettingsPage() {
                                 value={sysSettings.najizApiKey}
                                 onChange={e => setSysSettings({ ...sysSettings, najizApiKey: e.target.value })}
                                 placeholder="api_key_xxxxxxxxxxxxx"
-                                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#192a56]"
+                                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-edge"
                               />
                             </div>
                             <div className="space-y-1">
@@ -561,7 +564,7 @@ export default function SettingsPage() {
                                 value={sysSettings.najizClientId}
                                 onChange={e => setSysSettings({ ...sysSettings, najizClientId: e.target.value })}
                                 placeholder="client_id_xxxxxxxxx"
-                                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#192a56]"
+                                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-edge"
                               />
                             </div>
                           </div>
@@ -573,7 +576,7 @@ export default function SettingsPage() {
                             <SearchableSelect
                               value={sysSettings.najizSyncFreq}
                               onChange={e => setSysSettings({ ...sysSettings, najizSyncFreq: e.target.value })}
-                              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#192a56]"
+                              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-edge"
                             >
                               <option value="HOURLY">كل ساعة</option>
                               <option value="DAILY">يومياً (موصى به)</option>
@@ -588,8 +591,8 @@ export default function SettingsPage() {
                     {/* Financial/Tax Section */}
                     <Card className="shadow-sm border border-gray-100">
                       <CardHeader className="pb-3 bg-gray-50/50">
-                        <CardTitle className="text-base font-bold text-[#192a56] flex items-center gap-2">
-                          <DollarSign size={18} className="text-[#273c75]" /> الإعدادات المالية والضريبية
+                        <CardTitle className="text-base font-bold text-ink flex items-center gap-2">
+                          <DollarSign size={18} className="text-ink-2" /> الإعدادات المالية والضريبية
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="p-4 space-y-4">
@@ -603,7 +606,7 @@ export default function SettingsPage() {
                               if (cur === "EGP") vat = 0;
                               setSysSettings({ ...sysSettings, currency: cur, vatRate: vat });
                             }}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#192a56]"
+                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-edge"
                           >
                             <option value="SAR">الريال السعودي (ر.س) - السعودية</option>
                             <option value="EGP">الجنيه المصري (ج.م) - مصر</option>
@@ -619,7 +622,7 @@ export default function SettingsPage() {
                             max="100"
                             value={sysSettings.vatRate}
                             onChange={e => setSysSettings({ ...sysSettings, vatRate: Number(e.target.value) })}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#192a56]"
+                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-edge"
                           />
                         </div>
 
@@ -629,10 +632,10 @@ export default function SettingsPage() {
                             id="zatcaEnabled"
                             checked={sysSettings.zatcaEnabled}
                             onChange={e => setSysSettings({ ...sysSettings, zatcaEnabled: e.target.checked })}
-                            className="rounded text-[#273c75] focus:ring-[#273c75] mt-1"
+                            className="rounded text-ink-2 focus:ring-edge-2 mt-1"
                           />
                           <div>
-                            <label htmlFor="zatcaEnabled" className="text-xs font-bold text-[#192a56] block cursor-pointer">
+                            <label htmlFor="zatcaEnabled" className="text-xs font-bold text-ink block cursor-pointer">
                               تفعيل الفاتورة الإلكترونية المعتمدة (ZATCA)
                             </label>
                             <span className="text-[10px] text-gray-500 block mt-0.5">
@@ -646,8 +649,8 @@ export default function SettingsPage() {
                     {/* E-Signature Section */}
                     <Card className="shadow-sm border border-gray-100">
                       <CardHeader className="pb-3 bg-gray-50/50">
-                        <CardTitle className="text-base font-bold text-[#192a56] flex items-center gap-2">
-                          <FileEdit size={18} className="text-[#273c75]" /> نظام التوقيع الإلكتروني للعملاء
+                        <CardTitle className="text-base font-bold text-ink flex items-center gap-2">
+                          <FileEdit size={18} className="text-ink-2" /> نظام التوقيع الإلكتروني للعملاء
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="p-4 space-y-4">
@@ -656,7 +659,7 @@ export default function SettingsPage() {
                           <SearchableSelect
                             value={sysSettings.eSignatureMode}
                             onChange={e => setSysSettings({ ...sysSettings, eSignatureMode: e.target.value })}
-                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#192a56]"
+                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-edge"
                           >
                             <option value="OTP_NATIVE">نظام التوقيع الداخلي (رسالة التحقق OTP عبر الجوال)</option>
                             <option value="DOCUSIGN">التكامل مع منصة DocuSign العالمية</option>
@@ -678,7 +681,7 @@ export default function SettingsPage() {
                     <button
                       onClick={handleSeedFakeData}
                       disabled={saving}
-                      className="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-2xl transition shadow-lg flex items-center gap-2 text-sm disabled:opacity-50"
+                      className="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-[#451a03] font-bold rounded-2xl transition shadow-lg flex items-center gap-2 text-sm disabled:opacity-50"
                     >
                       {saving ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
                       توليد بيانات تجريبية (Fake Data)
@@ -686,7 +689,7 @@ export default function SettingsPage() {
                     <button
                       onClick={saveAllSettings}
                       disabled={saving}
-                      className="px-8 py-3 bg-[#192a56] hover:bg-[#192a56]/90 text-[#273c75] font-bold rounded-2xl transition shadow-lg flex items-center gap-2 text-sm disabled:opacity-50"
+                      className="px-8 py-3 bg-navy hover:bg-navy/90 text-ink-2 font-bold rounded-2xl transition shadow-lg flex items-center gap-2 text-sm disabled:opacity-50"
                     >
                       {saving ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
                       حفظ إعدادات النظام
@@ -696,7 +699,7 @@ export default function SettingsPage() {
               )}
 
               {/* ========== OTHER TABS ========== */}
-              {!["security", "profile", "permissions", "lists", "general", "integrations", "ai-platform"].includes(activeTab) && (
+              {!["security", "profile", "permissions", "lists", "notifications", "appearance", "audit", "recyclebin", "general", "integrations", "ai-platform"].includes(activeTab) && (
                 <div className="flex flex-col items-center justify-center py-12 text-gray-400">
                   <SettingsIcon size={48} className="mb-4 opacity-20" />
                   <p className="font-bold">قيد التطوير في النسخة القادمة</p>

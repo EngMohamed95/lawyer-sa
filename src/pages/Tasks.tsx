@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { Plus, Search, CheckCircle, Edit3, Trash2, Scale } from "lucide-react";
 import { Card, CardContent, CardHeader } from "../components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
@@ -13,6 +13,8 @@ import type { Query, DocumentData } from "firebase/firestore";
 import { excludeDeleted, softDelete } from "../lib/softDelete";
 import { fetchCaseOptions, type CaseOption } from "../lib/links";
 import { db } from "../lib/firebase";
+import FilterBanner from "../components/FilterBanner";
+import { TASK_STATUS_FILTER_AR, matchesTaskFilter } from "../lib/dashboardFilters";
 
 const getPriorityBadge = (p: string) => {
   switch (p) {
@@ -85,15 +87,20 @@ export default function Tasks() {
     fetchTasks();
   }, [lawyerId, userRole]);
 
+  // رابط لوحة التحكم: ?status=open|overdue|done|unfinished
+  const [params, setParams] = useSearchParams();
+  const statusFilter = params.get("status");
+
   const filteredTasks = useMemo(
     () => (Array.isArray(tasks) ? tasks : []).filter((t) => {
+      if (statusFilter && !matchesTaskFilter(t, statusFilter)) return false;
       const query = search.trim().toLowerCase();
       if (!query) return true;
       return [t.title, t.description, t.assignedTo, t.assignee?.name]
         .filter(Boolean)
         .some((field) => field.toLowerCase().includes(query));
     }),
-    [tasks, search]
+    [tasks, search, statusFilter]
   );
 
   const markCompleted = async (taskId: string) => {
@@ -130,18 +137,23 @@ export default function Tasks() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">المهام</h1>
+          <h1 className="text-3xl font-bold text-ink tracking-tight">المهام</h1>
           <p className="text-gray-500 mt-1 print:hidden">إدارة المهام الموكلة للمحامين والمتدربين</p>
         </div>
         <div className="flex gap-2 print:hidden">
           <Button variant="outline" onClick={() => window.print()} className="border-blue-600 text-blue-600 hover:bg-blue-50">
             <CheckCircle className="ml-2 h-4 w-4" /> تحميل تقرير المهام
           </Button>
-          <Button onClick={() => setIsAddOpen(true)} className="bg-[#273c75] hover:bg-[#192a56] text-white">
+          <Button onClick={() => setIsAddOpen(true)} className="bg-navy-2 hover:bg-navy text-white">
             <Plus className="ml-2 h-4 w-4" /> إضافة مهمة
           </Button>
         </div>
       </div>
+
+      {statusFilter && TASK_STATUS_FILTER_AR[statusFilter] && (
+        <FilterBanner label={`المهام ${TASK_STATUS_FILTER_AR[statusFilter]}`}
+          onClear={() => { params.delete("status"); setParams(params, { replace: true }); }} />
+      )}
 
       <Card className="shadow-sm border-gray-200">
         <CardHeader className="border-b bg-gray-50/50 pb-4">
@@ -151,7 +163,7 @@ export default function Tasks() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="بحث بالاسم أو المهمة..."
-              className="pl-4 pr-10 bg-white"
+              className="pl-4 pr-10 bg-surface"
             />
           </div>
         </CardHeader>
@@ -159,13 +171,13 @@ export default function Tasks() {
           <Table>
             <TableHeader className="bg-gray-50">
               <TableRow>
-                <TableHead className="text-right font-bold text-[#192a56]">العنوان</TableHead>
-                <TableHead className="text-right font-bold text-[#192a56] hidden sm:table-cell">تفاصيل المهمة</TableHead>
-                <TableHead className="text-right font-bold text-[#192a56] hidden md:table-cell">تاريخ الاستحقاق</TableHead>
-                <TableHead className="text-right font-bold text-[#192a56]">الأولوية</TableHead>
-                <TableHead className="text-right font-bold text-[#192a56]">الحالة</TableHead>
+                <TableHead className="text-right font-bold text-ink">العنوان</TableHead>
+                <TableHead className="text-right font-bold text-ink hidden sm:table-cell">تفاصيل المهمة</TableHead>
+                <TableHead className="text-right font-bold text-ink hidden md:table-cell">تاريخ الاستحقاق</TableHead>
+                <TableHead className="text-right font-bold text-ink">الأولوية</TableHead>
+                <TableHead className="text-right font-bold text-ink">الحالة</TableHead>
                 {userRole === "SUPER_ADMIN" && <TableHead className="text-right font-bold text-purple-600 hidden lg:table-cell">المحامي</TableHead>}
-                <TableHead className="text-center font-bold text-[#192a56] print-hidden">إجراءات</TableHead>
+                <TableHead className="text-center font-bold text-ink print-hidden">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -182,7 +194,7 @@ export default function Tasks() {
                   const dueDate = t.dueDate ? new Date(t.dueDate) : null;
                   return (
                     <TableRow key={t.id} className="hover:bg-gray-50/50">
-                      <TableCell className="font-medium text-[#192a56]">
+                      <TableCell className="font-medium text-ink">
                         {t.title}
                         {t.caseId && casesById[t.caseId] && (
                           <Link to={`/app/cases/${t.caseId}`}

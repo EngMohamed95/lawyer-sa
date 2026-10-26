@@ -176,11 +176,11 @@ export default function LegalLibrary() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">المكتبة القانونية الرقمية</h1>
+          <h1 className="text-3xl font-bold text-ink tracking-tight">المكتبة القانونية الرقمية</h1>
           <p className="text-gray-500 mt-1 text-sm">أرشيف الأنظمة واللوائح والمدونات القضائية الرسمية للمملكة العربية السعودية</p>
         </div>
         <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-2.5 rounded-xl text-xs font-bold shadow-2xs">
-          <Scale size={16} className="text-[#273c75]" />
+          <Scale size={16} className="text-ink-2" />
           <span>تحديثات مستمرة متوافقة مع الأنظمة الصادرة عن هيئة الخبراء بمجلس الوزراء</span>
         </div>
       </div>
@@ -195,7 +195,7 @@ export default function LegalLibrary() {
             placeholder="ابحث عن نظام، مادة، كلمة مفتاحية..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="pl-4 pr-10 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#192a56] focus:ring-1 focus:ring-[#192a56] bg-white shadow-3xs"
+            className="pl-4 pr-10 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-edge focus:ring-1 focus:ring-edge bg-surface shadow-3xs"
           />
         </div>
 
@@ -213,8 +213,8 @@ export default function LegalLibrary() {
               onClick={() => setActiveTab(tab.id)}
               className={`px-4 py-2 text-xs font-bold rounded-xl transition shadow-3xs border ${
                 activeTab === tab.id
-                  ? "bg-[#192a56] text-white border-[#192a56]"
-                  : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                  ? "bg-navy text-white border-edge"
+                  : "bg-surface text-gray-600 border-gray-200 hover:bg-gray-50"
               }`}
             >
               {tab.label}
@@ -226,23 +226,23 @@ export default function LegalLibrary() {
       {/* Main Books Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {filteredLaws.length === 0 ? (
-          <div className="col-span-2 py-16 text-center text-gray-400 font-bold bg-white rounded-2xl border border-gray-100 flex flex-col items-center justify-center gap-3">
+          <div className="col-span-2 py-16 text-center text-gray-400 font-bold bg-surface rounded-2xl border border-gray-100 flex flex-col items-center justify-center gap-3">
             <BookOpen size={48} className="opacity-20" />
             <span>لا توجد أنظمة تطابق معايير البحث الحالية</span>
           </div>
         ) : (
           filteredLaws.map(law => (
-            <Card key={law.id} className="shadow-xs border-gray-200/80 hover:shadow-md transition-all duration-300 bg-white flex flex-col justify-between group">
+            <Card key={law.id} className="shadow-xs border-gray-200/80 hover:shadow-md transition-all duration-300 bg-surface flex flex-col justify-between group">
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start gap-2">
-                  <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-[#192a56] group-hover:text-white transition-colors duration-300">
+                  <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-navy group-hover:text-white transition-colors duration-300">
                     <BookOpen size={20} />
                   </div>
                   <Badge variant="outline" className="border-amber-200 text-amber-700 bg-amber-50/50 font-bold text-[10px]">
                     {law.year}
                   </Badge>
                 </div>
-                <CardTitle className="text-lg font-black text-[#192a56] mt-3 group-hover:text-blue-600 transition-colors">
+                <CardTitle className="text-lg font-black text-ink mt-3 group-hover:text-blue-600 transition-colors">
                   {law.title}
                 </CardTitle>
                 <CardDescription className="text-gray-500 text-xs leading-relaxed mt-2 line-clamp-3">
@@ -258,7 +258,7 @@ export default function LegalLibrary() {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="text-gray-500 hover:text-[#192a56] hover:bg-gray-100" 
+                    className="text-gray-500 hover:text-ink hover:bg-gray-100" 
                     onClick={() => handlePrintLaw(law)}
                     title="طباعة النظام بالكامل"
                   >
@@ -266,7 +266,7 @@ export default function LegalLibrary() {
                   </Button>
                   <Button 
                     size="sm" 
-                    className="bg-[#192a56] hover:bg-[#192a56]/90 text-white font-bold text-xs gap-1 shadow-sm px-4" 
+                    className="bg-navy hover:bg-navy/90 text-white font-bold text-xs gap-1 shadow-sm px-4" 
                     onClick={() => {
                       setSelectedLaw(law);
                       setReaderSearchQuery("");
@@ -290,7 +290,7 @@ export default function LegalLibrary() {
             <div className="p-6 border-b bg-gray-50/50 flex flex-col gap-3">
               <div className="flex justify-between items-start gap-4">
                 <div>
-                  <DialogTitle className="text-xl font-black text-[#192a56]">
+                  <DialogTitle className="text-xl font-black text-ink">
                     {selectedLaw.title}
                   </DialogTitle>
                   <DialogDescription className="text-xs text-gray-500 mt-1">
@@ -298,7 +298,7 @@ export default function LegalLibrary() {
                   </DialogDescription>
                 </div>
                 <div className="flex gap-1.5 shrink-0">
-                  <Button variant="outline" size="sm" className="border-gray-200 text-[#192a56]" onClick={() => handlePrintLaw(selectedLaw)}>
+                  <Button variant="outline" size="sm" className="border-gray-200 text-ink" onClick={() => handlePrintLaw(selectedLaw)}>
                     <Printer size={14} className="ml-1" /> طباعة هذا النظام
                   </Button>
                 </div>
@@ -312,7 +312,7 @@ export default function LegalLibrary() {
                   placeholder="ابحث عن كلمة داخل هذا النظام..."
                   value={readerSearchQuery}
                   onChange={e => setReaderSearchQuery(e.target.value)}
-                  className="pl-3 pr-8 py-1.5 h-8 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#192a56] bg-white"
+                  className="pl-3 pr-8 py-1.5 h-8 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-edge bg-surface"
                 />
               </div>
             </div>

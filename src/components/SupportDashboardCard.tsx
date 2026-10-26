@@ -27,10 +27,10 @@ export default function SupportDashboardCard() {
   return (
     <Link
       to="/app/support/tickets"
-      className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-[#192a56] p-6 font-sans text-white shadow-sm ring-1 ring-[#273c75]/20 transition hover:bg-[#273c75]"
+      className="flex flex-wrap items-center justify-between gap-4 rounded-2xl bg-navy p-6 font-sans text-white shadow-sm ring-1 ring-edge-2/20 transition hover:bg-navy-2"
     >
       <div className="flex items-center gap-4">
-        <Headset className="text-[#273c75]" size={30} />
+        <Headset className="text-ink-2" size={30} />
         <div>
           <h2 className="text-lg font-bold">مركز الدعم الفني</h2>
           <p className="mt-1 text-sm text-white/70">

@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Loader2 } from "lucide-react";
+import ClientRoleChoice from "./ClientRoleChoice";
 import { AddClientModal } from "./AddClientModal";
 import { useOfficeLookups } from "../lib/officeLookups";
 import { clientRoleOf } from "../lib/clientRole";
@@ -47,6 +48,7 @@ export function EditCaseModal({
     defendantName: "",
     caseSubject: "",
     startDate: new Date().toISOString().split("T")[0],
+    startTime: "",
     assignedLawyerIds: [] as string[],
     assignedLawyerNames: [] as string[],
     assignedLawyerId: "",
@@ -57,6 +59,7 @@ export function EditCaseModal({
     traineeNames: [] as string[],
     notes: "",
     enforcementRequestType: "",
+    enforcementRequestKind: "",
     enforcementDeedType: "",
     executionDetails: { ...EMPTY_EXECUTION_DETAILS },
   });
@@ -167,6 +170,7 @@ export function EditCaseModal({
         defendantName: caseData.defendantName || "",
         caseSubject: caseData.caseSubject || "",
         startDate: caseData.startDate ? new Date(caseData.startDate).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+        startTime: caseData.startTime || "",
         // القضايا القديمة (محامٍ واحد) تُحمَّل كقائمة من عنصر واحد
         assignedLawyerIds: assignedLawyersOf(caseData).ids,
         assignedLawyerNames: assignedLawyersOf(caseData).names,
@@ -178,6 +182,7 @@ export function EditCaseModal({
         traineeNames: caseData.traineeNames || [],
         notes: caseData.notes || "",
         enforcementRequestType: caseData.enforcementRequestType || "",
+        enforcementRequestKind: caseData.enforcementRequestKind || "",
         enforcementDeedType: caseData.enforcementDeedType || "",
         executionDetails: executionDetailsOf(caseData),
       });
@@ -200,10 +205,10 @@ export function EditCaseModal({
       const finalDefendantName = clientRole === "PLAINTIFF" ? formData.opponentName : clientName;
       
       const exec = caseTypeLabel(formData.type) === "تنفيذ";
-      const { enforcementRequestType, enforcementDeedType, executionDetails, ...base } = formData;
+      const { enforcementRequestType, enforcementRequestKind, enforcementDeedType, executionDetails, startTime, ...base } = formData;
       await updateDoc(doc(db, "cases", caseData.id), {
         ...base,
-        ...(exec ? { enforcementRequestType, enforcementDeedType, executionDetails } : {}),
+        ...(exec ? { enforcementRequestType, enforcementRequestKind, enforcementDeedType, executionDetails, startTime } : {}),
         plaintiffName: finalPlaintiffName,
         defendantName: finalDefendantName,
         clientRole,
@@ -222,14 +227,14 @@ export function EditCaseModal({
 
   const isExec = caseTypeLabel(formData.type) === "تنفيذ";
   const P = partyLabels(isExec);
-  const label = "text-sm font-bold text-[#192a56]";
+  const label = "text-sm font-bold text-ink";
   const canAssign = localStorage.getItem("userRole") === "LAWYER" || localStorage.getItem("userRole") === "SUPER_ADMIN";
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[820px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-[#192a56]">{isExec ? "تعديل بيانات طلب التنفيذ" : "تعديل بيانات القضية"}</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-ink">{isExec ? "تعديل بيانات طلب التنفيذ" : "تعديل بيانات القضية"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -280,9 +285,18 @@ export function EditCaseModal({
 
             {isExec ? (
               <div className="space-y-2">
-                <label className={label}>تاريخ تقديم الطلب *</label>
-                <Input type="date" required value={formData.startDate}
-                  onChange={e => setFormData({...formData, startDate: e.target.value})} />
+                <div className="grid grid-cols-[1fr_9rem] gap-2">
+                  <div className="space-y-2">
+                    <label className={label}>تاريخ تقديم الطلب *</label>
+                    <Input type="date" required value={formData.startDate}
+                      onChange={e => setFormData({...formData, startDate: e.target.value})} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className={label}>الوقت</label>
+                    <Input type="time" value={formData.startTime}
+                      onChange={e => setFormData({...formData, startTime: e.target.value})} />
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="space-y-2">
@@ -302,6 +316,7 @@ export function EditCaseModal({
             {isExec && (
               <ExecutionTypeFields
                 requestType={formData.enforcementRequestType}
+                requestKind={formData.enforcementRequestKind}
                 onChange={(patch) => setFormData({ ...formData, ...patch })}
               />
             )}
@@ -310,37 +325,8 @@ export function EditCaseModal({
 
             <div className="space-y-2 md:col-span-2">
               <label className={label}>صفة العميل في {isExec ? "الطلب" : "القضية"}</label>
-              <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
-                <button
-                  type="button"
-                  onClick={() => setClientRole("PLAINTIFF")}
-                  className={`flex-1 py-2 text-center text-sm font-bold rounded-lg transition-all ${
-                    clientRole === "PLAINTIFF"
-                      ? "bg-[#192a56] text-white shadow-sm"
-                      : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  {isExec ? "طالب التنفيذ" : "مدعي (طالب الحق)"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setClientRole("DEFENDANT")}
-                  className={`flex-1 py-2 text-center text-sm font-bold rounded-lg transition-all ${
-                    clientRole === "DEFENDANT"
-                      ? "bg-[#192a56] text-white shadow-sm"
-                      : "text-slate-600 hover:text-slate-900"
-                  }`}
-                >
-                  {isExec ? "المنفذ ضده" : "مدعى عليه (المطلوب منه)"}
-                </button>
-              </div>
-              <p className="text-xs font-medium mt-1">
-                {clientRole === "PLAINTIFF" ? (
-                  <span className="text-blue-700">← سيكون العميل هو {P.PLAINTIFF}، والخصم هو {P.DEFENDANT}.</span>
-                ) : (
-                  <span className="text-rose-700">← سيكون العميل هو {P.DEFENDANT}، والخصم هو {P.PLAINTIFF}.</span>
-                )}
-              </p>
+              <ClientRoleChoice value={clientRole} onChange={setClientRole} isExec={isExec}
+                clientName={clients.find((c: any) => c.id === formData.clientId)?.fullName} />
             </div>
 
             <div className="space-y-2">
@@ -365,10 +351,10 @@ export function EditCaseModal({
               />
             </div>
 
-            <SectionTitle>{isExec ? "المحكمة ومنطوق الحكم" : "المحكمة وموضوع الدعوى"}</SectionTitle>
+            {!isExec && <SectionTitle>المحكمة وموضوع الدعوى</SectionTitle>}
 
             <div className="space-y-2">
-              <label className={label}>{isExec ? "محكمة التنفيذ" : "المحكمة المرفوع أمامها"}</label>
+              <label className={label}>{isExec ? "المحكمة" : "المحكمة المرفوع أمامها"}</label>
               <Input
                 value={formData.courtName}
                 onChange={e => setFormData({...formData, courtName: e.target.value})}
@@ -385,20 +371,16 @@ export function EditCaseModal({
               />
             </div>
 
-            <div className="space-y-2 md:col-span-2">
-              <label className={label}>{isExec ? "منطوق الحكم / مضمون السند" : "موضوع الدعوى / القضية"}</label>
-              {isExec ? (
-                <Textarea rows={3} value={formData.caseSubject}
-                  onChange={e => setFormData({...formData, caseSubject: e.target.value})}
-                  placeholder="اكتب منطوق الحكم أو مضمون السند المطلوب تنفيذه..." />
-              ) : (
+            {!isExec && (
+              <div className="space-y-2 md:col-span-2">
+                <label className={label}>موضوع الدعوى / القضية</label>
                 <Input
                   value={formData.caseSubject}
                   onChange={e => setFormData({...formData, caseSubject: e.target.value})}
                   placeholder="تفاصيل مختصرة لموضوع الدعوى..."
                 />
-              )}
-            </div>
+              </div>
+            )}
 
             {!isExec && (
               <div className="space-y-2">
@@ -446,7 +428,7 @@ export function EditCaseModal({
             <Button type="button" variant="outline" onClick={onClose}>
               إلغاء
             </Button>
-            <Button type="submit" disabled={loading} className="bg-[#192a56] hover:bg-[#192a56]/90 text-white">
+            <Button type="submit" disabled={loading} className="bg-navy hover:bg-navy/90 text-white">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               حفظ التعديلات
             </Button>

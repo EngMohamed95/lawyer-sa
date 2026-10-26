@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Outlet, Link, useLocation, Navigate, useNavigate } from "react-router";
-import { LayoutDashboard, Users, Briefcase, Calendar, CheckSquare, Settings, Bell, Search, Menu, Calculator, GraduationCap, BarChart, LogOut, Shield, CreditCard, Loader2, BookOpen, Sparkles, ChevronDown, ScrollText, Trash2, FileSignature, ReceiptText, Handshake, Timer, CalendarDays, Gavel, Headset, Lightbulb, Lock, Tag, Layers, UserCog } from "lucide-react";
+import { LayoutDashboard, Users, Briefcase, Calendar, CheckSquare, Settings, Bell, Menu, Calculator, GraduationCap, BarChart, LogOut, Shield, CreditCard, Loader2, BookOpen, Sparkles, ChevronDown, ScrollText, Trash2, FileSignature, ReceiptText, Handshake, Timer, CalendarDays, Gavel, Headset, Lightbulb, Lock, Tag, Layers, UserCog, Sun, Moon } from "lucide-react";
 import { useState, lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
 import { collection, getDocs, query, where, collectionGroup, limit } from "firebase/firestore";
 import { db } from "./lib/firebase";
@@ -10,6 +10,7 @@ import { loadOfficeSettings } from "./lib/officeSettings";
 import { loadOfficeLookups } from "./lib/officeLookups";
 import { loadPlatformAiSettings } from "./lib/platformSettings";
 import { roleLabel } from "./lib/roles";
+import { getThemePref, setThemePref, useTheme } from "./lib/theme";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Standard Import for Critical Pages (Faster initial load)
@@ -75,7 +76,6 @@ function PlatformOnly({ children }: { children: ReactNode }) {
 
 function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
   const location = useLocation();
-  const navigate = useNavigate();
   const perms = usePermissions();
 
   // بوابة الباقة منفصلة تماماً عن بوابة الدور: الدور يحدد "هل يحق له"،
@@ -98,9 +98,6 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
   // العقود والفواتير والأتعاب والساعات لصاحب المكتب (LAWYER) وحده
   const isOfficeOwner = perms.role === "LAWYER";
 
-  // الإعدادات الكاملة لمدير المكتب (ومدير المنصة)؛ غيرهما يرى تغيير كلمة المرور فقط
-  const canManageSettings = isOfficeOwner || perms.role === "SUPER_ADMIN";
-
   const navItems: NavItem[] = [
     { name: "لوحة التحكم", path: "/app/dashboard", icon: <LayoutDashboard size={20} /> },
     { name: "المحامين", path: "/app/lawyers", icon: <Shield size={20} />, hidden: !perms.can("platform.manage") },
@@ -118,21 +115,11 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
     { name: "سجل المدفوعات والعمليات", path: "/app/subscriptions", icon: <CreditCard size={20} />, hidden: !perms.can("platform.manage") },
     { name: "فريق مديري المنصة", path: "/app/platform-admins", icon: <UserCog size={20} />, hidden: !perms.can("platform.manage") },
 
-    // ── العمل القضائي: القضية هي الجذر، وتحتها ما يتفرّع عنها ──
-    // شرط الإخفاء لكل عنصر لم يتغيّر حرفاً واحداً؛ التغيير في الترتيب فقط.
-    // ولو أُخفي الأب وظهر أبناؤه (العميل مثلاً يرى الجلسات ولا يرى القضايا)
-    // يرفعهم visibleNavItems للمستوى الأعلى فلا يفقد أحد وصولاً كان يملكه.
-    {
-      name: "القضايا",
-      path: "/app/cases",
-      icon: <Briefcase size={20} />,
-      hidden: !perms.can("case.update"),
-      children: [
-        { name: "الجلسات", path: "/app/hearings", icon: <Calendar size={18} />, hidden: !perms.can("hearing.manage") },
-        { name: "المواعيد والتقويم", path: "/app/calendar", icon: <CalendarDays size={18} />, hidden: !perms.can("appointment.manage") },
-        { name: "المهام", path: "/app/tasks", icon: <CheckSquare size={18} />, hidden: !perms.can("task.manage") || paidRoleOnBasic },
-      ],
-    },
+    // ── العمل القضائي ──
+    { name: "القضايا", path: "/app/cases", icon: <Briefcase size={20} />, hidden: !perms.can("case.update") },
+    { name: "الجلسات", path: "/app/hearings", icon: <Calendar size={20} />, hidden: !perms.can("hearing.manage") },
+    { name: "المواعيد والتقويم", path: "/app/calendar", icon: <CalendarDays size={20} />, hidden: !perms.can("appointment.manage") },
+    { name: "المهام", path: "/app/tasks", icon: <CheckSquare size={20} />, hidden: !perms.can("task.manage") || paidRoleOnBasic },
 
     // التنفيذ قسم مستقل بمساره /app/execution — قائمته وتفاصيله لا تمر بالقضايا.
     // بياناته ما زالت في مجموعة cases (type: "تنفيذ").
@@ -213,11 +200,6 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
 
   const isGroupOpen = (path: string) => openGroups.includes(path);
 
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate("/login");
-  };
-
   return (
     <>
       {/* Mobile Overlay */}
@@ -226,7 +208,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
         onClick={onClose}
       />
       
-      <aside className={`fixed md:sticky top-0 right-0 h-screen w-64 bg-[#192a56] text-white flex flex-col shadow-2xl transition-transform duration-300 z-50 md:translate-x-0 ${isOpen ? "translate-x-0" : "translate-x-full md:translate-x-0"}`}>
+      <aside className={`fixed md:sticky top-0 right-0 h-screen w-64 bg-navy text-white flex flex-col shadow-2xl transition-transform duration-300 z-50 md:translate-x-0 ${isOpen ? "translate-x-0" : "translate-x-full md:translate-x-0"}`}>
         <div className="p-8 flex flex-col items-center border-b border-white/10 relative">
           <button onClick={onClose} className="md:hidden absolute top-4 left-4 text-white/70 hover:text-white">
             <Menu size={24} />
@@ -254,7 +236,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
                       onClick={onClose}
                       className={`flex items-center gap-3 px-6 py-3 transition-all duration-200 ${
                         isActive
-                          ? "bg-[#273c75]/20 text-[#273c75] border-r-4 border-[#273c75] font-bold"
+                          ? "bg-navy-2/20 text-ink-2 border-r-4 border-edge-2 font-bold"
                           : "hover:bg-white/5 text-gray-300 hover:text-white"
                       }`}
                     >
@@ -271,7 +253,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
                   <div
                     className={`flex items-center transition-all duration-200 ${
                       isActive
-                        ? "bg-[#273c75]/20 text-[#273c75] border-r-4 border-[#273c75] font-bold"
+                        ? "bg-navy-2/20 text-ink-2 border-r-4 border-edge-2 font-bold"
                         : "hover:bg-white/5 text-gray-300 hover:text-white"
                     }`}
                   >
@@ -299,7 +281,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
                             onClick={onClose}
                             className={`flex items-center gap-3 pr-12 pl-6 py-2.5 text-sm transition-all duration-200 ${
                               location.pathname === child.path
-                                ? "text-[#273c75] border-r-4 border-[#273c75] font-bold bg-[#273c75]/10"
+                                ? "text-ink-2 border-r-4 border-edge-2 font-bold bg-navy-2/10"
                                 : "hover:bg-white/5 text-gray-400 hover:text-white"
                             }`}
                           >
@@ -315,25 +297,124 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
             })}
           </ul>
         </nav>
-        <div className="p-6 border-t border-white/10 space-y-2">
-          <Link 
-            to="/app/settings"
-            onClick={onClose}
-            className="flex items-center gap-3 text-gray-300 hover:text-white transition-colors w-full px-2 py-2"
-          >
-            {canManageSettings ? <Settings size={20} /> : <Lock size={20} />}
-            <span className="font-medium">{canManageSettings ? "الإعدادات" : "تغيير كلمة المرور"}</span>
-          </Link>
-          <button 
-            onClick={handleLogout}
-            className="flex items-center gap-3 text-red-400 hover:text-red-300 transition-colors w-full px-2 py-2"
-          >
-            <LogOut size={20} />
-            <span className="font-medium">تسجيل الخروج</span>
-          </button>
-        </div>
       </aside>
     </>
+  );
+}
+
+/** مفتاح الوضع الداكن — بجانب التنبيهات */
+function ThemeSwitch() {
+  const { resolved, setPref } = useTheme();
+  const dark = resolved === "dark";
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={dark}
+      aria-label="الوضع الداكن"
+      title={dark ? "التبديل إلى الوضع الفاتح" : "التبديل إلى الوضع الداكن"}
+      onClick={() => setPref(dark ? "light" : "dark")}
+      className={`relative h-8 w-[3.75rem] shrink-0 rounded-full ring-1 transition-colors duration-300 ${
+        dark ? "bg-navy-2 ring-white/10" : "bg-gray-100 ring-gray-200 hover:bg-gray-200/70"
+      }`}
+    >
+      <Sun size={14} className={`absolute right-2 top-1/2 -translate-y-1/2 transition-opacity ${dark ? "opacity-40 text-white" : "opacity-0"}`} />
+      <Moon size={14} className={`absolute left-2 top-1/2 -translate-y-1/2 transition-opacity ${dark ? "opacity-0" : "opacity-50 text-gray-500"}`} />
+      <span
+        className={`absolute top-1 right-1 grid h-6 w-6 place-items-center rounded-full shadow-sm transition-transform duration-300 ${
+          dark ? "-translate-x-7 bg-surface text-amber-300" : "translate-x-0 bg-white text-amber-500"
+        }`}
+      >
+        {dark ? <Moon size={14} /> : <Sun size={14} />}
+      </span>
+    </button>
+  );
+}
+
+/** اسم المستخدم وصورته — يفتح قائمة الإعدادات وتسجيل الخروج */
+function UserMenu({ userName, roleName }: { userName: string; roleName: string }) {
+  const perms = usePermissions();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  // الإعدادات الكاملة لمدير المكتب ومدير المنصة؛ غيرهما يرى تغيير كلمة المرور فقط
+  const canManageSettings = perms.role === "LAWYER" || perms.role === "SUPER_ADMIN";
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  const handleLogout = () => {
+    // المظهر تفضيل للجهاز لا للحساب — يبقى بعد الخروج
+    const theme = getThemePref();
+    localStorage.clear();
+    setThemePref(theme);
+    navigate("/login");
+  };
+
+  return (
+    <div className="relative border-l border-gray-200 pl-2 md:pl-4">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className={`flex items-center gap-2 rounded-xl px-1.5 py-1 transition-colors md:gap-3 ${open ? "bg-gray-100" : "hover:bg-gray-50"}`}
+      >
+        <div className="hidden text-right sm:block">
+          <p className="text-sm font-semibold text-ink">{userName}</p>
+          <p className="text-xs text-gray-500">{roleName}</p>
+        </div>
+        <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border-2 border-white/20 bg-navy-2 text-lg font-bold shadow-sm md:h-10 md:w-10">
+          <img src="/logo.png" alt="" className="h-full w-full object-cover" />
+        </div>
+        <ChevronDown size={16} className={`text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+            <motion.div
+              role="menu"
+              initial={{ opacity: 0, y: 8, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.97 }}
+              transition={{ duration: 0.15 }}
+              className="absolute left-0 z-50 mt-2 w-60 overflow-hidden rounded-2xl border border-gray-200 bg-surface shadow-2xl"
+              dir="rtl"
+            >
+              <div className="border-b border-gray-100 px-4 py-3">
+                <p className="truncate text-sm font-bold text-ink">{userName}</p>
+                <p className="text-xs text-gray-500">{roleName}</p>
+              </div>
+              <div className="p-1.5">
+                <Link
+                  to="/app/settings"
+                  role="menuitem"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-ink"
+                >
+                  {canManageSettings ? <Settings size={18} /> : <Lock size={18} />}
+                  {canManageSettings ? "الإعدادات" : "تغيير كلمة المرور"}
+                </Link>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+                >
+                  <LogOut size={18} />
+                  تسجيل الخروج
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -514,7 +595,7 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
             description: t.description || "يجب تسليم وإكمال هذه المهمة اليوم.",
             date: t.dueDate,
             badge: "اليوم",
-            badgeColor: "bg-amber-500 text-white",
+            badgeColor: "bg-amber-500 text-[#451a03]",
             link: "/app/tasks"
           });
         } else if (diffDays <= 2) {
@@ -525,7 +606,7 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
             description: t.description || `باقي ${diffDays} أيام على التسليم.`,
             date: t.dueDate,
             badge: `خلال ${diffDays} يوم`,
-            badgeColor: "bg-amber-400 text-[#192a56]",
+            badgeColor: "bg-amber-400 text-ink",
             link: "/app/tasks"
           });
         }
@@ -590,21 +671,14 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
   }, [lawyerId]);
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 sticky top-0 z-30 shadow-sm">
+    <header className="h-16 bg-surface border-b border-gray-200 flex items-center justify-between px-4 md:px-6 sticky top-0 z-30 shadow-sm">
       <div className="flex items-center gap-4">
-        <button onClick={onMenuOpen} className="md:hidden text-[#192a56] hover:text-gray-700 p-1">
+        <button onClick={onMenuOpen} className="md:hidden text-ink hover:text-gray-700 p-1">
           <Menu size={24} />
         </button>
-        <div className="relative hidden sm:block">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-          <input
-            type="text"
-            placeholder="بحث..."
-            className="pl-4 pr-10 py-2 border border-gray-300 rounded-full text-sm focus:outline-none focus:border-[#192a56] focus:ring-1 focus:ring-[#192a56] w-64 bg-gray-50"
-          />
-        </div>
       </div>
       <div className="flex items-center gap-2 md:gap-4">
+        <ThemeSwitch />
         <div className="relative">
           <button 
             onClick={() => setShowDropdown(!showDropdown)}
@@ -613,7 +687,7 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
           >
             <Bell size={20} />
             {notifications.length > 0 && (
-              <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+              <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-surface">
                 {notifications.length}
               </span>
             )}
@@ -631,14 +705,14 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute left-0 mt-2 w-80 sm:w-96 bg-white border border-gray-200 shadow-2xl rounded-2xl overflow-hidden z-50 font-['Tajawal'] text-right"
+                  className="absolute left-0 mt-2 w-80 sm:w-96 bg-surface border border-gray-200 shadow-2xl rounded-2xl overflow-hidden z-50 font-['Tajawal'] text-right"
                   dir="rtl"
                 >
-                  <div className="bg-[#192a56] p-4 text-white flex items-center justify-between">
+                  <div className="bg-navy p-4 text-white flex items-center justify-between">
                     <span className="font-bold text-sm">التنبيهات والإشعارات ({notifications.length})</span>
                     <button 
                       onClick={fetchNotifications}
-                      className="text-xs text-[#273c75] hover:underline flex items-center gap-1"
+                      className="text-xs text-ink-2 hover:underline flex items-center gap-1"
                       disabled={loadingNotifications}
                     >
                       {loadingNotifications ? "جاري التحديث..." : "تحديث"}
@@ -648,7 +722,7 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
                   <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100">
                     {loadingNotifications && notifications.length === 0 ? (
                       <div className="p-8 text-center text-gray-500 text-sm flex flex-col items-center gap-2">
-                        <Loader2 className="animate-spin text-[#192a56]" size={20} />
+                        <Loader2 className="animate-spin text-ink" size={20} />
                         <span>جاري تحميل التنبيهات...</span>
                       </div>
                     ) : notifications.length === 0 ? (
@@ -667,12 +741,12 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
                           onClick={() => setShowDropdown(false)}
                           className="p-4 flex gap-3 hover:bg-gray-50 transition-colors block text-right"
                         >
-                          <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center ${n.type === "HEARING" ? "bg-amber-50 text-[#273c75]" : "bg-blue-50 text-blue-600"}`}>
+                          <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center ${n.type === "HEARING" ? "bg-amber-50 text-ink-2" : "bg-blue-50 text-blue-600"}`}>
                             {n.type === "HEARING" ? <Calendar size={16} /> : <CheckSquare size={16} />}
                           </div>
                           <div className="flex-1 min-w-0 space-y-1">
                             <div className="flex items-start justify-between gap-2">
-                              <p className="font-bold text-xs text-[#192a56] truncate">{n.title}</p>
+                              <p className="font-bold text-xs text-ink truncate">{n.title}</p>
                               <span className={`shrink-0 text-[9px] font-bold px-2 py-0.5 rounded-full ${n.badgeColor}`}>
                                 {n.badge}
                               </span>
@@ -689,7 +763,7 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
                   <Link
                     to="/app/notifications"
                     onClick={() => setShowDropdown(false)}
-                    className="block border-t bg-gray-50/70 px-4 py-2.5 text-center text-xs font-bold text-[#192a56] hover:bg-gray-100 transition"
+                    className="block border-t bg-gray-50/70 px-4 py-2.5 text-center text-xs font-bold text-ink hover:bg-gray-100 transition"
                   >
                     عرض كل التنبيهات
                   </Link>
@@ -699,15 +773,7 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
           </AnimatePresence>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-3 border-l pr-2 md:pl-4 border-gray-200">
-          <div className="text-right hidden sm:block">
-            <p className="text-sm font-semibold text-[#192a56]">{userName}</p>
-            <p className="text-xs text-gray-500">{roleName}</p>
-          </div>
-          <div className="w-8 h-8 md:w-10 md:h-10 bg-[#273c75] rounded-full flex items-center justify-center font-bold text-lg overflow-hidden border-2 border-white/20 shadow-sm">
-            <img src="/logo.png" alt="User" className="w-full h-full object-cover" />
-          </div>
-        </div>
+        <UserMenu userName={userName} roleName={roleName} />
       </div>
     </header>
   );
@@ -756,12 +822,12 @@ function SessionExpired({ email }: { email: string | null }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F3F4F6] p-6 font-['Tajawal']" dir="rtl">
-      <div className="bg-white rounded-3xl shadow-xl max-w-md w-full p-8 text-center space-y-4 border border-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-page p-6 font-['Tajawal']" dir="rtl">
+      <div className="bg-surface rounded-3xl shadow-xl max-w-md w-full p-8 text-center space-y-4 border border-gray-100">
         <div className="w-16 h-16 mx-auto rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
           <Shield size={30} />
         </div>
-        <h1 className="text-2xl font-bold text-[#192a56]">انتهت جلستك</h1>
+        <h1 className="text-2xl font-bold text-ink">انتهت جلستك</h1>
         <p className="text-sm text-gray-600 leading-relaxed">
           انتهت صلاحية تسجيل دخولك، ولهذا ظهرت البيانات فارغة.
           سجّل الدخول مرة أخرى لمتابعة العمل — لم يُفقد أي شيء من بياناتك.
@@ -771,7 +837,7 @@ function SessionExpired({ email }: { email: string | null }) {
         )}
         <button
           onClick={goLogin}
-          className="w-full py-3.5 rounded-2xl bg-[#192a56] text-[#273c75] font-bold hover:bg-[#192a56]/90 transition"
+          className="w-full py-3.5 rounded-2xl bg-navy text-ink-2 font-bold hover:bg-navy/90 transition"
         >
           تسجيل الدخول من جديد
         </button>
@@ -806,7 +872,7 @@ function Layout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#F3F4F6] text-[#192a56] font-['Tajawal']" dir="rtl">
+    <div className="flex min-h-screen bg-page text-ink font-['Tajawal']" dir="rtl">
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header onMenuOpen={() => setIsSidebarOpen(true)} />
@@ -823,8 +889,8 @@ function LoadingFallback() {
     return (
         <div className="flex items-center justify-center min-h-[50vh]">
             <div className="flex flex-col items-center gap-4">
-                <div className="w-10 h-10 border-4 border-[#192a56] border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-[#192a56] font-bold">جاري التحميل...</p>
+                <div className="w-10 h-10 border-4 border-edge border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-ink font-bold">جاري التحميل...</p>
             </div>
         </div>
     );

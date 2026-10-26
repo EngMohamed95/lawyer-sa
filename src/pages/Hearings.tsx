@@ -7,8 +7,14 @@ import { AddHearingModal } from "../components/AddHearingModal";
 import { Pagination } from "../components/ui/Pagination";
 import { collection, getDocs, query, where, collectionGroup, limit } from "firebase/firestore";
 import { db } from "../lib/firebase";
-import HearingCard from "../components/HearingCard";
+import { HearingListRow } from "../components/HearingCard";
 import { visibleCasesQuery } from "../lib/caseAccess";
+import { useSearchParams } from "react-router";
+import FilterBanner from "../components/FilterBanner";
+import {
+  HEARING_RANGE_FILTER_AR, HEARING_STATUS_FILTER_AR, dayOf, hearingStatusKey, inHearingRange, monthFilterLabel,
+  type HearingRangeKey, type HearingStatusKey,
+} from "../lib/dashboardFilters";
 
 const PAGE_SIZE = 20;
 
@@ -78,12 +84,24 @@ export default function Hearings() {
     fetchHearings();
   }, [lawyerId, userRole]);
 
+  // روابط لوحة التحكم: ?status=upcoming|awaiting|done و ?range=today|week و ?month=YYYY-MM
+  const [params, setParams] = useSearchParams();
+  const statusFilter = params.get("status") as HearingStatusKey | null;
+  const rangeFilter = params.get("range") as HearingRangeKey | null;
+  const monthFilter = params.get("month");
+  const clearParam = (key: string) => { params.delete(key); setParams(params, { replace: true }); setPage(1); };
+
   const filteredHearings = hearings.filter(
     h =>
+      (!statusFilter || hearingStatusKey(h) === statusFilter) &&
+      (!rangeFilter || inHearingRange(h, rangeFilter)) &&
+      (!monthFilter || dayOf(h.hearingDate).startsWith(monthFilter)) && (
       h.court?.toLowerCase().includes(search.toLowerCase()) ||
       h.caseTitle?.toLowerCase().includes(search.toLowerCase()) ||
-      String(h.caseNumber || "").toLowerCase().includes(search.toLowerCase())
+      String(h.caseNumber || "").toLowerCase().includes(search.toLowerCase()))
   );
+  // القادمة تُعرض الأقرب أولاً؛ غيرها الأحدث أولاً كما هو
+  if (statusFilter === "upcoming" || rangeFilter) filteredHearings.reverse();
 
   const pagedHearings = filteredHearings.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -97,14 +115,14 @@ export default function Hearings() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">الجلسات</h1>
+          <h1 className="text-3xl font-bold text-ink tracking-tight">الجلسات</h1>
           <p className="text-gray-500 mt-1">جدول الجلسات والمواعيد القادمة</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" className="border-gray-300">
             <Download className="ml-2 h-4 w-4" /> تحميل رول الجلسات
           </Button>
-          <Button className="bg-[#273c75] hover:bg-[#192a56] text-white" onClick={() => setIsAddModalOpen(true)}>
+          <Button className="bg-navy-2 hover:bg-navy text-white" onClick={() => setIsAddModalOpen(true)}>
             <Plus className="ml-2 h-4 w-4" /> إضافة جلسة
           </Button>
         </div>
@@ -119,13 +137,23 @@ export default function Hearings() {
         </Card>
       )}
 
+      {statusFilter && HEARING_STATUS_FILTER_AR[statusFilter] && (
+        <FilterBanner label={`الجلسات ${HEARING_STATUS_FILTER_AR[statusFilter]}`} onClear={() => clearParam("status")} />
+      )}
+      {rangeFilter && HEARING_RANGE_FILTER_AR[rangeFilter] && (
+        <FilterBanner label={HEARING_RANGE_FILTER_AR[rangeFilter]} onClear={() => clearParam("range")} />
+      )}
+      {monthFilter && (
+        <FilterBanner label={`جلسات ${monthFilterLabel(monthFilter)}`} onClear={() => clearParam("month")} />
+      )}
+
       <Card className="shadow-sm border-gray-200">
         <CardHeader className="border-b bg-gray-50/50 pb-4">
           <div className="flex items-center space-x-2 space-x-reverse relative w-full sm:w-96">
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
             <Input
               placeholder="بحث برقم القضية أو المحكمة..."
-              className="pl-4 pr-10 bg-white"
+              className="pl-4 pr-10 bg-surface"
               value={search}
               onChange={e => { setSearch(e.target.value); setPage(1); }}
             />
@@ -140,8 +168,8 @@ export default function Hearings() {
           ) : filteredHearings.length === 0 ? (
             <div className="text-center py-10 text-gray-500">لا توجد جلسات مسجلة</div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-4">
-              {pagedHearings.map(h => <HearingCard key={`${h.caseId}_${h.id}`} h={h} caseId={h.caseId} />)}
+            <div className="space-y-3 bg-slate-50/60 p-4">
+              {pagedHearings.map(h => <HearingListRow key={`${h.caseId}_${h.id}`} h={h} caseId={h.caseId} />)}
             </div>
           )}
           <Pagination

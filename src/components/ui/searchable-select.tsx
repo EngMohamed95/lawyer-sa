@@ -145,7 +145,7 @@ export const SearchableSelect = React.forwardRef<HTMLSelectElement, React.Select
         style={style}
         className={cn(
           "block",
-          className || "inline-block rounded-md border border-gray-300 bg-white px-2 py-1 text-sm",
+          className || "inline-block rounded-md border border-gray-300 bg-surface px-2 py-1 text-sm",
           "relative cursor-pointer select-none",
           disabled && "cursor-not-allowed opacity-50",
         )}
@@ -171,7 +171,7 @@ export const SearchableSelect = React.forwardRef<HTMLSelectElement, React.Select
         {open && (
           <span
             className={cn(
-              "absolute start-0 z-[100] block w-max min-w-full max-w-[min(90vw,28rem)] cursor-default rounded-xl border border-gray-200 bg-white text-sm font-normal text-gray-800 shadow-xl",
+              "absolute start-0 z-[100] block w-max min-w-full max-w-[min(90vw,28rem)] cursor-default rounded-xl border border-gray-200 bg-surface text-sm font-normal text-gray-800 shadow-xl",
               dropUp ? "bottom-full mb-1" : "top-full mt-1",
             )}
             onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}
@@ -185,7 +185,7 @@ export const SearchableSelect = React.forwardRef<HTMLSelectElement, React.Select
                 onKeyDown={onSearchKey}
                 placeholder="بحث..."
                 aria-label="بحث في القائمة"
-                className="w-full rounded-lg border border-gray-200 bg-gray-50 py-1.5 pe-2 ps-8 text-sm text-gray-800 focus:border-[#192a56] focus:outline-none"
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 py-1.5 pe-2 ps-8 text-sm text-gray-800 focus:border-edge focus:outline-none"
               />
             </span>
             <span ref={listRef} role="listbox" className="block max-h-60 overflow-y-auto py-1">
@@ -208,8 +208,8 @@ export const SearchableSelect = React.forwardRef<HTMLSelectElement, React.Select
                       className={cn(
                         "flex items-center justify-between gap-2 px-3 py-2",
                         o.disabled ? "cursor-not-allowed text-gray-300" : "cursor-pointer",
-                        i === active && !o.disabled && "bg-[#192a56]/10",
-                        o.index === selectedIndex && "font-bold text-[#192a56]",
+                        i === active && !o.disabled && "bg-navy/10",
+                        o.index === selectedIndex && "font-bold text-ink",
                       )}
                     >
                       <span className="whitespace-normal break-words">{o.label || " "}</span>

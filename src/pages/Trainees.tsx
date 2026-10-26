@@ -71,16 +71,16 @@ export default function Trainees() {
       
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">المتدربين</h1>
+          <h1 className="text-3xl font-bold text-ink tracking-tight">المتدربين</h1>
           <p className="text-gray-500 mt-1">إدارة المحامين تحت التدريب وتقييم الأداء</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="bg-white">
-            <Star className="ml-2 h-4 w-4 text-[#273c75]" /> إضافة تقييم
+          <Button variant="outline" className="bg-surface">
+            <Star className="ml-2 h-4 w-4 text-ink-2" /> إضافة تقييم
           </Button>
           <Button 
             onClick={() => setIsAddModalOpen(true)}
-            className="bg-[#192a56] hover:bg-[#192a56]/90 text-white shadow-lg shadow-[#192a56]/20"
+            className="bg-navy hover:bg-navy/90 text-white shadow-lg shadow-navy/20"
           >
             <Plus className="ml-2 h-4 w-4" /> إضافة متدرب
           </Button>
@@ -91,10 +91,10 @@ export default function Trainees() {
         <Tabs defaultValue="list" className="w-full">
           <CardHeader className="border-b bg-gray-50/50 pb-0 pt-4">
             <TabsList className="bg-transparent border-b-0 space-x-4 space-x-reverse h-auto p-0 overflow-x-auto overflow-y-hidden flex-nowrap scrollbar-hide">
-              <TabsTrigger value="list" className="data-[state=active]:bg-white data-[state=active]:border-t-2 data-[state=active]:border-[#273c75] px-6 py-3 font-semibold rounded-none">
+              <TabsTrigger value="list" className="data-[state=active]:bg-surface data-[state=active]:border-t-2 data-[state=active]:border-edge-2 px-6 py-3 font-semibold rounded-none">
                 <GraduationCap className="w-4 h-4 ml-2" /> قائمة المتدربين
               </TabsTrigger>
-              <TabsTrigger value="evaluations" className="data-[state=active]:bg-white data-[state=active]:border-t-2 data-[state=active]:border-[#273c75] px-6 py-3 font-semibold rounded-none">
+              <TabsTrigger value="evaluations" className="data-[state=active]:bg-surface data-[state=active]:border-t-2 data-[state=active]:border-edge-2 px-6 py-3 font-semibold rounded-none">
                 <Award className="w-4 h-4 ml-2" /> سجل التقييمات
               </TabsTrigger>
             </TabsList>
@@ -102,14 +102,14 @@ export default function Trainees() {
           <CardContent className="p-0 overflow-x-auto">
             <TabsContent value="list" className="m-0 border-none p-0">
               <Table>
-                <TableHeader className="bg-white">
+                <TableHeader className="bg-surface">
                   <TableRow>
-                    <TableHead className="text-right font-bold text-[#192a56]">الاسم</TableHead>
-                    <TableHead className="text-right font-bold text-[#192a56]">رقم الهاتف</TableHead>
-                    <TableHead className="text-right font-bold text-[#192a56] hidden sm:table-cell">تاريخ الالتحاق</TableHead>
+                    <TableHead className="text-right font-bold text-ink">الاسم</TableHead>
+                    <TableHead className="text-right font-bold text-ink">رقم الهاتف</TableHead>
+                    <TableHead className="text-right font-bold text-ink hidden sm:table-cell">تاريخ الالتحاق</TableHead>
                     {userRole === "SUPER_ADMIN" && <TableHead className="text-right font-bold text-purple-600 hidden md:table-cell">المحامي</TableHead>}
-                    <TableHead className="text-right font-bold text-[#192a56] hidden lg:table-cell">المشرف</TableHead>
-                    <TableHead className="text-center font-bold text-[#192a56]">إجراءات</TableHead>
+                    <TableHead className="text-right font-bold text-ink hidden lg:table-cell">المشرف</TableHead>
+                    <TableHead className="text-center font-bold text-ink">إجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -120,9 +120,9 @@ export default function Trainees() {
                   ) : (
                     data.trainees.map((t: any) => (
                       <TableRow key={t.id} className="hover:bg-gray-50/50">
-                        <TableCell className="font-medium text-[#192a56]">{t.name}</TableCell>
+                        <TableCell className="font-medium text-ink">{t.name}</TableCell>
                         <TableCell>
-                          <a href={`tel:${t.phone}`} className="flex items-center gap-2 text-[#192a56] hover:underline decoration-[#273c75] decoration-2 underline-offset-4">
+                          <a href={`tel:${t.phone}`} className="flex items-center gap-2 text-ink hover:underline decoration-ink-2 decoration-2 underline-offset-4">
                             <PhoneIcon size={14} className="text-gray-400" />
                             {t.phone || "-"}
                           </a>
@@ -142,13 +142,13 @@ export default function Trainees() {
             
             <TabsContent value="evaluations" className="m-0 border-none p-0">
               <Table>
-                <TableHeader className="bg-white">
+                <TableHeader className="bg-surface">
                   <TableRow>
-                    <TableHead className="text-right font-bold text-[#192a56]">تاريخ التقييم</TableHead>
-                    <TableHead className="text-right font-bold text-[#192a56]">المتدرب</TableHead>
-                    <TableHead className="text-right font-bold text-[#192a56]">التقييم (من 5)</TableHead>
-                    <TableHead className="text-right font-bold text-[#192a56]">المقيّم (المشرف)</TableHead>
-                    <TableHead className="text-right font-bold text-[#192a56]">ملاحظات</TableHead>
+                    <TableHead className="text-right font-bold text-ink">تاريخ التقييم</TableHead>
+                    <TableHead className="text-right font-bold text-ink">المتدرب</TableHead>
+                    <TableHead className="text-right font-bold text-ink">التقييم (من 5)</TableHead>
+                    <TableHead className="text-right font-bold text-ink">المقيّم (المشرف)</TableHead>
+                    <TableHead className="text-right font-bold text-ink">ملاحظات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

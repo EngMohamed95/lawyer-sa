@@ -65,13 +65,13 @@ export default function Consultants() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">المستشارون</h1>
+          <h1 className="text-3xl font-bold text-ink tracking-tight">المستشارون</h1>
           <p className="text-gray-500 mt-1">إدارة المستشارين القانونيين بالمكتب وتعيين صلاحياتهم</p>
         </div>
         <div className="flex gap-2">
           <Button
             onClick={() => setIsAddModalOpen(true)}
-            className="bg-[#192a56] hover:bg-[#192a56]/90 text-white shadow-lg shadow-[#192a56]/20"
+            className="bg-navy hover:bg-navy/90 text-white shadow-lg shadow-navy/20"
           >
             <Plus className="ml-2 h-4 w-4" /> إضافة مستشار
           </Button>
@@ -80,18 +80,18 @@ export default function Consultants() {
 
       <Card className="shadow-sm border-gray-200">
         <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
-          <Shield className="w-5 h-5 text-[#273c75]" />
-          <h2 className="font-bold text-lg text-[#192a56]">قائمة المستشارين المسجلين</h2>
+          <Shield className="w-5 h-5 text-ink-2" />
+          <h2 className="font-bold text-lg text-ink">قائمة المستشارين المسجلين</h2>
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
           <Table>
-            <TableHeader className="bg-white">
+            <TableHeader className="bg-surface">
               <TableRow>
-                <TableHead className="text-right font-bold text-[#192a56]">الاسم</TableHead>
-                <TableHead className="text-right font-bold text-[#192a56]">البريد الإلكتروني</TableHead>
-                <TableHead className="text-right font-bold text-[#192a56]">رقم الهاتف</TableHead>
-                <TableHead className="text-right font-bold text-[#192a56] hidden sm:table-cell">تاريخ التسجيل</TableHead>
-                <TableHead className="text-center font-bold text-[#192a56]">إجراءات</TableHead>
+                <TableHead className="text-right font-bold text-ink">الاسم</TableHead>
+                <TableHead className="text-right font-bold text-ink">البريد الإلكتروني</TableHead>
+                <TableHead className="text-right font-bold text-ink">رقم الهاتف</TableHead>
+                <TableHead className="text-right font-bold text-ink hidden sm:table-cell">تاريخ التسجيل</TableHead>
+                <TableHead className="text-center font-bold text-ink">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -102,11 +102,11 @@ export default function Consultants() {
               ) : (
                 consultants.map((c: any) => (
                   <TableRow key={c.id} className="hover:bg-gray-50/50">
-                    <TableCell className="font-medium text-[#192a56]">{c.name}</TableCell>
+                    <TableCell className="font-medium text-ink">{c.name}</TableCell>
                     <TableCell className="text-gray-600">{c.email}</TableCell>
                     <TableCell>
                       {c.phone ? (
-                        <a href={`tel:${c.phone}`} className="flex items-center gap-2 text-[#192a56] hover:underline decoration-[#273c75] decoration-2 underline-offset-4">
+                        <a href={`tel:${c.phone}`} className="flex items-center gap-2 text-ink hover:underline decoration-ink-2 decoration-2 underline-offset-4">
                           <PhoneIcon size={14} className="text-gray-400" />
                           {c.phone}
                         </a>

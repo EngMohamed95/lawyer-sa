@@ -92,31 +92,31 @@ export default function DashboardCalendar() {
   const goToday = () => { setAnchor(startOfMonth(new Date())); setSelectedKey(todayKey); };
 
   return (
-    <Card className="overflow-hidden border border-slate-200/80 bg-white shadow-xs rounded-2xl" dir="rtl">
+    <Card className="overflow-hidden border border-slate-200/80 bg-surface shadow-xs rounded-2xl" dir="rtl">
       <CardHeader className="border-b border-slate-100 bg-slate-50/50 px-5 py-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#273c75] text-[#192a56] shadow-xs">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-navy-2 text-ink shadow-xs">
               <CalendarDays size={18} />
             </div>
-            <CardTitle className="text-lg font-bold text-[#192a56]">التقويم</CardTitle>
+            <CardTitle className="text-lg font-bold text-ink">التقويم</CardTitle>
           </div>
           <div className="flex items-center gap-1">
             <button onClick={() => step(-1)} aria-label="الشهر السابق"
-              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-[#192a56]">
+              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-ink">
               <ChevronRight size={16} />
             </button>
-            <span className="min-w-[120px] text-center text-sm font-bold text-[#192a56]">{monthLabel(anchor)}</span>
+            <span className="min-w-[120px] text-center text-sm font-bold text-ink">{monthLabel(anchor)}</span>
             <button onClick={() => step(1)} aria-label="الشهر التالي"
-              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-[#192a56]">
+              className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-ink">
               <ChevronLeft size={16} />
             </button>
             <button onClick={goToday}
-              className="mr-1 px-3 h-8 rounded-lg border border-slate-200 text-xs font-bold text-[#192a56] hover:bg-slate-100">
+              className="mr-1 px-3 h-8 rounded-lg border border-slate-200 text-xs font-bold text-ink hover:bg-slate-100">
               اليوم
             </button>
             <Link to="/app/calendar"
-              className="mr-2 text-xs font-bold text-[#192a56] hover:text-[#273c75] flex items-center gap-1">
+              className="mr-2 text-xs font-bold text-ink hover:text-ink-2 flex items-center gap-1">
               التقويم الكامل <ChevronLeft size={14} />
             </Link>
           </div>
@@ -144,11 +144,11 @@ export default function DashboardCalendar() {
                   onDoubleClick={() => { setSelectedKey(key); if (addOptions.length) setMenuOpen(true); }}
                   title="ضغطتان للإضافة في هذا اليوم"
                   className={`h-16 border-b border-l border-slate-100 p-1.5 flex flex-col items-center gap-1 transition ${
-                    isSelected ? "bg-[#192a56]/5 ring-2 ring-inset ring-[#192a56]"
-                    : inMonth ? "bg-white hover:bg-slate-50" : "bg-slate-50/60 hover:bg-slate-100/60"
+                    isSelected ? "bg-navy/5 ring-2 ring-inset ring-edge"
+                    : inMonth ? "bg-surface hover:bg-slate-50" : "bg-slate-50/60 hover:bg-slate-100/60"
                   }`}>
                   <span className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full ${
-                    isToday ? "bg-[#192a56] text-[#273c75]"
+                    isToday ? "bg-navy text-ink-2"
                     : inMonth ? "text-slate-700" : "text-slate-300"
                   }`}>
                     {d.getDate()}
@@ -171,20 +171,20 @@ export default function DashboardCalendar() {
         {/* أحداث اليوم المختار */}
         <div className="flex flex-col min-h-[240px]">
           <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between gap-2">
-            <p className="text-sm font-bold text-[#192a56]">{selectedKey === todayKey ? "اليوم — " : ""}{dayTitle(selectedKey)}</p>
+            <p className="text-sm font-bold text-ink">{selectedKey === todayKey ? "اليوم — " : ""}{dayTitle(selectedKey)}</p>
             {addOptions.length > 0 && (
               <div className="relative" ref={menuRef}>
                 <button onClick={() => setMenuOpen((o) => !o)} aria-expanded={menuOpen}
-                  className="flex items-center gap-1 px-2.5 h-8 rounded-lg bg-[#192a56] text-[#273c75] text-xs font-bold hover:bg-[#192a56]/90 transition">
+                  className="flex items-center gap-1 px-2.5 h-8 rounded-lg bg-navy text-ink-2 text-xs font-bold hover:bg-navy/90 transition">
                   <Plus size={14} /> إضافة
                 </button>
                 {menuOpen && (
-                  <div className="absolute left-0 top-9 z-20 w-40 rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                  <div className="absolute left-0 top-9 z-20 w-40 rounded-xl border border-slate-200 bg-surface py-1 shadow-lg">
                     <p className="px-3 py-1.5 text-[10px] text-slate-400">في {dayTitle(selectedKey)}</p>
                     {addOptions.map((o) => (
                       <button key={o.kind} onClick={() => { setMenuOpen(false); setAdding(o.kind); }}
-                        className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-[#192a56] hover:bg-slate-50">
-                        <o.icon size={15} className="text-[#273c75]" /> {o.label}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm font-bold text-ink hover:bg-slate-50">
+                        <o.icon size={15} className="text-ink-2" /> {o.label}
                       </button>
                     ))}
                   </div>
@@ -227,7 +227,7 @@ function EventList({ events, showDate = false }: { events: CalendarEvent[]; show
           <Link to={e.href || "/app/calendar"} className="flex items-start gap-2.5 px-4 py-2.5 hover:bg-slate-50/70 transition">
             <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${SOURCE_DOT[e.source]}`} />
             <span className="flex-1 min-w-0">
-              <span className="block text-sm font-bold text-[#192a56] truncate">{e.title}</span>
+              <span className="block text-sm font-bold text-ink truncate">{e.title}</span>
               {e.subtitle && <span className="block text-xs text-slate-500 line-clamp-2 whitespace-pre-line">{e.subtitle}</span>}
               <span className="block text-[11px] text-slate-400 mt-0.5">
                 {SOURCE_LABELS_AR[e.source]}

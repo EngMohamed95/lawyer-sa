@@ -37,7 +37,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
   render() {
     if (this.state.error) {
       return (
-        <div dir="rtl" className="min-h-screen bg-[#192a56] p-8 text-white">
+        <div dir="rtl" className="min-h-screen bg-navy p-8 text-white">
           <div className="mx-auto mt-20 max-w-2xl rounded-2xl border border-red-400/30 bg-red-500/10 p-6">
             <h1 className="text-2xl font-bold">حدث خطأ أثناء تحميل النظام</h1>
             <p className="mt-3 text-sm text-red-100">{this.state.error.message}</p>

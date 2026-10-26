@@ -34,7 +34,7 @@ function StringListEditor({
   return (
     <div className="space-y-3">
       <div>
-        <h3 className="text-base font-black text-[#192a56]">{title}</h3>
+        <h3 className="text-base font-black text-ink">{title}</h3>
         <p className="text-xs text-gray-500 mt-1">{description}</p>
       </div>
 
@@ -42,7 +42,7 @@ function StringListEditor({
         {items.map((item, i) => (
           <span
             key={`${item}-${i}`}
-            className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-gray-50 border border-gray-200 text-sm text-[#192a56]"
+            className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-gray-50 border border-gray-200 text-sm text-ink"
           >
             {item}
             {!disabled && (
@@ -65,7 +65,7 @@ function StringListEditor({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="إضافة عنصر جديد..."
-            className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-[#192a56] bg-white"
+            className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-edge bg-surface"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
@@ -82,7 +82,7 @@ function StringListEditor({
               if (v && !items.includes(v)) onChange([...items, v]);
               setDraft("");
             }}
-            className="px-3 py-2 rounded-xl bg-[#192a56] text-[#273c75] text-sm font-bold flex items-center gap-1"
+            className="px-3 py-2 rounded-xl bg-navy text-ink-2 text-sm font-bold flex items-center gap-1"
           >
             <Plus size={14} /> إضافة
           </button>
@@ -118,7 +118,7 @@ function OptionListEditor({
   return (
     <div className="space-y-3">
       <div>
-        <h3 className="text-base font-black text-[#192a56]">{title}</h3>
+        <h3 className="text-base font-black text-ink">{title}</h3>
         <p className="text-xs text-gray-500 mt-1">{description}</p>
       </div>
 
@@ -126,7 +126,7 @@ function OptionListEditor({
         {items.map((item, i) => (
           <span
             key={`${item.value}-${i}`}
-            className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-gray-50 border border-gray-200 text-sm text-[#192a56]"
+            className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-gray-50 border border-gray-200 text-sm text-ink"
           >
             {item.label}
             {!disabled && (
@@ -149,7 +149,7 @@ function OptionListEditor({
             value={draftLabel}
             onChange={(e) => setDraftLabel(e.target.value)}
             placeholder="إضافة تصنيف جديد..."
-            className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-[#192a56] bg-white"
+            className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-edge bg-surface"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
                 e.preventDefault();
@@ -160,7 +160,7 @@ function OptionListEditor({
           <button
             type="button"
             onClick={addOption}
-            className="px-3 py-2 rounded-xl bg-[#192a56] text-[#273c75] text-sm font-bold flex items-center gap-1"
+            className="px-3 py-2 rounded-xl bg-navy text-ink-2 text-sm font-bold flex items-center gap-1"
           >
             <Plus size={14} /> إضافة
           </button>
@@ -199,8 +199,8 @@ function DurationListEditor({
   return (
     <div className="space-y-3">
       <div>
-        <h3 className="text-base font-black text-[#192a56] flex items-center gap-2">
-          <Clock size={16} className="text-[#273c75]" /> {title}
+        <h3 className="text-base font-black text-ink flex items-center gap-2">
+          <Clock size={16} className="text-ink-2" /> {title}
         </h3>
         <p className="text-xs text-gray-500 mt-1">{description}</p>
       </div>
@@ -209,10 +209,10 @@ function DurationListEditor({
         {items.map((item, i) => (
           <span
             key={`${item.id}-${i}`}
-            className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-gray-50 border border-gray-200 text-sm text-[#192a56]"
+            className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full bg-gray-50 border border-gray-200 text-sm text-ink"
           >
             {item.label}
-            <span className="text-xs font-bold text-[#273c75]">{item.days} يوم</span>
+            <span className="text-xs font-bold text-ink-2">{item.days} يوم</span>
             {!disabled && (
               <button
                 type="button"
@@ -233,7 +233,7 @@ function DurationListEditor({
             value={draftLabel}
             onChange={(e) => setDraftLabel(e.target.value)}
             placeholder="اسم الإجراء (مثال: الاعتراض على الحكم)..."
-            className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-[#192a56] bg-white"
+            className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-edge bg-surface"
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addDuration(); } }}
           />
           <input
@@ -241,13 +241,13 @@ function DurationListEditor({
             onChange={(e) => setDraftDays(e.target.value.replace(/[^\d]/g, ""))}
             placeholder="عدد الأيام"
             inputMode="numeric"
-            className="w-28 px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-[#192a56] bg-white"
+            className="w-28 px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:border-edge bg-surface"
             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addDuration(); } }}
           />
           <button
             type="button"
             onClick={addDuration}
-            className="px-3 py-2 rounded-xl bg-[#192a56] text-[#273c75] text-sm font-bold flex items-center gap-1"
+            className="px-3 py-2 rounded-xl bg-navy text-ink-2 text-sm font-bold flex items-center gap-1"
           >
             <Plus size={14} /> إضافة
           </button>
@@ -358,14 +358,14 @@ export default function ListsTab() {
           <button
             onClick={handleSave}
             disabled={saving || !isDirty}
-            className="px-6 py-3 bg-[#192a56] text-[#273c75] font-bold rounded-2xl text-sm hover:bg-[#192a56]/90 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 mt-4"
+            className="px-6 py-3 bg-navy text-ink-2 font-bold rounded-2xl text-sm hover:bg-navy/90 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2 mt-4"
           >
             <Save size={16} />
             {saving ? "جاري الحفظ..." : "حفظ القوائم"}
           </button>
           <button
             onClick={handleReset}
-            className="text-xs text-gray-500 hover:text-[#192a56] mt-4"
+            className="text-xs text-gray-500 hover:text-ink mt-4"
           >
             استعادة الافتراضي
           </button>

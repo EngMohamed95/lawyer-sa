@@ -86,7 +86,7 @@ export default function PlatformAiSettingsTab() {
             const model = provider === "GROQ" ? "llama-3.3-70b-versatile" : "gemini-flash-latest";
             setDraft((d) => ({ ...d, provider, model }));
           }}
-          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#192a56]"
+          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-edge"
         >
           <option value="GEMINI">Google Gemini API (مستحسن للأبحاث والملفات الضخمة)</option>
           <option value="GROQ">Groq API (أداء فائق السرعة)</option>
@@ -98,7 +98,7 @@ export default function PlatformAiSettingsTab() {
         <SearchableSelect
           value={draft.model}
           onChange={(e) => setDraft((d) => ({ ...d, model: e.target.value }))}
-          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#192a56]"
+          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-edge"
         >
           {draft.provider === "GEMINI" ? (
             <>
@@ -122,19 +122,19 @@ export default function PlatformAiSettingsTab() {
           <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
             <input type="checkbox" checked={draft.aiAnalysisEnabled}
               onChange={(e) => setDraft((d) => ({ ...d, aiAnalysisEnabled: e.target.checked }))}
-              className="rounded text-[#273c75] focus:ring-[#273c75]" />
+              className="rounded text-ink-2 focus:ring-edge-2" />
             تحليل قضايا واستخراج الوقائع والطلبات
           </label>
           <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
             <input type="checkbox" checked={draft.aiDraftingEnabled}
               onChange={(e) => setDraft((d) => ({ ...d, aiDraftingEnabled: e.target.checked }))}
-              className="rounded text-[#273c75] focus:ring-[#273c75]" />
+              className="rounded text-ink-2 focus:ring-edge-2" />
             إنشاء وصياغة المذكرات واللوائح القانونية
           </label>
           <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
             <input type="checkbox" checked={draft.aiRisksEnabled}
               onChange={(e) => setDraft((d) => ({ ...d, aiRisksEnabled: e.target.checked }))}
-              className="rounded text-[#273c75] focus:ring-[#273c75]" />
+              className="rounded text-ink-2 focus:ring-edge-2" />
             تحليل العقود واكتشاف المخاطر والبنود المفقودة
           </label>
         </div>
@@ -150,7 +150,7 @@ export default function PlatformAiSettingsTab() {
         <button
           onClick={handleSave}
           disabled={saving || !isDirty}
-          className="px-6 py-3 bg-[#192a56] text-[#273c75] font-bold rounded-2xl text-sm hover:bg-[#192a56]/90 transition disabled:opacity-40 disabled:cursor-not-allowed"
+          className="px-6 py-3 bg-navy text-ink-2 font-bold rounded-2xl text-sm hover:bg-navy/90 transition disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {saving ? "جاري الحفظ..." : "حفظ الإعدادات لكل المكاتب"}
         </button>

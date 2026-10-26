@@ -89,9 +89,9 @@ export default function AgingReport({ currencySymbol }: { currencySymbol: string
     <Card className="shadow-sm border-gray-200" dir="rtl">
       <CardHeader className="border-b bg-gray-50/50 flex flex-row items-center justify-between gap-3 py-4">
         <div className="flex items-center gap-2">
-          <Clock className="w-5 h-5 text-[#273c75]" />
+          <Clock className="w-5 h-5 text-ink-2" />
           <div>
-            <CardTitle className="text-lg text-[#192a56]">أعمار الديون (المتأخرات)</CardTitle>
+            <CardTitle className="text-lg text-ink">أعمار الديون (المتأخرات)</CardTitle>
             <CardDescription className="text-xs">
               المستحق غير المسدَّد موزّعاً على فئات التقادم — لا يشمل المسودات ولا الملغاة
             </CardDescription>
@@ -134,54 +134,54 @@ export default function AgingReport({ currencySymbol }: { currencySymbol: string
                   <p className="text-lg font-black mt-1">{money(aging.totals[b])}</p>
                 </div>
               ))}
-              <div className="p-3 rounded-2xl bg-[#192a56] text-white border border-[#192a56]">
-                <p className="text-xs text-[#273c75]">إجمالي المستحق</p>
+              <div className="p-3 rounded-2xl bg-navy text-white border border-edge">
+                <p className="text-xs text-ink-2">إجمالي المستحق</p>
                 <p className="text-lg font-black mt-1">{money(aging.grandTotal)} <span className="text-xs font-normal">{currencySymbol}</span></p>
               </div>
             </div>
 
             <Table>
-              <TableHeader className="bg-white">
+              <TableHeader className="bg-surface">
                 <TableRow>
-                  <TableHead className="text-right font-bold text-[#192a56]">العميل</TableHead>
+                  <TableHead className="text-right font-bold text-ink">العميل</TableHead>
                   {BUCKETS.map((b) => (
-                    <TableHead key={b} className="text-right font-bold text-[#192a56]">{AGING_LABELS_AR[b]}</TableHead>
+                    <TableHead key={b} className="text-right font-bold text-ink">{AGING_LABELS_AR[b]}</TableHead>
                   ))}
-                  <TableHead className="text-right font-bold text-[#192a56]">الإجمالي</TableHead>
+                  <TableHead className="text-right font-bold text-ink">الإجمالي</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {aging.rows.map((r) => (
                   <TableRow key={r.clientId} className="hover:bg-gray-50/50">
-                    <TableCell className="font-semibold text-[#192a56]">{r.clientName}</TableCell>
+                    <TableCell className="font-semibold text-ink">{r.clientName}</TableCell>
                     {BUCKETS.map((b) => (
                       <TableCell key={b} className={r.buckets[b] > 0 ? "font-bold" : "text-gray-300"}>
                         {r.buckets[b] > 0 ? money(r.buckets[b]) : "—"}
                       </TableCell>
                     ))}
-                    <TableCell className="font-black text-[#273c75]">{money(r.total)}</TableCell>
+                    <TableCell className="font-black text-ink-2">{money(r.total)}</TableCell>
                   </TableRow>
                 ))}
                 <TableRow className="bg-gray-50 border-t-2">
-                  <TableCell className="font-black text-[#192a56]">الإجمالي</TableCell>
+                  <TableCell className="font-black text-ink">الإجمالي</TableCell>
                   {BUCKETS.map((b) => (
-                    <TableCell key={b} className="font-black text-[#192a56]">{money(aging.totals[b])}</TableCell>
+                    <TableCell key={b} className="font-black text-ink">{money(aging.totals[b])}</TableCell>
                   ))}
-                  <TableCell className="font-black text-[#273c75]">{money(aging.grandTotal)} {currencySymbol}</TableCell>
+                  <TableCell className="font-black text-ink-2">{money(aging.grandTotal)} {currencySymbol}</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
 
             {overdueInvoices.length > 0 && (
               <div className="p-4 border-t">
-                <p className="font-bold text-sm text-[#192a56] mb-2">
+                <p className="font-bold text-sm text-ink mb-2">
                   الفواتير المتأخرة ({overdueInvoices.length}) — الأقدم أولاً
                 </p>
                 <ul className="space-y-1">
                   {overdueInvoices.slice(0, 10).map((inv) => (
                     <li key={inv.id} className="flex items-center gap-2 text-xs p-2 rounded-xl bg-red-50 border border-red-100">
                       <span className="font-mono text-gray-500" dir="ltr">{inv.invoiceNumber}</span>
-                      <span className="font-bold text-[#192a56]">{inv.clientName}</span>
+                      <span className="font-bold text-ink">{inv.clientName}</span>
                       <span className="text-red-700 font-bold">متأخرة {daysOverdue(inv.dueDate)} يوم</span>
                       <span className="mr-auto font-black text-red-800">{money(inv.remainingAmount)} {currencySymbol}</span>
                       <Link to="/app/invoices" className="text-indigo-600 underline hover:no-underline">فتح</Link>

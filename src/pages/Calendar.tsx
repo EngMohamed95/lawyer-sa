@@ -140,7 +140,7 @@ export default function Calendar() {
         <div className="w-14 h-14 rounded-full bg-red-50 text-red-500 flex items-center justify-center">
           <ShieldAlert size={26} />
         </div>
-        <h2 className="text-xl font-bold text-[#192a56]">لا تملك صلاحية الوصول للتقويم</h2>
+        <h2 className="text-xl font-bold text-ink">لا تملك صلاحية الوصول للتقويم</h2>
         <p className="text-sm text-gray-500">راجع مدير المكتب لمنحك الصلاحية.</p>
       </div>
     );
@@ -161,7 +161,7 @@ export default function Calendar() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">المواعيد والتقويم</h1>
+          <h1 className="text-3xl font-bold text-ink tracking-tight">المواعيد والتقويم</h1>
           <p className="text-gray-500 mt-1 text-sm">
             المواعيد والجلسات والمهام والاستحقاقات في مكان واحد — {visible.length} حدث
           </p>
@@ -177,7 +177,7 @@ export default function Calendar() {
             </Button>
           )}
           {canCreate && (
-            <Button onClick={() => openAdd()} className="bg-[#192a56] hover:bg-[#192a56]/90 text-white shadow-lg">
+            <Button onClick={() => openAdd()} className="bg-navy hover:bg-navy/90 text-white shadow-lg">
               <Plus className="ml-2 h-4 w-4" /> موعد جديد
             </Button>
           )}
@@ -203,7 +203,7 @@ export default function Calendar() {
           <Button variant="outline" size="sm" onClick={() => step(-1)} className="rounded-xl border-gray-200" title="السابق">
             <ChevronRight size={16} />
           </Button>
-          <span className="mr-2 font-bold text-[#192a56]">
+          <span className="mr-2 font-bold text-ink">
             {view === "day"
               ? anchor.toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long", year: "numeric" })
               : monthLabel(anchor)}
@@ -214,7 +214,7 @@ export default function Calendar() {
           {(Object.keys(VIEW_LABELS) as ViewMode[]).map((v) => (
             <button key={v} onClick={() => setView(v)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
-                view === v ? "bg-[#192a56] text-[#273c75] border-[#192a56]" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                view === v ? "bg-navy text-ink-2 border-edge" : "bg-surface text-gray-600 border-gray-200 hover:bg-gray-50"
               }`}>
               {VIEW_LABELS[v]}
             </button>
@@ -227,7 +227,7 @@ export default function Calendar() {
             return (
               <button key={s} onClick={() => toggleSource(s)}
                 className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition ${
-                  on ? "bg-white border-gray-300 text-gray-700" : "bg-gray-50 border-gray-200 text-gray-300 line-through"
+                  on ? "bg-surface border-gray-300 text-gray-700" : "bg-gray-50 border-gray-200 text-gray-300 line-through"
                 }`}>
                 <span className={`w-2 h-2 rounded-full ${on ? SOURCE_DOT[s] : "bg-gray-300"}`} />
                 {SOURCE_LABELS_AR[s]} ({counts.get(s) ?? 0})
@@ -239,8 +239,8 @@ export default function Calendar() {
 
       <Card className="shadow-sm border-gray-200 overflow-hidden">
         <CardHeader className="border-b bg-gray-50/50 py-3 flex flex-row items-center gap-2">
-          <CalendarDays className="w-5 h-5 text-[#273c75]" />
-          <h2 className="font-bold text-[#192a56]">{VIEW_LABELS[view]}</h2>
+          <CalendarDays className="w-5 h-5 text-ink-2" />
+          <h2 className="font-bold text-ink">{VIEW_LABELS[view]}</h2>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
@@ -334,11 +334,11 @@ function MonthView({
             return (
               <button key={key} onClick={() => onSelect(key)}
                 className={`h-20 border-b border-l border-gray-100 p-1.5 flex flex-col items-center gap-1.5 transition ${
-                  isSelected ? "bg-[#192a56]/5 ring-2 ring-inset ring-[#192a56]"
-                  : inMonth ? "bg-white hover:bg-gray-50" : "bg-gray-50/60 hover:bg-gray-100/60"
+                  isSelected ? "bg-navy/5 ring-2 ring-inset ring-edge"
+                  : inMonth ? "bg-surface hover:bg-gray-50" : "bg-gray-50/60 hover:bg-gray-100/60"
                 }`}>
                 <span className={`text-sm font-bold w-7 h-7 flex items-center justify-center rounded-full ${
-                  isToday ? "bg-[#192a56] text-[#273c75]"
+                  isToday ? "bg-navy text-ink-2"
                   : inMonth ? "text-gray-700" : "text-gray-300"
                 }`}>
                   {d.getDate()}
@@ -360,13 +360,13 @@ function MonthView({
 
       <div className="flex flex-col min-h-[320px]">
         <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between gap-2">
-          <p className="text-sm font-bold text-[#192a56]">
+          <p className="text-sm font-bold text-ink">
             {selectedKey === todayKey ? "اليوم — " : ""}
             {new Date(`${selectedKey}T12:00:00`).toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" })}
           </p>
           {canCreate && (
             <button onClick={() => onPick(selectedKey)}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-gray-200 text-xs font-bold text-[#192a56] hover:bg-gray-50">
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-gray-200 text-xs font-bold text-ink hover:bg-gray-50">
               <Plus size={13} /> موعد
             </button>
           )}
@@ -402,7 +402,7 @@ function DayEventList({ events, onOpen, showDate = false }: {
             className="w-full text-right flex items-start gap-2.5 px-4 py-2.5 hover:bg-gray-50/70 transition">
             <span className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${SOURCE_DOT[e.source]}`} />
             <span className="flex-1 min-w-0">
-              <span className="block text-sm font-bold text-[#192a56] truncate">{e.title}</span>
+              <span className="block text-sm font-bold text-ink truncate">{e.title}</span>
               {e.subtitle && <span className="block text-xs text-gray-500 line-clamp-2 whitespace-pre-line">{e.subtitle}</span>}
               <span className="block text-[11px] text-gray-400 mt-0.5">
                 {SOURCE_LABELS_AR[e.source]}
@@ -439,14 +439,14 @@ function WeekView({
         const isToday = key === todayKey;
         return (
           <div key={key} className={`border-b sm:border-l border-gray-100 min-h-[260px] p-2 space-y-1.5 ${
-            isToday ? "bg-[#273c75]/5 ring-2 ring-inset ring-[#273c75]" : "bg-white"
+            isToday ? "bg-navy-2/5 ring-2 ring-inset ring-edge-2" : "bg-surface"
           }`}>
             <div className="flex items-center justify-between pb-1 border-b border-gray-100">
               <div>
                 <p className="text-[11px] text-gray-500">{WEEKDAYS_AR[(d.getDay() + 1) % 7]}</p>
-                <p className={`text-sm font-bold ${isToday ? "text-[#192a56]" : "text-gray-700"}`}>{d.getDate()}</p>
+                <p className={`text-sm font-bold ${isToday ? "text-ink" : "text-gray-700"}`}>{d.getDate()}</p>
               </div>
-              <button onClick={() => onPick(key)} className="text-gray-300 hover:text-[#192a56]" title="إضافة موعد">
+              <button onClick={() => onPick(key)} className="text-gray-300 hover:text-ink" title="إضافة موعد">
                 <Plus size={14} />
               </button>
             </div>
@@ -536,7 +536,7 @@ function AgendaView({
         const d = new Date(`${k}T00:00:00`);
         return (
           <li key={k} className="p-4">
-            <p className="text-sm font-bold text-[#192a56] mb-2">
+            <p className="text-sm font-bold text-ink mb-2">
               {d.toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" })}
             </p>
             <div className="space-y-1.5">
@@ -548,7 +548,7 @@ function AgendaView({
                     {e.allDay ? "طوال اليوم" : timeLabel(e.start)}
                   </span>
                   <span className="flex-1 min-w-0">
-                    <span className="block text-sm font-bold text-[#192a56] truncate">{e.title}</span>
+                    <span className="block text-sm font-bold text-ink truncate">{e.title}</span>
                     {e.subtitle && <span className="block text-xs text-gray-500 truncate">{e.subtitle}</span>}
                   </span>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 shrink-0">
@@ -581,11 +581,11 @@ function EventDetails({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl" onClick={onClose}>
-      <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="p-6 border-b bg-[#192a56] text-white">
+      <div className="bg-surface rounded-3xl w-full max-w-lg shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="p-6 border-b bg-navy text-white">
           <div className="flex justify-between items-start gap-3">
             <div className="min-w-0">
-              <p className="text-xs text-[#273c75] font-bold">{SOURCE_LABELS_AR[ev.source]}</p>
+              <p className="text-xs text-ink-2 font-bold">{SOURCE_LABELS_AR[ev.source]}</p>
               <h2 className="text-xl font-bold mt-0.5">{ev.title}</h2>
             </div>
             <button onClick={onClose} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full shrink-0">
@@ -598,13 +598,13 @@ function EventDetails({
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-gray-50 rounded-xl p-3">
               <p className="text-xs text-gray-500">التاريخ</p>
-              <p className="font-bold text-[#192a56]">
+              <p className="font-bold text-ink">
                 {d.toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
               </p>
             </div>
             <div className="bg-gray-50 rounded-xl p-3">
               <p className="text-xs text-gray-500">الوقت</p>
-              <p className="font-bold text-[#192a56]">
+              <p className="font-bold text-ink">
                 {ev.allDay ? "طوال اليوم" : `${timeLabel(ev.start)} – ${timeLabel(ev.end)}`}
               </p>
             </div>

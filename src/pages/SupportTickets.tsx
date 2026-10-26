@@ -45,12 +45,12 @@ import {
 } from "../lib/support";
 
 const field =
-  "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#273c75]/50";
+  "w-full rounded-xl border border-gray-200 bg-surface px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-edge-2/50";
 const primary =
-  "inline-flex items-center justify-center gap-2 rounded-xl bg-[#192a56] px-5 py-3 text-sm font-bold text-white hover:bg-[#273c75] disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-xl bg-navy px-5 py-3 text-sm font-bold text-white hover:bg-navy-2 disabled:opacity-50";
 const colors: Record<SupportStatus, string> = {
-  OPEN: "bg-[#192a56] text-white",
-  IN_PROGRESS: "bg-[#273c75]/20 text-[#192a56]",
+  OPEN: "bg-navy text-white",
+  IN_PROGRESS: "bg-navy-2/20 text-ink",
   WAITING: "bg-amber-100 text-amber-800",
   RESOLVED: "bg-emerald-100 text-emerald-800",
   CLOSED: "bg-gray-100 text-gray-600",
@@ -268,13 +268,13 @@ export default function SupportTickets() {
       label: isAdmin ? "إجمالي التذاكر" : "إجمالي تذاكري",
       value: counts?.total,
       icon: Ticket,
-      color: "text-[#273c75] bg-[#192a56]",
+      color: "text-ink-2 bg-navy",
     },
     {
       label: "قيد المتابعة",
       value: counts?.active,
       icon: Clock3,
-      color: "text-[#192a56] bg-[#273c75]",
+      color: "text-ink bg-navy-2",
     },
     {
       label: isAdmin ? "بانتظار رد المستخدم" : "بانتظار ردك",
@@ -384,8 +384,8 @@ export default function SupportTickets() {
     );
 
   return (
-    <div className="mx-auto max-w-7xl space-y-4 font-sans text-[#192a56]" dir="rtl">
-      <header className="flex flex-wrap items-center justify-between gap-5 rounded-3xl bg-gradient-to-l from-[#273c75] to-[#192a56] p-6 text-white shadow-md md:p-7">
+    <div className="mx-auto max-w-7xl space-y-4 font-sans text-ink" dir="rtl">
+      <header className="flex flex-wrap items-center justify-between gap-5 rounded-3xl bg-gradient-to-l from-navy-2 to-navy p-6 text-white shadow-md md:p-7">
         <div className="flex max-w-3xl items-center gap-4">
           <div className="hidden rounded-full bg-white/15 p-4 text-amber-400 sm:block">
             <Headset size={32} />
@@ -405,7 +405,7 @@ export default function SupportTickets() {
         </div>
         {!isAdmin && (
           <button
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[#273c75] px-5 py-3 text-sm font-bold text-[#192a56] shadow hover:bg-[#192a56]"
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-navy-2 px-5 py-3 text-sm font-bold text-ink shadow hover:bg-navy"
             onClick={() => {
               setActionError("");
               setShowNew(true);
@@ -421,13 +421,13 @@ export default function SupportTickets() {
             {stats.map((s) => (
               <div
                 key={s.label}
-                className="flex items-center gap-3 rounded-3xl border border-gray-100 bg-white px-5 py-5 shadow-sm"
+                className="flex items-center gap-3 rounded-3xl border border-gray-100 bg-surface px-5 py-5 shadow-sm"
               >
                 <div className={`rounded-full p-3 ${s.color}`}>
                   <s.icon size={21} />
                 </div>
                 <div>
-                  <p className="text-xs text-[#192a56]/70">{s.label}</p>
+                  <p className="text-xs text-ink/70">{s.label}</p>
                   <p className="mt-1 text-xl">{s.value ?? "—"}</p>
                 </div>
               </div>
@@ -438,10 +438,10 @@ export default function SupportTickets() {
               تعذّر تحديث العدادات. يمكنك متابعة التذاكر أدناه.
             </p>
           )}
-          <div className="grid gap-5 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm md:grid-cols-[1.4fr_1fr_0.8fr]">
+          <div className="grid gap-5 rounded-3xl border border-gray-100 bg-surface p-5 shadow-sm md:grid-cols-[1.4fr_1fr_0.8fr]">
             <div className="relative">
               <Search
-                className="absolute right-4 top-4 text-[#192a56]/55"
+                className="absolute right-4 top-4 text-ink/55"
                 size={19}
               />
               <input
@@ -453,7 +453,7 @@ export default function SupportTickets() {
               />
             </div>
             <label className="relative">
-              <span className="absolute -top-2 right-4 bg-white px-1 text-xs text-[#192a56]/70">
+              <span className="absolute -top-2 right-4 bg-surface px-1 text-xs text-ink/70">
                 تصفية حسب الحالة
               </span>
               <SearchableSelect
@@ -477,7 +477,7 @@ export default function SupportTickets() {
               </SearchableSelect>
             </label>
             <label className="relative">
-              <span className="absolute -top-2 right-4 bg-white px-1 text-xs text-[#192a56]/70">
+              <span className="absolute -top-2 right-4 bg-surface px-1 text-xs text-ink/70">
                 الأولوية
               </span>
               <SearchableSelect
@@ -505,7 +505,7 @@ export default function SupportTickets() {
                 <Loader2 className="animate-spin" />
               </div>
             ) : tickets.length === 0 ? (
-              <div className="rounded-3xl bg-white px-6 py-16 text-center">
+              <div className="rounded-3xl bg-surface px-6 py-16 text-center">
                 <Ticket className="mx-auto mb-4 text-gray-300" size={48} />
                 <h3 className="font-bold">
                   {searchTerm || status || priority
@@ -523,7 +523,7 @@ export default function SupportTickets() {
                 <Link
                   key={t.id}
                   to={`/app/support/tickets/${t.id}`}
-                  className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[#192a56]/20 bg-white p-5 shadow-sm transition hover:border-[#273c75] hover:shadow-md focus-visible:ring-2 focus-visible:ring-[#273c75]"
+                  className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-edge/20 bg-surface p-5 shadow-sm transition hover:border-edge-2 hover:shadow-md focus-visible:ring-2 focus-visible:ring-edge-2"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
@@ -534,21 +534,21 @@ export default function SupportTickets() {
                         #{t.id}
                       </span>
                       <span
-                        className={`rounded-full px-2 py-1 ${["HIGH", "URGENT"].includes(t.priority) ? "bg-[#273c75] text-[#192a56]" : "bg-[#192a56]/10 text-[#192a56]"}`}
+                        className={`rounded-full px-2 py-1 ${["HIGH", "URGENT"].includes(t.priority) ? "bg-navy-2 text-ink" : "bg-navy/10 text-ink"}`}
                       >
                         {SUPPORT_PRIORITIES[t.priority]}
                       </span>
-                      <span className="rounded-full bg-[#273c75]/10 px-2 py-1 text-[#192a56]">
+                      <span className="rounded-full bg-navy-2/10 px-2 py-1 text-ink">
                         {t.category}
                       </span>
                     </div>
                     <h2 className="break-words text-lg font-medium">
                       {t.subject}
                     </h2>
-                    <p className="mt-1 line-clamp-1 text-sm text-[#192a56]/65">
+                    <p className="mt-1 line-clamp-1 text-sm text-ink/65">
                       {t.description}
                     </p>
-                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-[#192a56]/65">
+                    <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-ink/65">
                       {isAdmin && <span>مقدم الطلب: {t.requesterName}</span>}
                       <span className="inline-flex items-center gap-1">
                         <CalendarDays size={13} /> تاريخ الإنشاء:{" "}
@@ -562,12 +562,12 @@ export default function SupportTickets() {
                   </div>
                   <div className="flex shrink-0 items-center gap-4">
                     <Status value={t.status} admin={isAdmin} />
-                    <ChevronLeft className="text-[#273c75]" size={21} />
+                    <ChevronLeft className="text-ink-2" size={21} />
                   </div>
                 </Link>
               ))
             )}
-            <div className="flex items-center justify-between p-3 text-sm text-[#192a56]/70">
+            <div className="flex items-center justify-between p-3 text-sm text-ink/70">
               <span>
                 صفحة {page} · {tickets.length} تذاكر
               </span>
@@ -605,12 +605,12 @@ export default function SupportTickets() {
             <ArrowRight size={17} /> العودة إلى التذاكر
           </Link>
           {!ticket ? (
-            <div role="alert" className="rounded-2xl bg-white p-10 text-center">
+            <div role="alert" className="rounded-2xl bg-surface p-10 text-center">
               التذكرة غير موجودة أو لا تملك صلاحية الاطلاع عليها.
             </div>
           ) : (
             <div className="grid items-start gap-6 lg:grid-cols-[1fr_290px]">
-              <section className="min-w-0 overflow-hidden rounded-2xl border border-gray-100 bg-white">
+              <section className="min-w-0 overflow-hidden rounded-2xl border border-gray-100 bg-surface">
                 <div className="border-b border-gray-100 p-6">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <span className="font-mono text-xs text-gray-400">
@@ -651,7 +651,7 @@ export default function SupportTickets() {
                     <button
                       disabled={olderBusy}
                       onClick={older}
-                      className="block mx-auto text-sm text-[#192a56] underline"
+                      className="block mx-auto text-sm text-ink underline"
                     >
                       {olderBusy ? "جارٍ التحميل…" : "تحميل رسائل أقدم"}
                     </button>
@@ -708,7 +708,7 @@ export default function SupportTickets() {
                       ) : (
                         <button
                           disabled={busy}
-                          className="font-bold text-[#192a56] underline"
+                          className="font-bold text-ink underline"
                           onClick={() => updateStatus("OPEN")}
                         >
                           إعادة فتح التذكرة
@@ -763,7 +763,7 @@ export default function SupportTickets() {
                   )}
                 </div>
               </section>
-              <aside className="space-y-5 rounded-2xl border border-gray-100 bg-white p-6">
+              <aside className="space-y-5 rounded-2xl border border-gray-100 bg-surface p-6">
                 <h3 className="font-bold">بيانات التذكرة</h3>
                 {[
                   ["مقدم الطلب", ticket.requesterName],
@@ -815,7 +815,7 @@ export default function SupportTickets() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="new-ticket-title"
-            className="my-auto max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
+            className="my-auto max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl bg-surface p-6 shadow-xl"
           >
             <div className="mb-6 flex items-center justify-between">
               <h2 id="new-ticket-title" className="text-xl font-bold">

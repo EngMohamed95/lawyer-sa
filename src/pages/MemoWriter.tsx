@@ -152,7 +152,7 @@ export default function MemoWriter() {
   if (!perms.canCreate("memo.manage")) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center font-['Tajawal']" dir="rtl">
-        <h2 className="text-lg font-bold text-[#192a56] mb-2">لا تملك صلاحية كتابة المذكرات</h2>
+        <h2 className="text-lg font-bold text-ink mb-2">لا تملك صلاحية كتابة المذكرات</h2>
         <p className="text-sm text-gray-500">راجع مدير المكتب لمنحك الصلاحية.</p>
       </div>
     );
@@ -171,7 +171,7 @@ export default function MemoWriter() {
       />
 
       <div>
-        <h1 className="text-2xl font-black text-[#192a56]">كتابة مذكرة</h1>
+        <h1 className="text-2xl font-black text-ink">كتابة مذكرة</h1>
         <p className="text-gray-500 mt-1 text-sm">اكتب المذكرة أو الصحيفة واحفظها تبع أي قضية من قضاياك</p>
       </div>
 
@@ -196,10 +196,10 @@ export default function MemoWriter() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2 md:col-span-3">
               <div className="flex items-center justify-between gap-2">
-                <label className="text-sm font-bold text-[#192a56]">القضية</label>
+                <label className="text-sm font-bold text-ink">القضية</label>
                 {perms.canCreate("case.create") && (
                   <button type="button" onClick={() => setIsAddCaseOpen(true)}
-                    className="flex items-center gap-1 text-xs font-bold text-[#273c75] hover:text-[#192a56]">
+                    className="flex items-center gap-1 text-xs font-bold text-ink-2 hover:text-ink">
                     <Plus size={14} /> قضية جديدة
                   </button>
                 )}
@@ -218,7 +218,7 @@ export default function MemoWriter() {
               )}
             </div>
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-bold text-[#192a56]">الموضوع</label>
+              <label className="text-sm font-bold text-ink">الموضوع</label>
               <Input
                 placeholder="مثال: صحيفة دعوى تعويض، مذكرة دفاع..."
                 className="text-lg bg-gray-50"
@@ -227,14 +227,14 @@ export default function MemoWriter() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#192a56]">النوع</label>
+              <label className="text-sm font-bold text-ink">النوع</label>
               <SearchableSelect className={selectClass} value={memoType} onChange={e => setMemoType(e.target.value)}>
                 <option value="LAWSUIT">صحيفة دعوى</option>
                 <option value="MEMO">مذكرة رد / دفاع</option>
               </SearchableSelect>
             </div>
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-bold text-[#192a56]">مختصر المطلوب</label>
+              <label className="text-sm font-bold text-ink">مختصر المطلوب</label>
               <textarea
                 rows={3}
                 placeholder="اكتب باختصار ما تريده من هذه المذكرة، مثل: المطالبة بباقي قيمة العقد مع التعويض عن التأخير..."
@@ -245,7 +245,7 @@ export default function MemoWriter() {
               <p className="text-[11px] text-gray-400">يعتمد عليه المساعد الذكي عند الصياغة.</p>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#192a56]">المرفقات</label>
+              <label className="text-sm font-bold text-ink">المرفقات</label>
               <MemoAttachmentsField attachments={memoAttachments} onChange={setMemoAttachments} />
             </div>
           </div>
@@ -259,7 +259,7 @@ export default function MemoWriter() {
                   الترويسة تعرض بيانات افتراضية — أكمل اسم المكتب وشعاره وهواتفه من الإعدادات ← مطبوعات المكتب.
                 </div>
               )}
-              <div className="mx-auto max-w-[850px] bg-white shadow-md">
+              <div className="mx-auto max-w-[850px] bg-surface shadow-md">
                 <RichTextEditor
                   value={memoContent}
                   onChange={(val) => setMemoContent(val)}
@@ -291,7 +291,7 @@ export default function MemoWriter() {
             <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleSaveAndPrint} disabled={!canSave}>
               <Download className="ml-2 h-4 w-4" /> حفظ وطباعة فورية
             </Button>
-            <Button className="bg-[#192a56] hover:bg-[#192a56]/90 text-white" onClick={() => void handleSaveMemo()} disabled={!canSave}>
+            <Button className="bg-navy hover:bg-navy/90 text-white" onClick={() => void handleSaveMemo()} disabled={!canSave}>
               {saving ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Save className="ml-2 h-4 w-4" />} حفظ المذكرة فقط
             </Button>
           </div>

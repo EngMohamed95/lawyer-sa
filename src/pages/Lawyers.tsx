@@ -60,10 +60,10 @@ function SubscriptionBadge({ expiry, billing }: { expiry?: string; billing?: str
 type LawyerFilter = "ALL" | "ACTIVE" | "DISABLED" | "EXPIRING" | "EXPIRED";
 
 const FILTERS: { id: LawyerFilter; label: string; icon: React.ReactNode; on: string; off: string }[] = [
-  { id: "ALL",      label: "الكل",          icon: null,                     on: "border-[#273c75] bg-[#273c75] text-white",  off: "border-slate-200 text-slate-600 hover:bg-slate-50" },
+  { id: "ALL",      label: "الكل",          icon: null,                     on: "border-edge-2 bg-navy-2 text-white",  off: "border-slate-200 text-slate-600 hover:bg-slate-50" },
   { id: "ACTIVE",   label: "نشط فقط",       icon: <CheckCircle size={13} />, on: "border-emerald-600 bg-emerald-600 text-white", off: "border-emerald-200 text-emerald-700 hover:bg-emerald-50" },
   { id: "DISABLED", label: "معطل فقط",      icon: <Ban size={13} />,         on: "border-red-600 bg-red-600 text-white",         off: "border-red-200 text-red-600 hover:bg-red-50" },
-  { id: "EXPIRING", label: "قارب الانتهاء", icon: <Clock size={13} />,       on: "border-amber-500 bg-amber-500 text-white",     off: "border-amber-200 text-amber-700 hover:bg-amber-50" },
+  { id: "EXPIRING", label: "قارب الانتهاء", icon: <Clock size={13} />,       on: "border-amber-500 bg-amber-500 text-[#451a03]",     off: "border-amber-200 text-amber-700 hover:bg-amber-50" },
   { id: "EXPIRED",  label: "اشتراك منتهي",  icon: <XCircle size={13} />,     on: "border-slate-600 bg-slate-600 text-white",     off: "border-slate-200 text-slate-600 hover:bg-slate-50" },
 ];
 
@@ -294,10 +294,10 @@ export default function Lawyers() {
   };
 
   return (
-    <div className="space-y-6 font-['Tajawal'] text-[#192a56]" dir="rtl">
+    <div className="space-y-6 font-['Tajawal'] text-ink" dir="rtl">
 
       {/* الترويسة */}
-      <div className="flex flex-col gap-4 rounded-2xl bg-gradient-to-l from-[#192a56] to-[#273c75] p-6 text-white shadow-lg sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 rounded-2xl bg-gradient-to-l from-navy to-navy-2 p-6 text-white shadow-lg sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/10"><Building2 size={26} /></span>
           <div>
@@ -307,7 +307,7 @@ export default function Lawyers() {
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
           <button type="button" onClick={fetchLawyers} disabled={loading}
-            className="flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-[#192a56] transition hover:bg-blue-50 disabled:opacity-60">
+            className="flex items-center gap-2 rounded-xl bg-surface px-4 py-2.5 text-sm font-bold text-ink transition hover:bg-blue-50 disabled:opacity-60">
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> تحديث البيانات
           </button>
           <button type="button" onClick={() => setIsAddModalOpen(true)}
@@ -325,7 +325,7 @@ export default function Lawyers() {
           { title: "الحسابات المعطلة", value: disabledCount, icon: <Ban size={22} />, iconClass: "bg-red-100/70 text-red-600" },
           { title: "إجمالي القضايا المسجلة", value: totalCases, icon: <Briefcase size={22} />, iconClass: "bg-cyan-100/70 text-cyan-600" },
         ].map((c) => (
-          <div key={c.title} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-md transition-all hover:shadow-lg">
+          <div key={c.title} className="rounded-2xl border border-slate-100 bg-surface p-5 shadow-md transition-all hover:shadow-lg">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="mb-2 text-xs font-semibold text-slate-400">{c.title}</p>
@@ -338,7 +338,7 @@ export default function Lawyers() {
       </div>
 
       {/* البحث والتصفية */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-md lg:flex-row lg:items-center">
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-surface p-4 shadow-md lg:flex-row lg:items-center">
         <div className="relative flex-1">
           <Search size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input value={search} onChange={(e) => setSearch(e.target.value)} className="bg-slate-50 pr-9"
@@ -364,20 +364,20 @@ export default function Lawyers() {
       </div>
 
       {/* الجدول */}
-      <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-md">
+      <div className="overflow-hidden rounded-2xl border border-slate-100 bg-surface shadow-md">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader className="bg-slate-50">
               <TableRow>
-                <TableHead className="text-right font-bold text-[#192a56]">المحامي</TableHead>
-                <TableHead className="text-right font-bold text-[#192a56]">الباقة / الاشتراك</TableHead>
-                <TableHead className="text-right font-bold text-[#192a56] hidden md:table-cell">بيانات التواصل</TableHead>
-                <TableHead className="text-center font-bold text-[#192a56] hidden lg:table-cell">العملاء</TableHead>
-                <TableHead className="text-center font-bold text-[#192a56] hidden lg:table-cell">القضايا</TableHead>
-                <TableHead className="text-center font-bold text-[#192a56] hidden lg:table-cell">الفريق</TableHead>
-                <TableHead className="text-right font-bold text-[#192a56]">المتبقي</TableHead>
-                <TableHead className="text-center font-bold text-[#192a56]">حالة الحساب</TableHead>
-                <TableHead className="text-center font-bold text-[#192a56]">إجراءات</TableHead>
+                <TableHead className="text-right font-bold text-ink">المحامي</TableHead>
+                <TableHead className="text-right font-bold text-ink">الباقة / الاشتراك</TableHead>
+                <TableHead className="text-right font-bold text-ink hidden md:table-cell">بيانات التواصل</TableHead>
+                <TableHead className="text-center font-bold text-ink hidden lg:table-cell">العملاء</TableHead>
+                <TableHead className="text-center font-bold text-ink hidden lg:table-cell">القضايا</TableHead>
+                <TableHead className="text-center font-bold text-ink hidden lg:table-cell">الفريق</TableHead>
+                <TableHead className="text-right font-bold text-ink">المتبقي</TableHead>
+                <TableHead className="text-center font-bold text-ink">حالة الحساب</TableHead>
+                <TableHead className="text-center font-bold text-ink">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -394,11 +394,11 @@ export default function Lawyers() {
                   <TableRow key={lawyer.id} className={`hover:bg-slate-50 transition-colors ${disabled ? "bg-slate-50/70" : days !== null && days <= 0 ? "bg-red-50/40" : ""}`}>
                     <TableCell>
                       <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#273c75] text-sm font-black text-white">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-navy-2 text-sm font-black text-white">
                           {(lawyer.name || "?").charAt(0)}
                         </div>
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-[#192a56]">{lawyer.name || "—"}</p>
+                          <p className="truncate text-sm font-bold text-ink">{lawyer.name || "—"}</p>
                           <p className="truncate text-xs text-slate-500">{lawyer.officeName || "بدون اسم مكتب"}</p>
                         </div>
                       </div>
@@ -411,7 +411,7 @@ export default function Lawyers() {
                       </p>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      <p className="text-sm text-[#192a56]" dir="ltr" style={{ textAlign: "right" }}>{lawyer.email || "—"}</p>
+                      <p className="text-sm text-ink" dir="ltr" style={{ textAlign: "right" }}>{lawyer.email || "—"}</p>
                       <p className="text-xs text-slate-400" dir="ltr" style={{ textAlign: "right" }}>{lawyer.phone || "بدون هاتف"}</p>
                     </TableCell>
                     {[c.clients, c.cases, c.team].map((n, i) => (
@@ -434,11 +434,11 @@ export default function Lawyers() {
                           {disabled ? <CheckCircle size={12} /> : <Ban size={12} />} {disabled ? "تفعيل" : "تعطيل"}
                         </button>
                         <button onClick={() => { setRenewLawyer(lawyer); setRenewMonths(lawyer.subscriptionBilling === "annual" ? 12 : 1); }}
-                          className="flex items-center gap-1 bg-green-500 hover:bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition">
+                          className="flex items-center gap-1 bg-green-700 hover:bg-green-800 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition">
                           <RefreshCw size={12} /> تجديد
                         </button>
                         <button onClick={() => { setCredLawyer(lawyer); setCredForm({ email: "", password: "" }); setShowPass(false); }} title="بيانات الدخول"
-                          className="flex items-center gap-1 border border-slate-200 text-[#273c75] hover:bg-slate-50 text-xs font-bold px-2.5 py-1.5 rounded-xl transition">
+                          className="flex items-center gap-1 border border-slate-200 text-ink-2 hover:bg-slate-50 text-xs font-bold px-2.5 py-1.5 rounded-xl transition">
                           <KeyRound size={12} />
                         </button>
                         <button onClick={() => setEditingLawyer(lawyer)} title="تعديل"
@@ -462,8 +462,8 @@ export default function Lawyers() {
       {/* ========== RENEW MODAL ========== */}
       {renewLawyer && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl p-8">
-            <h2 className="text-xl font-black text-[#192a56] mb-2">تجديد الاشتراك</h2>
+          <div className="bg-surface rounded-3xl w-full max-w-md shadow-2xl p-8">
+            <h2 className="text-xl font-black text-ink mb-2">تجديد الاشتراك</h2>
             <p className="text-sm text-gray-500 mb-6">
               المحامي: <strong>{renewLawyer.name}</strong> — الباقة: <strong>{PLANS.find(p => p.id === renewLawyer.plan)?.name}</strong>
             </p>
@@ -488,8 +488,8 @@ export default function Lawyers() {
                   { months: 12, label: "سنة",    price: renewLawyer.plan === "BASIC" ? 2000 : renewLawyer.plan === "PROFESSIONAL" ? 5000 : 10000 },
                 ].map(opt => (
                   <button key={opt.months} onClick={() => setRenewMonths(opt.months)}
-                    className={`p-3 rounded-2xl border-2 text-center transition ${renewMonths === opt.months ? "border-[#273c75] bg-[#273c75]/10" : "border-gray-200 hover:border-gray-300"}`}>
-                    <p className="font-black text-[#192a56] text-sm">{opt.label}</p>
+                    className={`p-3 rounded-2xl border-2 text-center transition ${renewMonths === opt.months ? "border-edge-2 bg-navy-2/10" : "border-gray-200 hover:border-gray-300"}`}>
+                    <p className="font-black text-ink text-sm">{opt.label}</p>
                     <p className="text-xs text-gray-500 mt-1">{opt.price.toLocaleString()} ج.م</p>
                   </button>
                 ))}
@@ -498,7 +498,7 @@ export default function Lawyers() {
 
             <div className="bg-gray-50 rounded-2xl p-4 mb-6 text-sm">
               <p className="text-gray-600">سينتهي الاشتراك الجديد في:</p>
-              <p className="font-black text-[#192a56] text-lg mt-1">
+              <p className="font-black text-ink text-lg mt-1">
                 {(() => {
                   const base = renewLawyer.subscriptionExpiry
                     ? new Date(Math.max(Date.now(), new Date(renewLawyer.subscriptionExpiry).getTime()))
@@ -511,7 +511,7 @@ export default function Lawyers() {
 
             <div className="flex gap-3">
               <button onClick={handleRenew} disabled={actionLoading}
-                className="flex-1 bg-green-500 hover:bg-green-600 text-white font-black py-3 rounded-2xl transition">
+                className="flex-1 bg-green-700 hover:bg-green-800 text-white font-black py-3 rounded-2xl transition">
                 {actionLoading ? "جاري التجديد..." : "✅ تأكيد التجديد"}
               </button>
               <button onClick={() => setRenewLawyer(null)}
@@ -526,27 +526,27 @@ export default function Lawyers() {
       {/* ========== CHANGE CREDENTIALS MODAL ========== */}
       {credLawyer && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
-            <div className="p-5 bg-[#273c75] flex justify-between items-center">
+          <div className="bg-surface rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
+            <div className="p-5 bg-navy-2 flex justify-between items-center">
               <div>
-                <h2 className="text-lg font-black text-[#192a56]">تغيير بيانات الدخول</h2>
-                <p className="text-xs text-[#192a56]/70 mt-0.5">{credLawyer.name} — {credLawyer.email}</p>
+                <h2 className="text-lg font-black text-ink">تغيير بيانات الدخول</h2>
+                <p className="text-xs text-ink/70 mt-0.5">{credLawyer.name} — {credLawyer.email}</p>
               </div>
-              <button onClick={() => setCredLawyer(null)} className="text-[#192a56]/60 hover:text-[#192a56] text-xl font-bold">✕</button>
+              <button onClick={() => setCredLawyer(null)} className="text-ink/60 hover:text-ink text-xl font-bold">✕</button>
             </div>
 
             <div className="p-6 space-y-5">
               {/* Email field */}
               <div className="space-y-2">
                 <label className="text-sm font-black text-gray-700 flex items-center gap-2">
-                  <AtSign size={15} className="text-[#273c75]" /> البريد الإلكتروني الجديد
+                  <AtSign size={15} className="text-ink-2" /> البريد الإلكتروني الجديد
                 </label>
                 <input
                   type="email"
                   value={credForm.email}
                   onChange={e => setCredForm({ ...credForm, email: e.target.value })}
                   placeholder={credLawyer.email}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-[#273c75] focus:ring-2 focus:ring-[#273c75]/20"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-edge-2 focus:ring-2 focus:ring-edge-2/20"
                 />
                 <p className="text-xs text-gray-400">اترك فارغاً لعدم التغيير</p>
               </div>
@@ -554,7 +554,7 @@ export default function Lawyers() {
               {/* Password field */}
               <div className="space-y-2">
                 <label className="text-sm font-black text-gray-700 flex items-center gap-2">
-                  <KeyRound size={15} className="text-[#273c75]" /> كلمة المرور الجديدة
+                  <KeyRound size={15} className="text-ink-2" /> كلمة المرور الجديدة
                 </label>
                 <div className="relative">
                   <input
@@ -562,7 +562,7 @@ export default function Lawyers() {
                     value={credForm.password}
                     onChange={e => setCredForm({ ...credForm, password: e.target.value })}
                     placeholder="6 أحرف على الأقل"
-                    className="w-full pr-4 pl-12 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-[#273c75] focus:ring-2 focus:ring-[#273c75]/20"
+                    className="w-full pr-4 pl-12 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-edge-2 focus:ring-2 focus:ring-edge-2/20"
                   />
                   <button type="button" onClick={() => setShowPass(!showPass)}
                     className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
@@ -581,10 +581,10 @@ export default function Lawyers() {
                 <button
                   onClick={handleChangeCredentials}
                   disabled={credLoading}
-                  className="flex-1 bg-[#192a56] hover:bg-[#192a56]/90 text-[#273c75] font-black py-3 rounded-2xl transition flex items-center justify-center gap-2 text-sm"
+                  className="flex-1 bg-navy hover:bg-navy/90 text-ink-2 font-black py-3 rounded-2xl transition flex items-center justify-center gap-2 text-sm"
                 >
                   {credLoading
-                    ? <><span className="w-4 h-4 border-2 border-[#273c75]/30 border-t-[#273c75] rounded-full animate-spin" /> جاري التحديث...</>
+                    ? <><span className="w-4 h-4 border-2 border-edge-2/30 border-t-edge-2 rounded-full animate-spin" /> جاري التحديث...</>
                     : <><KeyRound size={15} /> حفظ التغييرات</>}
                 </button>
                 <button onClick={() => setCredLawyer(null)}
@@ -600,8 +600,8 @@ export default function Lawyers() {
       {/* ========== ADD MODAL ========== */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
-            <div className="p-5 bg-[#192a56] text-white flex justify-between items-center">
+          <div className="bg-surface rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden">
+            <div className="p-5 bg-navy text-white flex justify-between items-center">
               <h2 className="text-lg font-black">إضافة مشترك جديد</h2>
               <button onClick={() => setIsAddModalOpen(false)} className="text-white/70 hover:text-white">✕</button>
             </div>
@@ -634,8 +634,8 @@ export default function Lawyers() {
                 <div className="grid grid-cols-3 gap-2">
                   {PLANS.map(p => (
                     <button type="button" key={p.id} onClick={() => setNewLawyer({ ...newLawyer, plan: p.id })}
-                      className={`p-3 rounded-2xl border-2 text-center transition ${newLawyer.plan === p.id ? "border-[#273c75] bg-[#273c75]/10" : "border-gray-200"}`}>
-                      <p className="font-bold text-[#192a56] text-xs">{p.name}</p>
+                      className={`p-3 rounded-2xl border-2 text-center transition ${newLawyer.plan === p.id ? "border-edge-2 bg-navy-2/10" : "border-gray-200"}`}>
+                      <p className="font-bold text-ink text-xs">{p.name}</p>
                       <p className="text-xs text-gray-400 mt-0.5">{p.price}</p>
                     </button>
                   ))}
@@ -650,8 +650,8 @@ export default function Lawyers() {
                     { val: "annual",  label: "سنوي",   sub: "يمتد 12 شهر" },
                   ].map(opt => (
                     <button type="button" key={opt.val} onClick={() => setNewLawyer({ ...newLawyer, billing: opt.val })}
-                      className={`p-3 rounded-2xl border-2 text-center transition ${newLawyer.billing === opt.val ? "border-[#273c75] bg-[#273c75]/10" : "border-gray-200"}`}>
-                      <p className="font-bold text-sm text-[#192a56]">{opt.label}</p>
+                      className={`p-3 rounded-2xl border-2 text-center transition ${newLawyer.billing === opt.val ? "border-edge-2 bg-navy-2/10" : "border-gray-200"}`}>
+                      <p className="font-bold text-sm text-ink">{opt.label}</p>
                       <p className="text-xs text-gray-400">{opt.sub}</p>
                     </button>
                   ))}
@@ -659,7 +659,7 @@ export default function Lawyers() {
               </div>
 
               <Button type="submit" disabled={actionLoading}
-                className="w-full bg-[#192a56] text-[#273c75] font-black py-5 rounded-2xl">
+                className="w-full bg-navy text-ink-2 font-black py-5 rounded-2xl">
                 {actionLoading ? "جاري الإنشاء..." : "إنشاء الحساب"}
               </Button>
             </form>
@@ -670,7 +670,7 @@ export default function Lawyers() {
       {/* ========== EDIT MODAL ========== */}
       {editingLawyer && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
+          <div className="bg-surface rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
             <div className="p-5 bg-blue-600 text-white flex justify-between items-center">
               <h2 className="text-lg font-black">تعديل بيانات المشترك</h2>
               <button onClick={() => setEditingLawyer(null)} className="text-white/70 hover:text-white">✕</button>

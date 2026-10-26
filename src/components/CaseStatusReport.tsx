@@ -15,7 +15,7 @@ import { callGemini, callGroq, readAiSettings } from "../lib/aiProxy";
 import { formatGregorian } from "../lib/calendar";
 import { clientRoleLabelOf, clientRoleOf } from "../lib/clientRole";
 import { caseTypeLabel, isExecutionCase as isExecutionType } from "../lib/caseTypes";
-import { executionDetailsOf, formatMoney, remainingAmount } from "../lib/execution";
+import { executionDetailsOf, executionRequestLabel, formatMoney, remainingAmount } from "../lib/execution";
 import { assignedLawyersLabel } from "../lib/assignedLawyers";
 import { COURT_DEGREE_LABELS_AR, REQUEST_STATUS_LABELS_AR, isOpenRequest, type CaseRequest } from "../lib/caseRequests";
 import { renderMemoLetterheadFooter, renderMemoLetterheadHeader } from "../lib/letterhead";
@@ -186,7 +186,7 @@ export function renderCaseReportHtml({ data, profile, stampUrl, audience, aiHtml
         ${sectionTitle(exec ? "بيانات طلب التنفيذ" : "بيانات القضية")}
         <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; border:1px solid ${LINE}; border-radius:10px;">
           ${exec
-            ? infoRow([["عنوان الطلب", esc(data.title)], ["نوع الطلب", esc(data.enforcementRequestType || "تنفيذ")]])
+            ? infoRow([["عنوان الطلب", esc(data.title)], ["نوع الطلب", esc(executionRequestLabel(data) || "تنفيذ")]])
             : infoRow([["عنوان القضية", esc(data.title)], ["نوع القضية", esc(caseTypeLabel(data.type))]])}
           ${infoRow([["العميل", esc(data.client?.fullName)], ["الصفة", esc(role)]])}
           ${infoRow([["الخصم", esc(data.opponentName || (clientRoleOf(data) === "DEFENDANT" ? data.plaintiffName : data.defendantName))], ["المحكمة", esc(court)]])}
@@ -196,16 +196,38 @@ export function renderCaseReportHtml({ data, profile, stampUrl, audience, aiHtml
         ${exec ? (() => {
           const d = executionDetailsOf(data);
           const rem = remainingAmount(d);
-          return `${sectionTitle("مضمون الطلب")}
+          const textCell = (title: string, text: string) => `
+            <td style="width:50%; vertical-align:top; padding:0 5px;">
+              <div style="border:1px solid ${LINE}; border-radius:10px; padding:10px 14px; min-height:60px;">
+                <div style="font-size:9pt; color:${MUTED}; margin-bottom:4px;">${title}</div>
+                <div style="font-size:10.5pt; color:#111827; line-height:1.7; white-space:pre-wrap;">${esc(text) || "—"}</div>
+              </div>
+            </td>`;
+          return `${d.judgmentText || d.requestContent ? `
+          ${sectionTitle("منطوق الحكم ومضمون الطلب")}
+          <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr>
+            ${textCell("منطوق الحكم", d.judgmentText)}
+            ${textCell("مضمون الطلب", d.requestContent)}
+          </tr></table>` : ""}
+          ${sectionTitle("المبالغ المالية")}
           <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr>
             ${kpi("المدون في السند", d.deedAmount ? esc(formatMoney(d.deedAmount)) : "—")}
-            ${kpi("المستلم", esc(formatMoney(d.receivedAmount || 0)), GREEN_2)}
+            ${kpi(d.payments.length ? `المستلم (${d.payments.length} دفعات)` : "المستلم", esc(formatMoney(d.receivedAmount || 0)), GREEN_2)}
             ${kpi("المتبقي", rem === null ? "—" : esc(formatMoney(rem)), "#192a56")}
-            ${kpi("المطلوب تنفيذه", d.requestedAmount ? esc(formatMoney(d.requestedAmount)) : "—")}
           </tr></table>
+          ${d.payments.length ? `
+          <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; border:1px solid ${LINE}; margin-top:10px; font-size:10pt;">
+            ${d.payments.map((p, i) => `
+            <tr>
+              <td style="width:36px; padding:7px 10px; color:${MUTED}; border-bottom:1px solid ${LINE};">${i + 1}</td>
+              <td style="padding:7px 10px; font-weight:bold; border-bottom:1px solid ${LINE};">${esc(formatMoney(p.amount || 0))}</td>
+              <td style="padding:7px 10px; color:${MUTED}; border-bottom:1px solid ${LINE};">${esc(p.date ? formatGregorian(p.date) : "")}</td>
+              <td style="padding:7px 10px; color:${MUTED}; border-bottom:1px solid ${LINE};">${esc(p.note)}</td>
+            </tr>`).join("")}
+          </table>` : ""}
           <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse; border:1px solid ${LINE}; margin-top:10px;">
-            ${infoRow([["نوع السند", esc(data.enforcementDeedType)], ["تاريخ تحرير السند", esc(d.deedDate ? formatGregorian(d.deedDate) : "")]])}
-            ${infoRow([["مكان الصدور", esc([d.deedPlace, d.deedCity].filter(Boolean).join(" — "))], ["حالة الاستحقاق", esc(d.maturityStatus)]])}
+            ${infoRow([["تاريخ تحرير السند", esc(d.deedDate ? formatGregorian(d.deedDate) : "")], ["مكان الصدور", esc([d.deedPlace, d.deedCity].filter(Boolean).join(" — "))]])}
+            ${infoRow([["حالة الاستحقاق", esc(d.maturityStatus)]])}
           </table>`;
         })() : ""}
 
@@ -438,21 +460,21 @@ export default function CaseStatusReport({ data, profile, stampUrl, isExecutionC
   };
 
   return (
-    <Card className="overflow-hidden border border-gray-200 bg-white shadow-sm">
+    <Card className="overflow-hidden border border-gray-200 bg-surface shadow-sm">
       <CardHeader className="border-b border-gray-100 bg-gray-50/60 pb-4">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <CardTitle className="flex items-center gap-2 text-lg text-[#192a56]">
-              <FileBarChart className="h-5 w-5 text-[#273c75]" /> تقرير حالة القضية
+            <CardTitle className="flex items-center gap-2 text-lg text-ink">
+              <FileBarChart className="h-5 w-5 text-ink-2" /> تقرير حالة القضية
             </CardTitle>
             <CardDescription className="mt-1 text-xs text-gray-500">
               على ترويسة المكتب — اطبعه أو حمّله PDF أو أرسله للعميل عبر واتساب.
             </CardDescription>
           </div>
-          <div className="flex shrink-0 items-center gap-1 rounded-xl border border-gray-200 bg-white p-1">
+          <div className="flex shrink-0 items-center gap-1 rounded-xl border border-gray-200 bg-surface p-1">
             {(["OFFICE", "CLIENT"] as Audience[]).map((a) => (
               <button key={a} onClick={() => { setAudience(a); setAiError(""); }}
-                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${audience === a ? "bg-[#192a56] text-[#273c75]" : "text-gray-500 hover:bg-gray-50"}`}>
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${audience === a ? "bg-navy text-ink-2" : "text-gray-500 hover:bg-gray-50"}`}>
                 {a === "OFFICE" ? "نسخة صاحب المكتب" : "نسخة العميل"}
               </button>
             ))}
@@ -460,11 +482,11 @@ export default function CaseStatusReport({ data, profile, stampUrl, isExecutionC
         </div>
 
         {/* الملخص الذكي */}
-        <div className="mt-4 flex flex-col gap-3 rounded-xl border border-purple-100 bg-gradient-to-l from-purple-50/80 to-white p-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-4 flex flex-col gap-3 rounded-xl border border-purple-100 bg-gradient-to-l from-purple-50/80 to-surface p-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-2.5">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-600 text-white"><Sparkles size={17} /></span>
             <div>
-              <p className="text-sm font-bold text-[#192a56]">
+              <p className="text-sm font-bold text-ink">
                 {audience === "CLIENT" ? "ملخص ذكي مبسّط للعميل" : "ملخص وتحليل ذكي لصاحب المكتب"}
               </p>
               <p className="text-xs text-gray-500">
@@ -494,13 +516,13 @@ export default function CaseStatusReport({ data, profile, stampUrl, isExecutionC
 
       <CardContent className="p-0">
         <div className="overflow-x-auto bg-gray-100/70 p-4 sm:p-8">
-          <div className="mx-auto w-[794px] max-w-none overflow-hidden rounded-sm bg-white shadow-xl" dangerouslySetInnerHTML={{ __html: html }} />
+          <div className="los-paper mx-auto w-[794px] max-w-none overflow-hidden rounded-sm bg-surface shadow-xl" dangerouslySetInnerHTML={{ __html: html }} />
         </div>
         <div className="flex flex-wrap justify-end gap-2 border-t border-gray-100 p-4">
           <Button variant="outline" onClick={handlePrint} className="border-gray-200 text-gray-700 hover:bg-gray-50">
             <Printer className="ml-2 h-4 w-4" /> طباعة
           </Button>
-          <Button variant="outline" disabled={pdfBusy} onClick={handleDownload} className="border-[#192a56] text-[#192a56] hover:bg-gray-50">
+          <Button variant="outline" disabled={pdfBusy} onClick={handleDownload} className="border-edge text-ink hover:bg-gray-50">
             {pdfBusy ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Download className="ml-2 h-4 w-4" />} تحميل PDF
           </Button>
           <Button disabled={waBusy} onClick={handleWhatsApp} title={clientPhone ? `إرسال إلى ${clientPhone}` : "لا يوجد رقم جوال مسجَّل للعميل"}

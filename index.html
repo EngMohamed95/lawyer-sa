@@ -6,6 +6,19 @@
     <title>LawyerOS - نظام إدارة المكاتب القانونية</title>
     <link rel="icon" type="image/png" href="/logo.png" />
     <script>
+      // المظهر قبل أي رسم — يطابق src/lib/theme.ts (المفتاح los-theme)
+      (function () {
+        try {
+          var p = localStorage.getItem("los-theme");
+          var dark = p === "dark" || (p === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (dark) {
+            document.documentElement.classList.add("dark");
+            document.documentElement.style.colorScheme = "dark";
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <script>
       // Global error listener to catch startup crashes
       window.onerror = function(message, source, lineno, colno, error) {
         alert("حدث خطأ في النظام: " + message + "\nالمصدر: " + source);
@@ -20,6 +33,9 @@
         margin: 0;
         background-color: #F3F4F6; /* Set back to normal app background */
         font-family: sans-serif;
+      }
+      html.dark body {
+        background-color: #0b1120;
       }
       /* Loader specific styles */
       #initial-loader {

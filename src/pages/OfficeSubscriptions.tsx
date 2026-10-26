@@ -94,7 +94,7 @@ export default function OfficeSubscriptions() {
     .sort((a, b) => (daysUntil(a.subscriptionExpiry) ?? 99999) - (daysUntil(b.subscriptionExpiry) ?? 99999));
 
   return (
-    <div className="space-y-6 font-['Tajawal'] text-[#192a56]" dir="rtl">
+    <div className="space-y-6 font-['Tajawal'] text-ink" dir="rtl">
       <AdminHeader
         icon={<Users size={26} />}
         title="سجل اشتراكات وكوتات المحامين"
@@ -131,7 +131,7 @@ export default function OfficeSubscriptions() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-12"><Loader2 className="animate-spin text-[#273c75]" /></div>
+          <div className="flex justify-center py-12"><Loader2 className="animate-spin text-ink-2" /></div>
         ) : visible.length === 0 ? (
           <p className="py-12 text-center text-sm text-slate-400">{offices.length ? "لا توجد نتائج مطابقة" : "لا يوجد مكاتب مشتركة"}</p>
         ) : (
@@ -185,12 +185,12 @@ export default function OfficeSubscriptions() {
                                 <div className="mb-1 flex justify-between text-xs">
                                   <span>
                                     {QUOTA_LABELS[k]}: <span className="font-bold tabular-nums">{fmtNum(used[k])} / {quota ? fmtNum(quota) : "∞"}</span>
-                                    {custom && <span className="mr-1 text-[10px] text-[#273c75]">(مخصصة)</span>}
+                                    {custom && <span className="mr-1 text-[10px] text-ink-2">(مخصصة)</span>}
                                   </span>
                                   <span className={`font-bold tabular-nums ${pct >= 100 ? "text-red-600" : pct >= 80 ? "text-amber-600" : "text-slate-500"}`}>{quota ? `${pct}%` : "غير محدود"}</span>
                                 </div>
                                 <div className="h-1.5 rounded-full bg-slate-100">
-                                  <div className={`h-1.5 rounded-full ${pct >= 100 ? "bg-red-500" : pct >= 80 ? "bg-amber-500" : "bg-[#273c75]"}`} style={{ width: `${quota ? Math.max(pct, used[k] ? 2 : 0) : 0}%` }} />
+                                  <div className={`h-1.5 rounded-full ${pct >= 100 ? "bg-red-500" : pct >= 80 ? "bg-amber-500" : "bg-navy-2"}`} style={{ width: `${quota ? Math.max(pct, used[k] ? 2 : 0) : 0}%` }} />
                                 </div>
                               </div>
                             );
@@ -199,7 +199,7 @@ export default function OfficeSubscriptions() {
                       </td>
                       <td className="px-4 py-4">
                         <button type="button" onClick={() => setManaging(o)}
-                          className="flex items-center gap-1.5 rounded-xl border border-[#273c75]/30 px-3 py-1.5 text-xs font-bold text-[#273c75] hover:bg-slate-50">
+                          className="flex items-center gap-1.5 rounded-xl border border-edge-2/30 px-3 py-1.5 text-xs font-bold text-ink-2 hover:bg-slate-50">
                           <Settings2 size={13} /> إدارة
                         </button>
                       </td>
@@ -276,7 +276,7 @@ function ManageSubscription({ office, plans, plan, onClose, onSaved }: {
             <div className="grid grid-cols-2 gap-2">
               {([["extend", "تمديد فوق الاشتراك الحالي"], ["new", "بدء فترة جديدة من اليوم"]] as const).map(([m, text]) => (
                 <button key={m} type="button" onClick={() => setMode(m)} disabled={m === "extend" && !office.subscriptionExpiry}
-                  className={`rounded-xl border-2 p-3 text-sm font-bold transition disabled:opacity-40 ${mode === m ? "border-[#273c75] bg-slate-50" : "border-slate-200"}`}>
+                  className={`rounded-xl border-2 p-3 text-sm font-bold transition disabled:opacity-40 ${mode === m ? "border-edge-2 bg-slate-50" : "border-slate-200"}`}>
                   {text}
                 </button>
               ))}
@@ -301,7 +301,7 @@ function ManageSubscription({ office, plans, plan, onClose, onSaved }: {
             ))}
           </div>
           <button type="button" disabled={saving} onClick={() => run(false)}
-            className="w-full rounded-2xl border border-[#273c75]/30 py-3 font-bold text-[#273c75] hover:bg-slate-50 disabled:opacity-50">
+            className="w-full rounded-2xl border border-edge-2/30 py-3 font-bold text-ink-2 hover:bg-slate-50 disabled:opacity-50">
             حفظ الحصص فقط
           </button>
         </section>

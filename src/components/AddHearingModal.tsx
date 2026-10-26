@@ -249,13 +249,13 @@ export function AddHearingModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-[#192a56]">إضافة جلسة جديدة</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-ink">إضافة جلسة جديدة</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           {!caseId && (
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#192a56]">القضية *</label>
+              <label className="text-sm font-bold text-ink">القضية *</label>
               <SearchableSelect 
                 required
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -278,7 +278,7 @@ export function AddHearingModal({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#192a56]">تاريخ الجلسة *</label>
+              <label className="text-sm font-bold text-ink">تاريخ الجلسة *</label>
               <Input 
                 type="date"
                 required
@@ -288,7 +288,7 @@ export function AddHearingModal({
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#192a56]">تاريخ الجلسة القادمة</label>
+              <label className="text-sm font-bold text-ink">تاريخ الجلسة القادمة</label>
               <Input 
                 type="date"
                 value={formData.nextHearingDate}
@@ -299,7 +299,7 @@ export function AddHearingModal({
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#192a56]">المدعي</label>
+              <label className="text-sm font-bold text-ink">المدعي</label>
               <Input
                 value={formData.plaintiffName}
                 readOnly
@@ -310,7 +310,7 @@ export function AddHearingModal({
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#192a56]">المدعى عليه</label>
+              <label className="text-sm font-bold text-ink">المدعى عليه</label>
               <Input
                 value={formData.defendantName}
                 readOnly
@@ -322,7 +322,7 @@ export function AddHearingModal({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#192a56]">ملخص الجلسة</label>
+            <label className="text-sm font-bold text-ink">ملخص الجلسة</label>
             <Textarea
                rows={3}
                value={formData.requiredActions}
@@ -332,7 +332,7 @@ export function AddHearingModal({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#192a56]">الإجراء القادم (المطلوب قبل الجلسة القادمة)</label>
+            <label className="text-sm font-bold text-ink">الإجراء القادم (المطلوب قبل الجلسة القادمة)</label>
             <Textarea
                rows={3}
                value={formData.judgeRequests}
@@ -343,7 +343,7 @@ export function AddHearingModal({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#192a56]">قرار الجلسة (النتيجة)</label>
+            <label className="text-sm font-bold text-ink">قرار الجلسة (النتيجة)</label>
             <Input 
                value={formData.result}
                onChange={e => setFormData({...formData, result: e.target.value})}
@@ -355,7 +355,7 @@ export function AddHearingModal({
           <div className="space-y-2 border-t pt-2 text-xs font-bold text-gray-500">أرشفة الجلسة (اختياري)</div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#192a56]">محضر الضبط (نصي)</label>
+            <label className="text-sm font-bold text-ink">محضر الضبط (نصي)</label>
             <textarea 
                value={formData.minutesText}
                onChange={e => setFormData({...formData, minutesText: e.target.value})}
@@ -365,17 +365,17 @@ export function AddHearingModal({
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-bold text-[#192a56]">ملف محضر الضبط</label>
+            <label className="text-sm font-bold text-ink">ملف محضر الضبط</label>
             <Input 
                type="file"
                onChange={e => setMinutesFile(e.target.files?.[0] || null)}
-               className="bg-white"
+               className="bg-surface"
             />
             {minutesFile && <p className="text-[10px] text-gray-500">تم اختيار: {minutesFile.name}</p>}
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#192a56]">الحكم الصادر في الجلسة (نصي)</label>
+            <label className="text-sm font-bold text-ink">الحكم الصادر في الجلسة (نصي)</label>
             <textarea 
                value={formData.judgmentText}
                onChange={e => setFormData({...formData, judgmentText: e.target.value})}
@@ -385,11 +385,11 @@ export function AddHearingModal({
           </div>
 
           <div className="space-y-1">
-            <label className="text-sm font-bold text-[#192a56]">ملف حكم الجلسة / القرار</label>
+            <label className="text-sm font-bold text-ink">ملف حكم الجلسة / القرار</label>
             <Input 
                type="file"
                onChange={e => setJudgmentFile(e.target.files?.[0] || null)}
-               className="bg-white"
+               className="bg-surface"
             />
             {judgmentFile && <p className="text-[10px] text-gray-500">تم اختيار: {judgmentFile.name}</p>}
           </div>
@@ -402,7 +402,7 @@ export function AddHearingModal({
 
           <DialogFooter className="mt-6">
             <Button type="button" variant="outline" onClick={onClose}>إلغاء</Button>
-            <Button type="submit" disabled={loading} className="bg-[#192a56] hover:bg-[#192a56]/90 text-white">
+            <Button type="submit" disabled={loading} className="bg-navy hover:bg-navy/90 text-white">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               حفظ الجلسة
             </Button>

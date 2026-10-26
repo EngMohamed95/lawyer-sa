@@ -121,7 +121,7 @@ export default function Team() {
         <div className="w-14 h-14 rounded-full bg-red-50 text-red-500 flex items-center justify-center">
           <ShieldAlert size={26} />
         </div>
-        <h2 className="text-xl font-bold text-[#192a56]">لا تملك صلاحية إدارة المستخدمين</h2>
+        <h2 className="text-xl font-bold text-ink">لا تملك صلاحية إدارة المستخدمين</h2>
         <p className="text-sm text-gray-500">هذه الصفحة متاحة لمدير المكتب فقط.</p>
       </div>
     );
@@ -144,14 +144,14 @@ export default function Team() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">فريق المكتب</h1>
+          <h1 className="text-3xl font-bold text-ink tracking-tight">فريق المكتب</h1>
           <p className="text-gray-500 mt-1 text-sm">
             إدارة كل مستخدمي المكتب وأدوارهم — {members.length} عضو
           </p>
         </div>
         <Button
           onClick={() => setIsAddOpen(true)}
-          className="bg-[#192a56] hover:bg-[#192a56]/90 text-white shadow-lg shadow-[#192a56]/20"
+          className="bg-navy hover:bg-navy/90 text-white shadow-lg shadow-navy/20"
         >
           <Plus className="ml-2 h-4 w-4" /> إضافة عضو
         </Button>
@@ -165,11 +165,11 @@ export default function Team() {
             onClick={() => setRoleFilter(roleFilter === r ? "ALL" : r)}
             className={`p-3 rounded-2xl border text-right transition-all ${
               roleFilter === r
-                ? "border-[#273c75] bg-[#273c75]/10 shadow-sm"
-                : "border-gray-100 bg-white hover:border-gray-200"
+                ? "border-edge-2 bg-navy-2/10 shadow-sm"
+                : "border-gray-100 bg-surface hover:border-gray-200"
             }`}
           >
-            <p className="text-2xl font-black text-[#192a56]">{counts.get(r) ?? 0}</p>
+            <p className="text-2xl font-black text-ink">{counts.get(r) ?? 0}</p>
             <p className="text-xs text-gray-500 mt-0.5">{ROLE_LABELS_AR[r]}</p>
           </button>
         ))}
@@ -178,15 +178,15 @@ export default function Team() {
       <Card className="shadow-sm border-gray-200">
         <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
           <div className="flex items-center gap-2">
-            <Users className="w-5 h-5 text-[#273c75]" />
-            <h2 className="font-bold text-lg text-[#192a56]">
+            <Users className="w-5 h-5 text-ink-2" />
+            <h2 className="font-bold text-lg text-ink">
               {roleFilter === "ALL" ? "كل الأعضاء" : ROLE_LABELS_AR[roleFilter]}
               <span className="text-sm font-normal text-gray-400 mr-2">({filtered.length})</span>
             </h2>
           </div>
           <div className="flex items-center gap-2">
             {roleFilter !== "ALL" && (
-              <button onClick={() => setRoleFilter("ALL")} className="text-xs text-[#273c75] hover:underline">
+              <button onClick={() => setRoleFilter("ALL")} className="text-xs text-ink-2 hover:underline">
                 إلغاء التصفية
               </button>
             )}
@@ -196,7 +196,7 @@ export default function Team() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="بحث بالاسم أو البريد..."
-                className="pr-9 pl-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:border-[#192a56] w-full sm:w-56 bg-white"
+                className="pr-9 pl-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:border-edge w-full sm:w-56 bg-surface"
               />
             </div>
           </div>
@@ -210,14 +210,14 @@ export default function Team() {
             </div>
           ) : (
             <Table>
-              <TableHeader className="bg-white">
+              <TableHeader className="bg-surface">
                 <TableRow>
-                  <TableHead className="text-right font-bold text-[#192a56]">الاسم</TableHead>
-                  <TableHead className="text-right font-bold text-[#192a56]">الدور</TableHead>
-                  <TableHead className="text-right font-bold text-[#192a56] hidden md:table-cell">البريد الإلكتروني</TableHead>
-                  <TableHead className="text-right font-bold text-[#192a56] hidden sm:table-cell">الهاتف</TableHead>
-                  <TableHead className="text-right font-bold text-[#192a56] hidden lg:table-cell">تاريخ الإضافة</TableHead>
-                  <TableHead className="text-center font-bold text-[#192a56]">إجراءات</TableHead>
+                  <TableHead className="text-right font-bold text-ink">الاسم</TableHead>
+                  <TableHead className="text-right font-bold text-ink">الدور</TableHead>
+                  <TableHead className="text-right font-bold text-ink hidden md:table-cell">البريد الإلكتروني</TableHead>
+                  <TableHead className="text-right font-bold text-ink hidden sm:table-cell">الهاتف</TableHead>
+                  <TableHead className="text-right font-bold text-ink hidden lg:table-cell">تاريخ الإضافة</TableHead>
+                  <TableHead className="text-center font-bold text-ink">إجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -240,11 +240,11 @@ export default function Team() {
                 ) : (
                   filtered.map((m) => (
                     <TableRow key={m.id} className="hover:bg-gray-50/50">
-                      <TableCell className="font-medium text-[#192a56]">{m.name || "—"}</TableCell>
+                      <TableCell className="font-medium text-ink">{m.name || "—"}</TableCell>
                       <TableCell><RoleBadge role={m.role} /></TableCell>
                       <TableCell className="text-gray-600 hidden md:table-cell">
                         {m.email ? (
-                          <a href={`mailto:${m.email}`} className="flex items-center gap-2 hover:underline decoration-[#273c75] decoration-2 underline-offset-4" dir="ltr">
+                          <a href={`mailto:${m.email}`} className="flex items-center gap-2 hover:underline decoration-ink-2 decoration-2 underline-offset-4" dir="ltr">
                             <Mail size={14} className="text-gray-400 shrink-0" />
                             {m.email}
                           </a>
@@ -252,7 +252,7 @@ export default function Team() {
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">
                         {m.phone ? (
-                          <a href={`tel:${m.phone}`} className="flex items-center gap-2 text-[#192a56] hover:underline decoration-[#273c75] decoration-2 underline-offset-4" dir="ltr">
+                          <a href={`tel:${m.phone}`} className="flex items-center gap-2 text-ink hover:underline decoration-ink-2 decoration-2 underline-offset-4" dir="ltr">
                             <PhoneIcon size={14} className="text-gray-400 shrink-0" />
                             {m.phone}
                           </a>
@@ -269,7 +269,7 @@ export default function Team() {
                             <Button
                               variant="ghost" size="sm"
                               onClick={() => setEditingMember(m)}
-                              className="text-[#192a56] hover:bg-gray-100 h-8 w-8 p-0 rounded-lg"
+                              className="text-ink hover:bg-gray-100 h-8 w-8 p-0 rounded-lg"
                               title="تعديل بيانات العضو"
                             >
                               <Pencil size={14} />

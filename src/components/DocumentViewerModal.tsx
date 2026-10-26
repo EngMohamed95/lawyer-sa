@@ -174,8 +174,8 @@ export function DocumentViewerModal({
       <DialogContent className="sm:max-w-[950px] max-h-[92vh] flex flex-col overflow-hidden" dir="rtl">
         <DialogHeader className="shrink-0 border-b pb-3">
           <div className="flex items-center justify-between gap-4 flex-wrap">
-            <DialogTitle className="text-xl font-bold text-[#192a56] flex items-center gap-2">
-              <File className="h-5 w-5 text-[#273c75]" />
+            <DialogTitle className="text-xl font-bold text-ink flex items-center gap-2">
+              <File className="h-5 w-5 text-ink-2" />
               {activeDoc.name}
             </DialogTitle>
             <div className="flex items-center gap-2">
@@ -191,7 +191,7 @@ export function DocumentViewerModal({
               )}
               {hasFile && (
                 <a href={activeDoc.fileUrl} target="_blank" rel="noreferrer" download>
-                  <Button variant="outline" size="sm" className="border-[#192a56] text-[#192a56] hover:bg-gray-50">
+                  <Button variant="outline" size="sm" className="border-edge text-ink hover:bg-gray-50">
                     <Download className="h-4 w-4 ml-1" /> تحميل الملف الأصلي
                   </Button>
                 </a>
@@ -212,8 +212,8 @@ export function DocumentViewerModal({
                     <button key={v.id} onClick={() => setShownVersion(v)}
                       className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold border transition text-right ${
                         active
-                          ? "bg-[#192a56] text-[#273c75] border-[#192a56]"
-                          : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                          ? "bg-navy text-ink-2 border-edge"
+                          : "bg-surface text-gray-600 border-gray-200 hover:bg-gray-50"
                       }`}>
                       إصدار {v.version}
                       {v.isLatest !== false && <span className="mr-1 opacity-70">(الأحدث)</span>}
@@ -239,7 +239,7 @@ export function DocumentViewerModal({
 
           {/* No content at all */}
           {!hasFile && !hasText && (
-            <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400 bg-white rounded-2xl border border-gray-100">
+            <div className="flex flex-col items-center justify-center py-16 gap-3 text-gray-400 bg-surface rounded-2xl border border-gray-100">
               <FileText className="h-12 w-12 text-gray-300" />
               <p className="text-sm font-bold">لا يوجد ملف أو نص مرفق بهذا المستند</p>
               <p className="text-xs text-gray-300">يمكنك حذف هذا المستند وإعادة رفعه مرة أخرى</p>
@@ -250,8 +250,8 @@ export function DocumentViewerModal({
           {isDocx && (
             <div className="w-full">
               {wordLoading && (
-                <div className="flex flex-col items-center justify-center py-20 gap-3 bg-white rounded-2xl border">
-                  <Loader2 className="h-8 w-8 text-[#273c75] animate-spin" />
+                <div className="flex flex-col items-center justify-center py-20 gap-3 bg-surface rounded-2xl border">
+                  <Loader2 className="h-8 w-8 text-ink-2 animate-spin" />
                   <p className="text-sm text-gray-500 font-bold">جاري قراءة ملف Word وتنسيقه...</p>
                 </div>
               )}
@@ -260,12 +260,12 @@ export function DocumentViewerModal({
                   <AlertCircle className="h-8 w-8 text-red-500" />
                   <p className="text-sm font-bold text-center">{wordError}</p>
                   <a href={activeDoc.fileUrl} target="_blank" rel="noreferrer" download className="mt-2">
-                    <Button className="bg-[#192a56] text-white">تحميل المستند الآن</Button>
+                    <Button className="bg-navy text-white">تحميل المستند الآن</Button>
                   </a>
                 </div>
               )}
               {!wordLoading && !wordError && wordHtml && (
-                <div className="bg-white border shadow-md rounded-2xl p-8 max-w-2xl mx-auto min-h-[50vh] font-serif leading-relaxed text-gray-800 text-justify overflow-x-auto word-document-view">
+                <div className="los-paper bg-surface border shadow-md rounded-2xl p-8 max-w-2xl mx-auto min-h-[50vh] font-serif leading-relaxed text-gray-800 text-justify overflow-x-auto word-document-view">
                   <style dangerouslySetInnerHTML={{ __html: `
                     .word-document-view table { width: 100%; border-collapse: collapse; margin: 15px 0; }
                     .word-document-view th, .word-document-view td { border: 1px solid #ddd; padding: 8px; text-align: right; }
@@ -285,7 +285,7 @@ export function DocumentViewerModal({
           {isExcel && (
             <div className="w-full">
               {excelLoading && (
-                <div className="flex flex-col items-center justify-center py-20 gap-3 bg-white rounded-2xl border">
+                <div className="flex flex-col items-center justify-center py-20 gap-3 bg-surface rounded-2xl border">
                   <Loader2 className="h-8 w-8 text-green-600 animate-spin" />
                   <p className="text-sm text-gray-500 font-bold">جاري تحميل وقراءة جداول Excel...</p>
                 </div>
@@ -295,12 +295,12 @@ export function DocumentViewerModal({
                   <AlertCircle className="h-8 w-8 text-red-500" />
                   <p className="text-sm font-bold text-center">{excelError}</p>
                   <a href={activeDoc.fileUrl} target="_blank" rel="noreferrer" download className="mt-2">
-                    <Button className="bg-[#192a56] text-white">تحميل الملف</Button>
+                    <Button className="bg-navy text-white">تحميل الملف</Button>
                   </a>
                 </div>
               )}
               {!excelLoading && !excelError && excelSheets.length > 0 && (
-                <div className="bg-white border rounded-2xl overflow-hidden shadow-sm flex flex-col max-h-[70vh]">
+                <div className="bg-surface border rounded-2xl overflow-hidden shadow-sm flex flex-col max-h-[70vh]">
                   <div className="flex bg-gray-100 border-b p-2 overflow-x-auto gap-2 shrink-0">
                     {excelSheets.map((sheet, index) => (
                       <button
@@ -308,8 +308,8 @@ export function DocumentViewerModal({
                         onClick={() => setSelectedExcelSheet(index)}
                         className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-all ${
                           selectedExcelSheet === index
-                            ? "bg-white text-green-700 shadow-sm border-t-2 border-green-600"
-                            : "text-gray-600 hover:bg-white/50"
+                            ? "bg-surface text-green-700 shadow-sm border-t-2 border-green-600"
+                            : "text-gray-600 hover:bg-surface/50"
                         }`}
                       >
                         <Table2 size={14} className="text-green-600" />
@@ -317,7 +317,7 @@ export function DocumentViewerModal({
                       </button>
                     ))}
                   </div>
-                  <div className="flex-1 overflow-auto p-4 excel-table-view">
+                  <div className="los-paper flex-1 overflow-auto bg-surface p-4 excel-table-view">
                     <style dangerouslySetInnerHTML={{ __html: `
                       .excel-table-view table { border-collapse: collapse; width: 100%; font-size: 11pt; direction: rtl; text-align: right; }
                       .excel-table-view th, .excel-table-view td { border: 1px solid #e2e8f0; padding: 10px 14px; white-space: nowrap; }
@@ -351,7 +351,7 @@ export function DocumentViewerModal({
           {/* Image viewer */}
           {isImage && (
             <div className="flex justify-center">
-              <div className="rounded-lg overflow-hidden border border-gray-200 shadow-sm max-w-full bg-white">
+              <div className="rounded-lg overflow-hidden border border-gray-200 shadow-sm max-w-full bg-surface">
                 <div className="flex items-center gap-2 p-2 bg-gray-100 border-b text-xs text-gray-500 font-bold">
                   <Image className="h-4 w-4 text-blue-500" />
                   صورة مستندة
@@ -367,11 +367,11 @@ export function DocumentViewerModal({
 
           {/* Unknown file type fallback */}
           {hasFile && !isImage && !isPdf && !isDocx && !isExcel && (
-            <div className="flex flex-col items-center justify-center py-16 gap-3 bg-white rounded-2xl border">
+            <div className="flex flex-col items-center justify-center py-16 gap-3 bg-surface rounded-2xl border">
               <File className="h-12 w-12 text-gray-300" />
               <p className="text-sm text-gray-500 font-bold">لا يمكن عرض هذا النوع من الملفات مباشرةً</p>
               <a href={activeDoc.fileUrl} target="_blank" rel="noreferrer" download>
-                <Button className="bg-[#192a56] hover:bg-[#192a56]/90 text-white py-5 px-6 rounded-xl font-bold">
+                <Button className="bg-navy hover:bg-navy/90 text-white py-5 px-6 rounded-xl font-bold">
                   <Download className="ml-2 h-4 w-4" /> تحميل ومراجعة الملف
                 </Button>
               </a>
@@ -380,9 +380,9 @@ export function DocumentViewerModal({
 
           {/* Extracted text (OCR fallback) */}
           {hasText && (
-            <div className="rounded-lg border border-gray-200 overflow-hidden bg-white shadow-sm">
+            <div className="rounded-lg border border-gray-200 overflow-hidden bg-surface shadow-sm">
               <div className="flex items-center gap-2 p-3 bg-gray-50 border-b text-xs text-gray-500 font-bold">
-                <FileText className="h-4 w-4 text-[#273c75]" />
+                <FileText className="h-4 w-4 text-ink-2" />
                 النص المستخرج / الملاحظات المرفقة
               </div>
               <div className="p-5 whitespace-pre-wrap font-serif leading-loose text-gray-800 text-sm text-justify">

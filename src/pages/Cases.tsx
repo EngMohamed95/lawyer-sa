@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { Plus, Search, Filter, Eye, FileSpreadsheet, Gavel, X, ChevronDown, ChevronLeft, ChevronRight, Briefcase, Landmark, UserRound, Scale } from "lucide-react";
+import { Plus, Search, Filter, Eye, FileSpreadsheet, Gavel, X, ChevronDown, ChevronLeft, Briefcase, Landmark, UserRound, Scale, CalendarDays, Pencil } from "lucide-react";
 import { Card, CardContent, CardHeader } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -18,6 +18,9 @@ import { caseTypeLabel } from "../lib/caseTypes";
 import { assignedLawyersLabel } from "../lib/assignedLawyers";
 import ExecutionOverview, { matchesExecution, type ExecutionCapacity, type ExecutionFilter } from "../components/ExecutionOverview";
 import { visibleCasesQuery } from "../lib/caseAccess";
+import { enforcementProgressOf, executionRequestLabel, executionStatusOf, isEnforcementOverdue } from "../lib/execution";
+import FilterBanner from "../components/FilterBanner";
+import { CASE_STATUS_FILTER_AR, caseDay, caseStatusKey, monthFilterLabel, type CaseStatusKey } from "../lib/dashboardFilters";
 
 const STATUS_LABELS_AR: Record<string, string> = {
   // القيم الحالية التي يكتبها النظام
@@ -43,16 +46,7 @@ const ENFORCEMENT_CLOSURE_LABELS_AR: Record<string, string> = {
   OTHER: "سبب آخر",
 };
 
-const enforcementProgressOf = (c: any): number => {
-  const steps = c.enforcementSteps || {};
-  const done = Object.values(steps).filter(Boolean).length;
-  return Math.round((done / 22) * 100);
-};
 
-const isEnforcementOverdue = (c: any): boolean =>
-  !!c.enforcementNoticeDeadline &&
-  !c.enforcementClosureReason &&
-  new Date(c.enforcementNoticeDeadline).getTime() < Date.now();
 
 
 const CaseField = ({ label, children, className = "" }: { label: string; children: ReactNode; className?: string }) => (
@@ -62,55 +56,10 @@ const CaseField = ({ label, children, className = "" }: { label: string; childre
   </div>
 );
 
-// حاوية تمرير أفقي بأزرار أسهم على الجانبين (مثل ناجز) تظهر فقط عند وجود محتوى مخفي
-function CaseRowsScroller({ children }: { children: ReactNode }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [canPrev, setCanPrev] = useState(false);
-  const [canNext, setCanNext] = useState(false);
-
-  const update = () => {
-    const el = ref.current;
-    if (!el) return;
-    // في RTL تكون scrollLeft صفرًا في البداية وسالبة عند التمرير لليسار
-    const max = el.scrollWidth - el.clientWidth;
-    const pos = Math.abs(el.scrollLeft);
-    setCanPrev(pos > 2);
-    setCanNext(pos < max - 2);
-  };
-
-  useEffect(() => {
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, [children]);
-
-  const scrollBy = (dir: 1 | -1) => ref.current?.scrollBy({ left: dir * 320, behavior: "smooth" });
-
-  const arrow = "absolute top-1/2 -translate-y-1/2 z-10 h-8 w-8 rounded-full bg-gray-800/90 text-white flex items-center justify-center shadow-md hover:bg-gray-900 transition";
-
-  return (
-    <div className="relative">
-      {canPrev && (
-        <button aria-label="السابق" onClick={() => scrollBy(1)} className={`${arrow} right-3`}>
-          <ChevronRight className="h-5 w-5" />
-        </button>
-      )}
-      {canNext && (
-        <button aria-label="التالي" onClick={() => scrollBy(-1)} className={`${arrow} left-3`}>
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-      )}
-      <div ref={ref} onScroll={update} className="overflow-x-auto">
-        <div className="min-w-[900px] divide-y divide-gray-200 bg-gray-50/60">{children}</div>
-      </div>
-    </div>
-  );
-}
-
 // لون الحافة الجانبية وشارة الحالة في بطاقة القضية
 const CASE_STATUS_STYLES: Record<string, { bar: string; pill: string }> = {
-  "مفتوحة": { bar: "border-r-[#192a56]", pill: "bg-[#192a56] text-white" },
-  "معلّقة": { bar: "border-r-amber-500", pill: "bg-amber-500 text-white" },
+  "مفتوحة": { bar: "border-r-edge", pill: "bg-navy text-white" },
+  "معلّقة": { bar: "border-r-amber-500", pill: "bg-amber-500 text-[#451a03]" },
   "موقوفة": { bar: "border-r-red-500", pill: "bg-red-500 text-white" },
   "مكتملة": { bar: "border-r-green-600", pill: "bg-green-600 text-white" },
   "مغلقة": { bar: "border-r-gray-400", pill: "bg-gray-500 text-white" },
@@ -118,7 +67,7 @@ const CASE_STATUS_STYLES: Record<string, { bar: string; pill: string }> = {
 };
 
 const Chip = ({ children }: { children: ReactNode }) => (
-  <span className="rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-[#192a56]">{children}</span>
+  <span className="rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-ink">{children}</span>
 );
 
 function CaseRow({ c, expanded, onToggle, userRole }: { c: any; expanded: boolean; onToggle: () => void; userRole: string | null }) {
@@ -137,18 +86,18 @@ function CaseRow({ c, expanded, onToggle, userRole }: { c: any; expanded: boolea
   };
 
   return (
-    <div onClick={openCase} className={`cursor-pointer rounded-xl border border-gray-200 border-r-[5px] ${style.bar} bg-white shadow-sm transition hover:shadow-md`}>
+    <div onClick={openCase} className={`cursor-pointer rounded-xl border border-gray-200 border-r-[5px] ${style.bar} bg-surface shadow-sm transition hover:shadow-md`}>
       <div className="flex flex-col gap-4 p-4 lg:flex-row lg:items-center">
         {/* التاريخ */}
         <div className="w-fit shrink-0 rounded-lg bg-gray-100 px-4 py-2 text-center lg:w-28">
-          <div className="text-sm font-bold text-[#192a56]">{formatHijri(c.startDate || c.createdAt)}</div>
+          <div className="text-sm font-bold text-ink">{formatHijri(c.startDate || c.createdAt)}</div>
           <div className="mt-0.5 text-xs text-gray-500">تاريخ القضية</div>
         </div>
 
         {/* رقم القضية ونوعها */}
         <div className="min-w-0 shrink-0 space-y-1.5 lg:w-72">
-          <Link to={`/app/cases/${c.id}`} className="flex items-center gap-2 text-lg font-bold text-[#192a56] transition-colors hover:text-blue-700">
-            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#192a56] text-white">
+          <Link to={`/app/cases/${c.id}`} className="flex items-center gap-2 text-lg font-bold text-ink transition-colors hover:text-blue-700">
+            <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-navy text-white">
               <Briefcase size={14} />
             </span>
             <span dir="ltr" className="truncate">{c.caseNumber || "-"}</span>
@@ -175,7 +124,7 @@ function CaseRow({ c, expanded, onToggle, userRole }: { c: any; expanded: boolea
         {/* الحالة والإجراءات */}
         <div className="flex shrink-0 items-center gap-2 lg:flex-col lg:items-end">
           <span className={`rounded-md px-2.5 py-1 text-xs font-bold ${style.pill}`}>{statusLabel}</span>
-          <div className="flex overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xs">
+          <div className="flex overflow-hidden rounded-xl border border-gray-200 bg-surface shadow-xs">
             <button
               onClick={onToggle}
               aria-expanded={expanded}
@@ -186,7 +135,7 @@ function CaseRow({ c, expanded, onToggle, userRole }: { c: any; expanded: boolea
               <ChevronDown className={`h-4 w-4 transition-transform ${expanded ? "rotate-180" : ""}`} />
             </button>
             <Link to={`/app/cases/${c.id}`} aria-label="فتح القضية" title="فتح القضية"
-              className="border-r border-gray-200 px-3 py-2 text-[#192a56] transition-colors hover:bg-gray-50">
+              className="border-r border-gray-200 px-3 py-2 text-ink transition-colors hover:bg-gray-50">
               <Eye className="h-4 w-4" />
             </Link>
           </div>
@@ -210,13 +159,6 @@ function CaseRow({ c, expanded, onToggle, userRole }: { c: any; expanded: boolea
 
 /* ────────────────────────── قائمة ملفات التنفيذ (بتصميم ناجز) ────────────────────────── */
 
-const EXECUTION_COLS = "grid grid-cols-[1.3fr_0.9fr_1.4fr_1fr_1.5fr_1.2fr_0.9fr_9.5rem] gap-4 items-center";
-
-const executionStatusOf = (c: any): { label: string; dot: string; text: string } => {
-  if (c.enforcementClosureReason) return { label: "منتهي", dot: "bg-gray-400", text: "text-gray-500" };
-  if (isEnforcementOverdue(c)) return { label: "متأخر", dot: "bg-red-500", text: "text-red-600" };
-  return { label: "قيد التنفيذ", dot: "bg-blue-600", text: "text-gray-600" };
-};
 
 /** أسماء المنفذ ضدهم — من أطراف الدعوى إن وُجدت، وإلا من الحقول القديمة */
 const debtorNamesOf = (c: any): string[] => {
@@ -228,52 +170,96 @@ const debtorNamesOf = (c: any): string[] => {
   return fallback ? String(fallback).split("، ") : [];
 };
 
+const ExecField = ({ icon, label, children }: { icon: ReactNode; label: string; children: ReactNode }) => (
+  <div className="flex min-w-0 items-start gap-2">
+    <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-500">{icon}</span>
+    <div className="min-w-0">
+      <p className="text-[11px] text-gray-400">{label}</p>
+      <div className="text-sm font-medium leading-snug text-gray-900">{children}</div>
+    </div>
+  </div>
+);
+
+/** بطاقة ملف تنفيذ — البطاقة كلها تفتح الملف، وزر التعديل وحده لا يفتحه */
+function ExecutionCard({ c, onEdit }: { c: any; onEdit: (c: any) => void }) {
+  const navigate = useNavigate();
+  const status = executionStatusOf(c);
+  const debtors = debtorNamesOf(c);
+  const progress = enforcementProgressOf(c);
+  const href = `/app/execution/${c.id}`;
+
+  const open = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("a, button")) return;
+    if (window.getSelection()?.toString()) return;
+    navigate(href);
+  };
+
+  return (
+    <div role="link" tabIndex={0} onClick={open}
+      onKeyDown={(e) => { if (e.key === "Enter" && e.target === e.currentTarget) navigate(href); }}
+      className={`group cursor-pointer rounded-xl border border-slate-200 border-r-[5px] ${status.bar} bg-surface p-4 shadow-[0_1px_3px_rgba(25,42,86,0.08)] transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-[0_6px_16px_rgba(25,42,86,0.12)] focus-visible:outline-2 focus-visible:outline-edge-2`}>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+        {/* رقم الطلب ونوعه */}
+        <div className="flex min-w-0 items-center gap-3 lg:w-60 lg:shrink-0">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-navy/10 text-ink transition group-hover:bg-navy group-hover:text-white">
+            <Gavel size={20} />
+          </span>
+          <div className="min-w-0">
+            <p dir="ltr" className="truncate text-right text-lg font-bold text-ink">{c.caseNumber || "-"}</p>
+            <span className="mt-0.5 inline-block rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-ink">
+              {executionRequestLabel(c) || "طلب تنفيذ"}
+            </span>
+          </div>
+        </div>
+
+        {/* البيانات */}
+        <div className="grid min-w-0 flex-1 grid-cols-1 gap-3 sm:grid-cols-3">
+          <ExecField icon={<UserRound size={14} />} label="المنفذ ضده">
+            {debtors.length ? (<>
+              <span className="block truncate">{debtors[0]}</span>
+              {debtors.length > 1 && <span className="text-xs text-gray-400">و{debtors.length - 1} آخرين</span>}
+            </>) : "-"}
+          </ExecField>
+          <ExecField icon={<Landmark size={14} />} label="المحكمة">
+            <span className="block truncate">{c.courtName || "-"}</span>
+          </ExecField>
+          <ExecField icon={<CalendarDays size={14} />} label="تاريخ تقديم الطلب">
+            {formatHijri(c.startDate || c.createdAt)} هـ
+            {c.startTime && <span className="text-gray-500"> · الساعة <bdi dir="ltr">{c.startTime}</bdi></span>}
+          </ExecField>
+        </div>
+
+        {/* نسبة الإنجاز */}
+        <div className="lg:w-36 lg:shrink-0">
+          <div className="mb-1 flex justify-between text-[11px] text-gray-400">
+            <span>نسبة الإنجاز</span>
+            <span className="font-bold tabular-nums text-gray-700">{progress}%</span>
+          </div>
+          <div className="h-1.5 rounded-full bg-slate-100">
+            <div className={`h-1.5 rounded-full ${status.progress}`} style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+
+        {/* الحالة والإجراءات */}
+        <div className="flex shrink-0 items-center gap-2">
+          <span className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${status.pill}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} /> {status.label}
+          </span>
+          <button onClick={() => onEdit(c)} title="تعديل الطلب"
+            className="flex items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-bold text-ink transition hover:border-edge-2 hover:bg-slate-50">
+            <Pencil size={13} /> تعديل
+          </button>
+          <ChevronLeft size={18} className="text-slate-300 transition group-hover:-translate-x-0.5 group-hover:text-ink-2" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ExecutionRows({ cases, onEdit }: { cases: any[]; onEdit: (c: any) => void }) {
   return (
-    <div className="p-3 space-y-2 bg-gray-50/60">
-      <div className={`${EXECUTION_COLS} px-4 py-2 text-sm font-bold text-gray-700`}>
-        <span>رقم الطلب</span>
-        <span>نوع الطلب</span>
-        <span>نوع السند</span>
-        <span>تاريخ تقديم الطلب</span>
-        <span>اسم المنفذ ضده</span>
-        <span>اسم المحكمة</span>
-        <span>حالة الطلب</span>
-        <span />
-      </div>
-      {cases.map((c) => {
-        const status = executionStatusOf(c);
-        const debtors = debtorNamesOf(c);
-        return (
-          <div key={c.id} className={`${EXECUTION_COLS} px-4 py-3 rounded-lg bg-white border border-gray-100 shadow-xs hover:shadow-sm transition`}>
-            <Link to={`/app/execution/${c.id}`} dir="ltr" style={{ textAlign: "right" }}
-              className="text-base font-bold text-gray-900 hover:text-[#273c75] truncate">
-              {c.caseNumber || "-"}
-            </Link>
-            <span className="text-sm text-gray-800 truncate">{c.enforcementRequestType || "-"}</span>
-            <span className="text-sm text-gray-800 leading-snug line-clamp-2">{c.enforcementDeedType || "-"}</span>
-            <span className="text-sm text-gray-800">{formatHijri(c.startDate || c.createdAt)} هـ</span>
-            <span className="text-sm text-gray-800 leading-snug min-w-0">
-              {debtors.length ? debtors.slice(0, 2).map((n) => <span key={n} className="block truncate">{n}</span>) : "-"}
-              {debtors.length > 2 && <span className="block text-xs text-gray-400">+{debtors.length - 2} آخرين</span>}
-            </span>
-            <span className="text-sm text-gray-800 truncate">{c.courtName || "-"}</span>
-            <span className={`flex items-center gap-1.5 text-xs ${status.text}`}>
-              <span className={`w-2 h-2 rounded-full shrink-0 ${status.dot}`} /> {status.label}
-            </span>
-            <div className="justify-self-end flex gap-2">
-              <button onClick={() => onEdit(c)}
-                className="px-3 py-1.5 rounded-md border border-[#273c75] text-sm font-bold text-[#192a56] hover:bg-amber-50 transition">
-                تعديل
-              </button>
-              <Link to={`/app/execution/${c.id}`}
-                className="px-3 py-1.5 rounded-md border border-gray-300 text-sm font-bold text-gray-800 hover:bg-gray-50 transition">
-                تفاصيل
-              </Link>
-            </div>
-          </div>
-        );
-      })}
+    <div className="space-y-3 bg-slate-50/60 p-4">
+      {cases.map((c) => <ExecutionCard key={c.id} c={c} onEdit={onEdit} />)}
     </div>
   );
 }
@@ -299,6 +285,10 @@ export default function Cases({ section = "cases" }: { section?: "cases" | "exec
   // بياناته ما زالت في مجموعة cases نفسها (type: "تنفيذ")، فالفصل في العرض والتنقل.
   const [params, setParams] = useSearchParams();
   const typeFilter = section === "execution" ? "تنفيذ" : params.get("type");
+  // روابط لوحة التحكم: ?status=open|closed|archived و ?month=YYYY-MM
+  const statusFilter = params.get("status") as CaseStatusKey | null;
+  const monthFilter = params.get("month");
+  const clearParam = (key: string) => { params.delete(key); setParams(params, { replace: true }); };
 
   const userRole = localStorage.getItem("userRole");
   const lawyerId = localStorage.getItem("lawyerId");
@@ -376,8 +366,8 @@ export default function Cases({ section = "cases" }: { section?: "cases" | "exec
         "تاريخ القضية": c.startDate || "",
         "الحالة": getStatusLabel(c.status || "OPEN"),
         ...(isExecutionView ? {
-          "نوع الطلب": c.enforcementRequestType || "",
-          "نوع السند": c.enforcementDeedType || "",
+          "تصنيف الطلب": c.enforcementRequestType || "",
+          "نوع الطلب": c.enforcementRequestKind || "",
           "نسبة إنجاز التنفيذ": `${enforcementProgressOf(c)}%`,
           "مهلة التنفيذ": c.enforcementNoticeDeadline || "",
           "حالة ملف التنفيذ": c.enforcementClosureReason
@@ -407,7 +397,9 @@ export default function Cases({ section = "cases" }: { section?: "cases" | "exec
 
   const filteredCases = Array.isArray(cases) ? cases.filter(c => {
     if (isExecutionView ? !isExecutionType(c.type) : isExecutionType(c.type)) return false;
-    if (!isExecutionView && typeFilter && c.type !== typeFilter) return false;
+    if (!isExecutionView && typeFilter && c.type !== typeFilter && caseTypeLabel(c.type) !== typeFilter) return false;
+    if (statusFilter && caseStatusKey(c) !== statusFilter) return false;
+    if (monthFilter && !caseDay(c).startsWith(monthFilter)) return false;
     if (isExecutionView && !matchesExecution(c, execFilter, execCapacity)) return false;
     const s = (search || "").toLowerCase();
     return (
@@ -448,15 +440,15 @@ export default function Cases({ section = "cases" }: { section?: "cases" | "exec
 
       {isExecutionView ? (
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">التنفيذ</h1>
-          <Button className="bg-[#273c75] hover:bg-[#192a56] text-white px-5 py-5 rounded-lg font-bold" onClick={() => setIsAddCaseOpen(true)}>
+          <h1 className="text-3xl font-bold text-ink tracking-tight">التنفيذ</h1>
+          <Button className="bg-navy-2 hover:bg-navy text-white px-5 py-5 rounded-lg font-bold" onClick={() => setIsAddCaseOpen(true)}>
             <Plus className="ml-2 h-4 w-4" /> طلب تنفيذ جديد
           </Button>
         </div>
       ) : (
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">
+          <h1 className="text-3xl font-bold text-ink tracking-tight">
             {typeFilter ? `قضايا ${typeFilter}` : "إدارة القضايا"}
           </h1>
           <p className="text-gray-500 mt-1">سجل القضايا والعملاء</p>
@@ -469,7 +461,7 @@ export default function Cases({ section = "cases" }: { section?: "cases" | "exec
           >
             <FileSpreadsheet className="ml-2 h-5 w-5 text-green-600" /> تصدير لإكسل
           </Button>
-          <Button className="bg-[#273c75] hover:bg-[#192a56] text-white px-6 py-6 rounded-2xl font-bold" onClick={() => setIsAddCaseOpen(true)}>
+          <Button className="bg-navy-2 hover:bg-navy text-white px-6 py-6 rounded-2xl font-bold" onClick={() => setIsAddCaseOpen(true)}>
             <Plus className="ml-2 h-4 w-4" /> إضافة قضية جديدة
           </Button>
         </div>
@@ -501,6 +493,13 @@ export default function Cases({ section = "cases" }: { section?: "cases" | "exec
         </div>
       )}
 
+      {statusFilter && CASE_STATUS_FILTER_AR[statusFilter] && (
+        <FilterBanner label={`${isExecutionView ? "ملفات التنفيذ" : "القضايا"} ${CASE_STATUS_FILTER_AR[statusFilter]}`} onClear={() => clearParam("status")} />
+      )}
+      {monthFilter && (
+        <FilterBanner label={`المضافة في ${monthFilterLabel(monthFilter)}`} onClear={() => clearParam("month")} />
+      )}
+
       <Card ref={listRef} className="shadow-sm border-gray-200 scroll-mt-4">
         <CardHeader className="border-b bg-gray-50/50 pb-4">
           <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -508,12 +507,12 @@ export default function Cases({ section = "cases" }: { section?: "cases" | "exec
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input 
                 placeholder="بحث برقم أو اسم القضية..." 
-                className="pl-4 pr-10 bg-white"
+                className="pl-4 pr-10 bg-surface"
                 value={search}
                 onChange={e => { setSearch(e.target.value); setPage(1); }}
               />
             </div>
-            <Button variant="outline" className="bg-white">
+            <Button variant="outline" className="bg-surface">
               <Filter className="ml-2 w-4 h-4" /> تصفية
             </Button>
           </div>
@@ -525,9 +524,7 @@ export default function Cases({ section = "cases" }: { section?: "cases" | "exec
             ) : filteredCases.length === 0 ? (
               <div className="text-center py-10 text-gray-500">لا يوجد ملفات تنفيذ مطابقة</div>
             ) : (
-              <CaseRowsScroller>
-                <ExecutionRows cases={pagedCases} onEdit={setEditingCase} />
-              </CaseRowsScroller>
+              <ExecutionRows cases={pagedCases} onEdit={setEditingCase} />
             )
           ) : (
           loading ? (

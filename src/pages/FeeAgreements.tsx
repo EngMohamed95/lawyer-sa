@@ -120,7 +120,7 @@ export default function FeeAgreements() {
         <div className="w-14 h-14 rounded-full bg-red-50 text-red-500 flex items-center justify-center">
           <ShieldAlert size={26} />
         </div>
-        <h2 className="text-xl font-bold text-[#192a56]">لا تملك صلاحية الوصول لاتفاقيات الأتعاب</h2>
+        <h2 className="text-xl font-bold text-ink">لا تملك صلاحية الوصول لاتفاقيات الأتعاب</h2>
         <p className="text-sm text-gray-500">راجع مدير المكتب لمنحك الصلاحية.</p>
       </div>
     );
@@ -134,7 +134,7 @@ export default function FeeAgreements() {
 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#192a56] tracking-tight">اتفاقيات الأتعاب</h1>
+          <h1 className="text-3xl font-bold text-ink tracking-tight">اتفاقيات الأتعاب</h1>
           <p className="text-gray-500 mt-1 text-sm">
             نموذج احتساب الأتعاب لكل عميل — {rows.length} اتفاقية · {summary.active} سارية
           </p>
@@ -144,7 +144,7 @@ export default function FeeAgreements() {
             <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
           </Button>
           {canManage && (
-            <Button onClick={() => setIsAddOpen(true)} className="bg-[#192a56] hover:bg-[#192a56]/90 text-white shadow-lg">
+            <Button onClick={() => setIsAddOpen(true)} className="bg-navy hover:bg-navy/90 text-white shadow-lg">
               <Plus className="ml-2 h-4 w-4" /> اتفاقية جديدة
             </Button>
           )}
@@ -153,11 +153,11 @@ export default function FeeAgreements() {
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
         {[
-          ["إجمالي المتفق عليه", summary.agreed, "text-[#192a56]"],
+          ["إجمالي المتفق عليه", summary.agreed, "text-ink"],
           ["المحصَّل", summary.collected, "text-green-600"],
           ["المتبقي", Math.max(0, summary.agreed - summary.collected), "text-amber-600"],
         ].map(([label, value, cls]) => (
-          <div key={label as string} className="p-4 rounded-2xl bg-white border border-gray-200 shadow-sm">
+          <div key={label as string} className="p-4 rounded-2xl bg-surface border border-gray-200 shadow-sm">
             <p className="text-xs text-gray-500">{label as string}</p>
             <p className={`text-xl font-black mt-1 ${cls as string}`}>
               {money(value)} <span className="text-xs font-normal text-gray-400">{currency}</span>
@@ -176,14 +176,14 @@ export default function FeeAgreements() {
         <div className="relative sm:w-72">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="بحث بالرقم أو العميل..."
-            className="w-full pr-9 pl-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:border-[#192a56] bg-white" />
+            className="w-full pr-9 pl-3 py-2 text-sm border border-gray-200 rounded-full focus:outline-none focus:border-edge bg-surface" />
         </div>
       )}
 
       <Card className="shadow-sm border-gray-200">
         <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
-          <Handshake className="w-5 h-5 text-[#273c75]" />
-          <h2 className="font-bold text-lg text-[#192a56]">
+          <Handshake className="w-5 h-5 text-ink-2" />
+          <h2 className="font-bold text-lg text-ink">
             الاتفاقيات <span className="text-sm font-normal text-gray-400">({filtered.length})</span>
           </h2>
         </CardHeader>
@@ -215,7 +215,7 @@ export default function FeeAgreements() {
                             {FEE_MODEL_LABELS_AR[a.model]}
                           </span>
                         </div>
-                        <p className="font-bold text-[#192a56] mt-1">{a.clientName || "بلا عميل"}</p>
+                        <p className="font-bold text-ink mt-1">{a.clientName || "بلا عميل"}</p>
                         <p className="text-xs text-gray-500 mt-0.5">
                           {a.model === "HOURLY" && a.hourlyRate ? `${money(a.hourlyRate)} ${a.currency}/ساعة` : ""}
                           {a.model === "RETAINER" && a.retainerMonthly ? `${money(a.retainerMonthly)} ${a.currency}/شهر` : ""}
@@ -226,7 +226,7 @@ export default function FeeAgreements() {
 
                         {p.agreed > 0 && (
                           <div className="mt-2 h-1.5 w-full max-w-sm bg-gray-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-[#273c75] rounded-full transition-all" style={{ width: `${p.percent}%` }} />
+                            <div className="h-full bg-navy-2 rounded-full transition-all" style={{ width: `${p.percent}%` }} />
                           </div>
                         )}
 
@@ -403,20 +403,20 @@ function AddFeeAgreementModal({ onClose, onDone }: { onClose: () => void; onDone
     } finally { setBusy(false); }
   };
 
-  const field = "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:border-[#192a56] text-sm";
+  const field = "w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:border-edge text-sm";
   const needs = (m: FeeModel[]) => m.includes(form.model);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl" onClick={onClose}>
-      <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="p-6 border-b bg-[#192a56] text-white flex justify-between items-center sticky top-0 z-10">
+      <div className="bg-surface rounded-3xl w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="p-6 border-b bg-navy text-white flex justify-between items-center sticky top-0 z-10">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#273c75] rounded-xl flex items-center justify-center text-[#192a56]">
+            <div className="w-10 h-10 bg-navy-2 rounded-xl flex items-center justify-center text-ink">
               <Handshake size={20} />
             </div>
             <div>
               <h2 className="text-xl font-bold">اتفاقية أتعاب جديدة</h2>
-              <p className="text-xs text-[#273c75]">تُحفظ كمسودة ثم تُفعَّل — الفواتير تُصدر استناداً إليها</p>
+              <p className="text-xs text-ink-2">تُحفظ كمسودة ثم تُفعَّل — الفواتير تُصدر استناداً إليها</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-full"><X size={20} /></button>
@@ -509,7 +509,7 @@ function AddFeeAgreementModal({ onClose, onDone }: { onClose: () => void; onDone
                 <label className="text-sm font-bold text-gray-700">المراحل *</label>
                 <Button type="button" variant="outline" size="sm"
                   onClick={() => setMilestones((p) => [...p, { title: "", amount: 0, dueDate: null, status: "PENDING" }])}
-                  className="rounded-xl border-gray-200 text-[#192a56]">
+                  className="rounded-xl border-gray-200 text-ink">
                   <Plus size={14} className="ml-1" /> مرحلة
                 </Button>
               </div>
@@ -523,14 +523,14 @@ function AddFeeAgreementModal({ onClose, onDone }: { onClose: () => void; onDone
                   <div key={i} className="grid grid-cols-12 gap-2 px-3 py-2 items-center border-t border-gray-100">
                     <input value={m.title} placeholder="مثال: عند رفع الدعوى"
                       onChange={(e) => setMilestones((p) => p.map((x, idx) => idx === i ? { ...x, title: e.target.value } : x))}
-                      className="col-span-6 px-2 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#192a56]" />
+                      className="col-span-6 px-2 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-edge" />
                     <input type="number" min="0" step="0.01" value={m.amount}
                       onChange={(e) => setMilestones((p) => p.map((x, idx) => idx === i ? { ...x, amount: Number(e.target.value) } : x))}
-                      className="col-span-3 px-2 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#192a56]" />
+                      className="col-span-3 px-2 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-edge" />
                     <div className="col-span-3 flex items-center gap-1">
                       <input type="date" value={m.dueDate ?? ""}
                         onChange={(e) => setMilestones((p) => p.map((x, idx) => idx === i ? { ...x, dueDate: e.target.value || null } : x))}
-                        className="flex-1 px-2 py-2 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#192a56]" />
+                        className="flex-1 px-2 py-2 text-xs bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-edge" />
                       {milestones.length > 1 && (
                         <button type="button" title="حذف المرحلة"
                           onClick={() => setMilestones((p) => p.filter((_, idx) => idx !== i))}
@@ -552,7 +552,7 @@ function AddFeeAgreementModal({ onClose, onDone }: { onClose: () => void; onDone
                 {agreed > 0 ? "يُحتسب تلقائياً من النموذج المختار" : "غير محدّد مسبقاً في هذا النموذج — يتحدّد عند الفوترة"}
               </p>
             </div>
-            <p className="font-black text-xl text-[#273c75]">{money(agreed)} {currency}</p>
+            <p className="font-black text-xl text-ink-2">{money(agreed)} {currency}</p>
           </div>
 
           <div className="space-y-2">
@@ -563,7 +563,7 @@ function AddFeeAgreementModal({ onClose, onDone }: { onClose: () => void; onDone
 
           <div className="flex gap-3 pt-2">
             <Button type="submit" disabled={busy}
-              className="flex-1 py-6 bg-[#192a56] text-[#273c75] font-bold rounded-2xl hover:bg-[#192a56]/90">
+              className="flex-1 py-6 bg-navy text-ink-2 font-bold rounded-2xl hover:bg-navy/90">
               <Save size={16} className="ml-2" />
               {busy ? "جاري الحفظ..." : "حفظ كمسودة"}
             </Button>

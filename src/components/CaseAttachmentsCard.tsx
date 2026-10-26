@@ -55,7 +55,7 @@ export default function CaseAttachmentsCard({ caseData, title = "مرفقات ا
           <ol className="divide-y divide-gray-100 rounded-lg border border-gray-200">
             {files.map((f, i) => ({ f, i })).filter(({ f }) => matchesAttachmentSearch([f], search)).map(({ f, i }) => (
               <li key={f.url} className="flex items-center gap-3 px-4 py-2.5">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#192a56] text-xs font-bold text-[#273c75]">{i + 1}</span>
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-navy text-xs font-bold text-ink-2">{i + 1}</span>
                 <File size={16} className="shrink-0 text-green-600" />
                 <a href={f.url} target="_blank" rel="noreferrer" className="min-w-0 flex-1 truncate font-bold text-blue-700 hover:underline">{f.name}</a>
                 <span className="shrink-0 text-sm text-gray-500">{f.date ? formatGregorian(f.date) : "—"}</span>
@@ -68,7 +68,7 @@ export default function CaseAttachmentsCard({ caseData, title = "مرفقات ا
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[640px] max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-[#192a56]">{title}</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-ink">{title}</DialogTitle>
           </DialogHeader>
           <div className="py-2">
             <AttachmentPicker
@@ -83,7 +83,7 @@ export default function CaseAttachmentsCard({ caseData, title = "مرفقات ا
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>إلغاء</Button>
-            <Button disabled={saving} onClick={save} className="bg-[#192a56] text-white hover:bg-[#192a56]/90">
+            <Button disabled={saving} onClick={save} className="bg-navy text-white hover:bg-navy/90">
               {saving && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
               {saving && pending.length ? "جاري رفع المرفقات..." : "حفظ"}
             </Button>

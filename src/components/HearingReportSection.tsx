@@ -208,11 +208,11 @@ ${brief.trim() ? `\nمختصر ما يريده المحامي من هذا الت
       <div className="space-y-6" dir="rtl">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2 md:col-span-3">
-            <label className="text-sm font-bold text-[#192a56]">عنوان التقرير</label>
+            <label className="text-sm font-bold text-ink">عنوان التقرير</label>
             <Input className="text-lg bg-gray-50" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={defaultTitle} />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <label className="text-sm font-bold text-[#192a56]">مختصر المطلوب</label>
+            <label className="text-sm font-bold text-ink">مختصر المطلوب</label>
             <textarea
               rows={3}
               placeholder="اكتب باختصار ما تريده من التقرير، مثل: التركيز على طلبات الخصم وموعد الجلسة القادمة..."
@@ -223,7 +223,7 @@ ${brief.trim() ? `\nمختصر ما يريده المحامي من هذا الت
             <p className="text-[11px] text-gray-400">يعتمد عليه المساعد الذكي عند الصياغة.</p>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#192a56]">المرفقات</label>
+            <label className="text-sm font-bold text-ink">المرفقات</label>
             <MemoAttachmentsField
               attachments={attachments}
               onChange={setAttachments}
@@ -235,7 +235,7 @@ ${brief.trim() ? `\nمختصر ما يريده المحامي من هذا الت
                       const added = attachments.some((a) => a.name === mf.name);
                       return (
                         <button key={mf.id} type="button" disabled={added || loadingMinutesId !== null} onClick={() => addMinutesFile(mf)}
-                          className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-2.5 py-1 text-[11px] text-gray-700 hover:border-purple-300 disabled:opacity-50">
+                          className="flex items-center gap-1 rounded-full border border-gray-200 bg-surface px-2.5 py-1 text-[11px] text-gray-700 hover:border-purple-300 disabled:opacity-50">
                           {loadingMinutesId === mf.id ? <Loader2 size={11} className="animate-spin" /> : <Paperclip size={11} />}
                           <span className="max-w-[10rem] truncate">{mf.name}</span>
                         </button>
@@ -257,7 +257,7 @@ ${brief.trim() ? `\nمختصر ما يريده المحامي من هذا الت
                 الترويسة تعرض بيانات افتراضية — أكمل اسم المكتب وشعاره وهواتفه من الإعدادات ← مطبوعات المكتب.
               </div>
             )}
-            <div className="mx-auto max-w-[850px] bg-white shadow-md">
+            <div className="mx-auto max-w-[850px] bg-surface shadow-md">
               <RichTextEditor
                 value={html}
                 onChange={setHtml}
@@ -292,7 +292,7 @@ ${brief.trim() ? `\nمختصر ما يريده المحامي من هذا الت
           <Button type="button" variant="outline" disabled={!html.trim() || exporting !== null} onClick={() => exportPdf("editor", currentTitle, html)} className="border-gray-200 text-gray-700">
             {exporting === "editor" ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Download className="ml-2 h-4 w-4" />} تنزيل PDF
           </Button>
-          <Button type="button" disabled={saving || !html.trim()} onClick={handleSave} className="bg-[#192a56] hover:bg-[#192a56]/90 text-white font-bold">
+          <Button type="button" disabled={saving || !html.trim()} onClick={handleSave} className="bg-navy hover:bg-navy/90 text-white font-bold">
             {saving ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Save className="ml-2 h-4 w-4" />}
             حفظ في سجل الجلسة
           </Button>
@@ -310,7 +310,7 @@ ${brief.trim() ? `\nمختصر ما يريده المحامي من هذا الت
             <div key={r.id} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50/60">
               <div className="flex items-center gap-2 min-w-0">
                 <FileText className="h-4 w-4 text-purple-500 shrink-0" />
-                <span className="text-sm text-[#192a56] font-medium truncate">{r.title}</span>
+                <span className="text-sm text-ink font-medium truncate">{r.title}</span>
                 <span className="text-[10px] text-gray-400 shrink-0">{new Date(r.createdAt).toLocaleDateString("ar-EG")}</span>
               </div>
               <div className="flex items-center gap-1 shrink-0">

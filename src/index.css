@@ -5,6 +5,17 @@
   --color-brand-gold: #273c75;
   --color-brand-gray: #F3F4F6;
 
+  /* رموز الهوية — قيمها الداكنة في styles/dark-theme.css
+     navy: خلفيات كحلية · ink: نص كحلي · edge: حدود كحلية · surface: البطاقات · page: خلفية الصفحة */
+  --color-navy: #192a56;
+  --color-navy-2: #273c75;
+  --color-ink: #192a56;
+  --color-ink-2: #273c75;
+  --color-edge: #192a56;
+  --color-edge-2: #273c75;
+  --color-surface: #ffffff;
+  --color-page: #F3F4F6;
+
   /* البنفسجي والنيلي يُعاد تعريفهما بدرجات الهوية الكحلية — يغطي كل أدوات purple/violet/indigo/fuchsia */
   --color-purple-50: #eef1f8; --color-purple-100: #dde3f1; --color-purple-200: #c0cae4; --color-purple-300: #97a6d0; --color-purple-400: #6b80b8; --color-purple-500: #3f5895; --color-purple-600: #273c75; --color-purple-700: #213366; --color-purple-800: #192a56; --color-purple-900: #131f40; --color-purple-950: #0d152c;
   --color-violet-50: #eef1f8; --color-violet-100: #dde3f1; --color-violet-200: #c0cae4; --color-violet-300: #97a6d0; --color-violet-400: #6b80b8; --color-violet-500: #3f5895; --color-violet-600: #273c75; --color-violet-700: #213366; --color-violet-800: #192a56; --color-violet-900: #131f40; --color-violet-950: #0d152c;
@@ -26,6 +37,8 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "tailwindcss";
+/* الوضع الداكن — مُولَّد من scripts/generate-dark-theme.mjs؛ بعد tailwind ليغلب متغيراته */
+@import "./styles/dark-theme.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -107,39 +120,7 @@
     --sidebar-ring: #273c75;
 }
 
-.dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: #dfe3ee;
-    --primary-foreground: #192a56;
-    --secondary: #2f3640;
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: #2f3640;
-    --muted-foreground: #b8bfd0;
-    --accent: #2f3640;
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: #c9d1e6;
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: #2f3640;
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
-}
+/* متغيرات shadcn الداكنة في styles/dark-theme.css مع بقية الوضع الداكن */
 
 @layer base {
   * {
@@ -178,7 +159,7 @@
       scrollbar-width: thin;
       scrollbar-color: var(--los-green) rgb(25 42 86 / 0.08);
     }
-    aside,
+    aside.bg-navy,
     .los-scroll-dark {
       scrollbar-width: thin;
       scrollbar-color: rgb(255 255 255 / 0.35) rgb(255 255 255 / 0.08);
@@ -218,26 +199,38 @@
   }
 
   /* الأسطح الداكنة (القائمة الجانبية ورؤوس النوافذ) — فاتح على كحلي غامق */
-  aside ::-webkit-scrollbar-track,
-  aside::-webkit-scrollbar-track,
+  aside.bg-navy ::-webkit-scrollbar-track,
+  aside.bg-navy::-webkit-scrollbar-track,
   .los-scroll-dark::-webkit-scrollbar-track,
-  [class*="bg-[#192a56]"]::-webkit-scrollbar-track {
+  [class*="bg-navy"]::-webkit-scrollbar-track {
     background-color: rgb(255 255 255 / 0.06);
   }
 
-  aside ::-webkit-scrollbar-thumb,
-  aside::-webkit-scrollbar-thumb,
+  aside.bg-navy ::-webkit-scrollbar-thumb,
+  aside.bg-navy::-webkit-scrollbar-thumb,
   .los-scroll-dark::-webkit-scrollbar-thumb,
-  [class*="bg-[#192a56]"]::-webkit-scrollbar-thumb {
+  [class*="bg-navy"]::-webkit-scrollbar-thumb {
     background-color: rgb(255 255 255 / 0.35);
     background-clip: content-box;
   }
 
-  aside ::-webkit-scrollbar-thumb:hover,
-  aside::-webkit-scrollbar-thumb:hover,
+  aside.bg-navy ::-webkit-scrollbar-thumb:hover,
+  aside.bg-navy::-webkit-scrollbar-thumb:hover,
   .los-scroll-dark::-webkit-scrollbar-thumb:hover,
-  [class*="bg-[#192a56]"]::-webkit-scrollbar-thumb:hover {
+  [class*="bg-navy"]::-webkit-scrollbar-thumb:hover {
     background-color: var(--los-gold);
+  }
+
+  /* الوضع الداكن: إبهام فاتح قليلاً ومسار شبه شفاف كي لا يختفي الشريط في الخلفية */
+  .dark {
+    --los-green: #3d4f78;
+    --los-gold: #6f84bf;
+  }
+  .dark ::-webkit-scrollbar-track {
+    background-color: rgb(255 255 255 / 0.04);
+  }
+  .dark ::-webkit-scrollbar-thumb:active {
+    background-color: #6f84bf;
   }
 
   /* شريط أرفع داخل النوافذ المنبثقة والقوائم القصيرة */
@@ -253,32 +246,33 @@
    خارج @layer عمداً كي يتقدّم على أدوات Tailwind. الترتيب والأولوية مقصودان:
    كلما قرب السطح من العنصر غلبت قاعدته.
    ───────────────────────────────────────────────────────────── */
-:is(aside, .los-dark, [class~="bg-[#192a56]"], [class~="bg-[#273c75]"], [class~="bg-[#2f3640]"], [class~="bg-[#353b48]"]) :is(.text-\[\#273c75\], .text-\[\#192a56\], .hover\:text-\[\#273c75\]:hover) {
+/* الأسطح الكحلية: القائمة الجانبية، .los-dark، والأزرار bg-navy / bg-navy-2 */
+:is(.los-dark, [class~="bg-navy"], [class~="bg-navy-2"]) :is(.text-ink-2, .text-ink, .hover\:text-ink-2:hover) {
   color: #fff;
 }
 
-:is(aside, .los-dark, [class~="bg-[#192a56]"], [class~="bg-[#2f3640]"], [class~="bg-[#353b48]"]) :is(.border-\[\#273c75\], .hover\:border-\[\#273c75\]:hover) {
+:is(.los-dark, [class~="bg-navy"]) :is(.border-edge-2, .hover\:border-edge-2:hover) {
   border-color: rgb(255 255 255 / 0.85);
 }
 
-:is(aside, .los-dark, [class~="bg-[#192a56]"], [class~="bg-[#2f3640]"], [class~="bg-[#353b48]"]) :is(.bg-\[\#273c75\]\/10, .bg-\[\#273c75\]\/20) {
+:is(.los-dark, [class~="bg-navy"]) :is(.bg-navy-2\/10, .bg-navy-2\/20) {
   background-color: rgb(255 255 255 / 0.12);
 }
 
-/* سطح فاتح متداخل داخل سطح داكن (بطاقة بيضاء مثلاً) يستعيد ألوانه الأصلية */
-:is(aside, .los-dark, [class~="bg-[#192a56]"], [class~="bg-[#273c75]"], [class~="bg-[#2f3640]"], [class~="bg-[#353b48]"]) :is(.bg-white, .bg-gray-50, .bg-gray-100, .bg-card, .bg-background, .bg-popover) .text-\[\#273c75\] {
-  color: #273c75;
+/* سطح فاتح متداخل داخل سطح كحلي (بطاقة مثلاً) يستعيد ألوانه — متغيرات فتتبع الوضع الداكن */
+:is(.los-dark, [class~="bg-navy"], [class~="bg-navy-2"]) :is(.bg-surface, .bg-gray-50, .bg-gray-100, .bg-card, .bg-background, .bg-popover) .text-ink-2 {
+  color: var(--color-ink-2);
 }
-:is(aside, .los-dark, [class~="bg-[#192a56]"], [class~="bg-[#273c75]"], [class~="bg-[#2f3640]"], [class~="bg-[#353b48]"]) :is(.bg-white, .bg-gray-50, .bg-gray-100, .bg-card, .bg-background, .bg-popover) .text-\[\#192a56\] {
-  color: #192a56;
+:is(.los-dark, [class~="bg-navy"], [class~="bg-navy-2"]) :is(.bg-surface, .bg-gray-50, .bg-gray-100, .bg-card, .bg-background, .bg-popover) .text-ink {
+  color: var(--color-ink);
 }
 
-/* سطح داكن داخل فاتح داخل داكن (زر داكن في بطاقة بيضاء على صفحة داكنة) */
-:is(.bg-white, .bg-gray-50, .bg-gray-100, .bg-card, .bg-background, .bg-popover) :is([class~="bg-[#192a56]"], [class~="bg-[#273c75]"], [class~="bg-[#2f3640]"], [class~="bg-[#353b48]"]) :is(.text-\[\#273c75\], .text-\[\#192a56\]) {
+/* سطح كحلي داخل فاتح داخل كحلي (زر كحلي في بطاقة على القائمة) */
+:is(.bg-surface, .bg-gray-50, .bg-gray-100, .bg-card, .bg-background, .bg-popover) :is([class~="bg-navy"], [class~="bg-navy-2"]) :is(.text-ink-2, .text-ink) {
   color: #fff;
 }
 
 /* خلفية العنصر نفسه تحسم دائماً — :not(#_) يرفع الأولوية فوق كل ما سبق */
-:is([class~="bg-[#192a56]"], [class~="bg-[#273c75]"], [class~="bg-[#2f3640]"], [class~="bg-[#353b48]"]):is(.text-\[\#273c75\], .text-\[\#192a56\]):not(#_) {
+:is([class~="bg-navy"], [class~="bg-navy-2"]):is(.text-ink-2, .text-ink):not(#_) {
   color: #fff;
 }

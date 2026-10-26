@@ -207,7 +207,7 @@ export default function SubscriptionRequests() {
   const hasFilters = !!(search || status || planFilter || period !== "all" || from || to);
 
   return (
-    <div className="space-y-6 font-['Tajawal'] text-[#192a56]" dir="rtl">
+    <div className="space-y-6 font-['Tajawal'] text-ink" dir="rtl">
       <AdminHeader
         icon={<Receipt size={26} />}
         title="سجل المدفوعات والعمليات المالية"
@@ -231,14 +231,14 @@ export default function SubscriptionRequests() {
 
       {planBreakdown.length > 0 && (
         <div className={`${adminPanel} p-5`}>
-          <h2 className="mb-4 flex items-center gap-2 font-bold"><CreditCard size={18} className="text-[#273c75]" /> توزيع الإيرادات والمبالغ حسب الباقة <span className="text-xs font-normal text-slate-400">(اضغط على باقة لتصفية الجدول بها)</span></h2>
+          <h2 className="mb-4 flex items-center gap-2 font-bold"><CreditCard size={18} className="text-ink-2" /> توزيع الإيرادات والمبالغ حسب الباقة <span className="text-xs font-normal text-slate-400">(اضغط على باقة لتصفية الجدول بها)</span></h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {planBreakdown.map(p => (
               <button key={p.name} type="button" onClick={() => setPlanFilter(planFilter === p.name ? "" : p.name)}
-                className={`rounded-2xl border p-4 text-right transition hover:shadow-md ${planFilter === p.name ? "border-[#273c75] ring-2 ring-[#273c75]/20" : "border-slate-200"}`}>
+                className={`rounded-2xl border p-4 text-right transition hover:shadow-md ${planFilter === p.name ? "border-edge-2 ring-2 ring-edge-2/20" : "border-slate-200"}`}>
                 <div className="mb-3 flex items-center justify-between border-b border-slate-100 pb-2">
                   <span className="text-sm text-slate-500">{p.name}</span>
-                  <span className="rounded-full bg-[#273c75] px-2.5 py-0.5 text-xs font-bold text-white">{fmtNum(p.count)} عملية</span>
+                  <span className="rounded-full bg-navy-2 px-2.5 py-0.5 text-xs font-bold text-white">{fmtNum(p.count)} عملية</span>
                 </div>
                 <p className="flex justify-between text-sm"><span className="text-slate-500">المدفوع بنجاح:</span><span className="font-bold text-emerald-600">{money(p.approved)}</span></p>
                 {p.pending > 0 && <p className="mt-1 flex justify-between text-xs"><span className="text-slate-500">معلق:</span><span className="font-bold text-amber-600">{money(p.pending)}</span></p>}
@@ -254,7 +254,7 @@ export default function SubscriptionRequests() {
             <span className="text-sm font-bold">الفترة السريعة:</span>
             {PERIODS.map(p => (
               <button key={p.id} type="button" onClick={() => setPeriod(p.id)}
-                className={`rounded-full border px-3 py-1 text-xs font-bold transition ${period === p.id ? "border-[#273c75] bg-[#273c75] text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
+                className={`rounded-full border px-3 py-1 text-xs font-bold transition ${period === p.id ? "border-edge-2 bg-navy-2 text-white" : "border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
                 {p.label}
               </button>
             ))}
@@ -278,7 +278,7 @@ export default function SubscriptionRequests() {
         </div>
 
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-slate-100 bg-slate-50 px-4 py-2.5 text-sm">
-          <span className="flex items-center gap-1.5"><Filter size={14} className="text-[#273c75]" /> نتائج التصفية: <b>{fmtNum(filtered.length)}</b> عملية</span>
+          <span className="flex items-center gap-1.5"><Filter size={14} className="text-ink-2" /> نتائج التصفية: <b>{fmtNum(filtered.length)}</b> عملية</span>
           <span>إجمالي المبالغ: <b>{money(filteredSum)}</b></span>
           <span>المدفوع بنجاح: <b className="text-emerald-600">{money(filteredPaid)}</b></span>
           {hasFilters && (
@@ -287,7 +287,7 @@ export default function SubscriptionRequests() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-12"><Loader2 className="animate-spin text-[#273c75]" /></div>
+          <div className="flex justify-center py-12"><Loader2 className="animate-spin text-ink-2" /></div>
         ) : filtered.length === 0 ? (
           <p className="py-12 text-center text-sm text-slate-400">{requests.length ? "لا توجد عمليات مطابقة" : "لا توجد طلبات اشتراك بعد"}</p>
         ) : (
@@ -314,7 +314,7 @@ export default function SubscriptionRequests() {
                         {r.phone && <p className="text-xs text-slate-400" dir="ltr" style={{ textAlign: "right" }}>{r.phone}</p>}
                       </td>
                       <td className="px-4 py-3">
-                        <span className="rounded-full border border-[#273c75]/30 px-2.5 py-0.5 text-xs text-[#273c75]">{r.planName || r.plan}</span>
+                        <span className="rounded-full border border-edge-2/30 px-2.5 py-0.5 text-xs text-ink-2">{r.planName || r.plan}</span>
                         <p className="mt-1 text-xs text-slate-400">{r.billing === "annual" ? "سنوي" : "شهري"}</p>
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 font-bold tabular-nums">{money(amountOf(r))}</td>
@@ -351,8 +351,8 @@ export default function SubscriptionRequests() {
       {approveModal && (
         <AdminModal title="تفعيل الاشتراك" onClose={() => setApproveModal(null)}>
           <div className="mb-6 space-y-2 rounded-2xl bg-slate-50 p-4 text-sm">
-            <p className="flex items-center gap-2"><User size={14} className="text-[#273c75]" /><strong>{approveModal.name}</strong></p>
-            <p className="flex items-center gap-2"><CreditCard size={14} className="text-[#273c75]" />{approveModal.planName} — {money(amountOf(approveModal))} / {approveModal.billing === "annual" ? "سنة" : "شهر"}</p>
+            <p className="flex items-center gap-2"><User size={14} className="text-ink-2" /><strong>{approveModal.name}</strong></p>
+            <p className="flex items-center gap-2"><CreditCard size={14} className="text-ink-2" />{approveModal.planName} — {money(amountOf(approveModal))} / {approveModal.billing === "annual" ? "سنة" : "شهر"}</p>
           </div>
           <div className="mb-6">
             <label className="mb-2 block text-sm font-bold text-gray-700">البريد الإلكتروني للحساب في النظام</label>
@@ -361,7 +361,7 @@ export default function SubscriptionRequests() {
               onChange={e => setApproveEmail(e.target.value)}
               placeholder="example@mail.com"
               dir="ltr"
-              className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:border-[#192a56] focus:outline-none"
+              className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm focus:border-edge focus:outline-none"
             />
             <p className="mt-2 text-xs text-gray-400">تأكد أن البريد مطابق للحساب الموجود في النظام</p>
           </div>

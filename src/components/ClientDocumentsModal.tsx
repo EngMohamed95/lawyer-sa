@@ -82,8 +82,8 @@ export function ClientDocumentsModal({ isOpen, onClose, client }: Props) {
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-[850px] max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-[#192a56] flex items-center gap-2">
-              <FolderOpen className="h-5 w-5 text-[#273c75]" />
+            <DialogTitle className="text-xl font-bold text-ink flex items-center gap-2">
+              <FolderOpen className="h-5 w-5 text-ink-2" />
               مستندات العميل: {client?.fullName}
             </DialogTitle>
           </DialogHeader>
@@ -93,7 +93,7 @@ export function ClientDocumentsModal({ isOpen, onClose, client }: Props) {
               هذه المستندات ستظهر تلقائياً في جميع قضايا هذا العميل
             </p>
             <Button
-              className="bg-[#273c75] hover:bg-[#192a56] text-white"
+              className="bg-navy-2 hover:bg-navy text-white"
               onClick={() => setIsAddDocOpen(true)}
             >
               <Plus className="ml-2 h-4 w-4" /> إضافة مستند
@@ -122,7 +122,7 @@ export function ClientDocumentsModal({ isOpen, onClose, client }: Props) {
               <TableBody>
                 {documents.map(d => (
                   <TableRow key={d.id} className="hover:bg-gray-50/50">
-                    <TableCell className="font-medium text-[#192a56]">
+                    <TableCell className="font-medium text-ink">
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-amber-50 rounded-lg shrink-0">
                           {d.fileType?.startsWith("image/") ? (

@@ -82,10 +82,10 @@ export default function EditTeamMemberModal({ isOpen, onClose, onSuccess, member
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" dir="rtl">
-      <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl animate-in fade-in zoom-in duration-300">
-        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-[#192a56] text-white rounded-t-3xl">
+      <div className="bg-surface rounded-3xl w-full max-w-lg shadow-2xl animate-in fade-in zoom-in duration-300">
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-navy text-white rounded-t-3xl">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#273c75] rounded-xl flex items-center justify-center text-[#192a56]">
+            <div className="w-10 h-10 bg-navy-2 rounded-xl flex items-center justify-center text-ink">
               <UserCog size={20} />
             </div>
             <h2 className="text-xl font-bold">تعديل بيانات العضو</h2>
@@ -108,7 +108,7 @@ export default function EditTeamMemberModal({ isOpen, onClose, onSuccess, member
             <input
               required type="text" value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#192a56]/10 focus:border-[#192a56] transition-all"
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-edge/10 focus:border-edge transition-all"
             />
           </div>
 
@@ -117,13 +117,13 @@ export default function EditTeamMemberModal({ isOpen, onClose, onSuccess, member
             <input
               type="tel" value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#192a56]/10 focus:border-[#192a56] transition-all"
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-edge/10 focus:border-edge transition-all"
               placeholder="05xxxxxxxx" dir="ltr"
             />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-bold text-[#192a56] block">الدور والصلاحيات</label>
+            <label className="text-sm font-bold text-ink block">الدور والصلاحيات</label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {ROLES_CREATABLE_BY_OFFICE.map((r) => (
                 <button
@@ -132,13 +132,13 @@ export default function EditTeamMemberModal({ isOpen, onClose, onSuccess, member
                   onClick={() => setRole(r)}
                   className={`text-right p-3 rounded-2xl border-2 transition-all ${
                     role === r
-                      ? "border-[#273c75] bg-[#273c75]/10 shadow-sm"
-                      : "border-gray-200 hover:border-gray-300 bg-white"
+                      ? "border-edge-2 bg-navy-2/10 shadow-sm"
+                      : "border-gray-200 hover:border-gray-300 bg-surface"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-sm text-[#192a56]">{ROLE_LABELS_AR[r]}</span>
-                    {role === r && <Check size={16} className="text-[#273c75] shrink-0" />}
+                    <span className="font-bold text-sm text-ink">{ROLE_LABELS_AR[r]}</span>
+                    {role === r && <Check size={16} className="text-ink-2 shrink-0" />}
                   </div>
                 </button>
               ))}
@@ -147,7 +147,7 @@ export default function EditTeamMemberModal({ isOpen, onClose, onSuccess, member
 
           <div className="flex gap-3 pt-2">
             <Button type="submit" disabled={loading}
-              className="flex-1 py-6 bg-[#192a56] text-[#273c75] font-bold rounded-2xl hover:bg-[#192a56]/90 active:scale-[0.98] transition-all">
+              className="flex-1 py-6 bg-navy text-ink-2 font-bold rounded-2xl hover:bg-navy/90 active:scale-[0.98] transition-all">
               {loading ? "جاري الحفظ..." : "حفظ التعديلات"}
             </Button>
             <Button type="button" variant="outline" onClick={onClose}

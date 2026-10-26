@@ -56,13 +56,13 @@ export function EditClientModal({ isOpen, onClose, onSuccess, clientData }: { is
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[650px]" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-[#192a56]">تعديل بيانات العميل</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-ink">تعديل بيانات العميل</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#192a56]">الاسم الكامل *</label>
+              <label className="text-sm font-bold text-ink">الاسم الكامل *</label>
               <Input 
                 required
                 value={formData.fullName}
@@ -72,7 +72,7 @@ export function EditClientModal({ isOpen, onClose, onSuccess, clientData }: { is
             </div>
             
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#192a56]">النوع</label>
+              <label className="text-sm font-bold text-ink">النوع</label>
               <SearchableSelect 
                 className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={formData.clientType}
@@ -84,7 +84,7 @@ export function EditClientModal({ isOpen, onClose, onSuccess, clientData }: { is
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#192a56]">رقم الهاتف *</label>
+              <label className="text-sm font-bold text-ink">رقم الهاتف *</label>
               <Input 
                 required
                 value={formData.phone}
@@ -96,7 +96,7 @@ export function EditClientModal({ isOpen, onClose, onSuccess, clientData }: { is
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#192a56]">{formData.clientType === "COMPANY" ? "الرقم الضريبي" : "رقم الهوية"}</label>
+              <label className="text-sm font-bold text-ink">{formData.clientType === "COMPANY" ? "الرقم الضريبي" : "رقم الهوية"}</label>
               <Input 
                 value={formData.nationalId}
                 onChange={e => setFormData({...formData, nationalId: e.target.value})}
@@ -107,7 +107,7 @@ export function EditClientModal({ isOpen, onClose, onSuccess, clientData }: { is
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#192a56]">أتعاب متوقعة ({currencySymbol})</label>
+              <label className="text-sm font-bold text-ink">أتعاب متوقعة ({currencySymbol})</label>
               <Input
                 type="number"
                 step="0.01"
@@ -120,7 +120,7 @@ export function EditClientModal({ isOpen, onClose, onSuccess, clientData }: { is
               />
             </div>
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-bold text-[#192a56]">العنوان</label>
+              <label className="text-sm font-bold text-ink">العنوان</label>
               <Input 
                 value={formData.address}
                 onChange={e => setFormData({...formData, address: e.target.value})}
@@ -131,7 +131,7 @@ export function EditClientModal({ isOpen, onClose, onSuccess, clientData }: { is
 
           <DialogFooter className="mt-6">
             <Button type="button" variant="outline" onClick={onClose}>إلغاء</Button>
-            <Button type="submit" disabled={loading} className="bg-[#192a56] hover:bg-[#192a56]/90 text-white">
+            <Button type="submit" disabled={loading} className="bg-navy hover:bg-navy/90 text-white">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               حفظ التعديلات
             </Button>

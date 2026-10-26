@@ -238,13 +238,13 @@ export function AddDocumentModal({ isOpen, onClose, onSuccess, caseId, clientId,
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-[#192a56]">رفع مستند جديد</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-ink">رفع مستند جديد</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 md:col-span-2">
-              <label className="text-sm font-bold text-[#192a56]">اسم المستند *</label>
+              <label className="text-sm font-bold text-ink">اسم المستند *</label>
               <Input
                 required
                 value={formData.name}
@@ -254,7 +254,7 @@ export function AddDocumentModal({ isOpen, onClose, onSuccess, caseId, clientId,
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#192a56]">النوع</label>
+              <label className="text-sm font-bold text-ink">النوع</label>
               <SearchableSelect
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 value={formData.type}
@@ -267,7 +267,7 @@ export function AddDocumentModal({ isOpen, onClose, onSuccess, caseId, clientId,
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#192a56]">ملاحظات</label>
+              <label className="text-sm font-bold text-ink">ملاحظات</label>
               <Input
                 value={formData.notes}
                 onChange={e => setFormData({ ...formData, notes: e.target.value })}
@@ -278,7 +278,7 @@ export function AddDocumentModal({ isOpen, onClose, onSuccess, caseId, clientId,
             {!newVersionOf && (
               <>
                 <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-bold text-[#192a56]">التصنيف الأمني</label>
+                  <label className="text-sm font-bold text-ink">التصنيف الأمني</label>
                   <SearchableSelect
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                     value={confidentiality}
@@ -294,7 +294,7 @@ export function AddDocumentModal({ isOpen, onClose, onSuccess, caseId, clientId,
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-bold text-[#192a56]">الوسوم</label>
+                  <label className="text-sm font-bold text-ink">الوسوم</label>
                   <Input value={tags} onChange={e => setTags(e.target.value)}
                     placeholder="مثال: توكيل، أصل، مرافعة — تُستخدم في البحث" />
                 </div>
@@ -328,7 +328,7 @@ export function AddDocumentModal({ isOpen, onClose, onSuccess, caseId, clientId,
                 <input
                   id="createContractRecord"
                   type="checkbox"
-                  className="w-5 h-5 accent-[#192a56] shrink-0"
+                  className="w-5 h-5 accent-ink shrink-0"
                   checked={createContractRecord}
                   onChange={(e) => setCreateContractRecord(e.target.checked)}
                 />
@@ -348,7 +348,7 @@ export function AddDocumentModal({ isOpen, onClose, onSuccess, caseId, clientId,
                    <input
                      id="saveToClient"
                      type="checkbox"
-                     className="w-5 h-5 accent-[#192a56]"
+                     className="w-5 h-5 accent-ink"
                      checked={saveToClient}
                      onChange={(e) => setSaveToClient(e.target.checked)}
                    />
@@ -358,7 +358,7 @@ export function AddDocumentModal({ isOpen, onClose, onSuccess, caseId, clientId,
           </div>
 
           <div className="space-y-2 p-4 bg-gray-50 border border-dashed rounded-lg">
-            <label className="text-sm font-bold text-[#192a56]">ملف المستند</label>
+            <label className="text-sm font-bold text-ink">ملف المستند</label>
             <Input
               type="file"
               accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -395,7 +395,7 @@ export function AddDocumentModal({ isOpen, onClose, onSuccess, caseId, clientId,
 
           {extractedText !== "" && (
             <div className="space-y-2">
-              <label className="text-sm font-bold text-[#192a56]">النص المستخرج (قابل للتعديل)</label>
+              <label className="text-sm font-bold text-ink">النص المستخرج (قابل للتعديل)</label>
               <Textarea
                 className="min-h-[150px] leading-relaxed resize-y"
                 value={extractedText}
@@ -414,7 +414,7 @@ export function AddDocumentModal({ isOpen, onClose, onSuccess, caseId, clientId,
 
           <DialogFooter className="mt-6">
             <Button type="button" variant="outline" onClick={handleClose}>إلغاء</Button>
-            <Button type="submit" disabled={loading} className="bg-[#192a56] hover:bg-[#192a56]/90 text-white">
+            <Button type="submit" disabled={loading} className="bg-navy hover:bg-navy/90 text-white">
               {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
               رفع المستند
             </Button>

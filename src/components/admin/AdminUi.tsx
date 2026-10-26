@@ -2,11 +2,11 @@
 
 import type { ReactNode } from "react";
 
-export const adminPanel = "rounded-2xl border border-slate-100 bg-white text-[#192a56] shadow-md";
+export const adminPanel = "rounded-2xl border border-slate-100 bg-surface text-ink shadow-md";
 
 export function AdminHeader({ icon, title, subtitle, actions }: { icon: ReactNode; title: string; subtitle: string; actions?: ReactNode }) {
   return (
-    <div className="flex flex-col gap-4 rounded-2xl bg-gradient-to-l from-[#192a56] to-[#273c75] p-6 text-white shadow-lg sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex flex-col gap-4 rounded-2xl bg-gradient-to-l from-navy to-navy-2 p-6 text-white shadow-lg sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-4">
         <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/10">{icon}</span>
         <div>
@@ -23,7 +23,7 @@ export function AdminHeader({ icon, title, subtitle, actions }: { icon: ReactNod
 export function HeaderButton({ onClick, disabled, children }: { onClick: () => void; disabled?: boolean; children: ReactNode }) {
   return (
     <button type="button" onClick={onClick} disabled={disabled}
-      className="flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-bold text-[#192a56] transition hover:bg-blue-50 disabled:opacity-60">
+      className="flex items-center gap-2 rounded-xl bg-surface px-4 py-2.5 text-sm font-bold text-ink transition hover:bg-blue-50 disabled:opacity-60">
       {children}
     </button>
   );
@@ -35,7 +35,7 @@ export function AdminStat({ title, value, sub, icon, iconClass }: { title: strin
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="mb-2 text-xs font-semibold text-slate-400">{title}</p>
-          <div className="truncate text-2xl font-bold tracking-tight text-[#192a56] sm:text-3xl">{value}</div>
+          <div className="truncate text-2xl font-bold tracking-tight text-ink sm:text-3xl">{value}</div>
           {sub && <p className="mt-1 truncate text-xs text-slate-500">{sub}</p>}
         </div>
         <span className={`flex shrink-0 items-center justify-center rounded-2xl p-3.5 ${iconClass}`}>{icon}</span>
@@ -48,8 +48,8 @@ export function AdminStat({ title, value, sub, icon, iconClass }: { title: strin
 export function AdminModal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" dir="rtl">
-      <div className={`w-full ${wide ? "max-w-2xl" : "max-w-lg"} overflow-hidden rounded-3xl bg-white shadow-2xl`}>
-        <div className="flex items-center justify-between bg-gradient-to-l from-[#192a56] to-[#273c75] p-5 text-white">
+      <div className={`w-full ${wide ? "max-w-2xl" : "max-w-lg"} overflow-hidden rounded-3xl bg-surface shadow-2xl`}>
+        <div className="flex items-center justify-between bg-gradient-to-l from-navy to-navy-2 p-5 text-white">
           <h2 className="text-lg font-black">{title}</h2>
           <button type="button" onClick={onClose} className="text-white/70 hover:text-white" aria-label="إغلاق">✕</button>
         </div>
