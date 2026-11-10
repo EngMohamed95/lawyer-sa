@@ -7,7 +7,7 @@
  */
 
 import { useRef } from "react";
-import { File, Paperclip, Search, X } from "lucide-react";
+import { File, Paperclip, Search, Trash2, X } from "lucide-react";
 import { Button } from "./ui/button";
 import { uploadFile } from "./CaseClaimSection";
 import { formatGregorian } from "../lib/calendar";
@@ -100,6 +100,23 @@ export function AttachmentChips({ files, highlight = "", numbered = false }: { f
   );
 }
 
+/** ملف مختار (لم يُحفظ بعد) مع زر لإلغاء اختياره — بديل عن إبقاء حقل الملف الأصلي بلا إلغاء */
+export function PickedFileChip({ file, onRemove, label = "تم اختيار" }: { file: File; onRemove: () => void; label?: string }) {
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-lg border border-dashed border-green-300 bg-green-50/60 px-2.5 py-1.5 text-xs">
+      <span className="flex min-w-0 items-center gap-1.5 text-gray-700">
+        <File size={14} className="shrink-0 text-green-600" />
+        <span className="shrink-0 text-gray-500">{label}:</span>
+        <span className="truncate font-bold" title={file.name}>{file.name}</span>
+      </span>
+      <button type="button" onClick={onRemove} aria-label={`إلغاء ${file.name}`} title="إزالة الملف"
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-600 hover:bg-red-100">
+        <Trash2 size={14} />
+      </button>
+    </div>
+  );
+}
+
 export function AttachmentPicker({ label = "المرفقات", hint, existing, onExistingChange, newFiles, onNewFilesChange, numbered = false }: {
   label?: string;
   hint?: string;
@@ -112,6 +129,7 @@ export function AttachmentPicker({ label = "المرفقات", hint, existing, o
 }) {
   const input = useRef<HTMLInputElement>(null);
   const field = "h-8 rounded-md border border-gray-300 bg-surface px-2 text-xs focus:outline-none focus:border-edge-2";
+  const delBtn = "flex h-8 w-8 items-center justify-center rounded-md border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700";
 
   const editExisting = (i: number, patch: Partial<Attachment>) =>
     onExistingChange(existing.map((a, j) => (j === i ? { ...a, ...patch } : a)));
@@ -135,11 +153,11 @@ export function AttachmentPicker({ label = "المرفقات", hint, existing, o
 
       {existing.length || newFiles.length ? (
         <div className="space-y-1.5">
-          <div className="grid grid-cols-[1fr_9rem_1.5rem] gap-2 px-1 text-[11px] font-bold text-gray-500">
+          <div className="grid grid-cols-[1fr_9rem_2rem] gap-2 px-1 text-[11px] font-bold text-gray-500">
             <span>اسم المرفق</span><span>التاريخ</span><span />
           </div>
           {existing.map((a, i) => (
-            <div key={a.url} className="grid grid-cols-[1fr_9rem_1.5rem] items-center gap-2 rounded-lg border border-gray-200 bg-surface p-1.5">
+            <div key={a.url} className="grid grid-cols-[1fr_9rem_2rem] items-center gap-2 rounded-lg border border-gray-200 bg-surface p-1.5">
               <div className="flex min-w-0 items-center gap-1.5">
                 {numbered && <span className="w-5 shrink-0 text-center text-xs font-bold text-gray-500">{i + 1}</span>}
                 <a href={a.url} target="_blank" rel="noreferrer" title="فتح الملف" className="shrink-0 text-green-600 hover:text-green-800">
@@ -150,13 +168,16 @@ export function AttachmentPicker({ label = "المرفقات", hint, existing, o
               </div>
               <input type="date" value={a.date || ""} onChange={(e) => editExisting(i, { date: e.target.value })} aria-label="تاريخ المرفق"
                 className={field} />
-              <button type="button" aria-label={`إزالة ${a.name}`} title="إزالة"
-                onClick={() => onExistingChange(existing.filter((_, j) => j !== i))}
-                className="rounded p-0.5 text-gray-400 hover:bg-red-50 hover:text-red-600"><X size={14} /></button>
+              <button type="button" aria-label={`حذف ${a.name}`} title="حذف المرفق"
+                onClick={() => {
+                  if (confirm(`حذف المرفق «${a.name}»؟ يُطبَّق الحذف عند الضغط على «حفظ».`))
+                    onExistingChange(existing.filter((_, j) => j !== i));
+                }}
+                className={delBtn}><Trash2 size={15} /></button>
             </div>
           ))}
           {newFiles.map((p, i) => (
-            <div key={`${p.file.name}-${i}`} className="grid grid-cols-[1fr_9rem_1.5rem] items-center gap-2 rounded-lg border border-dashed border-green-300 bg-green-50/60 p-1.5">
+            <div key={`${p.file.name}-${i}`} className="grid grid-cols-[1fr_9rem_2rem] items-center gap-2 rounded-lg border border-dashed border-green-300 bg-green-50/60 p-1.5">
               <div className="flex min-w-0 items-center gap-1.5">
                 {numbered && <span className="w-5 shrink-0 text-center text-xs font-bold text-gray-500">{existing.length + i + 1}</span>}
                 <span title={p.file.name} className="shrink-0 text-green-600"><File size={15} /></span>
@@ -166,9 +187,9 @@ export function AttachmentPicker({ label = "المرفقات", hint, existing, o
               </div>
               <input type="date" value={p.date} onChange={(e) => editNew(i, { date: e.target.value })} aria-label="تاريخ المرفق"
                 className={field} />
-              <button type="button" aria-label={`إزالة ${p.name}`} title="إزالة"
+              <button type="button" aria-label={`حذف ${p.name}`} title="حذف المرفق"
                 onClick={() => onNewFilesChange(newFiles.filter((_, j) => j !== i))}
-                className="rounded p-0.5 text-gray-400 hover:bg-red-50 hover:text-red-600"><X size={14} /></button>
+                className={delBtn}><Trash2 size={15} /></button>
             </div>
           ))}
         </div>

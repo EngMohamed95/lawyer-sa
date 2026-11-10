@@ -21,6 +21,15 @@ export const EXECUTION_REQUEST_KINDS: Record<string, string[]> = {
   "أخرى": [],
 };
 
+/**
+ * خانة النص الوحيدة في الطلب حسب تصنيفه: «منطوق الحكم» لتصنيف «أحكام وقرارات»،
+ * و«مضمون الطلب» لبقية التصانيف.
+ */
+export const executionTextFieldFor = (requestType: string | undefined): { key: "judgmentText" | "requestContent"; label: string } =>
+  requestType === "أحكام وقرارات"
+    ? { key: "judgmentText", label: "منطوق الحكم" }
+    : { key: "requestContent", label: "مضمون الطلب" };
+
 /** «التصنيف — النوع» للعرض في القوائم والتقارير */
 export const executionRequestLabel = (c: any): string =>
   [c?.enforcementRequestType, c?.enforcementRequestKind].filter(Boolean).join(" — ");

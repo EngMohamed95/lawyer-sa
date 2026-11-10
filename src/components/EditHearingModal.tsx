@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Loader2, Trash2 } from "lucide-react";
+import { PickedFileChip } from "./AttachmentPicker";
 
 interface EditHearingModalProps {
   isOpen: boolean;
@@ -17,12 +18,14 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     hearingDate: "",
+    hearingTime: "",
     court: "",
     circuit: "",
     requiredActions: "",
     judgeRequests: "",
     result: "",
     nextHearingDate: "",
+    nextHearingTime: "",
     minutesText: "",
     judgmentText: "",
   });
@@ -39,12 +42,14 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
     if (isOpen && hearingData) {
       setFormData({
         hearingDate: hearingData.hearingDate || "",
+        hearingTime: hearingData.hearingTime || "",
         court: hearingData.court || "",
         circuit: hearingData.circuit || "",
         requiredActions: hearingData.requiredActions || "",
         judgeRequests: hearingData.judgeRequests || "",
         result: hearingData.result || "",
         nextHearingDate: hearingData.nextHearingDate || "",
+        nextHearingTime: hearingData.nextHearingTime || "",
         minutesText: hearingData.minutesText || "",
         judgmentText: hearingData.judgmentText || "",
       });
@@ -97,12 +102,14 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
 
       const payload = {
         hearingDate: formData.hearingDate,
+        hearingTime: formData.hearingTime,
         court: formData.court,
         circuit: formData.circuit,
         requiredActions: formData.requiredActions,
         judgeRequests: formData.judgeRequests,
         result: formData.result,
         nextHearingDate: formData.nextHearingDate || null,
+        nextHearingTime: formData.nextHearingDate ? formData.nextHearingTime : "",
         minutesText: formData.minutesText,
         minutesFileUrl: finalMinutesFileUrl,
         minutesFileName: finalMinutesFileName,
@@ -166,21 +173,43 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-bold text-ink">تاريخ الجلسة *</label>
-              <Input 
-                type="date"
-                required
-                value={formData.hearingDate}
-                onChange={e => setFormData({...formData, hearingDate: e.target.value})}
-              />
+              <div className="flex gap-2">
+                <Input 
+                  type="date"
+                  required
+                  value={formData.hearingDate}
+                  onChange={e => setFormData({...formData, hearingDate: e.target.value})}
+                  className="flex-1"
+                />
+                <Input
+                  type="time"
+                  value={formData.hearingTime}
+                  onChange={e => setFormData({...formData, hearingTime: e.target.value})}
+                  aria-label="وقت الجلسة"
+                  title="وقت الجلسة"
+                  className="w-32"
+                />
+              </div>
             </div>
             
             <div className="space-y-2">
               <label className="text-sm font-bold text-ink">تاريخ الجلسة القادمة</label>
-              <Input 
-                type="date"
-                value={formData.nextHearingDate || ""}
-                onChange={e => setFormData({...formData, nextHearingDate: e.target.value})}
-              />
+              <div className="flex gap-2">
+                <Input 
+                  type="date"
+                  value={formData.nextHearingDate || ""}
+                  onChange={e => setFormData({...formData, nextHearingDate: e.target.value})}
+                  className="flex-1"
+                />
+                <Input
+                  type="time"
+                  value={formData.nextHearingTime}
+                  onChange={e => setFormData({...formData, nextHearingTime: e.target.value})}
+                  aria-label="وقت الجلسة القادمة"
+                  title="وقت الجلسة القادمة"
+                  className="w-32"
+                />
+              </div>
             </div>
           </div>
           
@@ -242,12 +271,15 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
                 </Button>
               </div>
             )}
-            <Input 
-               type="file"
-               onChange={e => setMinutesFile(e.target.files?.[0] || null)}
-               className="bg-surface"
-            />
-            {minutesFile && <p className="text-[10px] text-gray-500">تم اختيار ملف جديد: {minutesFile.name}</p>}
+            {minutesFile ? (
+              <PickedFileChip file={minutesFile} label="ملف جديد" onRemove={() => setMinutesFile(null)} />
+            ) : (
+              <Input
+                 type="file"
+                 onChange={e => setMinutesFile(e.target.files?.[0] || null)}
+                 className="bg-surface"
+              />
+            )}
           </div>
 
           <div className="space-y-2">
@@ -275,12 +307,15 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
                 </Button>
               </div>
             )}
-            <Input 
-               type="file"
-               onChange={e => setJudgmentFile(e.target.files?.[0] || null)}
-               className="bg-surface"
-            />
-            {judgmentFile && <p className="text-[10px] text-gray-500">تم اختيار ملف جديد: {judgmentFile.name}</p>}
+            {judgmentFile ? (
+              <PickedFileChip file={judgmentFile} label="ملف جديد" onRemove={() => setJudgmentFile(null)} />
+            ) : (
+              <Input
+                 type="file"
+                 onChange={e => setJudgmentFile(e.target.files?.[0] || null)}
+                 className="bg-surface"
+              />
+            )}
           </div>
 
           {uploadStatus && (

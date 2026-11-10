@@ -5,7 +5,7 @@
 
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
-  EXECUTION_REQUEST_KINDS, EXECUTION_REQUEST_TYPES, MATURITY_STATUSES, formatMoney, paymentsTotal, remainingAmount,
+  EXECUTION_REQUEST_KINDS, EXECUTION_REQUEST_TYPES, MATURITY_STATUSES, executionTextFieldFor, formatMoney, paymentsTotal, remainingAmount,
   type ExecutionDetails, type ExecutionPayment,
 } from "../lib/execution";
 import { Plus, Trash2 } from "lucide-react";
@@ -67,10 +67,13 @@ export function ExecutionTypeFields({ requestType, requestKind, onChange }: {
   );
 }
 
-export function ExecutionContentFields({ value, onChange }: {
+export function ExecutionContentFields({ value, onChange, requestType }: {
   value: ExecutionDetails;
   onChange: (v: ExecutionDetails) => void;
+  /** تصنيف الطلب — يحدد الخانة: «منطوق الحكم» أو «مضمون الطلب» */
+  requestType: string;
 }) {
+  const text = executionTextFieldFor(requestType);
   const set = <K extends keyof ExecutionDetails>(k: K, v: ExecutionDetails[K]) => onChange({ ...value, [k]: v });
   const amountOnly = (v: string) => v.replace(/[^\d.,]/g, "");
   const remaining = remainingAmount(value);
@@ -86,15 +89,10 @@ export function ExecutionContentFields({ value, onChange }: {
 
   return (
     <>
-      <div className="space-y-2">
-        <label className={label}>منطوق الحكم</label>
-        <Textarea rows={4} value={value.judgmentText} onChange={(e) => set("judgmentText", e.target.value)}
-          placeholder="اكتب منطوق الحكم كما ورد..." />
-      </div>
-      <div className="space-y-2">
-        <label className={label}>مضمون الطلب</label>
-        <Textarea rows={4} value={value.requestContent} onChange={(e) => set("requestContent", e.target.value)}
-          placeholder="اكتب مضمون طلب التنفيذ..." />
+      <div className="space-y-2 md:col-span-2">
+        <label className={label}>{text.label}</label>
+        <Textarea rows={6} value={value[text.key]} onChange={(e) => set(text.key, e.target.value)}
+          placeholder={text.key === "judgmentText" ? "اكتب منطوق الحكم كما ورد..." : "اكتب مضمون طلب التنفيذ..."} />
       </div>
 
       <SectionTitle>المبالغ المالية</SectionTitle>

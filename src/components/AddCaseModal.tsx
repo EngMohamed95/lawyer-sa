@@ -306,15 +306,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
               </div>
             )}
 
-            {isExec && (
-              <ExecutionTypeFields
-                requestType={formData.enforcementRequestType}
-                requestKind={formData.enforcementRequestKind}
-                onChange={(patch) => setFormData({ ...formData, ...patch })}
-              />
-            )}
-
-            <SectionTitle>{isExec ? "أطراف الطلب" : "أطراف الدعوى والنزاع"}</SectionTitle>
+            <SectionTitle>{isExec ? "أطراف التنفيذ" : "أطراف الدعوى والنزاع"}</SectionTitle>
 
             <div className="space-y-2 md:col-span-2">
               <label className={label}>صفة العميل في {isExec ? "الطلب" : "القضية"}</label>
@@ -344,7 +336,16 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
               />
             </div>
 
-            {!isExec && <SectionTitle>المحكمة وموضوع الدعوى</SectionTitle>}
+            {isExec && <SectionTitle>تصنيف الطلب</SectionTitle>}
+            {isExec && (
+              <ExecutionTypeFields
+                requestType={formData.enforcementRequestType}
+                requestKind={formData.enforcementRequestKind}
+                onChange={(patch) => setFormData({ ...formData, ...patch })}
+              />
+            )}
+
+            <SectionTitle>{isExec ? "المحكمة" : "المحكمة وموضوع الدعوى"}</SectionTitle>
 
             <div className="space-y-2">
               <label className={label}>{isExec ? "المحكمة" : "المحكمة المرفوع أمامها"}</label>
@@ -391,6 +392,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
               <ExecutionContentFields
                 value={formData.executionDetails}
                 onChange={(executionDetails) => setFormData({ ...formData, executionDetails })}
+                requestType={formData.enforcementRequestType}
               />
             )}
 

@@ -193,8 +193,29 @@ export default function MemoWriter() {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-2 md:col-span-3">
+          {/* يمين: بيانات المذكرة والمرفقات والمساعد الذكي — يسار: صفحة المحرر بنظام الوورد (على الجوال المحرر أولاً) */}
+          <div className="grid grid-cols-1 lg:grid-cols-[22rem_minmax(0,1fr)] gap-5 items-start">
+            <div className="rounded-2xl bg-gray-100 border border-gray-200 p-3 sm:p-6 lg:order-last">
+              {!office.officeProfile.name && (
+                <div className="mx-auto max-w-[850px] mb-3 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  <Info size={14} className="shrink-0" />
+                  الترويسة تعرض بيانات افتراضية — أكمل اسم المكتب وشعاره وهواتفه من الإعدادات ← مطبوعات المكتب.
+                </div>
+              )}
+              <div className="mx-auto max-w-[850px] bg-surface shadow-md">
+                <RichTextEditor
+                  value={memoContent}
+                  onChange={(val) => setMemoContent(val)}
+                  placeholder="ابدأ الكتابة هنا..."
+                  headerHtml={renderMemoLetterheadHeader(office.officeProfile)}
+                  footerHtml={renderMemoLetterheadFooter(office.officeProfile)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+          <div className="space-y-4 rounded-2xl border border-gray-200 bg-surface p-4">
+            <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <label className="text-sm font-bold text-ink">القضية</label>
                 {perms.canCreate("case.create") && (
@@ -217,11 +238,11 @@ export default function MemoWriter() {
                 <p className="text-[11px] text-amber-700">لا توجد قضايا متاحة لك — أضف قضية من زر «قضية جديدة» لتحفظ المذكرة تبعها.</p>
               )}
             </div>
-            <div className="space-y-2 md:col-span-2">
+            <div className="space-y-2">
               <label className="text-sm font-bold text-ink">الموضوع</label>
               <Input
                 placeholder="مثال: صحيفة دعوى تعويض، مذكرة دفاع..."
-                className="text-lg bg-gray-50"
+                className="bg-gray-50"
                 value={memoTitle}
                 onChange={e => setMemoTitle(e.target.value)}
               />
@@ -233,10 +254,10 @@ export default function MemoWriter() {
                 <option value="MEMO">مذكرة رد / دفاع</option>
               </SearchableSelect>
             </div>
-            <div className="space-y-2 md:col-span-2">
+            <div className="space-y-2">
               <label className="text-sm font-bold text-ink">مختصر المطلوب</label>
               <textarea
-                rows={3}
+                rows={4}
                 placeholder="اكتب باختصار ما تريده من هذه المذكرة، مثل: المطالبة بباقي قيمة العقد مع التعويض عن التأخير..."
                 className="w-full resize-y rounded-md border border-input bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 value={memoBrief}
@@ -250,25 +271,6 @@ export default function MemoWriter() {
             </div>
           </div>
 
-          {/* يمين: المساعد الذكي — يسار: صفحة المحرر بنظام الوورد (على الجوال المحرر أولاً) */}
-          <div className="grid grid-cols-1 lg:grid-cols-[22rem_minmax(0,1fr)] gap-5 items-start">
-            <div className="rounded-2xl bg-gray-100 border border-gray-200 p-3 sm:p-6 lg:order-last">
-              {!office.officeProfile.name && (
-                <div className="mx-auto max-w-[850px] mb-3 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                  <Info size={14} className="shrink-0" />
-                  الترويسة تعرض بيانات افتراضية — أكمل اسم المكتب وشعاره وهواتفه من الإعدادات ← مطبوعات المكتب.
-                </div>
-              )}
-              <div className="mx-auto max-w-[850px] bg-surface shadow-md">
-                <RichTextEditor
-                  value={memoContent}
-                  onChange={(val) => setMemoContent(val)}
-                  placeholder="ابدأ الكتابة هنا..."
-                  headerHtml={renderMemoLetterheadHeader(office.officeProfile)}
-                  footerHtml={renderMemoLetterheadFooter(office.officeProfile)}
-                />
-              </div>
-            </div>
             <MemoAiPanel
               caseData={caseData}
               memoTypeLabel={MEMO_TYPE_LABELS[memoType] || "مذكرة"}
@@ -284,6 +286,7 @@ export default function MemoWriter() {
                 setMemoContent(html);
               }}
             />
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-gray-100">

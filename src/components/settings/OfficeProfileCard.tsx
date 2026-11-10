@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Building2, UploadCloud, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Building2, UploadCloud, Loader2, CheckCircle2, AlertCircle, Trash2 } from "lucide-react";
 import { usePermissions } from "../../lib/usePermissions";
 import { useOfficeSettings, saveOfficeProfile, type OfficeProfile } from "../../lib/officeSettings";
 import LetterheadPaper from "./LetterheadPaper";
@@ -93,6 +93,13 @@ export default function OfficeProfileCard() {
               {uploadingLogo ? <Loader2 size={14} className="animate-spin" /> : <UploadCloud size={14} />}
               {profile.logoUrl ? "استبدال الشعار" : "رفع شعار المكتب"}
             </button>
+            {profile.logoUrl && (
+              <button type="button" disabled={uploadingLogo}
+                onClick={() => { if (confirm("إزالة شعار المكتب؟ يُطبَّق عند الضغط على «حفظ بيانات المكتب».")) setProfile((p) => ({ ...p, logoUrl: "" })); }}
+                className="mt-2 flex items-center gap-2 px-4 py-2 border border-red-200 bg-red-50 text-red-600 font-bold rounded-xl text-xs hover:bg-red-100 transition disabled:opacity-50">
+                <Trash2 size={14} /> إزالة الشعار
+              </button>
+            )}
           </div>
         )}
       </div>

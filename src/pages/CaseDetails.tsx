@@ -1614,47 +1614,7 @@ export default function CaseDetails() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="pt-6 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="text-sm font-bold text-ink">الموضوع</label>
-                    <Input 
-                      placeholder="مثال: صحيفة دعوى تعويض، مذكرة دفاع..." 
-                      className="text-lg bg-gray-50"
-                      value={memoTitle}
-                      onChange={e => setMemoTitle(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-ink">النوع</label>
-                    <SearchableSelect 
-                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      value={memoType}
-                      onChange={e => setMemoType(e.target.value)}
-                    >
-                      <option value="LAWSUIT">صحيفة دعوى</option>
-                      <option value="MEMO">مذكرة رد / دفاع</option>
-                      {/* أُزيلت من القائمة؛ تظهر فقط لمذكرة قديمة محفوظة بهذا النوع كي لا يتغيّر نوعها عند التعديل */}
-                      {memoType === "PLEADING" && <option value="PLEADING">مذكرة مرافعة</option>}
-                    </SearchableSelect>
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <label className="text-sm font-bold text-ink">مختصر المطلوب</label>
-                    <textarea
-                      rows={3}
-                      placeholder="اكتب باختصار ما تريده من هذه المذكرة، مثل: المطالبة بباقي قيمة العقد مع التعويض عن التأخير..."
-                      className="w-full resize-y rounded-md border border-input bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                      value={memoBrief}
-                      onChange={e => setMemoBrief(e.target.value)}
-                    />
-                    <p className="text-[11px] text-gray-400">يعتمد عليه المساعد الذكي عند الصياغة.</p>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-ink">المرفقات</label>
-                    <MemoAttachmentsField attachments={memoAttachments} onChange={setMemoAttachments} />
-                  </div>
-                </div>
-                
-                {/* يمين: المساعد الذكي — يسار: صفحة المحرر بنظام الوورد (على الجوال المحرر أولاً) */}
+                {/* يمين: بيانات المذكرة والمرفقات والمساعد الذكي — يسار: صفحة المحرر بنظام الوورد (على الجوال المحرر أولاً) */}
                 <div className="grid grid-cols-1 lg:grid-cols-[22rem_minmax(0,1fr)] gap-5 items-start">
                   <div className="rounded-2xl bg-gray-100 border border-gray-200 p-3 sm:p-6 lg:order-last">
                     {!office.officeProfile.name && (
@@ -1673,6 +1633,48 @@ export default function CaseDetails() {
                       />
                     </div>
                   </div>
+
+                  <div className="space-y-4">
+                <div className="space-y-4 rounded-2xl border border-gray-200 bg-surface p-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-ink">الموضوع</label>
+                    <Input
+                      placeholder="مثال: صحيفة دعوى تعويض، مذكرة دفاع..."
+                      className="bg-gray-50"
+                      value={memoTitle}
+                      onChange={e => setMemoTitle(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-ink">النوع</label>
+                    <SearchableSelect 
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      value={memoType}
+                      onChange={e => setMemoType(e.target.value)}
+                    >
+                      <option value="LAWSUIT">صحيفة دعوى</option>
+                      <option value="MEMO">مذكرة رد / دفاع</option>
+                      {/* أُزيلت من القائمة؛ تظهر فقط لمذكرة قديمة محفوظة بهذا النوع كي لا يتغيّر نوعها عند التعديل */}
+                      {memoType === "PLEADING" && <option value="PLEADING">مذكرة مرافعة</option>}
+                    </SearchableSelect>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-ink">مختصر المطلوب</label>
+                    <textarea
+                      rows={4}
+                      placeholder="اكتب باختصار ما تريده من هذه المذكرة، مثل: المطالبة بباقي قيمة العقد مع التعويض عن التأخير..."
+                      className="w-full resize-y rounded-md border border-input bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      value={memoBrief}
+                      onChange={e => setMemoBrief(e.target.value)}
+                    />
+                    <p className="text-[11px] text-gray-400">يعتمد عليه المساعد الذكي عند الصياغة.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-ink">المرفقات</label>
+                    <MemoAttachmentsField attachments={memoAttachments} onChange={setMemoAttachments} />
+                  </div>
+                </div>
+
                   <MemoAiPanel
                     caseData={data}
                     memoTypeLabel={MEMO_TYPE_LABELS[memoType] || "مذكرة"}
@@ -1688,6 +1690,7 @@ export default function CaseDetails() {
                       setMemoContent(html);
                     }}
                   />
+                  </div>
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">

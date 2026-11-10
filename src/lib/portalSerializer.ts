@@ -37,7 +37,7 @@ const CASE_FIELDS = [
 ];
 
 const HEARING_FIELDS = [
-  "id", "caseId", "hearingDate", "court", "circuit", "nextHearingDate",
+  "id", "caseId", "hearingDate", "hearingTime", "court", "circuit", "nextHearingDate", "nextHearingTime",
 ];
 
 const DOCUMENT_FIELDS = [

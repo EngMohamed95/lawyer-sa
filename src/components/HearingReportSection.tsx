@@ -129,7 +129,9 @@ export default function HearingReportSection({ caseData, hearing, onUpdated }: H
 قرار الجلسة (النتيجة): ${hearing.result || "غير مذكور"}
 نص محضر الضبط المكتوب: ${hearing.minutesText || "لا يوجد"}
 ${brief.trim() ? `\nمختصر ما يريده المحامي من هذا التقرير (التزم به): ${brief.trim()}\n` : ""}
-المطلوب: اكتب "تقرير الجلسة" الكامل، يشمل: عنوان التقرير وبيانات القضية والجلسة، ملخص لأطراف الحضور وفريق العمل، سرد ما دار في الجلسة استناداً لكل ما سبق وللمرفقات، القرار الصادر أو المآل، وأخيراً التوصيات أو الخطوات القادمة المقترحة.`;
+ملاحظة: عنوان التقرير وجدول (رقم القضية، تاريخ الجلسة، المحكمة، المدعي، المدعى عليه) يُطبعان تلقائياً أعلى الصفحة — لا تكررهما.
+
+المطلوب: اكتب "تقرير الجلسة" الكامل، يشمل: فقرة «الأطراف» تذكر المدعي والمدعى عليه بالاسم وصفة موكّلنا منهما ومن حضر عن كل طرف، ملخص فريق العمل، سرد ما دار في الجلسة استناداً لكل ما سبق وللمرفقات، القرار الصادر أو المآل، وأخيراً التوصيات أو الخطوات القادمة المقترحة.`;
   };
 
   const handleSave = async () => {
@@ -159,15 +161,31 @@ ${brief.trim() ? `\nمختصر ما يريده المحامي من هذا الت
     }
   };
 
-  /** صفحة التقرير الكاملة: ترويسة المكتب + العنوان + بيانات القضية + المحتوى + التذييل */
+  /** عنوان التقرير وبيانات القضية والأطراف — يظهر أعلى صفحة المحرر وفي ملفات Word/PDF بنفس الشكل */
+  const reportInfoHtml = (reportTitle: string) => {
+    const cell = "padding:6px 10px;border:1px solid #e5e7eb;";
+    const head = `${cell}background:#f3f4f6;font-weight:bold;color:#192a56;width:22%;`;
+    const v = (s?: string) => escapeHtml(s || "---");
+    const court = [hearing.court, hearing.circuit].filter(Boolean).join(" — ");
+    return `
+      <div style="padding: 20px 40px 0; direction: rtl; text-align: right; font-family: 'Tajawal', 'Traditional Arabic', sans-serif;">
+        <h1 style="text-align: center; color: #192a56; border-bottom: 2px solid #273c75; padding-bottom: 10px; font-size: 20pt; margin: 0 0 14px;">${escapeHtml(reportTitle)}</h1>
+        <table style="width:100%;border-collapse:collapse;font-size:11pt;margin-bottom:8px;">
+          <tr><td style="${head}">رقم القضية</td><td style="${cell}">${v(caseData?.caseNumber)}</td>
+              <td style="${head}">تاريخ الجلسة</td><td style="${cell}">${v(hearing.hearingDate)}</td></tr>
+          <tr><td style="${head}">المحكمة</td><td style="${cell}" colspan="3">${v(court)}</td></tr>
+          <tr><td style="${head}">المدعي</td><td style="${cell}" colspan="3">${v(aiCaseData.plaintiffName)}</td></tr>
+          <tr><td style="${head}">المدعى عليه</td><td style="${cell}" colspan="3">${v(aiCaseData.defendantName)}</td></tr>
+        </table>
+      </div>`;
+  };
+
+  /** صفحة التقرير الكاملة: ترويسة المكتب + العنوان + بيانات القضية والأطراف + المحتوى + التذييل */
   const documentHtml = (reportTitle: string, body: string) => `
     <div style="font-family: 'Tajawal', 'Traditional Arabic', sans-serif; line-height: 1.8; direction: rtl; text-align: right; background:#fff;">
       ${renderMemoLetterheadHeader(office.officeProfile)}
-      <div style="padding: 30px 40px;">
-        <h1 style="text-align: center; color: #192a56; border-bottom: 2px solid #273c75; padding-bottom: 10px; font-size: 20pt;">${escapeHtml(reportTitle)}</h1>
-        <div style="color: #666; margin-bottom: 24px; border-bottom: 1px solid #eee; padding-bottom: 10px; font-size: 10pt;">
-          قضية رقم: ${escapeHtml(caseData?.caseNumber || "---")} | تاريخ الجلسة: ${escapeHtml(hearing.hearingDate || "---")}
-        </div>
+      ${reportInfoHtml(reportTitle)}
+      <div style="padding: 16px 40px 30px;">
         <div style="font-size: 13pt; text-align: justify;">${body}</div>
       </div>
       ${renderMemoLetterheadFooter(office.officeProfile)}
@@ -206,49 +224,7 @@ ${brief.trim() ? `\nمختصر ما يريده المحامي من هذا الت
     const currentTitle = title.trim() || defaultTitle;
     return (
       <div className="space-y-6" dir="rtl">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="space-y-2 md:col-span-3">
-            <label className="text-sm font-bold text-ink">عنوان التقرير</label>
-            <Input className="text-lg bg-gray-50" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={defaultTitle} />
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <label className="text-sm font-bold text-ink">مختصر المطلوب</label>
-            <textarea
-              rows={3}
-              placeholder="اكتب باختصار ما تريده من التقرير، مثل: التركيز على طلبات الخصم وموعد الجلسة القادمة..."
-              className="w-full resize-y rounded-md border border-input bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              value={brief}
-              onChange={(e) => setBrief(e.target.value)}
-            />
-            <p className="text-[11px] text-gray-400">يعتمد عليه المساعد الذكي عند الصياغة.</p>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-ink">المرفقات</label>
-            <MemoAttachmentsField
-              attachments={attachments}
-              onChange={setAttachments}
-              extra={minutesFiles.length > 0 && (
-                <div className="space-y-1">
-                  <p className="text-[11px] font-bold text-gray-500">أو أضف من محاضر الضبط المرفوعة:</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {minutesFiles.map((mf) => {
-                      const added = attachments.some((a) => a.name === mf.name);
-                      return (
-                        <button key={mf.id} type="button" disabled={added || loadingMinutesId !== null} onClick={() => addMinutesFile(mf)}
-                          className="flex items-center gap-1 rounded-full border border-gray-200 bg-surface px-2.5 py-1 text-[11px] text-gray-700 hover:border-purple-300 disabled:opacity-50">
-                          {loadingMinutesId === mf.id ? <Loader2 size={11} className="animate-spin" /> : <Paperclip size={11} />}
-                          <span className="max-w-[10rem] truncate">{mf.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            />
-          </div>
-        </div>
-
-        {/* يمين: المساعد الذكي — يسار: صفحة المحرر بترويسة المكتب (على الجوال المحرر أولاً) */}
+        {/* يمين: بيانات التقرير والمرفقات والمساعد الذكي — يسار: صفحة المحرر بترويسة المكتب (على الجوال المحرر أولاً) */}
         <div className="grid grid-cols-1 lg:grid-cols-[22rem_minmax(0,1fr)] gap-5 items-start">
           <div className="rounded-2xl bg-gray-100 border border-gray-200 p-3 sm:p-6 lg:order-last">
             {!office.officeProfile.name && (
@@ -262,8 +238,50 @@ ${brief.trim() ? `\nمختصر ما يريده المحامي من هذا الت
                 value={html}
                 onChange={setHtml}
                 placeholder="اكتب التقرير هنا أو اطلب صياغته من المساعد الذكي..."
-                headerHtml={renderMemoLetterheadHeader(office.officeProfile)}
+                headerHtml={renderMemoLetterheadHeader(office.officeProfile) + reportInfoHtml(currentTitle)}
                 footerHtml={renderMemoLetterheadFooter(office.officeProfile)}
+              />
+            </div>
+          </div>
+          <div className="space-y-4">
+          <div className="rounded-2xl border border-gray-200 bg-surface p-4 space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-ink">عنوان التقرير</label>
+              <Input className="bg-gray-50" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={defaultTitle} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-ink">مختصر المطلوب</label>
+              <textarea
+                rows={3}
+                placeholder="اكتب باختصار ما تريده من التقرير، مثل: التركيز على طلبات الخصم وموعد الجلسة القادمة..."
+                className="w-full resize-y rounded-md border border-input bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                value={brief}
+                onChange={(e) => setBrief(e.target.value)}
+              />
+              <p className="text-[11px] text-gray-400">يعتمد عليه المساعد الذكي عند الصياغة.</p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-ink">المرفقات</label>
+              <MemoAttachmentsField
+                attachments={attachments}
+                onChange={setAttachments}
+                extra={minutesFiles.length > 0 && (
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-bold text-gray-500">أو أضف من محاضر الضبط المرفوعة:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {minutesFiles.map((mf) => {
+                        const added = attachments.some((a) => a.name === mf.name);
+                        return (
+                          <button key={mf.id} type="button" disabled={added || loadingMinutesId !== null} onClick={() => addMinutesFile(mf)}
+                            className="flex items-center gap-1 rounded-full border border-gray-200 bg-surface px-2.5 py-1 text-[11px] text-gray-700 hover:border-purple-300 disabled:opacity-50">
+                            {loadingMinutesId === mf.id ? <Loader2 size={11} className="animate-spin" /> : <Paperclip size={11} />}
+                            <span className="max-w-[10rem] truncate">{mf.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               />
             </div>
           </div>
@@ -281,6 +299,7 @@ ${brief.trim() ? `\nمختصر ما يريده المحامي من هذا الت
               setHtml(part);
             }}
           />
+          </div>
         </div>
 
         {error && <p className="text-xs text-red-600">{error}</p>}

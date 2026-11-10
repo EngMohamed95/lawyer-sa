@@ -154,7 +154,7 @@ export default function HearingCard({ h, caseId, showCase = true, actions }: {
           {actions}
         </div>
         {h.nextHearingDate && (
-          <span className="text-xs text-gray-400">الجلسة القادمة: {formatGregorian(h.nextHearingDate)}</span>
+          <span className="text-xs text-gray-400">الجلسة القادمة: {formatGregorian(h.nextHearingDate)}{h.nextHearingTime && <> · الساعة <bdi dir="ltr">{h.nextHearingTime}</bdi></>}</span>
         )}
       </div>
     </div>

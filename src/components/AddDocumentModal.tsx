@@ -5,6 +5,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Loader2, Sparkles, Upload, AlertCircle, FileSignature } from "lucide-react";
+import { PickedFileChip } from "./AttachmentPicker";
 import { auth } from "../lib/firebase";
 import { createContractFromDocument } from "../lib/contractFromDocument";
 import { usePermissions } from "../lib/usePermissions";
@@ -359,16 +360,21 @@ export function AddDocumentModal({ isOpen, onClose, onSuccess, caseId, clientId,
 
           <div className="space-y-2 p-4 bg-gray-50 border border-dashed rounded-lg">
             <label className="text-sm font-bold text-ink">ملف المستند</label>
-            <Input
-              type="file"
-              accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-              onChange={handleFileChange}
-            />
+            {selectedFile ? (
+              <PickedFileChip
+                file={selectedFile}
+                label={`${(selectedFile.size / 1024).toFixed(0)} KB`}
+                onRemove={() => { setSelectedFile(null); setExtractedText(""); }}
+              />
+            ) : (
+              <Input
+                type="file"
+                accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                onChange={handleFileChange}
+              />
+            )}
             {selectedFile && (
               <div className="mt-3 flex flex-col items-center gap-2">
-                <p className="text-xs text-gray-500">
-                  {selectedFile.name} — {(selectedFile.size / 1024).toFixed(0)} KB
-                </p>
                 {selectedFile.type.startsWith('image/') && (
                    <div className="relative w-full max-h-48 overflow-hidden rounded-md border">
                       <img 

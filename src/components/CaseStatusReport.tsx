@@ -15,7 +15,7 @@ import { callGemini, callGroq, readAiSettings } from "../lib/aiProxy";
 import { formatGregorian } from "../lib/calendar";
 import { clientRoleLabelOf, clientRoleOf } from "../lib/clientRole";
 import { caseTypeLabel, isExecutionCase as isExecutionType } from "../lib/caseTypes";
-import { executionDetailsOf, executionRequestLabel, formatMoney, remainingAmount } from "../lib/execution";
+import { executionDetailsOf, executionRequestLabel, executionTextFieldFor, formatMoney, remainingAmount } from "../lib/execution";
 import { assignedLawyersLabel } from "../lib/assignedLawyers";
 import { COURT_DEGREE_LABELS_AR, REQUEST_STATUS_LABELS_AR, isOpenRequest, type CaseRequest } from "../lib/caseRequests";
 import { renderMemoLetterheadFooter, renderMemoLetterheadHeader } from "../lib/letterhead";
@@ -203,11 +203,11 @@ export function renderCaseReportHtml({ data, profile, stampUrl, audience, aiHtml
                 <div style="font-size:10.5pt; color:#111827; line-height:1.7; white-space:pre-wrap;">${esc(text) || "—"}</div>
               </div>
             </td>`;
-          return `${d.judgmentText || d.requestContent ? `
-          ${sectionTitle("منطوق الحكم ومضمون الطلب")}
+          const text = executionTextFieldFor(data.enforcementRequestType);
+          return `${d[text.key] ? `
+          ${sectionTitle(text.label)}
           <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr>
-            ${textCell("منطوق الحكم", d.judgmentText)}
-            ${textCell("مضمون الطلب", d.requestContent)}
+            ${textCell(text.label, d[text.key]).replace("width:50%", "width:100%")}
           </tr></table>` : ""}
           ${sectionTitle("المبالغ المالية")}
           <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr>

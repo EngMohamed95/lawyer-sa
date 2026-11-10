@@ -10,6 +10,7 @@ import { clientRoleLabelOf, clientRoleOf, partyLabels } from "../lib/clientRole"
 import { assignedLawyersLabel } from "../lib/assignedLawyers";
 import {
   enforcementProgressOf, executionDetailsOf, executionStatusOf, formatMoney, remainingAmount,
+  executionTextFieldFor,
 } from "../lib/execution";
 
 function Section({ icon, title, onEdit, className = "", children }: {
@@ -63,6 +64,7 @@ export default function ExecutionRequestView({ caseData: c, onEdit, attachments 
   attachments?: ReactNode;
 }) {
   const d = executionDetailsOf(c);
+  const text = executionTextFieldFor(c.enforcementRequestType);
   const remaining = remainingAmount(d);
   const status = executionStatusOf(c);
   const progress = enforcementProgressOf(c);
@@ -110,7 +112,7 @@ export default function ExecutionRequestView({ caseData: c, onEdit, attachments 
           </dl>
         </Section>
 
-        <Section icon={<UsersRound size={16} />} title="أطراف الطلب" onEdit={onEdit}>
+        <Section icon={<UsersRound size={16} />} title="أطراف التنفيذ" onEdit={onEdit}>
           <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="العميل">{c.client?.fullName}</Field>
             <Field label="صفة العميل في الطلب">{clientRoleLabelOf(c)}</Field>
@@ -127,12 +129,8 @@ export default function ExecutionRequestView({ caseData: c, onEdit, attachments 
           </dl>
         </Section>
 
-        <Section icon={<Gavel size={16} />} title="منطوق الحكم" onEdit={onEdit}>
-          <TextBlock empty="لم يُكتب منطوق الحكم بعد.">{d.judgmentText}</TextBlock>
-        </Section>
-
-        <Section icon={<FileText size={16} />} title="مضمون الطلب" onEdit={onEdit}>
-          <TextBlock empty="لم يُكتب مضمون الطلب بعد.">{d.requestContent}</TextBlock>
+        <Section icon={text.key === "judgmentText" ? <Gavel size={16} /> : <FileText size={16} />} title={text.label} onEdit={onEdit} className="xl:col-span-2">
+          <TextBlock empty={`لم يُكتب ${text.label} بعد.`}>{d[text.key]}</TextBlock>
         </Section>
 
         <Section icon={<Banknote size={16} />} title="المبالغ المالية" onEdit={onEdit}>

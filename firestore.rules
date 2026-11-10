@@ -293,6 +293,53 @@ service cloud.firestore {
       allow delete: if canDelete();
     }
 
+    /* ────────────────────── المكتبة القانونية الشخصية ────────────────────── */
+
+    /**
+     * محفظة خاصة بكل مستخدم: الأنظمة والقرارات والتعاميم والأوامر السامية.
+     * لا يقرأها ولا يعدّلها إلا صاحبها (ownerId) — حتى مدير المكتب ومدير المنصة.
+     */
+    function validLibraryFile(f, owner) {
+      return f == null || (
+        f.keys().hasOnly(['path', 'name', 'size', 'contentType'])
+        && f.path is string && f.path.matches('legalLibrary/' + owner + '/[A-Za-z0-9-]+')
+        && f.name is string && f.name.size() > 0 && f.name.size() <= 200
+        && f.size is int && f.size > 0 && f.size <= 52428800
+        && f.contentType in ['application/pdf', 'application/msword',
+                             'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+      );
+    }
+
+    function validLibraryItem(d) {
+      return d.keys().hasOnly(['type', 'title', 'number', 'issueDate', 'issuer', 'summary',
+                               'content', 'sourceUrl', 'file', 'ownerId', 'createdAt', 'updatedAt'])
+        && validLibraryFile(d.get('file', null), d.ownerId)
+        && d.type in ['REGULATION', 'DECISION', 'CIRCULAR', 'ROYAL_ORDER']
+        && d.title is string && d.title.size() > 0 && d.title.size() <= 300
+        && d.get('number', '') is string && d.get('number', '').size() <= 100
+        && d.get('issueDate', '') is string && d.get('issueDate', '').size() <= 50
+        && d.get('issuer', '') is string && d.get('issuer', '').size() <= 200
+        && d.get('summary', '') is string && d.get('summary', '').size() <= 2000
+        && d.get('content', '') is string && d.get('content', '').size() <= 300000
+        && d.get('sourceUrl', '') is string && d.get('sourceUrl', '').size() <= 1000;
+    }
+
+    match /legal_library/{id} {
+      allow get, list: if member() && resource.data.ownerId == request.auth.uid;
+      allow create: if member()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && validLibraryItem(request.resource.data);
+      allow update: if member()
+        && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time
+        && validLibraryItem(request.resource.data);
+      allow delete: if member() && resource.data.ownerId == request.auth.uid;
+    }
+
     match /office_settings/{id} {
       allow get, list: if canRead();
       // إعدادات المكتب: التعديل لمدير المكتب وحده

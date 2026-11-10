@@ -177,11 +177,11 @@ export default function HearingDetails() {
         <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <InfoField
             label="تاريخ الجلسة"
-            value={hearing.hearingDate ? new Date(hearing.hearingDate).toLocaleDateString("ar-EG", { day: "numeric", month: "long", year: "numeric" }) : undefined}
+            value={hearing.hearingDate ? new Date(hearing.hearingDate).toLocaleDateString("ar-EG", { day: "numeric", month: "long", year: "numeric" }) + (hearing.hearingTime ? ` — الساعة ${hearing.hearingTime}` : "") : undefined}
           />
           <InfoField
             label="تاريخ الجلسة القادمة"
-            value={hearing.nextHearingDate ? new Date(hearing.nextHearingDate).toLocaleDateString("ar-EG", { day: "numeric", month: "long", year: "numeric" }) : undefined}
+            value={hearing.nextHearingDate ? new Date(hearing.nextHearingDate).toLocaleDateString("ar-EG", { day: "numeric", month: "long", year: "numeric" }) + (hearing.nextHearingTime ? ` — الساعة ${hearing.nextHearingTime}` : "") : undefined}
           />
           <InfoField label="المحكمة / الغرفة" value={hearing.court} />
           <InfoField label="الدائرة / الرول" value={hearing.circuit} />

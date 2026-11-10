@@ -11,7 +11,7 @@ interface MinutesFile {
 
 interface HearingMinutesSectionProps {
   hearing: any;
-  onUpdated: (patch: Partial<{ minutesFiles: MinutesFile[] }>) => Promise<void>;
+  onUpdated: (patch: Partial<{ minutesFiles: MinutesFile[]; minutesFileUrl: string; minutesFileName: string }>) => Promise<void>;
 }
 
 export default function HearingMinutesSection({ hearing, onUpdated }: HearingMinutesSectionProps) {
@@ -60,9 +60,20 @@ export default function HearingMinutesSection({ hearing, onUpdated }: HearingMin
     }
   };
 
-  const handleRemove = async (id: string) => {
-    if (id === "legacy") return; // الملف القديم مرتبط بحقول الجلسة الأصلية، لا يُحذف من هنا
-    await onUpdated({ minutesFiles: minutesFiles.filter((f) => f.id !== id) });
+  const handleRemove = async (file: MinutesFile) => {
+    if (!confirm(`حذف «${file.name}» من محاضر الضبط؟`)) return;
+    setError(null);
+    try {
+      // الملف القديم محفوظ في حقلي الجلسة الأصليين — يُفرَّغان
+      await onUpdated(
+        file.id === "legacy"
+          ? { minutesFileUrl: "", minutesFileName: "" }
+          : { minutesFiles: minutesFiles.filter((f) => f.id !== file.id) },
+      );
+    } catch (err: any) {
+      console.error(err);
+      setError("تعذّر حذف الملف: " + err.message);
+    }
   };
 
   return (
@@ -85,16 +96,14 @@ export default function HearingMinutesSection({ hearing, onUpdated }: HearingMin
                   {f.name}
                 </a>
               </div>
-              {f.id !== "legacy" && (
-                <button
-                  type="button"
-                  onClick={() => handleRemove(f.id)}
-                  className="text-gray-400 hover:text-red-600 shrink-0"
-                  title="إزالة من القائمة"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => handleRemove(f)}
+                className="text-gray-400 hover:text-red-600 shrink-0"
+                title="حذف الملف"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
             </div>
           ))}
         </div>

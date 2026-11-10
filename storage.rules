@@ -22,5 +22,17 @@ service firebase.storage {
       allow delete: if member() && request.auth.uid == uploaderId;
       allow update: if false;
     }
+    // المكتبة القانونية الشخصية: مجلد كل مستخدم له وحده — لا مدير مكتب ولا مدير منصة
+    match /legalLibrary/{ownerId}/{fileId} {
+      allow read, delete: if member() && request.auth.uid == ownerId;
+      allow create: if member() && request.auth.uid == ownerId
+        && request.resource.size > 0 && request.resource.size <= 52428800
+        && request.resource.contentType in [
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ];
+      allow update: if false;
+    }
   }
 }
