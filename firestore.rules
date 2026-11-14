@@ -393,6 +393,14 @@ service cloud.firestore {
       allow delete: if canDelete();
     }
 
+    // المذكرات العامة من صفحة «كتابة مذكرة» — غير مرتبطة بقضية
+    match /general_memos/{id} {
+      allow get, list: if canRead();
+      allow create: if canCreate();
+      allow update: if canUpdate();
+      allow delete: if canDelete();
+    }
+
     /* ────────────────────────── السجلات غير القابلة للتعديل ────────────────────────── */
 
     // سجل التدقيق لا يُعدَّل ولا يُحذف — وإلا فقد قيمته كدليل (الوثيقة §خامساً)

@@ -203,7 +203,9 @@ export default function MemoAiPanel({ caseData, memoTypeLabel, editorHtml, brief
   const listRef = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const caseContext = () => `بيانات القضية:
+  const caseContext = () => !caseData
+    ? `مذكرة عامة غير مرتبطة بقضية مسجلة.${brief.trim() ? `\n- مختصر ما يريده المحامي من هذه المذكرة: ${brief.trim()}` : ""}`
+    : `بيانات القضية:
 - العنوان: ${caseData?.title || "-"}
 - الرقم: ${caseData?.caseNumber || "-"}
 - المحكمة: ${caseData?.courtName || "-"} / الدائرة: ${caseData?.courtCircle || "-"}

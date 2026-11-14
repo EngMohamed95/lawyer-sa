@@ -14,6 +14,8 @@ interface RichTextEditorProps {
   /** ترويسة وتذييل HTML تُعرض داخل الورقة للمعاينة فقط — لا تُحرَّر ولا تدخل في value */
   headerHtml?: string;
   footerHtml?: string;
+  /** يمتدّ المحرر ليملأ ارتفاع الحاوية الأم (الورقة تطول حتى أسفلها) */
+  fill?: boolean;
 }
 
 const FONTS = [
@@ -86,7 +88,7 @@ const extractContent = (html: string) => {
   return html;
 };
 
-export default function RichTextEditor({ value, onChange, placeholder, headerHtml, footerHtml }: RichTextEditorProps) {
+export default function RichTextEditor({ value, onChange, placeholder, headerHtml, footerHtml, fill = false }: RichTextEditorProps) {
   const framed = !!(headerHtml || footerHtml);
   const editorRef = useRef<HTMLDivElement>(null);
   const [borderStyle, setBorderStyle] = useState<'none' | 'solid' | 'double' | 'gold'>('none');
@@ -178,7 +180,7 @@ export default function RichTextEditor({ value, onChange, placeholder, headerHtm
   };
 
   return (
-    <div className="border border-gray-200 rounded-3xl overflow-hidden bg-surface shadow-sm focus-within:ring-2 focus-within:ring-edge/10 transition-all font-sans" dir="rtl">
+    <div className={`border border-gray-200 rounded-3xl overflow-hidden bg-surface shadow-sm focus-within:ring-2 focus-within:ring-edge/10 transition-all font-sans ${fill ? "flex flex-col h-full" : ""}`} dir="rtl">
       
       {/* Table Insertion Modal */}
       {showTableModal && (
@@ -470,10 +472,10 @@ export default function RichTextEditor({ value, onChange, placeholder, headerHtm
       </div>
 
       {/* Page Canvas Container with Borders Applied */}
-      <div className="p-4 bg-gray-50/30 overflow-x-auto min-h-[550px]">
+      <div className={`p-4 bg-gray-50/30 overflow-x-auto min-h-[550px] ${fill ? "flex-1 flex flex-col" : ""}`}>
         {/* مع ترويسة/تذييل: الإطار يلفّ الورقة كلها بلا حشوة، والحشوة على منطقة الكتابة فقط.
             بدونهما: السلوك الأصلي كما هو (الإطار والحشوة على منطقة الكتابة) */}
-        <div className={framed ? `los-paper bg-surface rounded-2xl shadow-sm overflow-hidden ${getBorderClassName(borderStyle).replace(/\bp-8\b/, "")}` : ""}>
+        <div className={`${framed ? `los-paper bg-surface rounded-2xl shadow-sm overflow-hidden ${getBorderClassName(borderStyle).replace(/\bp-8\b/, "")}` : ""} ${fill ? "flex-1 flex flex-col" : ""}`}>
           {/* الترويسة — للمعاينة فقط، خارج المنطقة القابلة للتحرير */}
           {headerHtml && <div className="select-none" contentEditable={false} dangerouslySetInnerHTML={{ __html: headerHtml }} />}
 
@@ -482,7 +484,7 @@ export default function RichTextEditor({ value, onChange, placeholder, headerHtm
             ref={editorRef}
             contentEditable
             onInput={handleInput}
-            className={`${framed ? "min-h-[420px] px-9 py-6" : `min-h-[500px] rounded-2xl shadow-sm ${getBorderClassName(borderStyle)}`} los-paper outline-none focus:outline-none bg-surface text-sm leading-relaxed text-gray-800 dir-rtl prose prose-slate max-w-none transition-all duration-300`}
+            className={`${fill ? "flex-1" : ""} ${framed ? "min-h-[420px] px-9 py-6" : `min-h-[500px] rounded-2xl shadow-sm ${getBorderClassName(borderStyle)}`} los-paper outline-none focus:outline-none bg-surface text-sm leading-relaxed text-gray-800 dir-rtl prose prose-slate max-w-none transition-all duration-300`}
             // div لا يقبل السمة placeholder — الصيغة الصحيحة لمحرّر contentEditable هي data-placeholder
             data-placeholder={placeholder}
             style={{ direction: 'rtl', textAlign: 'right', fontFamily: "'Tajawal', sans-serif" }}

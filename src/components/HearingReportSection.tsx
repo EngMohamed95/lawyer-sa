@@ -225,21 +225,22 @@ ${brief.trim() ? `\nمختصر ما يريده المحامي من هذا الت
     return (
       <div className="space-y-6" dir="rtl">
         {/* يمين: بيانات التقرير والمرفقات والمساعد الذكي — يسار: صفحة المحرر بترويسة المكتب (على الجوال المحرر أولاً) */}
-        <div className="grid grid-cols-1 lg:grid-cols-[22rem_minmax(0,1fr)] gap-5 items-start">
-          <div className="rounded-2xl bg-gray-100 border border-gray-200 p-3 sm:p-6 lg:order-last">
+        <div className="grid grid-cols-1 lg:grid-cols-[22rem_minmax(0,1fr)] gap-5 items-start lg:items-stretch">
+          <div className="rounded-2xl bg-gray-100 border border-gray-200 p-3 sm:p-6 lg:order-last lg:flex lg:flex-col">
             {!office.officeProfile.name && (
               <div className="mx-auto max-w-[850px] mb-3 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 <Info size={14} className="shrink-0" />
                 الترويسة تعرض بيانات افتراضية — أكمل اسم المكتب وشعاره وهواتفه من الإعدادات ← مطبوعات المكتب.
               </div>
             )}
-            <div className="mx-auto max-w-[850px] bg-surface shadow-md">
+            <div className="mx-auto w-full max-w-[850px] bg-surface shadow-md lg:flex-1 lg:flex lg:flex-col">
               <RichTextEditor
                 value={html}
                 onChange={setHtml}
                 placeholder="اكتب التقرير هنا أو اطلب صياغته من المساعد الذكي..."
                 headerHtml={renderMemoLetterheadHeader(office.officeProfile) + reportInfoHtml(currentTitle)}
                 footerHtml={renderMemoLetterheadFooter(office.officeProfile)}
+                fill
               />
             </div>
           </div>

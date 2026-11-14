@@ -14,6 +14,15 @@ export function buildMemoPrompt(type: string, customData: any, brief = ""): stri
   const caseSubject = customData?.caseSubject || 'نزاع قضائي';
   const caseSummary = customData?.summary || 'نزاع قضائي بين الطرفين';
 
+  // مذكرة عامة بلا قضية (صفحة «كتابة مذكرة») — الوقائع من المختصر والمرفقات فقط
+  if (!customData) {
+    let general = `أنت مستشار قانوني ومحامٍ خبير في الأنظمة واللوائح القضائية السعودية والعربية.
+وظيفتك هي صياغة مسودة قانونية بأسلوب احترافي ورصين.
+هذه مذكرة عامة غير مرتبطة بقضية مسجلة؛ استخرج الأطراف والوقائع والمحكمة من مختصر المحامي والمرفقات، واترك ما لم يُذكر فراغاً منقطاً (..........) دون اختلاق.`;
+    if (brief.trim()) general += `\n- مختصر ما يريده المحامي من هذه المذكرة (التزم به): ${brief.trim()}`;
+    return general + typeInstructions(type);
+  }
+
   let prompt = `أنت مستشار قانوني ومحامٍ خبير في الأنظمة واللوائح القضائية السعودية والعربية.
 وظيفتك هي صياغة مسودة قانونية بأسلوب احترافي ورصين.
 بيانات القضية الحالية:
@@ -26,7 +35,12 @@ export function buildMemoPrompt(type: string, customData: any, brief = ""): stri
 - موضوع القضية العام: ${caseSubject}
 - ملخص القضية: ${caseSummary}`;
   if (brief.trim()) prompt += `\n- مختصر ما يريده المحامي من هذه المذكرة (التزم به): ${brief.trim()}`;
+  return prompt + typeInstructions(type);
+}
 
+/** توجيهات الصياغة الخاصة بكل نوع مذكرة */
+function typeInstructions(type: string): string {
+  let prompt = "";
   if (type === "LAWSUIT") {
     prompt += `\nالمطلوب: صياغة "صحيفة دعوى" (مذكرة ادعاء) مفصلة واحترافية.
 توجيهات الصياغة لصحيفة الدعوى:
