@@ -83,7 +83,7 @@ export default function PlatformAiSettingsTab() {
           value={draft.provider}
           onChange={(e) => {
             const provider = e.target.value as PlatformAiSettings["provider"];
-            const model = provider === "GROQ" ? "llama-3.3-70b-versatile" : "gemini-flash-latest";
+            const model = provider === "GROQ" ? "llama-3.3-70b-versatile" : "gemini-flash-lite-latest";
             setDraft((d) => ({ ...d, provider, model }));
           }}
           className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-edge"
@@ -102,7 +102,8 @@ export default function PlatformAiSettingsTab() {
         >
           {draft.provider === "GEMINI" ? (
             <>
-              <option value="gemini-flash-latest">Gemini Flash (الافتراضي السريع والمجاني - مستحسن)</option>
+              <option value="gemini-flash-lite-latest">Gemini Flash Lite (الافتراضي — الأسرع والأثبت، مستحسن)</option>
+              <option value="gemini-flash-latest">Gemini Flash (قد يتأخر حالياً)</option>
               <option value="gemini-pro-latest">Gemini Pro (التحليل الذكي والعميق)</option>
               <option value="gemini-3.5-flash">Gemini 3.5 Flash (إصدار حديث وسريع)</option>
               <option value="gemini-3.6-flash">Gemini 3.6 Flash (آخر إصدار مستقر)</option>

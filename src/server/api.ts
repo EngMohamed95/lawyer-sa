@@ -136,7 +136,7 @@ router.post("/ai/generate", rateLimit(20), async (req, res) => {
         return res.status(400).json({ error: "محتوى الطلب مفقود." });
       }
 
-      const modelName = typeof model === "string" && model ? model : "gemini-flash-latest";
+      const modelName = typeof model === "string" && model ? model : "gemini-flash-lite-latest";
       const baseConfig = generationConfig ?? { temperature: 0.7, maxOutputTokens: 2048 };
       // نفس ما في ai-proxy.php: حدّ «التفكير» يُبقي الصياغة الطويلة سريعة، ويُعاد بدونه إن رُفض
       const withThinking = baseConfig.thinkingConfig ? baseConfig : { ...baseConfig, thinkingConfig: { thinkingBudget: 1024 } };

@@ -28,7 +28,8 @@ export interface PlatformAiSettings {
 
 export const DEFAULT_PLATFORM_AI_SETTINGS: PlatformAiSettings = {
   provider: "GEMINI",
-  model: "gemini-flash-latest",
+  // gemini-flash-latest صار يعلّق عند Google (لا يرد قبل مهلة الاستضافة) — الخفيف يرد في ثوانٍ
+  model: "gemini-flash-lite-latest",
   aiAnalysisEnabled: true,
   aiDraftingEnabled: true,
   aiRisksEnabled: true,
@@ -37,7 +38,7 @@ export const DEFAULT_PLATFORM_AI_SETTINGS: PlatformAiSettings = {
 function sanitize(raw: unknown): PlatformAiSettings {
   const src = (raw && typeof raw === "object") ? (raw as Partial<PlatformAiSettings>) : {};
   const provider: AiProvider = src.provider === "GROQ" ? "GROQ" : "GEMINI";
-  const defaultModel = provider === "GROQ" ? "llama-3.3-70b-versatile" : "gemini-flash-latest";
+  const defaultModel = provider === "GROQ" ? "llama-3.3-70b-versatile" : "gemini-flash-lite-latest";
   return {
     provider,
     model: typeof src.model === "string" && src.model ? src.model : defaultModel,

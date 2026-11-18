@@ -24,6 +24,9 @@ const MAX_BODY_BYTES = 20 * 1024 * 1024;
 const GEMINI_FALLBACK_MODELS = ['gemini-flash-lite-latest', 'gemini-3.5-flash'];
 /** حد «التفكير» قبل الكتابة — يكفي لصياغة قانونية منظمة ويُبقي الرد خلال ثوانٍ معدودة */
 const THINKING_BUDGET = 1024;
+/** ميزانية الطلب كله (أقل من مهلة الاستضافة ~120 ث) ومهلة المحاولة الواحدة قبل الانتقال للبديل */
+const AI_TOTAL_BUDGET_SECONDS = 105;
+const AI_FIRST_ATTEMPT_SECONDS = 45;
 const CERTS_URL ='https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com';
 
 /** $code يميّز الأخطاء للواجهة: RATE_LIMIT · OFFICE_QUOTA · PLATFORM_UNAVAILABLE · PROVIDER_BUSY */
@@ -68,7 +71,7 @@ function keepalive_tick(float $startedAt, float &$lastPing): void {
 }
 
 /** طلب HTTP يرجع [الحالة, الترويسات, الجسم] — curl إن وُجد، وإلا streams */
-function http_request(string $method, string $url, array $headers = [], ?string $body = null, bool $keepalive = false): array {
+function http_request(string $method, string $url, array $headers = [], ?string $body = null, bool $keepalive = false, int $timeout = 0): array {
     if (function_exists('curl_init')) {
         $ch = curl_init($url);
         $respHeaders = [];
@@ -76,7 +79,7 @@ function http_request(string $method, string $url, array $headers = [], ?string 
             CURLOPT_CUSTOMREQUEST => $method,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_TIMEOUT => $keepalive ? 170 : 120,
+            CURLOPT_TIMEOUT => $timeout > 0 ? $timeout : ($keepalive ? 170 : 120),
             CURLOPT_CONNECTTIMEOUT => 15,
             CURLOPT_HEADERFUNCTION => function ($ch, $line) use (&$respHeaders) {
                 $parts = explode(':', $line, 2);
@@ -395,7 +398,7 @@ if ($provider === 'GEMINI') {
     if ($key === '') fail(501, 'مفتاح الذكاء الاصطناعي غير مضبوط على الخادم.');
     $contents = $req['contents'] ?? null;
     if (!is_array($contents) || !$contents) fail(400, 'محتوى الطلب مفقود.');
-    $modelName = is_string($model) && $model !== '' ? $model : 'gemini-flash-latest';
+    $modelName = is_string($model) && $model !== '' ? $model : 'gemini-flash-lite-latest';
     if (!preg_match('/^[A-Za-z0-9._-]{1,80}$/', $modelName)) fail(400, 'اسم النموذج غير صالح.');
     $generationConfig = is_array($req['generationConfig'] ?? null) ? $req['generationConfig'] : ['temperature' => 0.7, 'maxOutputTokens' => 2048];
     @set_time_limit(0);
@@ -409,17 +412,25 @@ if ($provider === 'GEMINI') {
         return json_encode(['contents' => $contents, 'generationConfig' => $cfg], JSON_UNESCAPED_UNICODE);
     };
 
-    // ضغط مؤقت على نموذج Google (503/429/500) — نعيد المحاولة بنماذج احتياطية
+    // ضغط مؤقت على نموذج Google (503/429/500) أو تعليقه بلا رد — نعيد المحاولة بنماذج احتياطية.
+    // الاستضافة تقطع الطلب قرب 120 ثانية، فلكل محاولة مهلة من ميزانية إجمالية أقل منها:
+    // النموذج المعلَّق يُترك بعد AI_FIRST_ATTEMPT_SECONDS فيبقى وقت للبديل.
+    $deadline = time() + AI_TOTAL_BUDGET_SECONDS;
     $models = array_values(array_unique(array_merge([$modelName], GEMINI_FALLBACK_MODELS)));
     foreach ($models as $i => $m) {
         if ($i > 0) usleep(800000);
+        $left = $deadline - time();
+        if ($left < 10) break;
+        $isLast = $i === count($models) - 1;
+        $timeout = $isLast ? $left : min($left, AI_FIRST_ATTEMPT_SECONDS);
         $url = "https://generativelanguage.googleapis.com/v1beta/models/$m:generateContent";
         $headers = ['Content-Type: application/json', "x-goog-api-key: $key"];
-        [$status, , $body] = http_request('POST', $url, $headers, $payloadFor($withThinking), true);
+        [$status, , $body] = http_request('POST', $url, $headers, $payloadFor($withThinking), true, $timeout);
         if ($status === 400 && stripos($body, 'thinking') !== false) {
-            [$status, , $body] = http_request('POST', $url, $headers, $payloadFor($generationConfig), true);
+            [$status, , $body] = http_request('POST', $url, $headers, $payloadFor($generationConfig), true, max(10, min($timeout, $deadline - time())));
         }
-        if (!in_array($status, [429, 500, 503], true)) break;
+        // 0 = انتهت المهلة بلا رد · 404 = النموذج لم يعد متاحاً — كلاهما ينتقل للبديل
+        if (!in_array($status, [0, 404, 429, 500, 503], true)) break;
     }
     if ($status === 0 || json_decode($body) === null) {
         fail(504, 'استغرقت الصياغة وقتاً أطول من المسموح. أعد المحاولة، أو قلّل المرفقات أو اطلب جزءاً من المذكرة.');
