@@ -128,7 +128,7 @@ jobs:
 
       - name: Upload to Hostinger via FTP
         env:
-          FTP_HOST: ftp.lawyr-sa.smartcodix.com
+          FTP_HOST: ftp.mawazzen.com
           FTP_USER: ${{ secrets.HOSTINGER_USERNAME }}
           FTP_PASS: ${{ secrets.HOSTINGER_PASSWORD }}
         run: |
@@ -203,7 +203,7 @@ jobs:
 
       - name: Restart Node App
         env:
-          FTP_HOST: ftp.lawyr-sa.smartcodix.com
+          FTP_HOST: ftp.mawazzen.com
           FTP_USER: ${{ secrets.HOSTINGER_USERNAME }}
           FTP_PASS: ${{ secrets.HOSTINGER_PASSWORD }}
         run: |
@@ -219,7 +219,7 @@ jobs:
 
       - name: Verify Deployment
         env:
-          FTP_HOST: ftp.lawyr-sa.smartcodix.com
+          FTP_HOST: ftp.mawazzen.com
           FTP_USER: ${{ secrets.HOSTINGER_USERNAME }}
           FTP_PASS: ${{ secrets.HOSTINGER_PASSWORD }}
         # التحقق يتم عبر FTP لا HTTPS.

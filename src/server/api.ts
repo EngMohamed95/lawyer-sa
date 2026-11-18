@@ -484,7 +484,7 @@ router.post("/subscribe", async (req, res) => {
       `الهاتف: ${phone}\n` +
       `البريد: ${email}\n` +
       `الباقة: ${planName} (${amount} ج.م - ${billingText})\n` +
-      `رابط الإدارة: lawyers.smartcodix.com/app/subscriptions`;
+      `رابط الإدارة: mawazzen.com/app/subscriptions`;
 
     await sendWhatsAppNotification(msg);
 

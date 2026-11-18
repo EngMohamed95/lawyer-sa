@@ -33,7 +33,7 @@ const MAX_SENDS_PER_HOUR = 5;         // لكل حساب
 const MAX_SENDS_PER_IP_HOUR = 15;     // لكل عنوان IP
 const MAX_VERIFY_PER_IP_HOUR = 60;    // محاولات التأكيد لكل عنوان IP
 /** نطاق المرسل ثابت — لا نأخذه من ترويسة Host التي يتحكم بها الطالب */
-const DEFAULT_MAIL_DOMAIN = 'lawyr-sa.smartcodix.com';
+const DEFAULT_MAIL_DOMAIN = 'mawazzen.com';
 const DEFAULT_TRIAL_DAYS = 14;
 const DEFAULT_TRIAL_TIER = 'PROFESSIONAL';
 const MAX_BODY_BYTES = 20000;

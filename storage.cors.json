@@ -1,6 +1,6 @@
 [
   {
-    "origin": ["https://lawyr-sa.smartcodix.com"],
+    "origin": ["https://mawazzen.com", "https://www.mawazzen.com", "https://lawyr-sa.smartcodix.com"],
     "method": ["GET", "HEAD"],
     "responseHeader": ["Content-Type", "Content-Length", "Content-Disposition"],
     "maxAgeSeconds": 3600
