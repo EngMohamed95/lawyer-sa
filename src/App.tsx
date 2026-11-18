@@ -6,7 +6,7 @@ import { db } from "./lib/firebase";
 import { usePermissions } from "./lib/usePermissions";
 import { generateNotifications, loadPreferences, shouldAutoScan } from "./lib/notifications";
 import { clearLocalSession, useAuthSession } from "./lib/useAuthSession";
-import { loadOfficeSettings } from "./lib/officeSettings";
+import { loadOfficeSettings, useOfficeSettings } from "./lib/officeSettings";
 import { loadOfficeLookups } from "./lib/officeLookups";
 import { loadPlatformAiSettings } from "./lib/platformSettings";
 import { roleLabel } from "./lib/roles";
@@ -429,6 +429,8 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
   const userId = localStorage.getItem("userId");
   // كان يعرض "متدرب" لأي دور غير الثلاثة المعروفة — وهو خطأ مع الأدوار الجديدة
   const roleName = roleLabel(userRole);
+  // شعار المكتب في منتصف الشريط العلوي — من إعدادات المكتب المحمّلة في Layout
+  const { officeProfile } = useOfficeSettings();
 
   interface NotificationAlert {
     id: string;
@@ -675,12 +677,25 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
   }, [lawyerId]);
 
   return (
-    <header className="h-16 bg-surface border-b border-gray-200 flex items-center justify-between px-4 md:px-6 sticky top-0 z-30 shadow-sm">
+    <header className="relative h-16 bg-surface border-b border-gray-200 flex items-center justify-between px-4 md:px-6 sticky top-0 z-30 shadow-sm">
       <div className="flex items-center gap-4">
         <button onClick={onMenuOpen} className="md:hidden text-ink hover:text-gray-700 p-1">
           <Menu size={24} />
         </button>
       </div>
+      {userRole !== "SUPER_ADMIN" && (officeProfile.logoUrl || officeProfile.name) && (
+        <Link
+          to="/app/dashboard"
+          title={officeProfile.name || "الرئيسية"}
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center max-w-[38vw] md:max-w-xs"
+        >
+          {officeProfile.logoUrl ? (
+            <img src={officeProfile.logoUrl} alt={officeProfile.name || "شعار المكتب"} className="h-10 md:h-11 w-auto max-w-full object-contain" />
+          ) : (
+            <span className="truncate font-bold text-ink text-sm md:text-base">{officeProfile.name}</span>
+          )}
+        </Link>
+      )}
       <div className="flex items-center gap-2 md:gap-4">
         <ThemeSwitch />
         <div className="relative">
