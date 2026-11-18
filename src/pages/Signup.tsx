@@ -113,7 +113,9 @@ const latinDigits = (v: string) =>
  * المختار، أو رقماً دولياً كاملاً يبدأ بـ + أو 00 أو بالمفتاح نفسه. "" إن لم يكن صالحاً.
  */
 function fullPhone(phone: string, dialCode: string): string {
-  const raw = latinDigits(phone).replace(/[\s\-()]/g, "");
+  // أي شيء غير الأرقام و+ يُحذف — ومنه علامات الاتجاه المخفية (U+200E ...) التي تلتصق بالرقم
+  // عند نسخه من جهات الاتصال أو واتساب على الجوال، فيبدو الرقم سليماً ويُرفض
+  const raw = latinDigits(phone).replace(/[^\d+]/g, "");
   let digits: string;
   if (/^\+\d+$/.test(raw)) digits = raw.slice(1);
   else if (/^00\d+$/.test(raw)) digits = raw.slice(2);
@@ -435,7 +437,7 @@ export default function Signup() {
                     <span className="relative block flex-1 min-w-0">
                       <Phone size={18} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                       <input id="signup-phone" className={inputClass} type="tel" inputMode="tel" value={form.phone}
-                        onChange={(e) => setField("phone", latinDigits(e.target.value))}
+                        onChange={(e) => setField("phone", latinDigits(e.target.value).replace(/[^\d+\s()-]/g, ""))}
                         placeholder={form.dialCode === "966" ? "05xxxxxxxx" : form.dialCode === "20" ? "01xxxxxxxxx" : "رقم الجوال"}
                         autoComplete="tel-national" required />
                     </span>
