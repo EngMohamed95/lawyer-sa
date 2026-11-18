@@ -37,6 +37,7 @@ export default function Reports() {
         tasksQ = query(collection(db, "tasks"), where("lawyerId", "==", lawyerId));
         clientsQ = query(collection(db, "clients"), where("lawyerId", "==", lawyerId));
         expensesQ = query(collection(db, "expenses"), where("lawyerId", "==", lawyerId));
+        usersQ = query(collection(db, "users"), where("lawyerId", "==", lawyerId));
       }
 
       const [casesSnap, paymentsSnap, tasksSnap, clientsSnap, expensesSnap, usersSnap] = await Promise.all([

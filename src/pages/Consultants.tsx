@@ -10,6 +10,8 @@ import type { Query, DocumentData } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
 export default function Consultants() {
+  // إضافة أعضاء الفريق وتعديلهم لمدير المكتب وحده — نفس قاعدة users في Firestore
+  const canManageStaff = ["LAWYER", "SUPER_ADMIN"].includes(localStorage.getItem("userRole") || "");
   const [consultants, setConsultants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -69,12 +71,14 @@ export default function Consultants() {
           <p className="text-gray-500 mt-1">إدارة المستشارين القانونيين بالمكتب وتعيين صلاحياتهم</p>
         </div>
         <div className="flex gap-2">
+          {canManageStaff && (
           <Button
             onClick={() => setIsAddModalOpen(true)}
             className="bg-navy hover:bg-navy/90 text-white shadow-lg shadow-navy/20"
           >
             <Plus className="ml-2 h-4 w-4" /> إضافة مستشار
           </Button>
+          )}
         </div>
       </div>
 
@@ -116,7 +120,7 @@ export default function Consultants() {
                       {c.createdAt ? new Date(c.createdAt).toLocaleDateString('ar-EG') : "-"}
                     </TableCell>
                     <TableCell className="text-center">
-                      <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800" onClick={() => setEditingConsultant(c)}>التفاصيل والتعديل</Button>
+                      {canManageStaff && <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800" onClick={() => setEditingConsultant(c)}>التفاصيل والتعديل</Button>}
                     </TableCell>
                   </TableRow>
                 ))

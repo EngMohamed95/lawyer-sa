@@ -40,8 +40,11 @@ export default function AddTraineeModal({ isOpen, onClose, onSuccess }: AddTrain
       const uid = userCredential.user.uid;
 
       // 2. Save trainee profile to Firestore using the Auth UID
+      // كلمة المرور لـ Firebase Auth وحده — لا تُحفظ نصاً في مستند يقرؤه الفريق
+      const profile: Record<string, unknown> = { ...formData };
+      delete profile.password;
       await setDoc(doc(db, "users", uid), {
-        ...formData,
+        ...profile,
         role: "TRAINEE",
         lawyerId,
         createdAt: new Date().toISOString()

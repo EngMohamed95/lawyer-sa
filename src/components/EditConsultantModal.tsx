@@ -36,12 +36,13 @@ export default function EditConsultantModal({ isOpen, onClose, onSuccess, consul
     setLoading(true);
 
     try {
-      const { doc, updateDoc } = await import("firebase/firestore");
+      const { doc, updateDoc, deleteField } = await import("firebase/firestore");
       const { db } = await import("../lib/firebase");
 
       const consultantRef = doc(db, "users", consultantData.id);
       await updateDoc(consultantRef, {
         ...formData,
+        password: deleteField(), // كانت تُحفظ نصاً — نمسحها من المستندات القديمة
         updatedAt: new Date().toISOString()
       });
 
@@ -113,22 +114,6 @@ export default function EditConsultantModal({ isOpen, onClose, onSuccess, consul
                 />
               </div>
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-semibold text-gray-700 block mr-1">كلمة المرور</label>
-            <div className="relative group">
-              <Lock className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-              <input
-                required
-                type="text"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full pr-12 pl-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-edge/10 focus:border-edge transition-all"
-                placeholder="••••••••"
-              />
-            </div>
-            <p className="text-[10px] text-amber-600 mr-2">* تغيير كلمة المرور هنا للتذكير فقط، يجب تحديثها في نظام التأمين إذا لزم الأمر.</p>
           </div>
 
           <div className="flex gap-3 pt-4">

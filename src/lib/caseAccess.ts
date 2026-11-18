@@ -8,8 +8,8 @@
  */
 
 import {
-  and, collection, or, query, where,
-  type DocumentData, type Query, type QueryCompositeFilterConstraint, type QueryConstraint,
+  and, collection, getDocs, or, query, where,
+  type DocumentData, type Query, type QueryDocumentSnapshot, type QueryCompositeFilterConstraint, type QueryConstraint,
   type QueryFieldFilterConstraint, type QueryNonFilterConstraint,
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -55,4 +55,20 @@ export function canSeeCase(c: { assignedLawyerId?: unknown; assignedLawyerIds?: 
   if (!isAssignedOnly(viewer.role)) return true;
   return c.assignedLawyerId === viewer.userId
     || (Array.isArray(c.assignedLawyerIds) && c.assignedLawyerIds.includes(viewer.userId));
+}
+
+/**
+ * مستندات القضايا المكلَّف بها المحامي، ومستندات عملاء تلك القضايا.
+ * المحامي لا يستعلم مستندات المكتب كله (collectionGroup) — القواعد تمنعه منها لأن
+ * فيها مستندات قضايا غير مكلَّف بها. نقرأ مجموعة documents تحت كل قضية/عميل مرئي.
+ */
+export async function assignedDocuments(
+  cases: { id: string; clientId?: unknown }[],
+): Promise<QueryDocumentSnapshot<DocumentData>[]> {
+  const clientIds = [...new Set(cases.map((c) => c.clientId).filter((id): id is string => typeof id === "string" && id !== ""))];
+  const snaps = await Promise.all([
+    ...cases.map((c) => getDocs(collection(db, "cases", c.id, "documents"))),
+    ...clientIds.map((id) => getDocs(collection(db, "clients", id, "documents"))),
+  ]);
+  return snaps.flatMap((s) => s.docs);
 }

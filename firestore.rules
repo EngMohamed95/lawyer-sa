@@ -51,8 +51,31 @@ service cloud.firestore {
         : request.auth.uid;
     }
 
+    function blockedStatus(st) {
+      return st in ['SUSPENDED', 'DISABLED'];
+    }
+
+    /**
+     * الحساب نشط: غير موقوف ولا معطَّل ولا محذوف من الفريق، ومكتبه نفسه غير معطَّل.
+     * (التطبيق يعطّل بـ DISABLED — كانت القاعدة تفحص SUSPENDED وحدها فيبقى المعطَّل يصل للبيانات)
+     */
     function notSuspended() {
-      return userExists() && userData().get('status', 'ACTIVE') != 'SUSPENDED';
+      return userExists()
+        && !blockedStatus(userData().get('status', 'ACTIVE'))
+        && userData().get('deletedAt', null) == null
+        && officeActive();
+    }
+
+    /** عضو الفريق يتبع حالة مالك مكتبه — تعطيل المكتب يقطع وصول فريقه كله */
+    function officeActive() {
+      let tenant = userData().get('lawyerId', request.auth.uid);
+      return userData().get('role', '') == 'SUPER_ADMIN' || tenant == request.auth.uid || tenant == 'ALL'
+        || !blockedStatus(get(/databases/$(database)/documents/users/$(tenant)).data.get('status', 'ACTIVE'));
+    }
+
+    /** عميل البوابة ليس من فريق المكتب — لا يصل لبيانات المكتب الداخلية */
+    function staff() {
+      return myRole() != 'CLIENT';
     }
 
     function isSuperAdmin() {
@@ -64,7 +87,7 @@ service cloud.firestore {
     }
 
     function member() {
-      return signedIn() && notSuspended();
+      return signedIn() && notSuspended() && staff();
     }
 
     /**
@@ -140,7 +163,9 @@ service cloud.firestore {
         resource.data.get('lawyerId', userId) == myTenant()
       );
 
-      allow list: if signedIn() && (isSuperAdmin() || isOfficeOwner());
+      // القائمة لفريق المكتب نفسه فقط — الاستعلام يجب أن يحدّد lawyerId == مكتبي.
+      // (كانت isOfficeOwner() وحدها، فكان أي مالك مكتب يستطيع سرد مستخدمي كل المكاتب)
+      allow list: if isSuperAdmin() || (member() && resource.data.get('lawyerId', '') == myTenant());
 
       allow create: if member() && (
         isSuperAdmin() ||
@@ -172,11 +197,16 @@ service cloud.firestore {
           request.resource.data.get('lawyerId', '') == resource.data.get('lawyerId', '') &&
           request.resource.data.get('plan', '')     == resource.data.get('plan', '') &&
           request.resource.data.get('status', '')   == resource.data.get('status', '') &&
+          request.resource.data.get('deletedAt', null) == resource.data.get('deletedAt', null) &&
           subscriptionFieldsUnchanged()
         )
       );
 
-      allow delete: if isSuperAdmin();
+      allow delete: if isSuperAdmin() || (
+        member() && isOfficeOwner() && userId != request.auth.uid &&
+        resource.data.get('lawyerId', '') == myTenant() &&
+        resource.data.get('role', '') in ['PARTNER', 'OFFICE_LAWYER', 'CONSULTANT', 'SECRETARY', 'ACCOUNTANT', 'TRAINEE', 'CLIENT']
+      );
     }
 
     /* ────────────────────────── طلبات الاشتراك ────────────────────────── */
@@ -215,13 +245,34 @@ service cloud.firestore {
 
       // الجلسات والمستندات والمذكرات والطلبات ترث حدود القضية الأم — ومنها التكليف
       match /{document=**} {
-        allow read, write: if member() && (
-          isSuperAdmin() || (
-            get(/databases/$(database)/documents/cases/$(caseId)).data.get('lawyerId', '') == myTenant() &&
-            caseAssignedToMe(get(/databases/$(database)/documents/cases/$(caseId)).data)
-          )
-        );
+        function parentCaseOk() {
+          let c = get(/databases/$(database)/documents/cases/$(caseId)).data;
+          return c.get('lawyerId', '') == myTenant() && caseAssignedToMe(c);
+        }
+        // المستند الجديد لا يحمل lawyerId مكتب آخر — وإلا ظهر في مستندات ذلك المكتب ومساعده
+        function incomingSameOffice() {
+          return request.resource.data.get('lawyerId', myTenant()) == myTenant();
+        }
+        allow read: if member() && (isSuperAdmin() || parentCaseOk());
+        allow create, update: if member() && (isSuperAdmin() || (parentCaseOk() && incomingSameOffice() && officeWritable()));
+        allow delete: if member() && (isSuperAdmin() || (parentCaseOk() && officeWritable()));
       }
+    }
+
+    /**
+     * استعلامات collectionGroup تحتاج قاعدة تبدأ بـ {path=**} — القواعد المتداخلة أعلاه لا تكفيها.
+     * الجلسات عبر كل القضايا: لمدير المنصة وحده (لوحة المنصة وصفحة الجلسات).
+     * المستندات عبر كل القضايا والعملاء: لكل مكتب مستنداته (lawyerId) — صفحة المستندات والمساعد.
+     */
+    match /{path=**}/hearings/{hearingId} {
+      allow read: if isSuperAdmin();
+    }
+
+    // المحامي المكلَّف (OFFICE_LAWYER) مستثنى: هذه القاعدة تنطبق أيضاً على cases/{id}/documents
+    // فكانت تتخطى شرط التكليف. يقرأ مستندات قضاياه من القاعدة المتداخلة (assignedDocuments).
+    match /{path=**}/documents/{documentId} {
+      allow read: if member() && (isSuperAdmin() ||
+        (myRole() != 'OFFICE_LAWYER' && resource.data.get('lawyerId', '') == myTenant()));
     }
 
     match /clients/{clientId} {
@@ -231,10 +282,13 @@ service cloud.firestore {
       allow delete: if canHardDelete();
 
       match /{document=**} {
-        allow read, write: if member() && (
-          isSuperAdmin() ||
-          get(/databases/$(database)/documents/clients/$(clientId)).data.get('lawyerId', '') == myTenant()
-        );
+        function parentClientOk() {
+          return get(/databases/$(database)/documents/clients/$(clientId)).data.get('lawyerId', '') == myTenant();
+        }
+        allow read: if member() && (isSuperAdmin() || parentClientOk());
+        allow create, update: if member() && (isSuperAdmin() || (parentClientOk()
+          && request.resource.data.get('lawyerId', myTenant()) == myTenant() && officeWritable()));
+        allow delete: if member() && (isSuperAdmin() || (parentClientOk() && officeWritable()));
       }
     }
 
@@ -313,15 +367,18 @@ service cloud.firestore {
       allow delete: if canDelete();
     }
 
+    // الإشعارات وتفضيلاتها تُقرأ بـ where userId == المستخدم — نسمح لصاحبها بقراءتها
     match /notifications/{id} {
-      allow get, list: if canRead();
+      allow get, list: if canRead() || (member() && resource.data.get('userId', '') == request.auth.uid
+        && resource.data.get('lawyerId', myTenant()) == myTenant());
       allow create: if canCreate();
       allow update: if canUpdate();
       allow delete: if canDelete();
     }
 
     match /notification_preferences/{id} {
-      allow get, list: if canRead();
+      allow get, list: if canRead() || (member() && resource.data.get('userId', '') == request.auth.uid
+        && resource.data.get('lawyerId', myTenant()) == myTenant());
       allow create: if canCreate();
       allow update: if canUpdate();
       allow delete: if canDelete();
@@ -331,7 +388,7 @@ service cloud.firestore {
 
     /**
      * محفظة خاصة بكل مستخدم: الأنظمة والقرارات والتعاميم والأوامر السامية.
-     * لا يقرأها ولا يعدّلها إلا صاحبها (ownerId) — حتى مدير المكتب ومدير المنصة.
+     * لا يقرأها ولا يعدّلها إلا صاحبها (ownerId) — ولا مدير المكتب. مدير المنصة يطّلع ويحذف فقط.
      */
     function validLibraryFile(f, owner) {
       return f == null || (
@@ -359,7 +416,7 @@ service cloud.firestore {
     }
 
     match /legal_library/{id} {
-      allow get, list: if member() && resource.data.ownerId == request.auth.uid;
+      allow get, list: if isSuperAdmin() || (member() && resource.data.ownerId == request.auth.uid);
       allow create: if member()
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.createdAt == request.time
@@ -371,11 +428,12 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.updatedAt == request.time
         && validLibraryItem(request.resource.data);
-      allow delete: if member() && resource.data.ownerId == request.auth.uid;
+      allow delete: if isSuperAdmin() || (member() && resource.data.ownerId == request.auth.uid);
     }
 
     match /office_settings/{id} {
-      allow get, list: if canRead();
+      allow get: if member() && (isSuperAdmin() || id == myTenant() || ownsExisting());
+      allow list: if canRead();
       // إعدادات المكتب: التعديل لمدير المكتب وحده
       allow create, update: if member() && (
         isSuperAdmin() || (isOfficeOwner() && ownsIncoming())
@@ -384,8 +442,10 @@ service cloud.firestore {
     }
 
     match /counters/{id} {
-      // عدّادات الترقيم التسلسلي — تُقرأ وتُكتب داخل معاملة من التطبيق
-      allow get: if canRead();
+      // عدّادات الترقيم التسلسلي — تُقرأ وتُكتب داخل معاملة من التطبيق.
+      // المعرّف {lawyerId}_{scope}_{year}: نسمح بقراءته قبل وجوده (أول فاتورة في السنة)
+      // بمطابقة بادئة المعرّف، لأن resource يكون null فلا يصلح ownsExisting().
+      allow get: if member() && (isSuperAdmin() || id.matches('^' + myTenant() + '_.+'));
       allow create, update: if canCreate();
       allow list, delete: if isSuperAdmin();
     }
@@ -440,14 +500,14 @@ service cloud.firestore {
     // سجل التدقيق لا يُعدَّل ولا يُحذف — وإلا فقد قيمته كدليل (الوثيقة §خامساً)
     match /auditLogs/{id} {
       allow get, list: if canRead();
-      allow create: if member() && ownsIncoming();
+      allow create: if member() && (isSuperAdmin() || ownsIncoming());
       allow update, delete: if false;
     }
 
     // سجل الوصول للمستندات السرية — نفس المنطق
     match /documents_access_log/{id} {
       allow get, list: if canRead();
-      allow create: if member() && ownsIncoming();
+      allow create: if member() && (isSuperAdmin() || ownsIncoming());
       allow update, delete: if false;
     }
 
@@ -565,6 +625,14 @@ service cloud.firestore {
       }
     }
 
+    /* ────────────────────────── إعدادات المنصة ────────────────────────── */
+
+    // يقرؤها كل مستخدم مسجّل (مزايا الذكاء الاصطناعي)، ويعدّلها مدير المنصة وحده
+    match /platform_settings/{id} {
+      allow read: if signedIn();
+      allow write: if isSuperAdmin();
+    }
+
     /* ────────────────────────── باقات الاشتراك ────────────────────────── */
 
     // أسعار وحدود عامة تُعرض لكل زائر (صفحة الاشتراك)، والتعديل لمدير المنصة وحده
@@ -575,15 +643,17 @@ service cloud.firestore {
 
     /* ────────────────────────── محادثات المساعد الذكي ────────────────────────── */
 
-    // كل محادثة ملك صاحبها وحده (userId = uid) — لا يراها زملاؤه في المكتب ولا مدير المنصة.
+    // كل محادثة ملك صاحبها (userId = uid) — لا يراها زملاؤه في المكتب. مدير المنصة يطّلع ويحذف فقط.
     // المساعد واحد على مستوى المنصة، لكن ذاكرة كل مستخدم (سجل محادثاته) معزولة عن غيره.
     // lawyerId يُثبَّت على مكتب المستخدم عند الإنشاء (مدير المنصة يحمل "ALL")، ولا يتغيّر المالك بعدها.
     match /ai_conversations/{id} {
+      // صاحبها، وفي مكتبه الحالي — عضو انتقل لمكتب آخر لا يرى محادثات مكتبه القديم
       function ownsConversation() {
-        return resource.data.get('userId', '') == request.auth.uid;
+        return resource.data.get('userId', '') == request.auth.uid
+          && (isSuperAdmin() || resource.data.get('lawyerId', myTenant()) == myTenant());
       }
 
-      allow get, list: if member() && ownsConversation();
+      allow get, list: if isSuperAdmin() || (member() && ownsConversation());
       allow create: if member()
         && request.resource.data.get('userId', '') == request.auth.uid
         && (request.resource.data.get('lawyerId', '') == myTenant() || isSuperAdmin())
@@ -593,7 +663,7 @@ service cloud.firestore {
         && request.resource.data.get('userId', '') == resource.data.get('userId', '')
         && request.resource.data.get('lawyerId', '') == resource.data.get('lawyerId', '')
         && request.resource.data.messages is list;
-      allow delete: if member() && ownsConversation();
+      allow delete: if isSuperAdmin() || (member() && ownsConversation());
     }
 
     /* ────────────────────────── استهلاك المساعد الذكي ────────────────────────── */

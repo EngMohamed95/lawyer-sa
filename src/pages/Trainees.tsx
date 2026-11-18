@@ -13,6 +13,8 @@ import type { Query, DocumentData } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
 export default function Trainees() {
+  // إضافة أعضاء الفريق وتعديلهم لمدير المكتب وحده — نفس قاعدة users في Firestore
+  const canManageStaff = ["LAWYER", "SUPER_ADMIN"].includes(localStorage.getItem("userRole") || "");
   const [data, setData] = useState<any>({ trainees: [], evaluations: [] });
   const [loading, setLoading] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -78,12 +80,14 @@ export default function Trainees() {
           <Button variant="outline" className="bg-surface">
             <Star className="ml-2 h-4 w-4 text-ink-2" /> إضافة تقييم
           </Button>
+          {canManageStaff && (
           <Button 
             onClick={() => setIsAddModalOpen(true)}
             className="bg-navy hover:bg-navy/90 text-white shadow-lg shadow-navy/20"
           >
             <Plus className="ml-2 h-4 w-4" /> إضافة متدرب
           </Button>
+          )}
         </div>
       </div>
 
@@ -131,7 +135,7 @@ export default function Trainees() {
                         {userRole === "SUPER_ADMIN" && <TableCell className="text-xs text-purple-600 hidden md:table-cell">{t.lawyerId || "غير محدد"}</TableCell>}
                         <TableCell className="hidden lg:table-cell">{t.supervisorName || "بدون مشرف"}</TableCell>
                         <TableCell className="text-center">
-                          <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800" onClick={() => setEditingTrainee(t)}>التفاصيل والتعديل</Button>
+                          {canManageStaff && <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-800" onClick={() => setEditingTrainee(t)}>التفاصيل والتعديل</Button>}
                         </TableCell>
                       </TableRow>
                     ))

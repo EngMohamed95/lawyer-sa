@@ -104,15 +104,16 @@ export async function purgePermanently(target: SoftDeleteTarget): Promise<boolea
   const snap = await getDoc(ref);
   if (!snap.exists()) return false;
 
+  // السجل بعد نجاح الحذف — لا نسجّل حذفاً رفضته الصلاحيات
+  await deleteDoc(ref);
+
   await writeAudit({
     action: "DELETE",
     entity: target.entity,
     entityId: target.path[target.path.length - 1],
     entityLabel: `${target.label ?? ""} (حذف نهائي)`,
     before: snap.data() as Record<string, unknown>,
-  });
-
-  await deleteDoc(ref);
+  }).catch((e) => console.error("تعذّر تسجيل الحذف النهائي:", e)); // الحذف تم — فشل السجل لا يُظهره فشلاً
   return true;
 }
 

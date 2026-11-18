@@ -36,7 +36,7 @@ export function clearLocalSession(): void {
   const keys = [
     "isAuthenticated", "userRole", "userId", "userName",
     "userEmail", "lawyerId", "userPlan",
-    "subscriptionExpiry", "officeBilling", "officeExpiry",
+    "subscriptionExpiry", "officeBilling", "officeExpiry", "officeSelfSignup",
   ];
   for (const k of keys) {
     try { localStorage.removeItem(k); } catch { /* تجاهل */ }

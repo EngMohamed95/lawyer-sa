@@ -21,7 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         mkdir($uploadDir, 0777, true);
     }
 
-    $fileName = time() . '_' . basename($file['name']);
+    // جزء عشوائي في الاسم — رفعان بنفس الاسم في نفس الثانية لا يتشاركان ملفاً واحداً
+    $fileName = time() . '_' . bin2hex(random_bytes(4)) . '_' . basename($file['name']);
     $targetPath = $uploadDir . $fileName;
 
     if (move_uploaded_file($file['tmp_name'], $targetPath)) {

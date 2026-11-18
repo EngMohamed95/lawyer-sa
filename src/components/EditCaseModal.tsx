@@ -66,16 +66,21 @@ export function EditCaseModal({
 
   const fetchClients = async () => {
     try {
-      const { collection, getDocs, query, orderBy } = await import("firebase/firestore");
+      const { collection, getDocs, query, where } = await import("firebase/firestore");
       const { db } = await import("../lib/firebase");
       const lawyerId = localStorage.getItem("lawyerId");
       const userRole = localStorage.getItem("userRole");
 
-      // Fetch all and filter in memory to avoid missing index errors
-      const q = query(collection(db, "clients"), orderBy("fullName", "asc"));
+      // عملاء المكتب وحده من قاعدة البيانات — لا نجلب عملاء كل المكاتب ثم نصفّيهم في المتصفح
+      const q = userRole === "SUPER_ADMIN"
+        ? collection(db, "clients")
+        : query(collection(db, "clients"), where("lawyerId", "==", lawyerId || ""));
       const snap = await getDocs(q);
       
-      const allClients = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // الترتيب بالاسم في الذاكرة — يغني عن فهرس مركّب (lawyerId + fullName)
+      const allClients = snap.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .sort((a: any, b: any) => String(a.fullName || "").localeCompare(String(b.fullName || ""), "ar"));
       const filtered = allClients.filter((c: any) => 
         userRole === "SUPER_ADMIN" || c.lawyerId === lawyerId
       );

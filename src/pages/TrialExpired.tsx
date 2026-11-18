@@ -9,7 +9,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { Hourglass, LogOut, RefreshCw, Loader2, Database } from "lucide-react";
 import { db } from "../lib/firebase";
 import { useAuthSession } from "../lib/useAuthSession";
-import { isTrialLocked, logout, refreshOfficeSubscription } from "../lib/session";
+import { isTrialLocked, logout, refreshOfficeSubscription, trialDeletionDate } from "../lib/session";
 import PlanPicker, { currencyForCountry, type PendingPlanRequest } from "../components/PlanPicker";
 
 interface OwnerDoc {
@@ -60,6 +60,10 @@ export default function TrialExpired() {
     }
   };
 
+  // الحذف التلقائي بعد مهلة الاحتفاظ (trial-cleanup.php) — طلب باقة معلّق يؤجله حتى مراجعته
+  const deleteAt = trialDeletionDate();
+  const daysToDelete = deleteAt ? Math.max(1, Math.ceil((deleteAt.getTime() - Date.now()) / 86400000)) : 0;
+
   const handleLogout = async () => {
     await logout();
     navigate("/login", { replace: true });
@@ -87,9 +91,20 @@ export default function TrialExpired() {
               ? "اختر باقة لمتابعة استخدام موازين. يُفعَّل اشتراكك بعد إتمام الدفع، وتعود لعملك من حيث توقفت."
               : "انتهت الفترة التجريبية لمكتبك. تواصل مع مدير المكتب لتفعيل الاشتراك ثم سجّل الدخول من جديد."}
           </p>
-          <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-1.5 text-sm text-emerald-700 dark:bg-emerald-500/10">
-            <Database size={15} /> كل بياناتك محفوظة ولن تُحذف
-          </p>
+          {deleteAt && deleteAt.getTime() > Date.now() ? (
+            <p className="mt-3 inline-flex flex-wrap items-center justify-center gap-2 rounded-2xl bg-red-50 px-4 py-2 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">
+              <Database size={15} /> بياناتك محفوظة حتى {deleteAt.toLocaleDateString("ar-EG", { day: "numeric", month: "long", year: "numeric" })}
+              ({daysToDelete} {daysToDelete === 1 ? "يوم" : "أيام"})، وبعدها تُحذف نهائياً إن لم يُفعَّل اشتراك
+            </p>
+          ) : deleteAt ? (
+            <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-amber-50 px-4 py-1.5 text-sm text-amber-700 dark:bg-amber-500/10">
+              <Database size={15} /> بياناتك مجدولة للحذف — اطلب باقة الآن لإيقافه
+            </p>
+          ) : (
+            <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-1.5 text-sm text-emerald-700 dark:bg-emerald-500/10">
+              <Database size={15} /> كل بياناتك محفوظة
+            </p>
+          )}
         </div>
 
         {isOwner && (

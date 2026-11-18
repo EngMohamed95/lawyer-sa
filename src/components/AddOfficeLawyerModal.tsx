@@ -40,8 +40,11 @@ export default function AddOfficeLawyerModal({ isOpen, onClose, onSuccess }: Add
       const uid = userCredential.user.uid;
 
       // 2. Save lawyer profile to Firestore using the Auth UID
+      // كلمة المرور لـ Firebase Auth وحده — لا تُحفظ نصاً في مستند يقرؤه الفريق
+      const profile: Record<string, unknown> = { ...formData };
+      delete profile.password;
       await setDoc(doc(db, "users", uid), {
-        ...formData,
+        ...profile,
         role: "OFFICE_LAWYER",
         lawyerId,
         createdAt: new Date().toISOString()

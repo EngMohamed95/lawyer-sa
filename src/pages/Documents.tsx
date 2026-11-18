@@ -25,7 +25,7 @@ import {
 } from "../lib/documentAcl";
 import { useOfficeLookups } from "../lib/officeLookups";
 import { downloadWordDoc } from "../lib/wordExport";
-import { visibleCasesQuery } from "../lib/caseAccess";
+import { visibleCasesQuery, assignedDocuments } from "../lib/caseAccess";
 
 type ViewMode = 'CLIENTS' | 'CASES' | 'DOCS';
 type HubTab = 'ARCHIVE' | 'WORD_GENERATOR' | 'EXCEL_IMPORTER';
@@ -464,7 +464,13 @@ export default function Documents({
     try {
       let casesQ: any = collection(db, "cases");
       let clientsQ: any = collection(db, "clients");
-      let docsQ: any = collectionGroup(db, "documents");
+      // مستندات المكتب وحده (يحتاج فهرس collection-group على documents.lawyerId)
+      // المحامي المكلَّف: مستندات قضاياه فقط تُقرأ بعد جلب القضايا (assignedDocuments)
+      const docsQ: any = userRole === "SUPER_ADMIN"
+        ? collectionGroup(db, "documents")
+        : userRole === "OFFICE_LAWYER"
+          ? null
+          : query(collectionGroup(db, "documents"), where("lawyerId", "==", lawyerId || ""));
       let foldersQ: any = collection(db, "template_folders");
       let customTemplatesQ: any = collection(db, "custom_templates");
 
@@ -482,7 +488,7 @@ export default function Documents({
       }
 
       const [docsSnap, casesSnap, clientsSnap, foldersSnap, customTemplatesSnap] = await Promise.all([
-        getDocs(docsQ),
+        docsQ ? getDocs(docsQ) : Promise.resolve(null),
         getDocs(casesQ),
         getDocs(clientsQ),
         getDocs(foldersQ),
@@ -496,7 +502,8 @@ export default function Documents({
         clients = clients.filter(cl => clientIds.has(cl.id));
       }
 
-      const documents = docsSnap.docs
+      const docSnaps = docsSnap ? docsSnap.docs : await assignedDocuments(cases);
+      const documents = docSnaps
         .map(doc => {
           const d = doc.data() as any;
           const parentId = doc.ref.parent.parent?.id;

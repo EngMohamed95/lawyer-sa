@@ -36,12 +36,15 @@ export class NoProfileError extends Error {
 export interface OfficeSubscription {
   billing: string;
   expiry: string;
+  /** سجّل ذاتياً — الحذف التلقائي بعد التجربة يخص هذه المكاتب وحدها */
+  selfSignup?: boolean;
 }
 
 export function readOfficeSubscription(): OfficeSubscription {
   return {
     billing: localStorage.getItem("officeBilling") || "",
     expiry: localStorage.getItem("officeExpiry") || "",
+    selfSignup: localStorage.getItem("officeSelfSignup") === "1",
   };
 }
 
@@ -60,9 +63,20 @@ export function trialDaysLeft(sub: OfficeSubscription = readOfficeSubscription()
   return Math.max(0, Math.ceil((t - Date.now()) / 86400000));
 }
 
-function storeOfficeSubscription(office: { subscriptionBilling?: string; subscriptionExpiry?: string } | null | undefined) {
+/** أيام الاحتفاظ بالبيانات بعد انتهاء التجربة — يطابق TRIAL_GRACE_DAYS في public/trial-cleanup.php */
+export const TRIAL_GRACE_DAYS = 10;
+
+/** موعد حذف بيانات المكتب التجريبي إن لم يشترك */
+export function trialDeletionDate(sub: OfficeSubscription = readOfficeSubscription()): Date | null {
+  if (sub.billing !== "trial" || !sub.expiry || !sub.selfSignup) return null;
+  const t = new Date(sub.expiry).getTime();
+  return Number.isNaN(t) ? null : new Date(t + TRIAL_GRACE_DAYS * 86400000);
+}
+
+function storeOfficeSubscription(office: { subscriptionBilling?: string; subscriptionExpiry?: string; selfSignup?: boolean } | null | undefined) {
   localStorage.setItem("officeBilling", office?.subscriptionBilling || "");
   localStorage.setItem("officeExpiry", office?.subscriptionExpiry || "");
+  localStorage.setItem("officeSelfSignup", office?.selfSignup ? "1" : "");
 }
 
 /**
@@ -132,6 +146,12 @@ export async function startSession(firebaseUser: User, opts: StartSessionOptions
     }
   }
 
+  // عضو فريق حذفه مدير المكتب، أو حساب معطَّل بعينه — لا يدخل
+  if (role !== "SUPER_ADMIN" && role !== "LAWYER" && (userData?.deletedAt || userData?.status === "DISABLED" || userData?.status === "SUSPENDED")) {
+    await auth.signOut();
+    throw new Error("هذا الحساب غير مفعّل. تواصل مع مدير المكتب.");
+  }
+
   // مدير المنصة المعطَّل من «فريق مديري المنصة» لا يدخل
   if (role === "SUPER_ADMIN" && userData?.status === "DISABLED") {
     await auth.signOut();
@@ -139,7 +159,7 @@ export async function startSession(firebaseUser: User, opts: StartSessionOptions
   }
 
   // المكتب الذي عطّله مدير المنصة (status: DISABLED) لا يدخل — لا مالكه ولا فريقه
-  if (role !== "SUPER_ADMIN" && officeData?.status === "DISABLED") {
+  if (role !== "SUPER_ADMIN" && (officeData?.status === "DISABLED" || officeData?.status === "SUSPENDED")) {
     await auth.signOut();
     throw new Error("هذا الحساب موقوف من إدارة المنصة. تواصل مع الدعم الفني لإعادة تفعيله.");
   }

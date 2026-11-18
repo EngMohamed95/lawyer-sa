@@ -7,7 +7,7 @@ import { Input } from "./ui/input";
 import { collection, getDocs, collectionGroup, query, where } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { callGemini, callGroq, readAiSettings, type GeminiContent } from "../lib/aiProxy";
-import { visibleCasesQuery } from "../lib/caseAccess";
+import { assignedDocuments, visibleCasesQuery } from "../lib/caseAccess";
 
 export function AiAssistant() {
   const [isOpen, setIsOpen] = useState(false);
@@ -35,7 +35,13 @@ export function AiAssistant() {
       const userRole = localStorage.getItem("userRole");
       if (!storedLawyerId) return;
 
-      const docsQ = collectionGroup(db, "documents");
+      // مستندات المكتب وحده (يحتاج فهرس collection-group على documents.lawyerId)
+      // المحامي المكلَّف: مستندات قضاياه فقط (assignedDocuments بعد جلب القضايا)
+      const docsQ = userRole === "SUPER_ADMIN"
+        ? collectionGroup(db, "documents")
+        : userRole === "OFFICE_LAWYER"
+          ? null
+          : query(collectionGroup(db, "documents"), where("lawyerId", "==", storedLawyerId));
       const casesQ = userRole === "SUPER_ADMIN"
         ? collection(db, "cases")
         : visibleCasesQuery(storedLawyerId);
@@ -44,14 +50,15 @@ export function AiAssistant() {
         : query(collection(db, "clients"), where("lawyerId", "==", storedLawyerId));
 
       const [docsSnap, casesSnap, clientsSnap] = await Promise.all([
-        getDocs(docsQ),
+        docsQ ? getDocs(docsQ) : Promise.resolve(null),
         getDocs(casesQ),
         getDocs(clientsQ)
       ]);
 
       const clientsList = clientsSnap.docs.map(d => ({ id: d.id, ...d.data() as any }));
       const casesList = casesSnap.docs.map(d => ({ id: d.id, ...d.data() as any }));
-      const docsList = docsSnap.docs
+      const docSnaps = docsSnap ? docsSnap.docs : await assignedDocuments(casesList);
+      const docsList = docSnaps
         .map(doc => {
           const d = doc.data() as any;
           const parentId = doc.ref.parent.parent?.id;

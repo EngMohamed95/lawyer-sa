@@ -647,7 +647,15 @@ export default function CaseDetails() {
     if (!id) return;
     setLoading(true);
     try {
-      const caseDoc = await getDoc(doc(db, "cases", id));
+      // محامي المكتب على قضية غير مكلَّف بها: القواعد ترفض القراءة نفسها
+      const caseDoc = await getDoc(doc(db, "cases", id)).catch((e: { code?: string }) => {
+        if (e?.code === "permission-denied") return null;
+        throw e;
+      });
+      if (!caseDoc) {
+        setData({ error: "غير مصرح لك بالدخول لهذه القضية" });
+        return;
+      }
       if (!caseDoc.exists()) {
         setData({ error: "القضية غير موجودة" });
         return;
@@ -679,7 +687,13 @@ export default function CaseDetails() {
       const documents = docsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
       // Fetch tasks
-      const tasksSnap = await getDocs(query(collection(db, "tasks"), where("caseId", "==", id)));
+      // تقييد بالمكتب أيضاً — قواعد الحماية ترفض أي استعلام لا يحدّد lawyerId
+      const officeId = localStorage.getItem("lawyerId");
+      const tasksSnap = await getDocs(
+        localStorage.getItem("userRole") === "SUPER_ADMIN" || !officeId
+          ? query(collection(db, "tasks"), where("caseId", "==", id))
+          : query(collection(db, "tasks"), where("lawyerId", "==", officeId), where("caseId", "==", id)),
+      );
       const tasks = tasksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
       // Fetch memos
