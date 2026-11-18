@@ -73,6 +73,8 @@ jobs:
         env:
           GEMINI_KEY: ${{ secrets.GEMINI_API_KEY }}
           GROQ_KEY: ${{ secrets.GROQ_API_KEY }}
+          # عبر env لا داخل السكربت: JSON المفتاح مليء بعلامات " التي كانت تكسر شرط if
+          SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
         run: |
           set -e
           rm -rf release
@@ -85,8 +87,14 @@ jobs:
           cp -r dist/. release/
 
           # مفتاح حساب الخدمة من الأسرار — اختياري
-          if [ -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" ]; then
-            printf '%s' '${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}' > release/serviceAccountKey.json
+          # (التسجيل الذاتي signup.php يحتاجه — .htaccess يمنع تقديمه للمتصفح)
+          if [ -n "$SA_KEY" ]; then
+            printf '%s' "$SA_KEY" > release/serviceAccountKey.json
+            # نتأكد أنه JSON صالح بالحقول المطلوبة — وإلا نُفشل النشر بدل نشر مفتاح تالف
+            node -e '
+              const k = JSON.parse(require("fs").readFileSync("release/serviceAccountKey.json", "utf8"));
+              if (!k.client_email || !k.private_key || !k.private_key_id) throw new Error("حقول ناقصة");
+            ' || { echo "❌ سرّ FIREBASE_SERVICE_ACCOUNT_KEY ليس JSON صالحاً"; exit 1; }
             echo "أُضيف مفتاح حساب الخدمة."
           else
             echo "تنبيه: لا يوجد سرّ FIREBASE_SERVICE_ACCOUNT_KEY — تُنشر الحزمة بدونه."
