@@ -5,6 +5,7 @@ import fs from "fs";
 import path from "path";
 import mammoth from "mammoth";
 import { authGate, requireAuth, requireRole, requireUserAdmin } from "./middleware/auth.js";
+import { AiError, countUsage, enforceQuota, officeContext, platformState, providerFailure } from "./aiQuota.js";
 
 const DOCX_MIME_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
@@ -86,7 +87,8 @@ function rateLimit(maxPerMinute: number) {
       const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
       res.setHeader("Retry-After", String(retryAfter));
       return res.status(429).json({
-        error: "تجاوزت حد الطلبات المسموح. حاول بعد قليل.",
+        error: "أرسلت طلبات كثيرة خلال دقيقة واحدة. انتظر دقيقة ثم أعد المحاولة.",
+        code: "RATE_LIMIT",
         retryAfter,
       });
     }
@@ -108,6 +110,22 @@ const GEMINI_RETRYABLE = new Set([429, 500, 503]);
 router.post("/ai/generate", rateLimit(20), async (req, res) => {
   try {
     const { provider = "GEMINI", model, contents, generationConfig, messages, temperature } = req.body ?? {};
+    const idToken = (req.headers.authorization ?? "").replace(/^Bearer\s+/i, "");
+    const officeCtx = req.user?.uid && idToken ? await officeContext(req.user.uid, idToken) : null;
+    await enforceQuota(officeCtx, idToken);
+
+    /** نفس ما في ai-proxy.php: رسالة واضحة لفشل المزوّد، وحساب الطلب الناجح على المكتب */
+    const finish = async (status: number, raw: string) => {
+      const failure = await providerFailure(status, raw, idToken);
+      if (failure) throw failure;
+      if (status >= 200 && status < 300) {
+        await countUsage(officeCtx, idToken);
+        await platformState(idToken, "OK");
+      }
+      let data: unknown;
+      try { data = JSON.parse(raw); } catch { data = { error: "تعذّر تنفيذ طلب الذكاء الاصطناعي." }; }
+      return res.status(status >= 200 && status < 300 ? 200 : status).json(data);
+    };
 
     if (provider === "GEMINI") {
       const key = process.env.GEMINI_API_KEY;
@@ -138,9 +156,8 @@ router.post("/ai/generate", rateLimit(20), async (req, res) => {
         if (!GEMINI_RETRYABLE.has(upstream.status)) break;
       }
 
-      const data = await upstream!.json();
-      // نمرّر الرد كما هو لتبقى معالجة الأخطاء في الواجهة كما كانت
-      return res.status(upstream!.ok ? 200 : upstream!.status).json(data);
+      // نمرّر الرد الناجح كما هو؛ الفشل يتحوّل لرسالة واضحة برمز يميّزه
+      return finish(upstream!.status, await upstream!.text());
     }
 
     if (provider === "GROQ") {
@@ -153,12 +170,12 @@ router.post("/ai/generate", rateLimit(20), async (req, res) => {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
         body: JSON.stringify({ model, messages, temperature: temperature ?? 0.7 }),
       });
-      const data = await upstream.json();
-      return res.status(upstream.ok ? 200 : upstream.status).json(data);
+      return finish(upstream.status, await upstream.text());
     }
 
     return res.status(400).json({ error: "مزوّد غير مدعوم." });
   } catch (error: unknown) {
+    if (error instanceof AiError) return res.status(error.status).json({ error: error.message, code: error.code });
     console.error("AI proxy error:", error);
     return res.status(500).json({ error: "تعذّر تنفيذ طلب الذكاء الاصطناعي." });
   }

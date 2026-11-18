@@ -660,12 +660,12 @@ function fold(line: string): string {
   return parts.join("\r\n");
 }
 
-export function buildIcs(events: CalendarEvent[], calendarName = "LawyerOS"): string {
+export function buildIcs(events: CalendarEvent[], calendarName = "موازين"): string {
   const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
   const lines: string[] = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//LawyerOS//Calendar//AR",
+    "PRODID:-//Mawazeen//Calendar//AR",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     `X-WR-CALNAME:${icsEscape(calendarName)}`,
@@ -696,7 +696,7 @@ export function buildIcs(events: CalendarEvent[], calendarName = "LawyerOS"): st
   return lines.join("\r\n");
 }
 
-export function downloadIcs(events: CalendarEvent[], filename = "lawyeros-calendar.ics"): void {
+export function downloadIcs(events: CalendarEvent[], filename = "mawazeen-calendar.ics"): void {
   const blob = new Blob([buildIcs(events)], { type: "text/calendar;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

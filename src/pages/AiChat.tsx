@@ -5,6 +5,7 @@ import { Input } from "../components/ui/input";
 import { collection, getDocs, doc, updateDoc, deleteDoc, query, where, addDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { callGemini, callGroq, readAiSettings, type GeminiContent } from "../lib/aiProxy";
+import AiUsageMeter from "../components/AiUsageMeter";
 import { AI_ACCEPT, AI_MAX_FILES, AI_MAX_TOTAL_BYTES, addAiFiles, attachmentsText, formatSize, hasInline, inlineParts, type AiAttachment } from "../lib/aiAttachments";
 
 interface Message {
@@ -159,7 +160,7 @@ export default function AiChat() {
       const countryContext = currencyCode === "SAR" ? "المملكة العربية السعودية" : currencyCode === "EGP" ? "جمهورية مصر العربية" : "البلد الذي يعمل فيه المحامي";
 
       // مساعد قانوني عام — لا يُحمَّل فيه أي من بيانات المكتب، ويرفض ما هو خارج القانون
-      const systemPrompt = `أنت مساعد قانوني ذكي محترف داخل منصة "LawyerOS" لمكاتب المحاماة، وتخدم محامين في ${countryContext}.
+      const systemPrompt = `أنت مساعد قانوني ذكي محترف داخل منصة "موازين" لمكاتب المحاماة، وتخدم محامين في ${countryContext}.
 
 نطاق عملك محصور في الشؤون القانونية فقط، ومنها:
 - الاستشارات والأسئلة القانونية والشرعية والنظامية
@@ -280,6 +281,8 @@ export default function AiChat() {
             <Plus size={18} />
           </button>
         </div>
+
+        <AiUsageMeter className="border-b border-gray-200 bg-surface px-4 py-3" />
 
         <div className="flex-1 overflow-y-auto p-3 space-y-2">
           {loadingHistory ? (

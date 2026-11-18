@@ -15,6 +15,7 @@
 import { auth } from "./firebase";
 import { apiUrl } from "./apiBase";
 import { getPlatformAiSettingsSnapshot } from "./platformSettings";
+import { AI_USAGE_EVENT } from "./aiUsage";
 
 export type AiProvider = "GEMINI" | "GROQ";
 
@@ -78,6 +79,23 @@ async function gatewayError(res: Response): Promise<Error | null> {
   );
 }
 
+/**
+ * 429 له سببان: حد الدقيقة لكل مستخدم (RATE_LIMIT) أو نفاد حصة المكتب الشهرية
+ * (OFFICE_QUOTA) — رسالة الخادم تشرح السبب، فنعرضها كما هي.
+ */
+async function limitError(res: Response): Promise<Error> {
+  try {
+    const body = (await res.json()) as { error?: string };
+    if (typeof body?.error === "string" && body.error) return new Error(body.error);
+  } catch { /* رد غير JSON */ }
+  return new Error("أرسلت طلبات كثيرة خلال دقيقة واحدة. انتظر دقيقة ثم أعد المحاولة.");
+}
+
+/** يحدّث عدّاد استهلاك المكتب المعروض بعد كل رد ناجح */
+function notifyUsage(): void {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(AI_USAGE_EVENT));
+}
+
 /** رسالة موحّدة حين لا يوجد خادم يستقبل النداء */
 const NO_SERVER_MESSAGE =
   "خدمة الذكاء الاصطناعي غير متاحة حالياً على الخادم. أعد المحاولة بعد قليل، " +
@@ -106,10 +124,11 @@ async function readJsonOrExplain(res: Response): Promise<unknown> {
 
 function extractGeminiText(data: unknown): string {
   const d = data as {
-    error?: { message?: string };
+    error?: string | { message?: string };
     candidates?: { content?: { parts?: { text?: string }[] } }[];
   };
-  if (d?.error) throw new Error(d.error.message || "خطأ في معالجة طلب Gemini");
+  // بعد بدء إبقاء الاتصال حياً يصل خطأ الخادم في الجسم كنص { error: "..." } بحالة 200
+  if (d?.error) throw new Error(typeof d.error === "string" ? d.error : d.error.message || "خطأ في معالجة طلب Gemini");
   // الردود الطويلة قد تأتي مقسّمة على عدة أجزاء
   return (d?.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? "").join("");
 }
@@ -143,9 +162,7 @@ export async function callGemini(
   if (res.status === 501) {
     throw new Error("خدمة الذكاء الاصطناعي غير مُهيّأة على الخادم. تواصل مع مدير المنصة.");
   }
-  if (res.status === 429) {
-    throw new Error("تجاوزت حد الطلبات المسموح. انتظر قليلاً ثم أعد المحاولة.");
-  }
+  if (res.status === 429) throw await limitError(res);
   const gateway = await gatewayError(res);
   if (gateway) throw gateway;
   if (!res.ok) {
@@ -153,7 +170,9 @@ export async function callGemini(
     throw new Error(`تعذّر الاتصال بخدمة الذكاء الاصطناعي (${res.status}). ${detail.slice(0, 160)}`);
   }
 
-  return extractGeminiText(await readJsonOrExplain(res));
+  const text = extractGeminiText(await readJsonOrExplain(res));
+  notifyUsage();
+  return text;
 }
 
 /** نداء Groq — دائماً عبر مسار الخادم */
@@ -175,13 +194,15 @@ export async function callGroq(
   if (res.status === 501) {
     throw new Error("خدمة الذكاء الاصطناعي غير مُهيّأة على الخادم. تواصل مع مدير المنصة.");
   }
+  if (res.status === 429) throw await limitError(res);
   const gateway = await gatewayError(res);
   if (gateway) throw gateway;
   if (!res.ok) throw new Error(`تعذّر الاتصال بالخدمة (${res.status}).`);
   const data = (await readJsonOrExplain(res)) as {
-    error?: { message?: string };
+    error?: string | { message?: string };
     choices?: { message?: { content?: string } }[];
   };
-  if (data.error) throw new Error(data.error.message || "خطأ في المعالجة");
+  if (data.error) throw new Error(typeof data.error === "string" ? data.error : data.error.message || "خطأ في المعالجة");
+  notifyUsage();
   return data.choices?.[0]?.message?.content ?? "";
 }

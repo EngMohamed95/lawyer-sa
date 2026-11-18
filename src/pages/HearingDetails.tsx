@@ -12,9 +12,9 @@ import HearingReportSection from "../components/HearingReportSection";
 
 function InfoField({ label, value }: { label: string; value?: string | null }) {
   return (
-    <div className="space-y-1">
-      <p className="text-xs font-bold text-gray-400">{label}</p>
-      <p className="text-sm font-medium text-ink">{value || "—"}</p>
+    <div className="rounded-lg border border-gray-100 bg-gray-50/70 px-4 py-3">
+      <p className="text-xs text-gray-500 mb-1">{label}</p>
+      <p className={`text-sm leading-relaxed whitespace-pre-wrap break-words ${value ? "font-semibold text-ink" : "text-gray-400"}`}>{value || "—"}</p>
     </div>
   );
 }
@@ -174,7 +174,7 @@ export default function HearingDetails() {
           <Calendar className="w-5 h-5 text-ink-2" />
           <CardTitle className="text-lg text-ink">معلومات الجلسة</CardTitle>
         </CardHeader>
-        <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <InfoField
             label="تاريخ الجلسة"
             value={hearing.hearingDate ? new Date(hearing.hearingDate).toLocaleDateString("ar-EG", { day: "numeric", month: "long", year: "numeric" }) + (hearing.hearingTime ? ` — الساعة ${hearing.hearingTime}` : "") : undefined}
@@ -192,10 +192,24 @@ export default function HearingDetails() {
 
       <Card className="shadow-sm border-gray-200">
         <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
+          <Scale className="w-5 h-5 text-ink-2" />
+          <CardTitle className="text-lg text-ink">ملخص الجلسة والقرار</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+          <InfoField label="ملخص الجلسة" value={hearing.requiredActions} />
+          <InfoField label="الإجراء القادم" value={hearing.judgeRequests} />
+          <InfoField label="قرار الجلسة (النتيجة)" value={hearing.result} />
+        </CardContent>
+      </Card>
+
+      {/* فريق العمل والأرشيف جنباً إلى جنب على الشاشات العريضة */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      <Card className="shadow-sm border-gray-200">
+        <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
           <Users className="w-5 h-5 text-ink-2" />
           <CardTitle className="text-lg text-ink">فريق العمل على القضية</CardTitle>
         </CardHeader>
-        <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
           <InfoField label="المحامي المسؤول" value={hearing.assignedLawyerName} />
           <InfoField label="المستشار" value={hearing.assignedConsultantName} />
           <InfoField label="المتدرب" value={traineeNames.length > 0 ? traineeNames.join("، ") : undefined} />
@@ -204,22 +218,10 @@ export default function HearingDetails() {
 
       <Card className="shadow-sm border-gray-200">
         <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
-          <Scale className="w-5 h-5 text-ink-2" />
-          <CardTitle className="text-lg text-ink">ملخص الجلسة والقرار</CardTitle>
-        </CardHeader>
-        <CardContent className="p-6 space-y-4">
-          <InfoField label="ملخص الجلسة" value={hearing.requiredActions} />
-          <InfoField label="الإجراء القادم" value={hearing.judgeRequests} />
-          <InfoField label="قرار الجلسة (النتيجة)" value={hearing.result} />
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-sm border-gray-200">
-        <CardHeader className="border-b bg-gray-50/50 py-4 flex flex-row items-center gap-2">
           <ScrollText className="w-5 h-5 text-ink-2" />
           <CardTitle className="text-lg text-ink">الحكم والمذكرة المعتمدة</CardTitle>
         </CardHeader>
-        <CardContent className="p-6 space-y-4">
+        <CardContent className="p-4 space-y-3">
           <ArchiveBlock
             dotColor="bg-purple-500"
             title="الحكم / القرار الصادر"
@@ -236,12 +238,13 @@ export default function HearingDetails() {
             secondFileLabel="تحميل Word"
           />
           {!(hearing.judgmentText || hearing.judgmentFileUrl || hearing.memoFileUrl) && (
-            <div className="flex items-center gap-3 text-gray-400 text-sm">
+            <div className="flex items-center gap-3 text-gray-400 text-sm rounded-lg border border-dashed border-gray-200 px-4 py-6 justify-center">
               <Gavel size={18} /> لا يوجد أرشيف مسجَّل لهذه الجلسة بعد
             </div>
           )}
         </CardContent>
       </Card>
+      </div>
 
       {/* تقرير الجلسة بعرض الصفحة كاملاً — المحرر ولوحة المساعد بجوار بعض كما في كتابة المذكرة */}
       <div className="space-y-6">

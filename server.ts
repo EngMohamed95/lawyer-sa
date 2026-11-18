@@ -173,6 +173,37 @@ async function startServer() {
   // تقديم الملفات المرفوعة محلياً (على الاستضافة يتولاها الخادم مباشرة)
   app.use("/uploads", express.static(uploadsDir, { index: false }));
 
+  /**
+   * التسجيل الذاتي (public/signup.php) يعمل بـ PHP على الاستضافة. محلياً لا مُفسّر PHP
+   * داخل Vite، فنمرّر الطلب لخادم PHP المدمج:  php -S 127.0.0.1:8090 -t public
+   * (ويحتاج serviceAccountKey.json في جذر المشروع — مستثنى من Git، ولا يوضع في public/).
+   */
+  if (process.env.NODE_ENV !== "production") {
+    // ملفات الأسرار لا تُقدَّم أبداً — .htaccess يحميها على الاستضافة، وهذا يحميها محلياً
+    app.use(/^\/(serviceAccountKey\.json|ai-config\.php)$/i, (_req, res) => {
+      res.sendStatus(404);
+    });
+    const phpDevUrl = (process.env.PHP_DEV_URL || "http://127.0.0.1:8090").replace(/\/$/, "");
+    app.post("/signup.php", async (req, res) => {
+      try {
+        const upstream = await fetch(`${phpDevUrl}/signup.php`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(req.headers.authorization ? { Authorization: req.headers.authorization } : {}),
+          },
+          body: JSON.stringify(req.body ?? {}),
+        });
+        res.status(upstream.status).type("application/json").send(await upstream.text());
+      } catch {
+        res.status(503).json({
+          error: "خادم PHP المحلي غير مشغّل. شغّل: php -S 127.0.0.1:8090 -t public",
+          code: "NOT_CONFIGURED",
+        });
+      }
+    });
+  }
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const hmrPort = Number(process.env.HMR_PORT || 24679);

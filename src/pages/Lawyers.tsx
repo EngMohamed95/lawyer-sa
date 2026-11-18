@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
-import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, deleteField } from "firebase/firestore";
 import { db, firebaseConfig } from "../lib/firebase";
 import { initializeApp, deleteApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
@@ -225,6 +225,8 @@ export default function Lawyers() {
       await updateDoc(doc(db, "users", renewLawyer.id), {
         subscriptionExpiry:  current.toISOString(),
         subscriptionBilling: renewMonths >= 12 ? "annual" : "monthly",
+        // التجديد المدفوع يُنهي الباقة التجريبية — وإلا ظلّ المكتب يظهر «تجريبياً»
+        ...(renewLawyer.planId === "trial" ? { planId: deleteField() } : {}),
       });
 
       setRenewLawyer(null);

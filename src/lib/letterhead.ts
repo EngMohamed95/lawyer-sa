@@ -2,7 +2,7 @@
  * ترويسة وتذييل موحّدان لكل مستند مطبوع أو مُصدَّر (تقارير، مذكرات، PDF، Word).
  *
  * كل مكتب (tenant) له شعاره واسمه وعنوانه ورقمه الخاص المحفوظ في
- * OfficeProfile — هذا ما يظهر في الترويسة. شعار LawyerOS يظهر كعلامة
+ * OfficeProfile — هذا ما يظهر في الترويسة. شعار موازين يظهر كعلامة
  * "صادر عبر" صغيرة، فلا يُنافس هوية المكتب لكنه يبقى حاضراً كمصدر النظام.
  *
  * نسختان لكل عنصر:
@@ -13,8 +13,9 @@
 
 import type { OfficeProfile } from "./officeSettings";
 
-/** شعار المنصة — يُخدَّم من جذر المشروع (public/logo.png عبر Vite) */
-const PLATFORM_LOGO_URL = "/logo.png";
+/** رمز الشعار المربّع — نسخة فاتحة للخلفيات الكحلية ونسخة داكنة للخلفيات البيضاء */
+const PLATFORM_MARK_LIGHT_URL = "/logo-mark-light.png";
+const PLATFORM_MARK_URL = "/logo-mark.png";
 const BRAND_DARK = "#192a56";
 const BRAND_DARK_2 = "#273c75";
 const BRAND_GOLD = "#273c75";
@@ -66,7 +67,7 @@ export function renderLetterheadHeader(profile: OfficeProfile, opts: LetterheadH
               <div>${new Date().toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" })}</div>
               ${profile.crNumber ? `<div>س.ت: ${profile.crNumber}</div>` : ""}
             </div>
-            <img src="${PLATFORM_LOGO_URL}" alt="LawyerOS" style="width:32px; height:32px; object-fit:contain; opacity:0.85;" />
+            <img src="${PLATFORM_MARK_LIGHT_URL}" alt="موازين" style="width:32px; height:32px; object-fit:contain; opacity:0.85;" />
           </div>
         </div>
         ${opts.documentLabel ? `<div style="margin-top:14px; text-align:center; font-size:14pt; font-weight:bold;">${opts.documentLabel}</div>` : ""}
@@ -76,7 +77,7 @@ export function renderLetterheadHeader(profile: OfficeProfile, opts: LetterheadH
   `;
 }
 
-/** تذييل احترافي: ختم اختياري، خط ذهبي فاصل، بيانات تواصل المكتب، وعلامة LawyerOS صغيرة */
+/** تذييل احترافي: ختم اختياري، خط ذهبي فاصل، بيانات تواصل المكتب، وعلامة موازين صغيرة */
 export function renderLetterheadFooter(profile: OfficeProfile, opts: LetterheadFooterOptions = {}): string {
   const parts = [profile.name, profile.address, profile.phone].filter(Boolean);
 
@@ -92,8 +93,8 @@ export function renderLetterheadFooter(profile: OfficeProfile, opts: LetterheadF
         <div>${parts.join("  —  ")}</div>
         <div style="display:flex; align-items:center; gap:6px;">
           <span>صادر إلكترونياً عبر</span>
-          <img src="${PLATFORM_LOGO_URL}" alt="LawyerOS" style="width:15px; height:15px; object-fit:contain; opacity:0.7;" />
-          <span style="font-weight:bold; color:${BRAND_DARK};">LawyerOS</span>
+          <img src="${PLATFORM_MARK_URL}" alt="موازين" style="width:15px; height:15px; object-fit:contain; opacity:0.7;" />
+          <span style="font-weight:bold; color:${BRAND_DARK};">موازين</span>
         </div>
       </div>
       ${opts.note ? `<div style="padding:0 40px 20px; font-size:7.5pt; color:#aaa; text-align:center;">${opts.note}</div>` : ""}
@@ -297,7 +298,7 @@ export function renderLetterheadFooterWordSafe(profile: OfficeProfile, opts: Let
       <table width="100%" style="font-size:8pt; color:#888;">
         <tr>
           <td style="text-align:right;">${parts.join(" — ")}</td>
-          <td style="text-align:left;">صادر إلكترونياً عبر LawyerOS</td>
+          <td style="text-align:left;">صادر إلكترونياً عبر موازين</td>
         </tr>
       </table>
     </div>

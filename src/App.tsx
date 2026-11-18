@@ -10,6 +10,7 @@ import { loadOfficeSettings } from "./lib/officeSettings";
 import { loadOfficeLookups } from "./lib/officeLookups";
 import { loadPlatformAiSettings } from "./lib/platformSettings";
 import { roleLabel } from "./lib/roles";
+import { isTrialLocked, readOfficeSubscription, trialDaysLeft } from "./lib/session";
 import { getThemePref, setThemePref, useTheme } from "./lib/theme";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -52,7 +53,10 @@ const SubscriptionRequests = lazy(() => import("./pages/SubscriptionRequests"));
 const SubscriptionPlans = lazy(() => import("./pages/SubscriptionPlans"));
 const OfficeSubscriptions = lazy(() => import("./pages/OfficeSubscriptions"));
 const PlatformAdmins = lazy(() => import("./pages/PlatformAdmins"));
-const SubscribePage = lazy(() => import("./pages/SubscribePage"));
+const PlatformAiStatusBanner = lazy(() => import("./components/PlatformAiStatusBanner"));
+const Signup = lazy(() => import("./pages/Signup"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const TrialExpired = lazy(() => import("./pages/TrialExpired"));
 const LegalLibrary = lazy(() => import("./pages/LegalLibrary"));
 const OfficeLawyers = lazy(() => import("./pages/OfficeLawyers"));
 const Consultants = lazy(() => import("./pages/Consultants"));
@@ -214,7 +218,7 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
             <Menu size={24} />
           </button>
           <Link to="/" onClick={onClose}>
-              <img src="/logo.png" alt="LawyerOS" className="w-40 h-auto object-contain" />
+              <img src="/logo-light.png" alt="موازين" className="w-44 h-auto object-contain" />
           </Link>
         </div>
         <nav className="flex-1 py-4 overflow-y-auto">
@@ -368,7 +372,7 @@ function UserMenu({ userName, roleName }: { userName: string; roleName: string }
           <p className="text-xs text-gray-500">{roleName}</p>
         </div>
         <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border-2 border-white/20 bg-navy-2 text-lg font-bold shadow-sm md:h-10 md:w-10">
-          <img src="/logo.png" alt="" className="h-full w-full object-cover" />
+          <img src="/logo-mark-light.png" alt="" className="h-full w-full object-contain p-1" />
         </div>
         <ChevronDown size={16} className={`text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
@@ -786,6 +790,23 @@ function SubscriptionBanner() {
   const expiry = localStorage.getItem("subscriptionExpiry");
   if (role !== "LAWYER" || !expiry) return null;
 
+  // الفترة التجريبية: تذكير دائم بالأيام المتبقية مع رابط اختيار الباقة
+  const trialLeft = trialDaysLeft(readOfficeSubscription());
+  if (trialLeft !== null) {
+    return (
+      <div className={`${trialLeft <= 3 ? "bg-orange-500" : "bg-navy-2"} text-white text-sm font-bold px-4 py-2.5 flex items-center justify-between gap-4`} dir="rtl">
+        <span>
+          {trialLeft === 0
+            ? "⏳ تنتهي فترتك التجريبية اليوم — اختر باقتك لمتابعة العمل دون انقطاع."
+            : `⏳ أنت في الفترة التجريبية — متبقٍ ${trialLeft} ${trialLeft === 1 ? "يوم" : trialLeft <= 10 ? "أيام" : "يوماً"}.`}
+        </span>
+        <Link to="/onboarding?step=plans" className="shrink-0 bg-white/20 hover:bg-white/30 px-4 py-1 rounded-full text-xs transition">
+          اختر باقتك
+        </Link>
+      </div>
+    );
+  }
+
   const days = Math.ceil((new Date(expiry).getTime() - Date.now()) / 86400000);
   if (days > 14) return null;
 
@@ -799,7 +820,7 @@ function SubscriptionBanner() {
     <div className={`${bg} text-white text-sm font-bold px-4 py-2.5 flex items-center justify-between gap-4`} dir="rtl">
       <span>{msg}</span>
       <a
-        href={`https://wa.me/201094040671?text=${encodeURIComponent("أريد تجديد اشتراكي في LawyerOS")}`}
+        href={`https://wa.me/201094040671?text=${encodeURIComponent("أريد تجديد اشتراكي في موازين")}`}
         target="_blank"
         rel="noreferrer"
         className="shrink-0 bg-white/20 hover:bg-white/30 px-4 py-1 rounded-full text-xs transition"
@@ -865,6 +886,11 @@ function Layout() {
     return <Navigate to="/login" replace />;
   }
 
+  // انتهت التجربة المجانية بلا اشتراك — الدخول مقفل حتى التفعيل (البيانات محفوظة)
+  if (isTrialLocked()) {
+    return <Navigate to="/subscription-expired" replace />;
+  }
+
   // انتهت جلسة Firebase بينما التخزين المحلي يدّعي أننا داخل:
   // نُعلم المستخدم بدل تركه يرى أصفاراً وأخطاء صلاحيات لا يفهمها.
   if (session.state === "expired") {
@@ -878,6 +904,10 @@ function Layout() {
         <Header onMenuOpen={() => setIsSidebarOpen(true)} />
         <SubscriptionBanner />
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6">
+          {/* القراءة لمدير المنصة وحده (platform_status في firestore.rules) */}
+          {localStorage.getItem("userRole") === "SUPER_ADMIN" && (
+            <Suspense fallback={null}><PlatformAiStatusBanner /></Suspense>
+          )}
           <Outlet />
         </main>
       </div>
@@ -909,7 +939,11 @@ export default function App() {
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/subscribe" element={<SubscribePage />} />
+          {/* الاشتراك صار من داخل التطبيق بعد إنشاء حساب تجريبي */}
+          <Route path="/subscribe" element={<Navigate to="/signup" replace />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/subscription-expired" element={<TrialExpired />} />
           <Route path="/login" element={<Login />} />
           <Route path="/support/tickets" element={<Navigate to="/app/support/tickets" replace />} />
           <Route

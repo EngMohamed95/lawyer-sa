@@ -16,7 +16,7 @@ import {
 
 const emptyPlan = (order: number): SubscriptionPlan => ({
   id: "", name: "", nameEn: "", tier: "BASIC", billing: "monthly", durationDays: 30,
-  quotas: { cases: 0, clients: 0, team: 0 }, prices: { SAR: 0, EGP: 0, USD: 0 }, active: true, order,
+  quotas: { cases: 0, clients: 0, team: 0, ai: 0 }, prices: { SAR: 0, EGP: 0, USD: 0 }, active: true, order,
 });
 
 const label = "text-xs font-bold text-slate-600";

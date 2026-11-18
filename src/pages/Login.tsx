@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
 import { Lock, User, Eye, EyeOff, ShieldCheck, Scale, Gavel } from "lucide-react";
 
@@ -28,6 +28,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -63,7 +64,8 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-    
+    setInfo("");
+
     try {
       const {
         browserLocalPersistence,
@@ -71,113 +73,31 @@ export default function Login() {
         setPersistence,
         signInWithEmailAndPassword,
       } = await import("firebase/auth");
-      const { auth, db } = await import("../lib/firebase");
-      const { doc, getDoc } = await import("firebase/firestore");
+      const { auth } = await import("../lib/firebase");
+      const { startSession, NoProfileError } = await import("../lib/session");
 
       await withLoginTimeout(
         setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence),
         "تعذر تجهيز جلسة تسجيل الدخول. حدّث الصفحة ثم حاول مرة أخرى.",
       );
-      
+
       const userCredential = await withLoginTimeout(
         signInWithEmailAndPassword(auth, username, password),
         "تعذر الاتصال بخدمة تسجيل الدخول. تحقق من الإنترنت ثم حاول مرة أخرى.",
       );
       const firebaseUser = userCredential.user;
-      
-      // Fetch user role and info from Firestore
-      const userDoc = await withLoginTimeout(
-        getDoc(doc(db, "users", firebaseUser.uid)),
-        "تم التحقق من بيانات الدخول، لكن تعذر تحميل بيانات الحساب. حاول مرة أخرى.",
-      );
-      if (!userDoc.exists()) {
-          throw new Error("لم يتم العثور على حساب لهذا المستخدم في قاعدة البيانات.");
-      }
-      
-      const userData = userDoc.data();
-      const role = userData?.role || "TRAINEE";
-      let plan = userData?.plan || "BASIC";
 
-      // SaaS Tenancy Logic:
-      let lawyerId = null;
-      if (role === "LAWYER") {
-          lawyerId = firebaseUser.uid;
-      } else if (role === "TRAINEE" || role === "OFFICE_LAWYER") {
-          lawyerId = userData.lawyerId; 
-          // Fetch Lawyer's plan for the Trainee / Office Lawyer
-          const lawyerDoc = await withLoginTimeout(
-            getDoc(doc(db, "users", lawyerId)),
-            "تعذر تحميل بيانات المكتب. تحقق من الإنترنت ثم حاول مرة أخرى.",
-          );
-          if (lawyerDoc.exists()) {
-            plan = lawyerDoc.data().plan || "BASIC";
-          }
-      } else if (role === "SUPER_ADMIN") {
-          lawyerId = "ALL"; 
-          plan = "PREMIUM";
-      }
-      
-      // مدير المنصة المعطَّل من «فريق مديري المنصة» لا يدخل
-      if (role === "SUPER_ADMIN" && userData?.status === "DISABLED") {
-        await auth.signOut();
-        throw new Error("هذا الحساب الإداري معطّل. تواصل مع المدير العام للمنصة.");
-      }
-
-      // المكتب الذي عطّله مدير المنصة (status: DISABLED) لا يدخل — لا مالكه ولا فريقه
-      if (role !== "SUPER_ADMIN") {
-        const officeId = role === "LAWYER" ? firebaseUser.uid : userData?.lawyerId;
-        const officeData = role === "LAWYER"
-          ? userData
-          : officeId ? (await getDoc(doc(db, "users", officeId)).catch(() => null))?.data() : null;
-        if (officeData?.status === "DISABLED") {
-          await auth.signOut();
-          throw new Error("هذا الحساب موقوف من إدارة المنصة. تواصل مع الدعم الفني لإعادة تفعيله.");
+      try {
+        const destination = await startSession(firebaseUser, { rememberMe, typedEmail: username });
+        navigate(destination);
+      } catch (sessionError) {
+        // مستخدم بلا حساب مكتب = تسجيل ذاتي لم يكتمل — نكمله، والخادم يقرّر إن كان مسموحاً
+        if (sessionError instanceof NoProfileError) {
+          navigate("/signup?resume=1");
+          return;
         }
+        throw sessionError;
       }
-
-      // Check subscription expiry
-      if (role === "LAWYER" && userData?.subscriptionExpiry) {
-        const expiry = new Date(userData.subscriptionExpiry);
-        if (expiry < new Date()) {
-          plan = "BASIC";
-          const { updateDoc, doc: firestoreDoc } = await import("firebase/firestore");
-          void updateDoc(firestoreDoc(db, "users", firebaseUser.uid), { plan: "BASIC" })
-            .catch((updateError) => console.warn("تعذر تحديث حالة الاشتراك:", updateError));
-        }
-        localStorage.setItem("subscriptionExpiry", userData.subscriptionExpiry);
-      }
-
-      // آخر دخول — يظهر في «فريق مديري المنصة»؛ فشله لا يمنع الدخول
-      {
-        const { updateDoc: touchDoc, doc: userRef } = await import("firebase/firestore");
-        void touchDoc(userRef(db, "users", firebaseUser.uid), { lastLoginAt: new Date().toISOString() }).catch(() => {});
-      }
-
-      localStorage.setItem("isAuthenticated", "true");
-      localStorage.setItem("userRole", role);
-      localStorage.setItem("userPlan", plan);
-      localStorage.setItem("userName", userData?.name || firebaseUser.email?.split('@')[0] || "مستخدم");
-      localStorage.setItem("userEmail", firebaseUser.email || username);
-      localStorage.setItem("userId", firebaseUser.uid);
-      localStorage.setItem("lawyerId", lawyerId || "");
-
-      if (rememberMe) {
-        localStorage.setItem("rememberLogin", "true");
-        localStorage.setItem("rememberedEmail", firebaseUser.email || username);
-      } else {
-        localStorage.removeItem("rememberLogin");
-        localStorage.removeItem("rememberedEmail");
-      }
-
-      navigate("/app");
-
-      // سجل التدقيق عملية مساعدة؛ لا نسمح لاتصال Firestore البطيء أن يحبس المستخدم في شاشة الدخول.
-      void import("../lib/audit")
-        .then(({ writeAudit }) => writeAudit(
-          { action: "LOGIN", entity: "session", entityId: firebaseUser.uid, entityLabel: userData?.name || username },
-          { lawyerId, actorId: firebaseUser.uid, actorName: userData?.name || username, actorRole: role },
-        ))
-        .catch((auditError) => console.warn("تعذر تحميل سجل التدقيق:", auditError));
     } catch (err: any) {
       console.error(err);
       if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
@@ -187,6 +107,26 @@ export default function Login() {
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setError("");
+    setInfo("");
+    const email = username.trim();
+    if (!email) {
+      setError("اكتب بريدك الإلكتروني أولاً ثم اضغط «نسيت كلمة المرور؟».");
+      return;
+    }
+    try {
+      const { sendPasswordResetEmail } = await import("firebase/auth");
+      const { auth } = await import("../lib/firebase");
+      auth.languageCode = "ar";
+      await sendPasswordResetEmail(auth, email);
+      setInfo("إن كان البريد مسجلاً لدينا فستصلك رسالة لإعادة تعيين كلمة المرور خلال دقائق.");
+    } catch (err: any) {
+      if (err?.code === "auth/invalid-email") setError("البريد الإلكتروني غير صالح.");
+      else setInfo("إن كان البريد مسجلاً لدينا فستصلك رسالة لإعادة تعيين كلمة المرور خلال دقائق.");
     }
   };
 
@@ -225,7 +165,7 @@ export default function Login() {
                     className="flex flex-col items-center gap-4 mb-8"
                 >
                     <div className="w-48 h-auto flex items-center justify-center">
-                        <img src="/logo.png" alt="LawyerOS" className="w-full h-full object-contain" />
+                        <img src="/logo-light.png" alt="موازين" className="w-full h-full object-contain" />
                     </div>
                 </motion.div>
                 
@@ -290,6 +230,16 @@ export default function Login() {
                     {error}
                   </motion.div>
                 )}
+                {info && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="bg-emerald-50 border border-emerald-100 text-emerald-700 px-4 py-3 rounded-xl text-sm"
+                  >
+                    {info}
+                  </motion.div>
+                )}
               </AnimatePresence>
 
               <div className="space-y-2">
@@ -343,7 +293,7 @@ export default function Login() {
                   />
                   <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors">تذكرني</span>
                 </label>
-                <button type="button" className="text-sm font-semibold text-ink hover:underline">
+                <button type="button" onClick={handleForgotPassword} className="text-sm font-semibold text-ink hover:underline">
                   نسيت كلمة المرور؟
                 </button>
               </div>
@@ -368,9 +318,16 @@ export default function Login() {
               </button>
             </form>
 
-            <div className="mt-12 text-center">
+            <div className="mt-8 rounded-2xl border border-gray-100 bg-gray-50 p-4 text-center text-sm text-gray-600">
+              ليس لديك حساب؟{" "}
+              <Link to="/signup" className="font-bold text-ink hover:underline">
+                ابدأ تجربتك المجانية 14 يوماً
+              </Link>
+            </div>
+
+            <div className="mt-8 text-center">
                 <p className="text-gray-400 text-sm">
-                    جميع الحقوق محفوظة &copy; {new Date().getFullYear()} LawyerOS Pro
+                    جميع الحقوق محفوظة &copy; {new Date().getFullYear()} موازين
                 </p>
             </div>
           </div>

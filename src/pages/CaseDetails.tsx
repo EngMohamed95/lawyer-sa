@@ -1125,49 +1125,33 @@ export default function CaseDetails() {
                 <CardTitle className="text-lg">{isExecutionCase ? "بيانات الطلب" : "بيانات القضية"}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {isExecutionCase ? (
-                    <>
-                      <div className="flex justify-between border-b pb-3 border-gray-100">
-                        <span className="text-gray-500">نوع الطلب</span>
-                        <span className="font-medium">{data.enforcementRequestType || "غير محدد"}</span>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="flex justify-between border-b pb-3 border-gray-100">
-                      <span className="text-gray-500">نوع القضية</span>
-                      <span className="font-medium">
-                        {caseTypeLabel(data.type) || "غير محدد"}
-                      </span>
+                {/* كل حقل: العنوان فوق القيمة مباشرة داخل خانة مستقلة — أسهل للقراءة من صف ممتد بعرض الصفحة */}
+                <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {([
+                    isExecutionCase
+                      ? { label: "نوع الطلب", value: data.enforcementRequestType || "غير محدد" }
+                      : { label: "نوع القضية", value: caseTypeLabel(data.type) || "غير محدد" },
+                    { label: "الصفة", value: clientRoleLabelOf(data) },
+                    { label: isExecutionCase ? "المحكمة" : "المحكمة المرفوع أمامها", value: data.courtName || "غير محدد" },
+                    { label: "الدائرة القضائية", value: data.courtCircle || "غير محدد" },
+                    {
+                      label: isExecutionCase ? "تاريخ تقديم الطلب" : "تاريخ القضية",
+                      value: (
+                        <>
+                          {data.startDate ? formatGregorian(data.startDate) : "-"}
+                          {isExecutionCase && data.startTime && <span className="text-gray-500 font-normal"> · الساعة <bdi dir="ltr">{data.startTime}</bdi></span>}
+                        </>
+                      ),
+                    },
+                    // نفس الحقول التي يحفظها نموذج تعديل القضية — فيظهر أي تعديل فور الحفظ
+                    { label: isExecutionCase ? "الأشخاص المسؤولون" : "المحامي المسؤول", value: assignedLawyersLabel(data) },
+                  ] as { label: string; value: React.ReactNode }[]).map((field) => (
+                    <div key={field.label} className="rounded-lg border border-gray-100 bg-gray-50/70 px-4 py-3">
+                      <dt className="text-xs text-gray-500 mb-1">{field.label}</dt>
+                      <dd className="font-semibold text-ink leading-relaxed break-words">{field.value}</dd>
                     </div>
-                  )}
-                  <div className="flex justify-between border-b pb-3 border-gray-100">
-                    <span className="text-gray-500">الصفة</span>
-                    <span className="font-medium text-ink">
-                      {clientRoleLabelOf(data)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-b pb-3 border-gray-100">
-                    <span className="text-gray-500">{isExecutionCase ? "المحكمة" : "المحكمة المرفوع أمامها"}</span>
-                    <span className="font-medium text-ink">{data.courtName || "غير محدد"}</span>
-                  </div>
-                  <div className="flex justify-between border-b pb-3 border-gray-100">
-                    <span className="text-gray-500">الدائرة القضائية</span>
-                    <span className="font-medium text-ink">{data.courtCircle || "غير محدد"}</span>
-                  </div>
-                  <div className="flex justify-between border-b pb-3 border-gray-100">
-                    <span className="text-gray-500">{isExecutionCase ? "تاريخ تقديم الطلب" : "تاريخ القضية"}</span>
-                    <span className="font-medium">
-                      {data.startDate ? formatGregorian(data.startDate) : "-"}
-                      {isExecutionCase && data.startTime && <span className="text-gray-500"> · الساعة <bdi dir="ltr">{data.startTime}</bdi></span>}
-                    </span>
-                  </div>
-                  {/* نفس الحقول التي يحفظها نموذج تعديل القضية — فيظهر أي تعديل فور الحفظ */}
-                  <div className="flex justify-between gap-4 pb-1">
-                    <span className="text-gray-500 shrink-0">{isExecutionCase ? "الأشخاص المسؤولون" : "المحامي المسؤول"}</span>
-                    <span className="font-medium text-left">{assignedLawyersLabel(data)}</span>
-                  </div>
-                </div>
+                  ))}
+                </dl>
               </CardContent>
             </Card>
 
@@ -1241,139 +1225,62 @@ export default function CaseDetails() {
                     </div>
                   </div>
 
-                  {/* Litigation Stages */}
-                  <div className="space-y-4">
-                    {/* Stage 1: Submission */}
-                    <div className="border border-gray-100 rounded-xl overflow-hidden shadow-2xs">
-                      <button 
-                        onClick={() => setExpandedStages((prev: any) => ({ ...prev, SUBMIT: !prev.SUBMIT }))}
-                        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-ink text-sm">1. تقديم قيد الدعوى وإحالتها</span>
-                          <span className="text-xs text-gray-500 font-medium">({litigationStepsList.filter(s => s.stage === "SUBMIT").filter(s => data.litigationSteps?.[s.id]).length}/8)</span>
-                        </div>
-                        {expandedStages.SUBMIT ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
-                      </button>
-                      
-                      {expandedStages.SUBMIT && (
-                        <div className="p-3 bg-surface divide-y divide-gray-50">
-                          {litigationStepsList.filter(s => s.stage === "SUBMIT").map(step => (
-                            <div 
-                              key={step.id} 
-                              onClick={() => handleToggleLitigationStep(step.id)}
-                              className="flex items-start gap-3 py-2.5 px-2 hover:bg-blue-50/20 cursor-pointer rounded-lg transition"
-                            >
-                              <div className={`w-5 h-5 rounded-full border shrink-0 flex items-center justify-center transition ${data.litigationSteps?.[step.id] ? "bg-blue-600 border-blue-700 text-white" : "border-gray-300 bg-surface"}`}>
-                                {data.litigationSteps?.[step.id] && <span className="text-[10px] font-bold">✓</span>}
+                  {/* Litigation Stages — عمودان على الشاشات العريضة لاستغلال المساحة */}
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
+                    {([
+                      { key: "SUBMIT", title: "1. تقديم قيد الدعوى وإحالتها" },
+                      { key: "PLEADING", title: "2. الترافع وتبادل المذكرات والجلسات" },
+                      { key: "JUDGMENT", title: "3. الأحكام والاعتراض والاستئناف" },
+                      { key: "EXECUTION", title: "4. السند والتنفيذ والتحصيل" },
+                    ] as const).map(stage => {
+                      const steps = litigationStepsList.filter(s => s.stage === stage.key);
+                      const done = steps.filter(s => data.litigationSteps?.[s.id]).length;
+                      const isOpen = !!expandedStages[stage.key];
+                      return (
+                        <div key={stage.key} className="border border-gray-100 rounded-xl overflow-hidden shadow-2xs bg-surface">
+                          <button
+                            onClick={() => setExpandedStages((prev: any) => ({ ...prev, [stage.key]: !prev[stage.key] }))}
+                            className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="font-bold text-ink text-sm">{stage.title}</span>
+                                <span className={`text-xs font-bold shrink-0 ${done === steps.length ? "text-green-600" : "text-gray-500"}`}>({done}/{steps.length})</span>
                               </div>
-                              <span className={`text-xs leading-relaxed ${data.litigationSteps?.[step.id] ? "text-gray-500 line-through" : "text-gray-800 font-medium"}`}>
-                                <span className="font-bold text-gray-400 ml-1">{step.id}.</span> {step.label}
-                              </span>
+                              {isOpen ? <ChevronUp size={16} className="text-gray-500 shrink-0" /> : <ChevronDown size={16} className="text-gray-500 shrink-0" />}
                             </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                            <div className="mt-2 w-full bg-gray-200/70 h-1 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-500 ${done === steps.length ? "bg-green-500" : "bg-blue-600"}`}
+                                style={{ width: `${steps.length ? (done / steps.length) * 100 : 0}%` }}
+                              />
+                            </div>
+                          </button>
 
-                    {/* Stage 2: Pleadings & Hearings */}
-                    <div className="border border-gray-100 rounded-xl overflow-hidden shadow-2xs">
-                      <button 
-                        onClick={() => setExpandedStages((prev: any) => ({ ...prev, PLEADING: !prev.PLEADING }))}
-                        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-ink text-sm">2. الترافع وتبادل المذكرات والجلسات</span>
-                          <span className="text-xs text-gray-500 font-medium">({litigationStepsList.filter(s => s.stage === "PLEADING").filter(s => data.litigationSteps?.[s.id]).length}/6)</span>
-                        </div>
-                        {expandedStages.PLEADING ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
-                      </button>
-                      
-                      {expandedStages.PLEADING && (
-                        <div className="p-3 bg-surface divide-y divide-gray-50">
-                          {litigationStepsList.filter(s => s.stage === "PLEADING").map(step => (
-                            <div 
-                              key={step.id} 
-                              onClick={() => handleToggleLitigationStep(step.id)}
-                              className="flex items-start gap-3 py-2.5 px-2 hover:bg-blue-50/20 cursor-pointer rounded-lg transition"
-                            >
-                              <div className={`w-5 h-5 rounded-full border shrink-0 flex items-center justify-center transition ${data.litigationSteps?.[step.id] ? "bg-blue-600 border-blue-700 text-white" : "border-gray-300 bg-surface"}`}>
-                                {data.litigationSteps?.[step.id] && <span className="text-[10px] font-bold">✓</span>}
-                              </div>
-                              <span className={`text-xs leading-relaxed ${data.litigationSteps?.[step.id] ? "text-gray-500 line-through" : "text-gray-800 font-medium"}`}>
-                                <span className="font-bold text-gray-400 ml-1">{step.id}.</span> {step.label}
-                              </span>
+                          {isOpen && (
+                            <div className="p-2 divide-y divide-gray-50">
+                              {steps.map(step => {
+                                const checked = !!data.litigationSteps?.[step.id];
+                                return (
+                                  <div
+                                    key={step.id}
+                                    onClick={() => handleToggleLitigationStep(step.id)}
+                                    className="flex items-start gap-3 py-2 px-2 hover:bg-blue-50/30 cursor-pointer rounded-lg transition"
+                                  >
+                                    <div className={`w-5 h-5 mt-0.5 rounded-full border shrink-0 flex items-center justify-center transition ${checked ? "bg-blue-600 border-blue-700 text-white" : "border-gray-300 bg-surface"}`}>
+                                      {checked && <span className="text-[10px] font-bold">✓</span>}
+                                    </div>
+                                    <span className={`text-[13px] leading-relaxed ${checked ? "text-gray-500 line-through" : "text-gray-800 font-medium"}`}>
+                                      <span className="font-bold text-gray-400 ml-1">{step.id}.</span> {step.label}
+                                    </span>
+                                  </div>
+                                );
+                              })}
                             </div>
-                          ))}
+                          )}
                         </div>
-                      )}
-                    </div>
-
-                    {/* Stage 3: Judgments */}
-                    <div className="border border-gray-100 rounded-xl overflow-hidden shadow-2xs">
-                      <button 
-                        onClick={() => setExpandedStages((prev: any) => ({ ...prev, JUDGMENT: !prev.JUDGMENT }))}
-                        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-ink text-sm">3. الأحكام والاعتراض والاستئناف</span>
-                          <span className="text-xs text-gray-500 font-medium">({litigationStepsList.filter(s => s.stage === "JUDGMENT").filter(s => data.litigationSteps?.[s.id]).length}/6)</span>
-                        </div>
-                        {expandedStages.JUDGMENT ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
-                      </button>
-                      
-                      {expandedStages.JUDGMENT && (
-                        <div className="p-3 bg-surface divide-y divide-gray-50">
-                          {litigationStepsList.filter(s => s.stage === "JUDGMENT").map(step => (
-                            <div 
-                              key={step.id} 
-                              onClick={() => handleToggleLitigationStep(step.id)}
-                              className="flex items-start gap-3 py-2.5 px-2 hover:bg-blue-50/20 cursor-pointer rounded-lg transition"
-                            >
-                              <div className={`w-5 h-5 rounded-full border shrink-0 flex items-center justify-center transition ${data.litigationSteps?.[step.id] ? "bg-blue-600 border-blue-700 text-white" : "border-gray-300 bg-surface"}`}>
-                                {data.litigationSteps?.[step.id] && <span className="text-[10px] font-bold">✓</span>}
-                              </div>
-                              <span className={`text-xs leading-relaxed ${data.litigationSteps?.[step.id] ? "text-gray-500 line-through" : "text-gray-800 font-medium"}`}>
-                                <span className="font-bold text-gray-400 ml-1">{step.id}.</span> {step.label}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Stage 4: Execution */}
-                    <div className="border border-gray-100 rounded-xl overflow-hidden shadow-2xs">
-                      <button 
-                        onClick={() => setExpandedStages((prev: any) => ({ ...prev, EXECUTION: !prev.EXECUTION }))}
-                        className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100/70 transition text-right"
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-ink text-sm">4. السند والتنفيذ والتحصيل</span>
-                          <span className="text-xs text-gray-500 font-medium">({litigationStepsList.filter(s => s.stage === "EXECUTION").filter(s => data.litigationSteps?.[s.id]).length}/5)</span>
-                        </div>
-                        {expandedStages.EXECUTION ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
-                      </button>
-                      
-                      {expandedStages.EXECUTION && (
-                        <div className="p-3 bg-surface divide-y divide-gray-50">
-                          {litigationStepsList.filter(s => s.stage === "EXECUTION").map(step => (
-                            <div 
-                              key={step.id} 
-                              onClick={() => handleToggleLitigationStep(step.id)}
-                              className="flex items-start gap-3 py-2.5 px-2 hover:bg-blue-50/20 cursor-pointer rounded-lg transition"
-                            >
-                              <div className={`w-5 h-5 rounded-full border shrink-0 flex items-center justify-center transition ${data.litigationSteps?.[step.id] ? "bg-blue-600 border-blue-700 text-white" : "border-gray-300 bg-surface"}`}>
-                                {data.litigationSteps?.[step.id] && <span className="text-[10px] font-bold">✓</span>}
-                              </div>
-                              <span className={`text-xs leading-relaxed ${data.litigationSteps?.[step.id] ? "text-gray-500 line-through" : "text-gray-800 font-medium"}`}>
-                                <span className="font-bold text-gray-400 ml-1">{step.id}.</span> {step.label}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                      );
+                    })}
                   </div>
 
                   {/* Special Scenarios Section */}
@@ -1381,7 +1288,7 @@ export default function CaseDetails() {
                     <h4 className="text-sm font-bold text-ink flex items-center gap-2">
                       <AlertTriangle className="text-blue-500 w-4 h-4" /> حالات طارئة قد تطرأ أثناء سير القضية
                     </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-blue-50/10 p-4 rounded-xl border border-blue-100/50">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2 bg-blue-50/10 p-3 rounded-xl border border-blue-100/50">
                       {litigationScenariosList.map(item => (
                         <label 
                           key={item.id} 

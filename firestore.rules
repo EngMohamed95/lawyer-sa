@@ -67,6 +67,17 @@ service cloud.firestore {
       return signedIn() && notSuspended();
     }
 
+    /**
+     * حقول الاشتراك يكتبها مدير المنصة (أو signup.php بحساب الخدمة) وحده —
+     * لا يستطيع مالك المكتب تمديد اشتراكه أو ترقية باقته أو تغيير حصصه بنفسه.
+     */
+    function subscriptionFieldsUnchanged() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+        'plan', 'planId', 'status', 'subscriptionExpiry', 'subscriptionStart',
+        'subscriptionBilling', 'quotaOverrides', 'selfSignup', 'emailVerifiedAt', 'trialEndsAt'
+      ]);
+    }
+
     /** السجل الموجود يخص مكتبي */
     function ownsExisting() {
       return resource != null && resource.data.get('lawyerId', '') == myTenant();
@@ -81,8 +92,20 @@ service cloud.firestore {
       return member() && (isSuperAdmin() || ownsExisting());
     }
 
+    /**
+     * الفترة التجريبية للتسجيل الذاتي انتهت بلا اشتراك؟ — الكتابة مقفلة على المكتب كله
+     * (القراءة تبقى: البيانات محفوظة). signup.php يكتب trialEndsAt كـ Timestamp، وتفعيل
+     * أي اشتراك مدفوع يغيّر subscriptionBilling فيُفتح القفل. مستند المالك = myTenant().
+     */
+    function officeWritable() {
+      let owner = get(/databases/$(database)/documents/users/$(myTenant())).data;
+      return owner.get('subscriptionBilling', '') != 'trial'
+        || !('trialEndsAt' in owner)
+        || owner.trialEndsAt > request.time;
+    }
+
     function canCreate() {
-      return member() && (isSuperAdmin() || ownsIncoming());
+      return member() && (isSuperAdmin() || (ownsIncoming() && officeWritable()));
     }
 
     /** التعديل يفحص القادم والموجود معاً، ويمنع نقل السجل لمكتب آخر */
@@ -90,6 +113,7 @@ service cloud.firestore {
       return member() && (
         isSuperAdmin() ||
         (
+          officeWritable() &&
           ownsExisting() &&
           ownsIncoming() &&
           request.resource.data.get('lawyerId', '') == resource.data.get('lawyerId', '')
@@ -98,12 +122,12 @@ service cloud.firestore {
     }
 
     function canDelete() {
-      return member() && (isSuperAdmin() || ownsExisting());
+      return member() && (isSuperAdmin() || (ownsExisting() && officeWritable()));
     }
 
     /** الحذف النهائي داخل المكتب — لمدير المكتب وحده */
     function canHardDelete() {
-      return member() && (isSuperAdmin() || (ownsExisting() && isOfficeOwner()));
+      return member() && (isSuperAdmin() || (ownsExisting() && isOfficeOwner() && officeWritable()));
     }
 
     /* ────────────────────────── المستخدمون ────────────────────────── */
@@ -136,6 +160,7 @@ service cloud.firestore {
           isOfficeOwner() &&
           resource.data.get('lawyerId', userId) == myTenant() &&
           request.resource.data.get('lawyerId', userId) == resource.data.get('lawyerId', userId) &&
+          (userId != request.auth.uid || subscriptionFieldsUnchanged()) &&
           (request.resource.data.get('role', '') == resource.data.get('role', '') ||
             (userId != request.auth.uid && resource.data.get('role', '') != 'SUPER_ADMIN' &&
               request.resource.data.get('role', '') in ['PARTNER', 'OFFICE_LAWYER', 'CONSULTANT', 'SECRETARY', 'ACCOUNTANT', 'TRAINEE', 'CLIENT']))
@@ -146,7 +171,8 @@ service cloud.firestore {
           request.resource.data.get('role', '')     == resource.data.get('role', '') &&
           request.resource.data.get('lawyerId', '') == resource.data.get('lawyerId', '') &&
           request.resource.data.get('plan', '')     == resource.data.get('plan', '') &&
-          request.resource.data.get('status', '')   == resource.data.get('status', '')
+          request.resource.data.get('status', '')   == resource.data.get('status', '') &&
+          subscriptionFieldsUnchanged()
         )
       );
 
@@ -159,6 +185,14 @@ service cloud.firestore {
     match /subscriptionRequests/{docId} {
       allow create: if true;
       allow read, update, delete: if isSuperAdmin();
+    }
+
+    /* ────────────────────────── رموز تأكيد التسجيل ────────────────────────── */
+
+    // رموز OTP للتسجيل الذاتي — يكتبها ويقرؤها signup.php بحساب الخدمة وحده.
+    // لا وصول للعميل إطلاقاً، ولا حتى لمدير المنصة (الرمز مُجزَّأ أصلاً).
+    match /signup_otps/{uid} {
+      allow read, write: if false;
     }
 
     /* ────────────────────────── القضايا والعملاء ────────────────────────── */
@@ -537,6 +571,72 @@ service cloud.firestore {
     match /subscriptionPlans/{planId} {
       allow read: if true;
       allow write: if isSuperAdmin();
+    }
+
+    /* ────────────────────────── محادثات المساعد الذكي ────────────────────────── */
+
+    // كل محادثة ملك صاحبها وحده (userId = uid) — لا يراها زملاؤه في المكتب ولا مدير المنصة.
+    // المساعد واحد على مستوى المنصة، لكن ذاكرة كل مستخدم (سجل محادثاته) معزولة عن غيره.
+    // lawyerId يُثبَّت على مكتب المستخدم عند الإنشاء (مدير المنصة يحمل "ALL")، ولا يتغيّر المالك بعدها.
+    match /ai_conversations/{id} {
+      function ownsConversation() {
+        return resource.data.get('userId', '') == request.auth.uid;
+      }
+
+      allow get, list: if member() && ownsConversation();
+      allow create: if member()
+        && request.resource.data.get('userId', '') == request.auth.uid
+        && (request.resource.data.get('lawyerId', '') == myTenant() || isSuperAdmin())
+        && request.resource.data.messages is list;
+      allow update: if member()
+        && ownsConversation()
+        && request.resource.data.get('userId', '') == resource.data.get('userId', '')
+        && request.resource.data.get('lawyerId', '') == resource.data.get('lawyerId', '')
+        && request.resource.data.messages is list;
+      allow delete: if member() && ownsConversation();
+    }
+
+    /* ────────────────────────── استهلاك المساعد الذكي ────────────────────────── */
+
+    // عدّاد شهري لكل مكتب: المعرّف {lawyerId}_{YYYY-MM}. يكتبه وسيط الذكاء الاصطناعي
+    // بتوكن المستخدم بعد كل رد ناجح. لا يُسمح إلا بزيادة 1 بالضبط — فلا يستطيع أحد
+    // إنقاص عدّاد مكتبه أو تصفيره، ولا لمس عدّاد مكتب آخر.
+    match /ai_usage/{id} {
+      function usageFieldsOk() {
+        return request.resource.data.keys().hasOnly(['lawyerId', 'month', 'count', 'updatedAt'])
+          && request.resource.data.month is string
+          && request.resource.data.month.matches('^[0-9]{4}-[0-9]{2}$')
+          && id == request.resource.data.lawyerId + '_' + request.resource.data.month
+          && request.resource.data.updatedAt == request.time;
+      }
+
+      // قراءة عدّاد مكتبي بالمعرّف حتى قبل وجوده (فيظهر 0 بدل خطأ صلاحية)
+      allow get: if member() && (isSuperAdmin() || id.matches('^' + myTenant() + '_[0-9]{4}-[0-9]{2}$'));
+      allow list: if isSuperAdmin();
+      allow create: if member() && !isSuperAdmin() && usageFieldsOk()
+        && request.resource.data.lawyerId == myTenant()
+        && request.resource.data.count == 1;
+      allow update: if member() && !isSuperAdmin() && usageFieldsOk()
+        && resource.data.lawyerId == myTenant()
+        && request.resource.data.lawyerId == resource.data.lawyerId
+        && request.resource.data.month == resource.data.month
+        && request.resource.data.count == resource.data.count + 1;
+      allow delete: if false;
+    }
+
+    /* ────────────────────────── حالة خدمة المنصة ────────────────────────── */
+
+    // platform_status/ai: يسجّل وسيط الذكاء الاصطناعي توقف مفتاح المنصة (DOWN) وعودته (OK)
+    // بتوكن المستخدم الذي صادف الخلل، ليظهر تنبيه لمدير المنصة. القراءة لمدير المنصة وحده.
+    match /platform_status/{id} {
+      allow read: if isSuperAdmin();
+      allow create, update: if member() && id == 'ai'
+        && request.resource.data.keys().hasOnly(['state', 'reason', 'httpStatus', 'at'])
+        && request.resource.data.state in ['DOWN', 'OK']
+        && request.resource.data.reason in ['', 'QUOTA', 'ACCOUNT', 'MANUAL']
+        && request.resource.data.httpStatus is int
+        && request.resource.data.at == request.time;
+      allow delete: if isSuperAdmin();
     }
 
     /* ────────────────────────── الافتراضي: الرفض ────────────────────────── */

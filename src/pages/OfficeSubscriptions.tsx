@@ -6,11 +6,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Clock, Hourglass, Loader2, RefreshCw, Search, Settings2, Users, XCircle } from "lucide-react";
-import { collection, deleteField, doc, getDocs, updateDoc } from "firebase/firestore";
+import { collection, deleteField, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { Input } from "../components/ui/input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { AdminHeader, AdminModal, AdminStat, HeaderButton, adminPanel, fmtDate, fmtNum } from "../components/admin/AdminUi";
+import { currentAiMonth } from "../lib/aiUsage";
 import {
   QUOTA_KEYS, QUOTA_LABELS, STATUS_META, assignPlan, daysUntil, effectiveQuota, loadPlans, subscriptionStatus,
   type QuotaKey, type SubscriptionPlan, type SubscriptionStatus,
@@ -54,16 +55,24 @@ export default function OfficeSubscriptions() {
         getDocs(collection(db, "clients")).catch(() => null),
         loadPlans().catch(() => [] as SubscriptionPlan[]),
       ]);
+      // طلبات المساعد الذكي هذا الشهر — عدّاد يكتبه وسيط الذكاء الاصطناعي (ai_usage)
+      const aiSnap = await getDocs(query(collection(db, "ai_usage"), where("month", "==", currentAiMonth()))).catch(() => null);
       const next: Record<string, Record<QuotaKey, number>> = {};
       const bump = (id: unknown, key: QuotaKey) => {
         if (typeof id !== "string" || !id) return;
-        next[id] = next[id] || { cases: 0, clients: 0, team: 0 };
+        next[id] = next[id] || { cases: 0, clients: 0, team: 0, ai: 0 };
         next[id][key]++;
       };
       const users = usersSnap.docs.map((d) => ({ id: d.id, ...d.data() } as any));
       users.forEach((u) => { if (!NON_TEAM_ROLES.has(u.role)) bump(u.lawyerId, "team"); });
       casesSnap?.docs.forEach((d) => bump(d.data().lawyerId, "cases"));
       clientsSnap?.docs.forEach((d) => bump(d.data().lawyerId, "clients"));
+      aiSnap?.docs.forEach((d) => {
+        const { lawyerId, count } = d.data();
+        if (typeof lawyerId !== "string" || !lawyerId) return;
+        next[lawyerId] = next[lawyerId] || { cases: 0, clients: 0, team: 0, ai: 0 };
+        next[lawyerId].ai = Number(count) || 0;
+      });
       setUsage(next);
       setPlans(planList);
       setOffices(users.filter((u) => u.role === "LAWYER"));
@@ -149,7 +158,7 @@ export default function OfficeSubscriptions() {
                   const plan = planOf(o);
                   const status = statusOf(o);
                   const days = daysUntil(o.subscriptionExpiry);
-                  const used = usage[o.id] || { cases: 0, clients: 0, team: 0 };
+                  const used = usage[o.id] || { cases: 0, clients: 0, team: 0, ai: 0 };
                   return (
                     <tr key={o.id} className="align-top hover:bg-slate-50">
                       <td className="px-4 py-4">
@@ -230,6 +239,7 @@ function ManageSubscription({ office, plans, plan, onClose, onSaved }: {
     cases: office.quotaOverrides?.cases?.toString() ?? "",
     clients: office.quotaOverrides?.clients?.toString() ?? "",
     team: office.quotaOverrides?.team?.toString() ?? "",
+    ai: office.quotaOverrides?.ai?.toString() ?? "",
   });
   const [saving, setSaving] = useState(false);
   const chosen = plans.find((p) => p.id === planId) || null;
@@ -291,7 +301,7 @@ function ManageSubscription({ office, plans, plan, onClose, onSaved }: {
 
         <section className="space-y-3 border-t border-slate-100 pt-5">
           <h3 className="font-bold">الحصص المخصصة <span className="text-xs font-normal text-slate-400">(اتركها فارغة لتطبيق حدود الباقة — 0 = غير محدود)</span></h3>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {QUOTA_KEYS.map((k) => (
               <div key={k} className="space-y-1">
                 <label className="text-xs font-bold text-slate-600">{QUOTA_LABELS[k]}</label>

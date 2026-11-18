@@ -1744,7 +1744,7 @@ export default function Documents({
                     </div>
                     <div className="text-left font-mono text-[9px] text-gray-400">
                       <p>تاريخ الإنشاء: {new Date().toLocaleDateString("ar-EG")}</p>
-                      <p>LawyerOS Word Engine</p>
+                      <p>موازين — محرر Word</p>
                     </div>
                   </div>
 
@@ -2191,7 +2191,7 @@ export default function Documents({
                         </div>
                         <div className="text-left font-mono text-[9px] text-gray-400 font-normal">
                           <p>تاريخ المعاينة: {new Date().toLocaleDateString("ar-EG")}</p>
-                          <p>LawyerOS Custom Engine</p>
+                          <p>موازين — المحرر المخصص</p>
                         </div>
                       </div>
 

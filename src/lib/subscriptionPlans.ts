@@ -14,7 +14,7 @@ import { db } from "./firebase";
 export type PlanTier = "BASIC" | "PROFESSIONAL" | "PREMIUM";
 export type PlanBilling = "trial" | "monthly" | "annual";
 export type Currency = "SAR" | "EGP" | "USD";
-export type QuotaKey = "cases" | "clients" | "team";
+export type QuotaKey = "cases" | "clients" | "team" | "ai";
 
 export const TIER_LABELS: Record<PlanTier, string> = {
   BASIC: "أساسية — القضايا والعملاء والجلسات",
@@ -27,8 +27,9 @@ export const CURRENCIES: { code: Currency; label: string; flag: string }[] = [
   { code: "EGP", label: "جنيه مصري", flag: "EG" },
   { code: "USD", label: "دولار أمريكي", flag: "USD" },
 ];
-export const QUOTA_LABELS: Record<QuotaKey, string> = { cases: "القضايا", clients: "العملاء", team: "أعضاء الفريق" };
-export const QUOTA_KEYS: QuotaKey[] = ["cases", "clients", "team"];
+/** ai: طلبات المساعد الذكي في الشهر — يفرضها وسيط الذكاء الاصطناعي على الخادم (ai_usage) */
+export const QUOTA_LABELS: Record<QuotaKey, string> = { cases: "القضايا", clients: "العملاء", team: "أعضاء الفريق", ai: "طلبات المساعد الذكي / شهر" };
+export const QUOTA_KEYS: QuotaKey[] = ["cases", "clients", "team", "ai"];
 
 /** أيام السماح بعد انتهاء الاشتراك قبل اعتباره منتهياً */
 export const GRACE_DAYS = 7;
@@ -51,13 +52,13 @@ export interface SubscriptionPlan {
 /** الباقات الافتراضية — بنفس أسعار ومستويات النظام الحالية */
 export const DEFAULT_PLANS: SubscriptionPlan[] = [
   { id: "trial", name: "الباقة التجريبية", nameEn: "Free Trial", tier: "PROFESSIONAL", billing: "trial", durationDays: 14,
-    quotas: { cases: 20, clients: 20, team: 2 }, prices: { SAR: 0, EGP: 0, USD: 0 }, active: true, order: 0 },
+    quotas: { cases: 20, clients: 20, team: 2, ai: 50 }, prices: { SAR: 0, EGP: 0, USD: 0 }, active: true, order: 0 },
   { id: "basic", name: "الباقة الأساسية", nameEn: "Basic Plan", tier: "BASIC", billing: "monthly", durationDays: 30,
-    quotas: { cases: 100, clients: 100, team: 2 }, prices: { SAR: 0, EGP: 200, USD: 0 }, active: true, order: 1 },
+    quotas: { cases: 100, clients: 100, team: 2, ai: 100 }, prices: { SAR: 0, EGP: 200, USD: 0 }, active: true, order: 1 },
   { id: "professional", name: "الباقة الاحترافية", nameEn: "Professional Plan", tier: "PROFESSIONAL", billing: "monthly", durationDays: 30,
-    quotas: { cases: 500, clients: 500, team: 5 }, prices: { SAR: 0, EGP: 500, USD: 0 }, active: true, order: 2 },
+    quotas: { cases: 500, clients: 500, team: 5, ai: 500 }, prices: { SAR: 0, EGP: 500, USD: 0 }, active: true, order: 2 },
   { id: "enterprise", name: "باقة الشركات", nameEn: "Enterprise Plan", tier: "PREMIUM", billing: "annual", durationDays: 365,
-    quotas: { cases: 0, clients: 0, team: 20 }, prices: { SAR: 0, EGP: 10000, USD: 0 }, active: true, order: 3 },
+    quotas: { cases: 0, clients: 0, team: 20, ai: 3000 }, prices: { SAR: 0, EGP: 10000, USD: 0 }, active: true, order: 3 },
 ];
 
 const num = (v: unknown, fallback = 0) => {
@@ -75,7 +76,7 @@ function sanitizePlan(id: string, d: any): SubscriptionPlan {
     tier,
     billing,
     durationDays: num(d?.durationDays, billing === "annual" ? 365 : billing === "trial" ? 14 : 30),
-    quotas: { cases: num(d?.quotas?.cases), clients: num(d?.quotas?.clients), team: num(d?.quotas?.team) },
+    quotas: { cases: num(d?.quotas?.cases), clients: num(d?.quotas?.clients), team: num(d?.quotas?.team), ai: num(d?.quotas?.ai) },
     prices: { SAR: num(d?.prices?.SAR), EGP: num(d?.prices?.EGP), USD: num(d?.prices?.USD) },
     active: d?.active !== false,
     order: num(d?.order),

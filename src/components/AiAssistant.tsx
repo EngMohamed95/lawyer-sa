@@ -300,7 +300,7 @@ export function AiAssistant() {
       const currencyCode = localStorage.getItem("sys_currency") || "SAR";
       const countryContext = currencyCode === "SAR" ? "المملكة العربية السعودية" : currencyCode === "EGP" ? "جمهورية مصر العربية" : "مكتبك القانوني";
       
-      const systemPrompt = `أنت مساعد قانوني ذكي محترف تعمل داخل منصة "LawyerOS" لإدارة مكاتب المحاماة في ${countryContext}.
+      const systemPrompt = `أنت مساعد قانوني ذكي محترف تعمل داخل منصة "موازين" لإدارة مكاتب المحاماة في ${countryContext}.
 مهمتك هي مساعدة المحامي في تنظيم عمله، الإجابة على أسئلته القانونية بناءً على الملفات والقضايا والعملاء المتاحة في أرشيفه، وتقديم نصائح إدارية.
 تحدث دائماً بلهجة مهنية محترمة باللغة العربية واعتمد في مراجعاتك وقوانينك على الأنظمة السارية في ${countryContext}.
 
