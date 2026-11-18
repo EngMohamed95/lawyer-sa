@@ -1,4 +1,4 @@
-import { Brain, CheckCircle2, Gavel, Globe, Lock, MessageSquare } from "lucide-react";
+import { Brain, Briefcase, CalendarDays, CheckCircle2, Gavel, Globe, Lock, MessageSquare, ReceiptText, Scale } from "lucide-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 
@@ -25,6 +25,97 @@ const FEATURES = [
   },
 ];
 
+
+/** أقسام «داخل النظام» — صور من مكتب العرض (بيانات وهمية) بالهوية الجديدة */
+const MODULES = [
+  {
+    image: "/screenshots/cases.webp",
+    alt: "إدارة القضايا في موازين",
+    badge: "إدارة القضايا",
+    icon: <Briefcase size={16} />,
+    badgeClass: "bg-[#c9a227]/10 text-[#e6c766]",
+    checkClass: "text-[#e6c766]",
+    glowClass: "bg-[#c9a227]/10",
+    title: "كل قضاياك منظمة وفي متناول يدك",
+    description: "سجّل القضية مرة واحدة وتابع أطرافها ومحكمتها ودائرتها ومراحلها والمحامي المسؤول عنها — بالتاريخ الهجري والميلادي.",
+    points: ["رقم القضية والمحكمة والدائرة وصفة الموكّل", "تكليف المحامين والمستشارين والمتدربين", "مراحل التقاضي ونسبة الإنجاز لكل قضية", "تصدير سجل القضايا إلى Excel"],
+  },
+  {
+    image: "/screenshots/hearings.webp",
+    alt: "جدول الجلسات في موازين",
+    badge: "الجلسات",
+    icon: <Gavel size={16} />,
+    badgeClass: "bg-blue-500/10 text-blue-300",
+    checkClass: "text-blue-400",
+    glowClass: "bg-blue-500/10",
+    title: "لا تفوّت جلسة واحدة",
+    description: "كل جلسات المكتب في جدول واحد: القادمة، واليوم، والتي تنتظر تسجيل نتيجتها — مع رول الجلسات جاهزاً للطباعة.",
+    points: ["حالة كل جلسة: قادمة / اليوم / بانتظار النتيجة / منتهية", "تحميل رول الجلسات PDF بضغطة", "ربط الجلسة بقضيتها ومحاميها تلقائياً", "تسجيل القرار والمطلوب للجلسة التالية"],
+  },
+  {
+    image: "/screenshots/calendar.webp",
+    alt: "التقويم والمواعيد في موازين",
+    badge: "المواعيد والتقويم",
+    icon: <CalendarDays size={16} />,
+    badgeClass: "bg-emerald-500/10 text-emerald-300",
+    checkClass: "text-emerald-400",
+    glowClass: "bg-emerald-500/10",
+    title: "يومك كله في تقويم واحد",
+    description: "الجلسات والمواعيد والمهام ومواعيد الفواتير والعقود تجتمع في تقويم شهري وأسبوعي ويومي، مع تذكيرات قبل كل موعد.",
+    points: ["عرض شهري وأسبوعي ويومي وأجندة", "اجتماعات العملاء والاستشارات ومواعيد الإجراءات", "تذكيرات داخل النظام قبل الموعد", "تصدير التقويم إلى Google وOutlook"],
+  },
+  {
+    image: "/screenshots/execution.webp",
+    alt: "ملفات التنفيذ في موازين",
+    badge: "التنفيذ",
+    icon: <Scale size={16} />,
+    badgeClass: "bg-orange-500/10 text-orange-300",
+    checkClass: "text-orange-400",
+    glowClass: "bg-orange-500/10",
+    title: "تابع طلبات التنفيذ حتى التحصيل",
+    description: "قسم مستقل لطلبات التنفيذ: نوع السند، والمنفذ ضده، والمبالغ المحصّلة، ومهلة التنفيذ، ونسبة إنجاز كل ملف.",
+    points: ["السندات لأمر والشيكات والأحكام والعقود", "تنبيه الملفات الناقصة والتي تجاوزت المهلة", "خطوات التنفيذ ونسبة الإنجاز لكل ملف", "سجل المبالغ المحصّلة من المنفذ ضده"],
+  },
+  {
+    image: "/screenshots/invoices.webp",
+    alt: "الفواتير والتحصيل في موازين",
+    badge: "الفواتير والحسابات",
+    icon: <ReceiptText size={16} />,
+    badgeClass: "bg-green-500/10 text-green-300",
+    checkClass: "text-green-400",
+    glowClass: "bg-green-500/10",
+    title: "فوترة احترافية وتحصيل بلا ضياع",
+    description: "أصدر الفواتير بضريبة القيمة المضافة، واعتمدها وأرسلها للعميل، وتابع المحصَّل والمتبقي والمتأخر في لوحة واحدة.",
+    points: ["فواتير ضريبية مرتبطة بالعميل والقضية", "سندات القبض والصرف والمصروفات", "المحصَّل والمستحق والمتأخر لحظة بلحظة", "كشف حساب لكل عميل"],
+  },
+  {
+    image: "/screenshots/login.webp",
+    alt: "الدخول الآمن إلى موازين",
+    badge: "أمان وخصوصية",
+    icon: <Lock size={16} />,
+    badgeClass: "bg-purple-500/10 text-purple-300",
+    checkClass: "text-purple-400",
+    glowClass: "bg-purple-500/10",
+    title: "بيانات مكتبك لمكتبك وحده",
+    description: "كل مكتب في مساحة معزولة تماماً، ولكل عضو في الفريق صلاحيات تناسب دوره — والمحامي يرى القضايا المكلّف بها فقط.",
+    points: ["عزل كامل لبيانات كل مكتب", "أدوار: مدير مكتب، محامٍ، مستشار، متدرب، محاسب", "تأكيد البريد الإلكتروني برمز عند التسجيل", "سجل تدقيق لكل عملية داخل المكتب"],
+  },
+];
+
+/** صورة شاشة داخل إطار متصفح بسيط */
+function ScreenFrame({ src, alt, eager = false }: { src: string; alt: string; eager?: boolean }) {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0b1733] shadow-2xl shadow-black/40">
+      <div className="flex items-center gap-2 border-b border-white/10 bg-white/5 px-4 py-2.5" dir="ltr">
+        <span className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
+        <span className="h-2.5 w-2.5 rounded-full bg-yellow-400/80" />
+        <span className="h-2.5 w-2.5 rounded-full bg-green-400/80" />
+        <span className="mx-auto rounded-md bg-white/5 px-6 py-0.5 text-[11px] text-gray-400">mawazzen.com</span>
+      </div>
+      <img src={src} alt={alt} width={1440} height={900} loading={eager ? "eager" : "lazy"} decoding="async" className="block w-full" />
+    </div>
+  );
+}
 
 function Badge({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
@@ -77,12 +168,9 @@ export default function LandingPage() {
             </a>
           </div>
 
-          <div className="mx-auto mt-20 max-w-5xl overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-4 shadow-2xl backdrop-blur-xl">
-            <img
-              src="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?q=80&w=2070&auto=format&fit=crop"
-              alt="Law office"
-              className="aspect-[16/7] w-full rounded-2xl object-cover opacity-70"
-            />
+          <div className="relative mx-auto mt-20 max-w-6xl">
+            <div className="absolute -inset-6 rounded-[48px] bg-gradient-to-b from-[#c9a227]/20 via-blue-500/10 to-transparent blur-3xl" />
+            <ScreenFrame src="/screenshots/dashboard.webp" alt="لوحة تحكم موازين — ملخص القضايا والجلسات والمهام والفواتير" eager />
           </div>
         </div>
       </section>
@@ -152,136 +240,37 @@ export default function LandingPage() {
               كل ما يحتاجه مكتبك <span className="text-ink-2">في مكان واحد</span>
             </h2>
             <p className="mt-6 text-lg text-gray-400 max-w-2xl mx-auto">
-              واجهة عربية احترافية مصممة خصيصاً للمحامين المصريين — من إدارة القضايا حتى تتبع الحسابات
+              واجهة عربية احترافية مصممة للمحامين — من القضية الأولى حتى تحصيل آخر فاتورة
             </p>
           </div>
 
-          {/* Service 1: Cases */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-24">
-            <div>
-              <div className="inline-flex items-center gap-2 bg-navy-2/10 text-ink-2 px-4 py-2 rounded-full text-sm font-bold mb-6">
-                ⚖️ إدارة القضايا
+          <div className="space-y-24 lg:space-y-32">
+            {MODULES.map((m, i) => (
+              <div key={m.image} className="grid grid-cols-1 items-center gap-12 lg:grid-cols-5">
+                <div className={`lg:col-span-2 ${i % 2 ? "lg:order-2" : ""}`}>
+                  <div className={`mb-6 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold ${m.badgeClass}`}>
+                    {m.icon} {m.badge}
+                  </div>
+                  <h3 className="mb-6 text-3xl font-black leading-tight">{m.title}</h3>
+                  <p className="mb-8 text-lg leading-relaxed text-gray-400">{m.description}</p>
+                  <ul className="space-y-3">
+                    {m.points.map((item) => (
+                      <li key={item} className="flex items-start gap-3 text-gray-300">
+                        <CheckCircle2 size={18} className={`mt-0.5 shrink-0 ${m.checkClass}`} />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className={`relative lg:col-span-3 ${i % 2 ? "lg:order-1" : ""}`}>
+                  <div className={`absolute -inset-4 rounded-[40px] blur-2xl ${m.glowClass}`} />
+                  <ScreenFrame src={m.image} alt={m.alt} />
+                </div>
               </div>
-              <h3 className="text-3xl font-black mb-6 leading-tight">
-                سجّل قضاياك وتتبّع كل تفاصيلها بدقة
-              </h3>
-              <p className="text-gray-400 text-lg leading-relaxed mb-8">
-                منظومة متكاملة لإدارة ملفات القضايا — أضف قضايا جديدة، حدد الخصوم والعملاء، تابع الحالة القانونية، وابحث بسرعة في آلاف الملفات بلحظة واحدة.
-              </p>
-              <ul className="space-y-3">
-                {["رقم القضية والمحكمة والدائرة", "ربط كل قضية بعميلها تلقائياً", "تصفية حسب الحالة: مفتوحة / مغلقة / معلقة", "عرض كامل لتفاصيل القضية والجلسات والمستندات"].map(item => (
-                  <li key={item} className="flex items-start gap-3 text-gray-300">
-                    <CheckCircle2 size={18} className="text-ink-2 mt-0.5 shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="relative">
-              <div className="absolute -inset-4 bg-navy-2/5 rounded-[40px] blur-2xl" />
-              <img
-                src="/screenshots/cases.png"
-                alt="إدارة القضايا"
-                className="relative rounded-2xl border border-white/10 shadow-2xl w-full"
-              />
-            </div>
-          </div>
-
-          {/* Service 2: Hearings */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-24">
-            <div className="order-2 lg:order-1 relative">
-              <div className="absolute -inset-4 bg-blue-500/5 rounded-[40px] blur-2xl" />
-              <img
-                src="/screenshots/hearings.png"
-                alt="إدارة الجلسات"
-                className="relative rounded-2xl border border-white/10 shadow-2xl w-full"
-              />
-            </div>
-            <div className="order-1 lg:order-2">
-              <div className="inline-flex items-center gap-2 bg-blue-500/10 text-blue-300 px-4 py-2 rounded-full text-sm font-bold mb-6">
-                📅 جدول الجلسات
-              </div>
-              <h3 className="text-3xl font-black mb-6 leading-tight">
-                لا تفوّت موعداً واحداً مع جدول الجلسات الذكي
-              </h3>
-              <p className="text-gray-400 text-lg leading-relaxed mb-8">
-                تتبع مواعيد الجلسات لكل قضاياك في لوحة واضحة — سجل تاريخ الجلسة، المحكمة، الطلبات، وحمّل رول الجلسات كاملاً بضغطة واحدة للمحكمة.
-              </p>
-              <ul className="space-y-3">
-                {["تحميل رول الجلسات PDF جاهز للمحكمة", "تنبيهات بالمواعيد القادمة", "ربط كل جلسة بقضيتها تلقائياً", "سجل كامل لكل جلسات كل قضية"].map(item => (
-                  <li key={item} className="flex items-start gap-3 text-gray-300">
-                    <CheckCircle2 size={18} className="text-blue-400 mt-0.5 shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          {/* Service 3: Accounting */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-24">
-            <div>
-              <div className="inline-flex items-center gap-2 bg-green-500/10 text-green-300 px-4 py-2 rounded-full text-sm font-bold mb-6">
-                💰 الحسابات المالية
-              </div>
-              <h3 className="text-3xl font-black mb-6 leading-tight">
-                تحكم كامل في إيرادات ومصروفات مكتبك
-              </h3>
-              <p className="text-gray-400 text-lg leading-relaxed mb-8">
-                نظام محاسبي مبسّط مصمم للمحامين — سجّل الأتعاب والمدفوعات والمصروفات، واحصل على صورة مالية واضحة لمكتبك في أي وقت.
-              </p>
-              <ul className="space-y-3">
-                {["تسجيل الأتعاب لكل قضية وعميل", "تتبع المدفوعات والمستحقات المتبقية", "إضافة مصروفات المكتب الشهرية", "ملخص مالي فوري: إجمالي الإيرادات والمصروفات"].map(item => (
-                  <li key={item} className="flex items-start gap-3 text-gray-300">
-                    <CheckCircle2 size={18} className="text-green-400 mt-0.5 shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="relative">
-              <div className="absolute -inset-4 bg-green-500/5 rounded-[40px] blur-2xl" />
-              <img
-                src="/screenshots/accounting.png"
-                alt="الحسابات المالية"
-                className="relative rounded-2xl border border-white/10 shadow-2xl w-full"
-              />
-            </div>
-          </div>
-
-          {/* Service 4: Login / Security */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="order-2 lg:order-1 relative">
-              <div className="absolute -inset-4 bg-purple-500/5 rounded-[40px] blur-2xl" />
-              <img
-                src="/screenshots/login.png"
-                alt="نظام الدخول الآمن"
-                className="relative rounded-2xl border border-white/10 shadow-2xl w-full"
-              />
-            </div>
-            <div className="order-1 lg:order-2">
-              <div className="inline-flex items-center gap-2 bg-purple-500/10 text-purple-300 px-4 py-2 rounded-full text-sm font-bold mb-6">
-                🔒 أمان وخصوصية
-              </div>
-              <h3 className="text-3xl font-black mb-6 leading-tight">
-                بياناتك محمية بأعلى معايير التشفير
-              </h3>
-              <p className="text-gray-400 text-lg leading-relaxed mb-8">
-                كل مكتب له مساحة عمل منفصلة وآمنة تماماً — سجل دخول بالبريد الإلكتروني، صلاحيات مختلفة للمحامي والمتدرب، وبياناتك لا يراها أحد غيرك.
-              </p>
-              <ul className="space-y-3">
-                {["تشفير كامل لجميع البيانات عبر Firebase", "مساحات عمل منفصلة لكل مكتب (SaaS)", "صلاحيات: محامي / متدرب / مدير", "لا مشاركة للبيانات بين المكاتب"].map(item => (
-                  <li key={item} className="flex items-start gap-3 text-gray-300">
-                    <CheckCircle2 size={18} className="text-purple-400 mt-0.5 shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            ))}
           </div>
         </div>
       </section>
-
 
       <footer className="border-t border-white/10 bg-navy px-6 py-12">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 md:flex-row">
