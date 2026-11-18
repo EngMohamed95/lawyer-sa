@@ -141,7 +141,10 @@ function clean_count($v, string $label): int {
 
 function clean_profile($p): array {
     if (!is_array($p)) fail(400, 'بيانات المكتب ناقصة.', 'INVALID_INPUT');
-    $phone = preg_replace('/[\s\-()]/', '', is_string($p['phone'] ?? null) ? $p['phone'] : '');
+    $phone = preg_replace('/[\s\-()]/u', '', is_string($p['phone'] ?? null) ? $p['phone'] : '');
+    // أرقام عربية/فارسية → لاتينية (لوحات المفاتيح العربية)
+    $phone = strtr($phone, ['٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4', '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
+        '۰' => '0', '۱' => '1', '۲' => '2', '۳' => '3', '۴' => '4', '۵' => '5', '۶' => '6', '۷' => '7', '۸' => '8', '۹' => '9']);
     if (!preg_match('/^\+?[0-9]{8,15}$/', $phone)) fail(400, 'رقم الجوال غير صالح.', 'INVALID_INPUT');
     $country = in_array($p['country'] ?? '', ['SA', 'EG', 'OTHER'], true) ? $p['country'] : 'OTHER';
     $team = is_array($p['team'] ?? null) ? $p['team'] : [];

@@ -30,6 +30,8 @@ interface SignupForm {
   name: string;
   email: string;
   phone: string;
+  /** مفتاح الدولة بلا + (966 للسعودية) — يُضاف للرقم المحلي عند الإرسال */
+  dialCode: string;
   country: Country;
   password: string;
   confirm: string;
@@ -37,7 +39,7 @@ interface SignupForm {
 }
 
 const EMPTY_FORM: SignupForm = {
-  officeName: "", name: "", email: "", phone: "", country: "SA", password: "", confirm: "",
+  officeName: "", name: "", email: "", phone: "", dialCode: "966", country: "SA", password: "", confirm: "",
   team: { lawyers: "1", consultants: "0", trainees: "0", staff: "0" },
 };
 
@@ -77,6 +79,51 @@ async function callSignupApi(user: FirebaseUser, body: Record<string, unknown>) 
   return data;
 }
 
+/** مفاتيح الدول — السعودية أولاً (الافتراضي)، ثم مصر والخليج والدول العربية */
+const DIAL_CODES: { code: string; label: string }[] = [
+  { code: "966", label: "السعودية" },
+  { code: "20", label: "مصر" },
+  { code: "971", label: "الإمارات" },
+  { code: "965", label: "الكويت" },
+  { code: "974", label: "قطر" },
+  { code: "973", label: "البحرين" },
+  { code: "968", label: "عُمان" },
+  { code: "962", label: "الأردن" },
+  { code: "964", label: "العراق" },
+  { code: "961", label: "لبنان" },
+  { code: "963", label: "سوريا" },
+  { code: "970", label: "فلسطين" },
+  { code: "967", label: "اليمن" },
+  { code: "249", label: "السودان" },
+  { code: "218", label: "ليبيا" },
+  { code: "216", label: "تونس" },
+  { code: "213", label: "الجزائر" },
+  { code: "212", label: "المغرب" },
+  { code: "90", label: "تركيا" },
+  { code: "44", label: "بريطانيا" },
+  { code: "1", label: "أمريكا/كندا" },
+];
+
+/** الأرقام العربية (٠-٩) والفارسية (۰-۹) → لاتينية — لوحات المفاتيح العربية تكتبها افتراضياً */
+const latinDigits = (v: string) =>
+  v.replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660)).replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0));
+
+/**
+ * الرقم الدولي الكامل (+9665xxxxxxxx). يقبل الرقم المحلي (05xxxxxxxx أو 5xxxxxxxx) مع المفتاح
+ * المختار، أو رقماً دولياً كاملاً يبدأ بـ + أو 00 أو بالمفتاح نفسه. "" إن لم يكن صالحاً.
+ */
+function fullPhone(phone: string, dialCode: string): string {
+  const raw = latinDigits(phone).replace(/[\s\-()]/g, "");
+  let digits: string;
+  if (/^\+\d+$/.test(raw)) digits = raw.slice(1);
+  else if (/^00\d+$/.test(raw)) digits = raw.slice(2);
+  else if (/^\d+$/.test(raw)) {
+    const local = raw.startsWith(dialCode) && raw.length > dialCode.length + 7 ? raw.slice(dialCode.length) : raw.replace(/^0+/, "");
+    digits = dialCode + local;
+  } else return "";
+  return /^\d{8,15}$/.test(digits) ? `+${digits}` : "";
+}
+
 const toCount = (v: string) => {
   const n = Number(v);
   return Number.isInteger(n) && n >= 0 && n <= 1000 ? n : NaN;
@@ -86,7 +133,7 @@ function validate(form: SignupForm, needsPassword: boolean): string {
   if (form.officeName.trim().length < 2) return "اكتب اسم المكتب.";
   if (form.name.trim().length < 2) return "اكتب اسمك الكامل.";
   if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) return "البريد الإلكتروني غير صالح.";
-  if (!/^\+?[0-9]{8,15}$/.test(form.phone.replace(/[\s\-()]/g, ""))) return "رقم الجوال غير صالح — أرقام فقط (8 إلى 15 رقماً).";
+  if (!fullPhone(form.phone, form.dialCode)) return "رقم الجوال غير صالح — اكتب الرقم بدون مفتاح الدولة، مثل 05xxxxxxxx.";
   for (const f of TEAM_FIELDS) {
     if (Number.isNaN(toCount(form.team[f.key]))) return `عدد ${f.label} غير صالح.`;
   }
@@ -194,7 +241,7 @@ export default function Signup() {
         profile: {
           officeName: form.officeName.trim(),
           name: form.name.trim(),
-          phone: form.phone.replace(/[\s\-()]/g, ""),
+          phone: fullPhone(form.phone, form.dialCode),
           country: form.country,
           team: {
             lawyers: toCount(form.team.lawyers),
@@ -376,13 +423,30 @@ export default function Signup() {
                   <input className={inputClass} type="email" dir="ltr" value={form.email} disabled={!!existingUser}
                     onChange={(e) => setField("email", e.target.value)} placeholder="name@example.com" autoComplete="email" required />
                 </Field>
-                <Field label="رقم الجوال" icon={Phone}>
-                  <input className={inputClass} type="tel" dir="ltr" value={form.phone} onChange={(e) => setField("phone", e.target.value)}
-                    placeholder="+9665xxxxxxxx" autoComplete="tel" required />
-                </Field>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 block" htmlFor="signup-phone">رقم الجوال</label>
+                  <div className="flex gap-2" dir="ltr">
+                    <select aria-label="مفتاح الدولة" value={form.dialCode} onChange={(e) => setField("dialCode", e.target.value)}
+                      className="shrink-0 w-[8.75rem] px-2 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-edge/20 focus:border-edge dark:bg-white/5 dark:border-white/10">
+                      {DIAL_CODES.map((d) => (
+                        <option key={d.code} value={d.code}>+{d.code} {d.label}</option>
+                      ))}
+                    </select>
+                    <span className="relative block flex-1 min-w-0">
+                      <Phone size={18} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      <input id="signup-phone" className={inputClass} type="tel" inputMode="tel" value={form.phone}
+                        onChange={(e) => setField("phone", latinDigits(e.target.value))}
+                        placeholder={form.dialCode === "966" ? "05xxxxxxxx" : form.dialCode === "20" ? "01xxxxxxxxx" : "رقم الجوال"}
+                        autoComplete="tel-national" required />
+                    </span>
+                  </div>
+                </div>
                 <div className="sm:col-span-2 space-y-1.5">
                   <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 block" htmlFor="signup-country">الدولة</label>
-                  <select id="signup-country" value={form.country} onChange={(e) => setField("country", e.target.value as Country)}
+                  <select id="signup-country" value={form.country} onChange={(e) => {
+                    const country = e.target.value as Country;
+                    setForm((f) => ({ ...f, country, dialCode: country === "SA" ? "966" : country === "EG" ? "20" : f.dialCode }));
+                  }}
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-ink focus:outline-none focus:ring-2 focus:ring-edge/20 focus:border-edge dark:bg-white/5 dark:border-white/10">
                     <option value="SA">المملكة العربية السعودية</option>
                     <option value="EG">جمهورية مصر العربية</option>
