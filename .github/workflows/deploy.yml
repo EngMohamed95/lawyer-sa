@@ -173,6 +173,8 @@ jobs:
           fi
 
           # نقل متسلسل: الاستضافات المشتركة تحدّ الاتصالات المتزامنة.
+          # index.html يُرفع أخيراً: لو سبق ملفات assets/ لطلب المتصفح ملفات لم تصل بعد
+          # فيظهر «Failed to fetch dynamically imported module» لمن يفتح الموقع أثناء النشر.
           # لا نستخدم --delete: على الخادم ملفات لا تأتي من المستودع
           # (مستندات المستخدمين في uploads/) وحذفها يعني فقدانها.
           if command -v lftp >/dev/null 2>&1 && lftp -f /dev/stdin <<EOF
@@ -181,7 +183,9 @@ jobs:
           mirror --reverse --parallel=1 --verbose=1 \
                  --exclude '^uploads/' \
                  --exclude '^dist/uploads/' \
+                 --exclude '^index\.html$' \
                  release/ ./
+          put release/index.html -o index.html
           bye
           EOF
           then
@@ -200,7 +204,7 @@ jobs:
                 echo "❌ تعذّر رفع $rel"
                 failed=$((failed + 1))
               fi
-            done < <(find release -type f)
+            done < <(find release -type f ! -path release/index.html; echo release/index.html)
 
             if [ "$failed" -gt 0 ]; then
               echo "فشل رفع $failed ملف"

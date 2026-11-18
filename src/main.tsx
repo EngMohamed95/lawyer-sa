@@ -18,8 +18,36 @@ function showBootError(error: unknown) {
   }
 }
 
-window.addEventListener('error', (event) => showBootError(event.error || event.message));
-window.addEventListener('unhandledrejection', (event) => showBootError(event.reason));
+/**
+ * بعد كل نشر تتغير أسماء ملفات البرنامج. من كان فاتحاً الموقع يطلب ملفاً قديماً لم يعد موجوداً
+ * (أو جديداً لم يكتمل رفعه) — نعيد تحميل الصفحة مرة واحدة بدل عرض خطأ. الحارس في
+ * sessionStorage يمنع حلقة إعادة تحميل إن كان الخطأ حقيقياً.
+ */
+const CHUNK_ERROR = /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|Unable to preload CSS/i;
+
+function reloadOnceForNewVersion(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  if (!CHUNK_ERROR.test(message)) return false;
+  try {
+    const last = Number(sessionStorage.getItem('chunkReloadAt') || 0);
+    if (Date.now() - last < 60_000) return false;
+    sessionStorage.setItem('chunkReloadAt', String(Date.now()));
+  } catch {
+    return false;
+  }
+  window.location.reload();
+  return true;
+}
+
+window.addEventListener('vite:preloadError', (event) => {
+  if (reloadOnceForNewVersion((event as Event & { payload?: unknown }).payload)) event.preventDefault();
+});
+window.addEventListener('error', (event) => {
+  if (!reloadOnceForNewVersion(event.error || event.message)) showBootError(event.error || event.message);
+});
+window.addEventListener('unhandledrejection', (event) => {
+  if (!reloadOnceForNewVersion(event.reason)) showBootError(event.reason);
+});
 
 document.getElementById('boot-status')?.replaceChildren('بدأ تحميل React...');
 
@@ -31,6 +59,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | 
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    if (reloadOnceForNewVersion(error)) return;
     console.error("Application render failed:", error, errorInfo);
   }
 
@@ -64,5 +93,5 @@ async function boot() {
 }
 
 boot().catch((error) => {
-  showBootError(error);
+  if (!reloadOnceForNewVersion(error)) showBootError(error);
 });
