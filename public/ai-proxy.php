@@ -280,6 +280,8 @@ function ai_office_context(string $uid, string $token, string $projectId): ?arra
             $q = is_array($plan) ? ($plan['quotas']['ai'] ?? 0) : 0;
             $quota = is_numeric($q) && $q > 0 ? (int) $q : 0;
         }
+        // التجربة تفتح كل المزايا، لكن استهلاك المساعد يظل محدوداً لحماية الرصيد.
+        if (($owner['subscriptionBilling'] ?? '') === 'trial') $quota = 10;
         // تجربة التسجيل الذاتي انتهت بلا اشتراك — نفس قفل قواعد Firestore (officeWritable)
         $trialEnd = ($owner['subscriptionBilling'] ?? '') === 'trial' ? strtotime((string) ($owner['subscriptionExpiry'] ?? '')) : false;
         $locked = $trialEnd !== false && $trialEnd <= time();

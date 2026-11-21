@@ -56,6 +56,13 @@ export function isTrialLocked(sub: OfficeSubscription = readOfficeSubscription()
   return !Number.isNaN(t) && t <= Date.now();
 }
 
+/** التجربة ما زالت سارية — تحصل خلالها المكاتب على كل مزايا الباقة الكاملة. */
+export function isActiveTrial(sub: OfficeSubscription = readOfficeSubscription()): boolean {
+  if (sub.billing !== "trial" || !sub.expiry) return false;
+  const t = new Date(sub.expiry).getTime();
+  return !Number.isNaN(t) && t > Date.now();
+}
+
 export function trialDaysLeft(sub: OfficeSubscription = readOfficeSubscription()): number | null {
   if (sub.billing !== "trial" || !sub.expiry) return null;
   const t = new Date(sub.expiry).getTime();
@@ -91,7 +98,8 @@ export async function refreshOfficeSubscription(): Promise<boolean> {
   storeOfficeSubscription(office);
   if (localStorage.getItem("userRole") === "LAWYER" && office) {
     if (office.subscriptionExpiry) localStorage.setItem("subscriptionExpiry", office.subscriptionExpiry);
-    if (office.plan) localStorage.setItem("userPlan", office.plan);
+    if (isActiveTrial()) localStorage.setItem("userPlan", "PREMIUM");
+    else if (office.plan) localStorage.setItem("userPlan", office.plan);
   }
   return !isTrialLocked();
 }
@@ -171,6 +179,14 @@ export async function startSession(firebaseUser: User, opts: StartSessionOptions
       plan = "BASIC";
     }
     localStorage.setItem("subscriptionExpiry", userData.subscriptionExpiry);
+  }
+
+  // طوال التجربة النشطة نفتح مزايا الباقة الكاملة، بصرف النظر عن المستوى
+  // المخزّن في مستند الباقة التجريبية. حدود الاستخدام (ومنها AI) تبقى مستقلة.
+  const trialOffice = role === "SUPER_ADMIN" ? null : officeData;
+  if (trialOffice?.subscriptionBilling === "trial" && trialOffice.subscriptionExpiry) {
+    const trialEnd = new Date(trialOffice.subscriptionExpiry).getTime();
+    if (!Number.isNaN(trialEnd) && trialEnd > Date.now()) plan = "PREMIUM";
   }
 
   // آخر دخول — يظهر في «فريق مديري المنصة»؛ فشله لا يمنع الدخول

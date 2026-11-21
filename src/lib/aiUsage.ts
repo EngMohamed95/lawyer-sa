@@ -8,6 +8,7 @@
 
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "./firebase";
+import { TRIAL_AI_QUOTA } from "./subscriptionPlans";
 
 /** يُطلق بعد كل رد ناجح من المساعد ليتحدّث العدّاد المعروض */
 export const AI_USAGE_EVENT = "ai-usage-changed";
@@ -42,6 +43,7 @@ export async function loadMyAiUsage(): Promise<AiUsage | null> {
       const q = Number(plan.data()?.quotas?.ai ?? 0);
       quota = Number.isFinite(q) && q > 0 ? q : 0;
     }
+    if (owner.subscriptionBilling === "trial") quota = TRIAL_AI_QUOTA;
 
     const usage = await getDoc(doc(db, "ai_usage", `${tenant}_${currentAiMonth()}`));
     return { used: Number(usage.data()?.count ?? 0) || 0, quota };

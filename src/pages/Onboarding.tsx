@@ -208,6 +208,7 @@ export default function Onboarding() {
                 requester={requester}
                 currency={currencyForCountry(owner.country)}
                 pending={owner.pendingPlanRequest ?? null}
+                showPrices={daysLeft === null}
               />
             )}
 

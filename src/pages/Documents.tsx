@@ -26,6 +26,7 @@ import {
 import { useOfficeLookups } from "../lib/officeLookups";
 import { downloadWordDoc } from "../lib/wordExport";
 import { visibleCasesQuery, assignedDocuments } from "../lib/caseAccess";
+import { isActiveTrial } from "../lib/session";
 
 type ViewMode = 'CLIENTS' | 'CASES' | 'DOCS';
 type HubTab = 'ARCHIVE' | 'WORD_GENERATOR' | 'EXCEL_IMPORTER';
@@ -1601,7 +1602,7 @@ export default function Documents({
                                       </Button>
                                     </>
                                   )}
-                                  {localStorage.getItem('userPlan') === 'PREMIUM' && (
+                                  {(localStorage.getItem('userPlan') === 'PREMIUM' || isActiveTrial()) && (
                                     <Button variant="ghost" size="icon" className="h-9 w-9 text-purple-600 hover:bg-purple-50" title="تحليل بالذكاء الاصطناعي (AI)" onClick={() => setActiveAiDoc(d)}>
                                       <Sparkles className="h-4.5 w-4.5" />
                                     </Button>

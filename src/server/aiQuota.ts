@@ -10,6 +10,7 @@
 const PROJECT_ID = process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID || "lawyer-sa";
 const BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 const CTX_TTL_MS = 5 * 60_000;
+const TRIAL_AI_QUOTA = 10;
 
 export interface OfficeCtx {
   exempt: boolean;
@@ -106,6 +107,7 @@ export async function officeContext(uid: string, token: string): Promise<OfficeC
       const q = Number(plan?.quotas?.ai ?? 0);
       quota = Number.isFinite(q) && q > 0 ? Math.floor(q) : 0;
     }
+    if (owner.subscriptionBilling === "trial") quota = TRIAL_AI_QUOTA;
     ctx = { exempt: false, tenant, quota };
   }
   ctxCache.set(uid, { ctx, expiresAt: Date.now() + CTX_TTL_MS });

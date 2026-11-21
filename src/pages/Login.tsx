@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { motion, AnimatePresence } from "motion/react";
-import { Lock, User, Eye, EyeOff, ShieldCheck, Scale, Gavel } from "lucide-react";
+import { ArrowRight, Lock, User, Eye, EyeOff, ShieldCheck, Scale, Gavel } from "lucide-react";
 
 const LOGIN_TIMEOUT_MS = 20_000;
 
@@ -212,6 +212,13 @@ export default function Login() {
         {/* Right Side: Login Form */}
         <div className="w-full md:w-1/2 p-8 lg:p-16 bg-surface flex flex-col justify-center">
           <div className="max-w-md mx-auto w-full">
+            <Link
+              to="/"
+              className="mb-7 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-gray-500 transition hover:bg-gray-100 hover:text-ink focus:outline-none focus:ring-2 focus:ring-edge/20"
+            >
+              <ArrowRight size={18} />
+              العودة للصفحة الرئيسية
+            </Link>
             <div className="mb-10 text-center md:text-right">
                 <h2 className="text-3xl font-bold text-ink mb-2">تسجيل الدخول</h2>
                 <p className="text-gray-500">الرجاء إدخال بياناتك للوصول إلى لوحة التحكم</p>

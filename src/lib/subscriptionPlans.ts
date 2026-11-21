@@ -30,6 +30,7 @@ export const CURRENCIES: { code: Currency; label: string; flag: string }[] = [
 /** ai: طلبات المساعد الذكي في الشهر — يفرضها وسيط الذكاء الاصطناعي على الخادم (ai_usage) */
 export const QUOTA_LABELS: Record<QuotaKey, string> = { cases: "القضايا", clients: "العملاء", team: "أعضاء الفريق", ai: "طلبات المساعد الذكي / شهر" };
 export const QUOTA_KEYS: QuotaKey[] = ["cases", "clients", "team", "ai"];
+export const TRIAL_AI_QUOTA = 10;
 
 /** أيام السماح بعد انتهاء الاشتراك قبل اعتباره منتهياً */
 export const GRACE_DAYS = 7;
@@ -51,8 +52,8 @@ export interface SubscriptionPlan {
 
 /** الباقات الافتراضية — بنفس أسعار ومستويات النظام الحالية */
 export const DEFAULT_PLANS: SubscriptionPlan[] = [
-  { id: "trial", name: "الباقة التجريبية", nameEn: "Free Trial", tier: "PROFESSIONAL", billing: "trial", durationDays: 14,
-    quotas: { cases: 20, clients: 20, team: 2, ai: 50 }, prices: { SAR: 0, EGP: 0, USD: 0 }, active: true, order: 0 },
+  { id: "trial", name: "الباقة التجريبية", nameEn: "Free Trial", tier: "PREMIUM", billing: "trial", durationDays: 14,
+    quotas: { cases: 20, clients: 20, team: 2, ai: TRIAL_AI_QUOTA }, prices: { SAR: 0, EGP: 0, USD: 0 }, active: true, order: 0 },
   { id: "basic", name: "الباقة الأساسية", nameEn: "Basic Plan", tier: "BASIC", billing: "monthly", durationDays: 30,
     quotas: { cases: 100, clients: 100, team: 2, ai: 100 }, prices: { SAR: 0, EGP: 200, USD: 0 }, active: true, order: 1 },
   { id: "professional", name: "الباقة الاحترافية", nameEn: "Professional Plan", tier: "PROFESSIONAL", billing: "monthly", durationDays: 30,

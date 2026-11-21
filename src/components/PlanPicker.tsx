@@ -46,12 +46,13 @@ export function currencyForCountry(country?: string | null): Currency {
 }
 
 export default function PlanPicker({
-  requester, currency, pending, onRequested,
+  requester, currency, pending, onRequested, showPrices = true,
 }: {
   requester: PlanRequester;
   currency: Currency;
   pending?: PendingPlanRequest | null;
   onRequested?: (req: PendingPlanRequest) => void;
+  showPrices?: boolean;
 }) {
   const [plans, setPlans] = useState<SubscriptionPlan[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -126,7 +127,7 @@ export default function PlanPicker({
         <h3 className="text-lg font-bold text-ink">طلب «{requested.planName}» قيد المراجعة</h3>
         <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
           بعد إتمام الدفع يفعّل فريقنا اشتراكك خلال 24 ساعة.
-          {price && <> قيمة الباقة: <b className="text-ink">{price.amount.toLocaleString("en")} {CURRENCY_SYMBOL[price.currency]}</b>.</>}
+          {showPrices && price && <> قيمة الباقة: <b className="text-ink">{price.amount.toLocaleString("en")} {CURRENCY_SYMBOL[price.currency]}</b>.</>}
         </p>
         <div className="mt-4 rounded-2xl bg-surface p-4 text-right text-sm text-gray-600 dark:text-gray-300">
           <p className="mb-1 flex items-center gap-2 font-bold text-ink"><CreditCard size={15} /> طريقة الدفع</p>
@@ -166,18 +167,20 @@ export default function PlanPicker({
               )}
               <h3 className="text-lg font-bold text-ink">{plan.name}</h3>
               <p className="mt-1 text-xs leading-relaxed text-gray-500">{TIER_LABELS[plan.tier]}</p>
-              <div className="my-4">
-                {price ? (
+              {showPrices && (
+                <div className="my-4">
+                  {price ? (
                   <>
                     <span className="text-3xl font-black text-ink">{price.amount.toLocaleString("en")}</span>
                     <span className="mr-1 text-sm text-gray-500">
                       {CURRENCY_SYMBOL[price.currency]} / {plan.billing === "annual" ? "سنة" : "شهر"}
                     </span>
                   </>
-                ) : (
-                  <span className="text-sm font-bold text-gray-500">السعر عند التواصل</span>
-                )}
-              </div>
+                  ) : (
+                    <span className="text-sm font-bold text-gray-500">السعر عند التواصل</span>
+                  )}
+                </div>
+              )}
               <ul className="mb-6 flex-1 space-y-2 text-sm text-gray-600 dark:text-gray-300">
                 {(["cases", "clients", "team"] as const).map((k) => (
                   <li key={k} className="flex items-center gap-2">

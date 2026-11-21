@@ -10,7 +10,7 @@ import { loadOfficeSettings, useOfficeSettings } from "./lib/officeSettings";
 import { loadOfficeLookups } from "./lib/officeLookups";
 import { loadPlatformAiSettings } from "./lib/platformSettings";
 import { roleLabel } from "./lib/roles";
-import { isTrialLocked, readOfficeSubscription, trialDaysLeft } from "./lib/session";
+import { isActiveTrial, isTrialLocked, readOfficeSubscription, trialDaysLeft } from "./lib/session";
 import { getThemePref, setThemePref, useTheme } from "./lib/theme";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -85,8 +85,9 @@ function Sidebar({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) 
   // بوابة الباقة منفصلة تماماً عن بوابة الدور: الدور يحدد "هل يحق له"،
   // والباقة تحدد "هل اشترك فيها". الشرطان يبقيان كما كانا بالضبط.
   const plan = localStorage.getItem("userPlan");
-  const isBasic = plan === "BASIC";
-  const isPremium = plan === "PREMIUM";
+  const fullTrialAccess = isActiveTrial();
+  const isBasic = plan === "BASIC" && !fullTrialAccess;
+  const isPremium = plan === "PREMIUM" || fullTrialAccess;
 
   // حجب باقة BASIC للمهام والمستندات كان — ولا يزال — مقصوراً على LAWYER
   // و OFFICE_LAWYER دون المتدرب. سلوك قائم نحافظ عليه حرفياً.

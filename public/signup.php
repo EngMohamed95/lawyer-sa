@@ -35,7 +35,8 @@ const MAX_VERIFY_PER_IP_HOUR = 60;    // محاولات التأكيد لكل ع
 /** نطاق المرسل ثابت — لا نأخذه من ترويسة Host التي يتحكم بها الطالب */
 const DEFAULT_MAIL_DOMAIN = 'mawazzen.com';
 const DEFAULT_TRIAL_DAYS = 14;
-const DEFAULT_TRIAL_TIER = 'PROFESSIONAL';
+const DEFAULT_TRIAL_TIER = 'PREMIUM';
+const TRIAL_AI_QUOTA = 10;
 const MAX_BODY_BYTES = 20000;
 
 require_once __DIR__ . '/_firebase.php';
@@ -274,7 +275,7 @@ function verify_code(string $projectId, string $token, array $sa, string $uid, s
         fs_commit($projectId, $token, [fs_set_write($projectId, 'subscriptionPlans/trial', [
             'name' => 'الباقة التجريبية', 'nameEn' => 'Free Trial', 'tier' => DEFAULT_TRIAL_TIER, 'billing' => 'trial',
             'durationDays' => DEFAULT_TRIAL_DAYS,
-            'quotas' => ['cases' => 20, 'clients' => 20, 'team' => 2, 'ai' => 50],
+            'quotas' => ['cases' => 20, 'clients' => 20, 'team' => 2, 'ai' => TRIAL_AI_QUOTA],
             'prices' => ['SAR' => 0, 'EGP' => 0, 'USD' => 0],
             'active' => true, 'order' => 0, 'createdAt' => $seedAt, 'updatedAt' => $seedAt,
         ], null, ['exists' => false])]);
