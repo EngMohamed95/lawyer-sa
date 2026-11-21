@@ -40,6 +40,7 @@ const TRIAL_AI_QUOTA = 10;
 const MAX_BODY_BYTES = 20000;
 
 require_once __DIR__ . '/_firebase.php';
+require_once __DIR__ . '/_mailer.php';
 
 /* ────────────────────────── حدود الإرسال ────────────────────────── */
 
@@ -103,26 +104,12 @@ HTML;
 }
 
 function send_otp_mail(string $email, string $name, string $code): bool {
-    $from = 'no-reply@' . mail_domain();
-    $subject = '=?UTF-8?B?' . base64_encode("رمز التأكيد: $code — موازين") . '?=';
-    $headers = implode("\r\n", [
-        'MIME-Version: 1.0',
-        'Content-Type: text/html; charset=UTF-8',
-        'Content-Transfer-Encoding: base64',
-        'From: =?UTF-8?B?' . base64_encode('موازين') . "?= <$from>",
-        "Reply-To: $from",
-    ]);
-    $body = chunk_split(base64_encode(otp_email_html($name, $code)));
-    $sent = @mail($email, $subject, $body, $headers, "-f$from");
-    if (!$sent) $sent = @mail($email, $subject, $body, $headers);
-
-    // الخادم المدمج (php -S) للتطوير فقط — لا بريد محلياً، فنطبع الرمز في الطرفية
-    if (!$sent && PHP_SAPI === 'cli-server') {
-        error_log("[signup.php dev] رمز التأكيد لـ $email: $code");
-        return true;
-    }
-    if (!$sent) error_log("signup.php: فشل mail() إلى $email");
-    return $sent;
+    return send_mawazeen_email(
+        $email,
+        $name,
+        "رمز التأكيد: $code — موازين",
+        otp_email_html($name, $code),
+    );
 }
 
 /* ────────────────────────── بيانات المكتب ────────────────────────── */

@@ -33,6 +33,7 @@ if (PHP_SAPI !== 'cli') {
 }
 
 require_once __DIR__ . '/_firebase.php';
+require_once __DIR__ . '/_mailer.php';
 
 const TRIAL_GRACE_DAYS = 10;           // أيام الاحتفاظ بالبيانات بعد انتهاء التجربة
 const MIN_NOTICE_DAYS = 7;             // أقل مدة بين بريد الانتهاء والحذف
@@ -247,7 +248,6 @@ function mail_domain(): string {
 }
 
 function send_notice(string $email, string $name, string $subject, string $text): bool {
-    $from = 'no-reply@' . mail_domain();
     $safeName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
     $safeText = nl2br(htmlspecialchars($text, ENT_QUOTES, 'UTF-8'));
     $site = 'https://' . mail_domain();
@@ -260,16 +260,7 @@ function send_notice(string $email, string $name, string $subject, string $text)
 <p style="font-size:12px;color:#64748b">للمساعدة: واتساب 01094040671</p>
 </div></body></html>
 HTML;
-    $headers = implode("\r\n", [
-        'MIME-Version: 1.0',
-        'Content-Type: text/html; charset=UTF-8',
-        'Content-Transfer-Encoding: base64',
-        'From: =?UTF-8?B?' . base64_encode('موازين') . "?= <$from>",
-        "Reply-To: $from",
-    ]);
-    $encSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
-    $body = chunk_split(base64_encode($html));
-    return @mail($email, $encSubject, $body, $headers, "-f$from") || @mail($email, $encSubject, $body, $headers);
+    return send_mawazeen_email($email, $name, $subject, $html);
 }
 
 /** يكتب حقولاً على مستند المالك — بشرط اختياري على وقت آخر تعديل. يرجع وقت التعديل الجديد أو '' */

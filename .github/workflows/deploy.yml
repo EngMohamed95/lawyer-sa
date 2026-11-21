@@ -28,6 +28,15 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+
+      - name: Install PHP Mailer
+        run: composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+
       - name: Type Check
         # نُفشل النشر قبل الرفع لا بعده — أرخص من نشر نسخة مكسورة
         run: npx tsc --noEmit
@@ -75,13 +84,16 @@ jobs:
           GROQ_KEY: ${{ secrets.GROQ_API_KEY }}
           # عبر env لا داخل السكربت: JSON المفتاح مليء بعلامات " التي كانت تكسر شرط if
           SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
+          SMTP_USER: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASS: ${{ secrets.SMTP_PASSWORD }}
         run: |
           set -e
           rm -rf release
           mkdir -p release
 
-          cp package.json index.js .env release/
+          cp package.json composer.json index.js .env release/
           cp -r dist release/dist
+          cp -r vendor release/vendor
 
           # تسطيح محتوى dist في الجذر (نفس ما كان unzip.php يفعله)
           cp -r dist/. release/
@@ -121,6 +133,25 @@ jobs:
           else
             echo "تنبيه: لا يوجد سرّ GEMINI_API_KEY — الذكاء الاصطناعي لن يعمل على اللايف."
           fi
+
+          # بريد النظام يخرج عبر SMTP موثّق حتى تمر الرسائل عبر SPF/DKIM ولا تعتمد
+          # على PHP mail(). بيانات الدخول تُحقن من GitHub Secrets وقت النشر فقط.
+          if [ "$SMTP_USER" != "no-reply@mawazzen.com" ] || [ -z "$SMTP_PASS" ]; then
+            echo "❌ أضف SMTP_USERNAME=no-reply@mawazzen.com وSMTP_PASSWORD إلى GitHub Secrets"
+            exit 1
+          fi
+          smtp_user_b64=$(printf '%s' "$SMTP_USER" | base64 -w0)
+          smtp_pass_b64=$(printf '%s' "$SMTP_PASS" | base64 -w0)
+          {
+            echo "<?php"
+            echo "return ["
+            echo "  'host' => 'smtp.hostinger.com',"
+            echo "  'port' => 465,"
+            echo "  'username' => base64_decode('$smtp_user_b64'),"
+            echo "  'password' => base64_decode('$smtp_pass_b64'),"
+            echo "];"
+          } > release/mail-config.php
+          echo "أُضيف إعداد SMTP الموثّق."
 
           # مجلد رفع المستخدمين يجب أن يوجد ولا يُمسّ محتواه لاحقاً
           mkdir -p release/uploads
