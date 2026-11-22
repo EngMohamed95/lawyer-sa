@@ -58,8 +58,23 @@ export function useAuthSession(): AuthSession {
       (u) => {
         if (u) {
           setUser(u);
-          setEmail(u.email ?? null);
-          setState("authenticated");
+          setEmail(u.email ?? localStorage.getItem("userEmail"));
+          // جلسة Firebase وحدها ما تكفي: البيانات صارت من MySQL وتحتاج جلسته (الكوكي).
+          // مستخدم داخل من النسخة القديمة (قبل التحويل) عنده Firebase بلا MySQL — نطلب
+          // منه دخول جديد بدل ما تفشل كل الصفحات. خطأ شبكة ← ما نطلّعه (ممكن غير متصل).
+          void import("./authApi")
+            .then(({ me }) => me())
+            .then((account) => {
+              if (cancelled) return;
+              if (account) {
+                setState("authenticated");
+                return;
+              }
+              restoreTried = true; // ما في جلسة MySQL نجدد منها
+              setState("expired");
+              void auth.signOut().catch(() => {});
+            })
+            .catch(() => { if (!cancelled) setState("authenticated"); });
           return;
         }
         setUser(null);
