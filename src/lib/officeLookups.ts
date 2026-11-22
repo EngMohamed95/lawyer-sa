@@ -10,7 +10,7 @@
  */
 
 import { useCallback, useSyncExternalStore } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "@/lib/store";
 import { db } from "./firebase";
 import { normalizeCaseTypes } from "./caseTypes";
 

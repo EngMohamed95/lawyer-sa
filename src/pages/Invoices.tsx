@@ -12,7 +12,7 @@ import {
   Receipt, Plus, Search, ShieldAlert, RefreshCw, AlertTriangle, Scale, X,
   Send, CheckCircle2, XCircle, Eye, Trash2, Banknote, Clock,
 } from "lucide-react";
-import { addDoc, collection, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { addDoc, collection, doc, getDocs, query, updateDoc, where } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { Card, CardContent, CardHeader } from "../components/ui/card";
 import { Button } from "../components/ui/button";

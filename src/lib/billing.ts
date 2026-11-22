@@ -11,7 +11,7 @@
  *  - آلة حالات تمنع الانتقالات غير المشروعة برمجياً لا بإخفاء الأزرار (R1).
  */
 
-import { doc, runTransaction } from "firebase/firestore";
+import { doc, runTransaction } from "@/lib/store";
 import { db } from "./firebase";
 import { scopeOf } from "./permissions";
 import type { Role } from "./roles";

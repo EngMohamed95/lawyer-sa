@@ -51,7 +51,7 @@ export default function EditTeamMemberModal({ isOpen, onClose, onSuccess, member
     setLoading(true);
     setError("");
     try {
-      const { doc, updateDoc } = await import("firebase/firestore");
+      const { doc, updateDoc } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
 
       await updateDoc(doc(db, "users", member.id), {

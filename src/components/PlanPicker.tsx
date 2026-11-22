@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { addDoc, collection, doc, updateDoc } from "firebase/firestore";
+import { addDoc, collection, doc, updateDoc } from "@/lib/store";
 import { CheckCircle2, Loader2, Clock, CreditCard } from "lucide-react";
 import { db } from "../lib/firebase";
 import {

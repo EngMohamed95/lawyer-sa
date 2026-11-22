@@ -8,7 +8,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "@/lib/store";
 import { ImagePlus, Stamp, Loader2, CheckCircle2, ArrowLeft, LogOut, Sparkles } from "lucide-react";
 import { db } from "../lib/firebase";
 import { useAuthSession } from "../lib/useAuthSession";

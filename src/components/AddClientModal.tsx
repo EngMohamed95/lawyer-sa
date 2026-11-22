@@ -1,6 +1,6 @@
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import React, { useState } from "react";
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";

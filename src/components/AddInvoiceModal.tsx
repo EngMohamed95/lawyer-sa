@@ -3,7 +3,7 @@
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useState } from "react";
 import { X, Receipt, AlertCircle, Save, Plus, Trash2 } from "lucide-react";
-import { addDoc, collection, getDocs, query, where } from "firebase/firestore";
+import { addDoc, collection, getDocs, query, where } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { Button } from "./ui/button";
 import { usePermissions } from "../lib/usePermissions";

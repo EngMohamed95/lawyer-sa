@@ -9,7 +9,7 @@ import {
   Ban, CheckCircle2, Clock, CreditCard, Download, FileText, Filter, Loader2, Percent, Receipt, RefreshCw, Search, User, X, XCircle,
 } from "lucide-react";
 import { db } from "../lib/firebase";
-import { collection, getDocs, doc, updateDoc, query, where, orderBy, limit, deleteField } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, query, where, orderBy, limit, deleteField } from "@/lib/store";
 import { Input } from "../components/ui/input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { AdminHeader, AdminModal, AdminStat, HeaderButton, adminPanel, fmtDateTime, fmtNum } from "../components/admin/AdminUi";

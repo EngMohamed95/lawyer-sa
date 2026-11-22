@@ -5,6 +5,7 @@ import fs from "fs";
 import cors from "cors";
 import multer from "multer";
 import net from "net";
+import { spawn } from "child_process";
 import apiRouter from "./src/server/api.js";
 import { checkDbHealth } from "./src/server/db.js";
 
@@ -64,6 +65,47 @@ async function startServer() {
     next();
   });
   app.use(cors());
+
+  /**
+   * API قاعدة MySQL (public/api/index.php). على الاستضافة Apache يحوّل /api/v1/xxx
+   * إلى api/index.php?__route=xxx — هنا نمرّر بنفس الشكل لخادم PHP المحلي، مع الكوكيز.
+   * يُسجَّل قبل express.json عشان الجسم يوصل لـ PHP كما هو.
+   */
+  if (process.env.NODE_ENV !== "production") {
+    const phpUrl = (process.env.PHP_DEV_URL || "http://127.0.0.1:8090").replace(/\/$/, "");
+    if (!process.env.PHP_DEV_URL) {
+      const php = spawn("php", ["-S", "127.0.0.1:8090", "-t", "public"], { stdio: ["ignore", "ignore", "pipe"] });
+      php.stderr.on("data", (chunk: Buffer) => {
+        const line = chunk.toString();
+        // سجل الطلبات العادي مزعج — نطبع الأخطاء فقط
+        if (/error|warning|fatal/i.test(line)) process.stderr.write(`[php] ${line}`);
+      });
+      php.on("error", (err) => console.warn(`تعذّر تشغيل PHP (${err.message}) — /api/v1 لن يعمل محلياً`));
+      process.on("exit", () => php.kill());
+    }
+    app.use("/api/v1", express.raw({ type: () => true, limit: "2mb" }), async (req, res) => {
+      const route = req.path.replace(/^\//, "");
+      const search = new URLSearchParams(req.query as Record<string, string>);
+      search.set("__route", route);
+      try {
+        const upstream = await fetch(`${phpUrl}/api/index.php?${search}`, {
+          method: req.method,
+          headers: {
+            ...(req.headers["content-type"] ? { "Content-Type": req.headers["content-type"] } : {}),
+            ...(req.headers.cookie ? { Cookie: req.headers.cookie } : {}),
+            ...(req.headers["user-agent"] ? { "User-Agent": req.headers["user-agent"] } : {}),
+          },
+          body: ["GET", "HEAD"].includes(req.method) || !Buffer.isBuffer(req.body) ? undefined : req.body,
+          redirect: "manual",
+        });
+        for (const cookie of upstream.headers.getSetCookie()) res.append("Set-Cookie", cookie);
+        res.status(upstream.status).type(upstream.headers.get("content-type") || "application/json").send(Buffer.from(await upstream.arrayBuffer()));
+      } catch {
+        res.status(503).json({ error: "خادم PHP المحلي غير مشغّل. شغّل: php -S 127.0.0.1:8090 -t public", code: "NOT_CONFIGURED" });
+      }
+    });
+  }
+
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -180,7 +222,7 @@ async function startServer() {
    */
   if (process.env.NODE_ENV !== "production") {
     // ملفات الأسرار لا تُقدَّم أبداً — .htaccess يحميها على الاستضافة، وهذا يحميها محلياً
-    app.use(/^\/(serviceAccountKey\.json|ai-config\.php)$/i, (_req, res) => {
+    app.use(/^\/(serviceAccountKey\.json|ai-config\.php|mail-config\.php|db-config\.php)$/i, (_req, res) => {
       res.sendStatus(404);
     });
     const phpDevUrl = (process.env.PHP_DEV_URL || "http://127.0.0.1:8090").replace(/\/$/, "");

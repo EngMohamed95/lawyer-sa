@@ -11,7 +11,7 @@ import { Link } from "react-router";
 import {
   Timer, Plus, ShieldAlert, RefreshCw, AlertTriangle, Scale, X, Trash2, Save, Receipt,
 } from "lucide-react";
-import { addDoc, collection, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { addDoc, collection, doc, getDocs, query, updateDoc, where } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { Card, CardContent, CardHeader } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -374,7 +374,7 @@ function AddTimeEntryModal({
       let clientName: string | null = null;
       if (clientId) {
         try {
-          const { getDoc } = await import("firebase/firestore");
+          const { getDoc } = await import("@/lib/store");
           const snap = await getDoc(doc(db, "clients", clientId));
           if (snap.exists()) {
             const c = snap.data();

@@ -11,7 +11,7 @@ import {
   updateDoc,
   where,
   type Timestamp,
-} from "firebase/firestore";
+} from "@/lib/store";
 import { db } from "./firebase";
 import { loadSupportProfile, type SupportProfile } from "./support";
 

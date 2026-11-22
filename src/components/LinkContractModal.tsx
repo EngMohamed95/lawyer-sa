@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { X, Link2, Search, AlertCircle } from "lucide-react";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { Button } from "./ui/button";
 import { writeAudit } from "../lib/audit";

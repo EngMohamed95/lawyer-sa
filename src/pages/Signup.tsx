@@ -19,7 +19,7 @@ import {
   createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut,
   type User as FirebaseUser,
 } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc } from "@/lib/store";
 import { auth, db } from "../lib/firebase";
 import { startSession } from "../lib/session";
 
@@ -276,6 +276,17 @@ export default function Signup() {
     }
   };
 
+  /**
+   * جلسة الدخول في MySQL بعد اكتمال التسجيل. لو كلمة المرور في النموذج (تسجيل جديد) ندخل
+   * بها عبر الـ API — فينتقل الحساب لـ MySQL من أول يوم. في وضع الاستكمال (resume) جاء
+   * المستخدم من صفحة الدخول وجلسته في MySQL موجودة أصلاً.
+   */
+  const enterServerSession = async (fallback: FirebaseUser): Promise<FirebaseUser> => {
+    if (!form.password) return fallback;
+    const { login } = await import("../lib/authApi");
+    return (await login(form.email.trim().toLowerCase(), form.password, true)).firebaseUser;
+  };
+
   const handleVerify = async (e?: React.FormEvent) => {
     e?.preventDefault();
     const user = existingUser || auth.currentUser;
@@ -295,12 +306,14 @@ export default function Signup() {
       // التوكن الجديد يحمل email_verified=true
       await user.getIdToken(true);
       await user.reload();
-      const destination = await startSession(auth.currentUser || user, { rememberMe: true });
+      const destination = await startSession(await enterServerSession(auth.currentUser || user), { rememberMe: true });
       navigate(destination, { replace: true });
     } catch (err: any) {
       if (err?.code === "ALREADY_ACTIVE") {
         // الحساب أُنشئ (طلب سابق نجح) — نبدأ الجلسة مباشرة
-        const destination = await startSession(user, { rememberMe: true }).catch(() => "/login");
+        const destination = await enterServerSession(user)
+          .then((u) => startSession(u, { rememberMe: true }))
+          .catch(() => "/login");
         navigate(destination, { replace: true });
         return;
       }

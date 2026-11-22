@@ -17,7 +17,7 @@ import {
   updateDoc,
   where,
   type Timestamp,
-} from "firebase/firestore";
+} from "@/lib/store";
 import { deleteObject, getBlob, ref, uploadBytesResumable } from "firebase/storage";
 import { db, storage } from "./firebase";
 

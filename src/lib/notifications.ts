@@ -13,10 +13,10 @@
 
 import {
   addDoc, collection, getDocs, limit, onSnapshot, orderBy, query, updateDoc, doc, where, writeBatch,
-} from "firebase/firestore";
+} from "@/lib/store";
 import { db } from "./firebase";
 import { excludeDeleted } from "./softDelete";
-import { visibleCasesQuery } from "./caseAccess";
+import { childrenOf, parentIdOf, visibleCasesQuery } from "./caseAccess";
 import { displayStatus, isOverdue } from "./billing";
 import { judgeRequestsByDate, judgeRequestsFor, pendingNextHearings } from "./calendar";
 
@@ -238,13 +238,13 @@ export async function collectCandidates(lawyerId: string, userId: string): Promi
   ]);
 
   // ── الجلسات: 3 أيام · يوم · اليوم نفسه — ونتيجة غير مسجّلة بعد يوم
-  const hearingArrays = await Promise.all(cases.map(async (c) => {
-    try {
-      const snap = await getDocs(collection(db, "cases", c.id, "hearings"));
-      return snap.docs.map((d) => ({ id: d.id, caseId: c.id, caseTitle: str(c.title) || str(c.caseNumber), ...d.data() }));
-    } catch { return []; }
-  }));
-  const allHearings = hearingArrays.flat() as (Record<string, unknown> & { id: string; caseId: string; caseTitle: string })[];
+  // جلسات قضايا المكتب باستعلام واحد (كان طلب لكل قضية)
+  const caseById = new Map(cases.map((c) => [c.id, c]));
+  const hearingDocs = await childrenOf("hearings", lawyerId, cases.map((c) => `cases/${c.id}`)).catch(() => []);
+  const allHearings = hearingDocs.map((d) => {
+    const c = caseById.get(parentIdOf(d));
+    return { id: d.id, caseId: parentIdOf(d), caseTitle: str(c?.title) || str(c?.caseNumber), ...d.data() };
+  }) as (Record<string, unknown> & { id: string; caseId: string; caseTitle: string })[];
   const requests = judgeRequestsByDate(allHearings);
   const titleOf = new Map(allHearings.map((h) => [h.caseId, h.caseTitle]));
 

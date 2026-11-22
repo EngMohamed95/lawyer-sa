@@ -10,7 +10,7 @@ import { AiSummarizerModal } from "../components/AiSummarizerModal";
 import { DocumentViewerModal } from "../components/DocumentViewerModal";
 import RichTextEditor from "../components/RichTextEditor";
 import { AddDocumentModal } from "../components/AddDocumentModal";
-import { collection, getDocs, collectionGroup, query, where, doc, deleteDoc, updateDoc, addDoc } from "firebase/firestore";
+import { collection, getDocs, collectionGroup, query, where, doc, deleteDoc, updateDoc, addDoc } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { Link } from "react-router";
 import { FileSignature, ShieldCheck } from "lucide-react";
@@ -718,7 +718,7 @@ export default function Documents({
     }
 
     try {
-      const { collection, addDoc, doc } = await import("firebase/firestore");
+      const { collection, addDoc, doc } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
       const lawyerId = localStorage.getItem("lawyerId");
       
@@ -816,7 +816,7 @@ export default function Documents({
         uploadDate: new Date().toISOString(),
       };
 
-      const { collection, addDoc, doc } = await import("firebase/firestore");
+      const { collection, addDoc, doc } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
 
       if (targetCaseId) {

@@ -37,7 +37,7 @@ export default function EditTraineeModal({ isOpen, onClose, onSuccess, traineeDa
     setLoading(true);
     
     try {
-      const { doc, updateDoc, deleteField } = await import("firebase/firestore");
+      const { doc, updateDoc, deleteField } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
       
       const traineeRef = doc(db, "users", traineeData.id);

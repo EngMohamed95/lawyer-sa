@@ -11,10 +11,10 @@
  * لا يُعدَّل أي مصدر قائم؛ الدمج يحدث في الذاكرة عند العرض فقط.
  */
 
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where } from "@/lib/store";
 import { db } from "./firebase";
 import { excludeDeleted } from "./softDelete";
-import { visibleCasesQuery } from "./caseAccess";
+import { childrenOf, parentIdOf, visibleCasesQuery } from "./caseAccess";
 import { REQUEST_STATUS_LABELS_AR, type RequestStatus } from "./caseRequests";
 
 /* ────────────────────────── الأنواع ────────────────────────── */
@@ -527,39 +527,39 @@ export async function aggregateCalendar(
     events.push(...expandRecurrence(appt, opts.windowStart, opts.windowEnd));
   }
 
-  // الجلسات مجموعات فرعية — نقرأها لكل قضية دون تعديل بنيتها
+  // الجلسات والطلبات مجموعات فرعية — باستعلام واحد لكل نوع بدل طلب لكل قضية
+  const caseKeys = cases.map((c) => `cases/${c.id}`);
+  const byCase = async (sub: "hearings" | "requests") => {
+    const grouped = new Map<string, (Row & { caseId: string })[]>();
+    const docs = await childrenOf(sub, lawyerId, caseKeys).catch(() => []);
+    for (const d of docs) {
+      const caseId = parentIdOf(d);
+      grouped.set(caseId, [...(grouped.get(caseId) ?? []), { id: d.id, caseId, ...d.data() } as Row & { caseId: string }]);
+    }
+    return grouped;
+  };
+
   if (want("hearing") && cases.length > 0) {
-    const perCase = await Promise.all(cases.map(async (c) => {
-      try {
-        const snap = await getDocs(collection(db, "cases", c.id, "hearings"));
-        const title = str(c.title) || str(c.caseNumber) || "قضية";
-        const hearings = snap.docs.map((d) => ({ id: d.id, caseId: c.id, ...d.data() }) as Row & { caseId: string });
-        const requests = judgeRequestsByDate(hearings);
-        return [
-          ...hearings
-            .filter((h) => str(h.hearingDate))
-            .map((h) => hearingToEvent(h, title, judgeRequestsFor(requests, c.id, h.hearingDate))),
-          ...pendingNextHearings(hearings).map((n) => nextHearingToEvent(n, title)),
-        ];
-      } catch {
-        return [];
-      }
-    }));
-    events.push(...perCase.flat());
+    const hearingsByCase = await byCase("hearings");
+    for (const c of cases) {
+      const hearings = hearingsByCase.get(c.id) ?? [];
+      const title = str(c.title) || str(c.caseNumber) || "قضية";
+      const requests = judgeRequestsByDate(hearings);
+      events.push(
+        ...hearings
+          .filter((h) => str(h.hearingDate))
+          .map((h) => hearingToEvent(h, title, judgeRequestsFor(requests, c.id, h.hearingDate))),
+        ...pendingNextHearings(hearings).map((n) => nextHearingToEvent(n, title)),
+      );
+    }
   }
 
-  // طلبات القضايا — مجموعة فرعية «cases/{id}/requests»
   if (want("request") && cases.length > 0) {
-    const perCase = await Promise.all(cases.map(async (c) => {
-      try {
-        const snap = await getDocs(collection(db, "cases", c.id, "requests"));
-        const title = str(c.title) || str(c.caseNumber) || "قضية";
-        return snap.docs.flatMap((d) => requestToEvents({ id: d.id, caseId: c.id, ...d.data() } as Row, title));
-      } catch {
-        return [];
-      }
-    }));
-    events.push(...perCase.flat());
+    const requestsByCase = await byCase("requests");
+    for (const c of cases) {
+      const title = str(c.title) || str(c.caseNumber) || "قضية";
+      for (const r of requestsByCase.get(c.id) ?? []) events.push(...requestToEvents(r as Row, title));
+    }
   }
 
   for (const t of tasks) if (str(t.dueDate)) events.push(taskToEvent(t));

@@ -5,10 +5,9 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { AddHearingModal } from "../components/AddHearingModal";
 import { Pagination } from "../components/ui/Pagination";
-import { collection, getDocs, query, where, collectionGroup, limit } from "firebase/firestore";
+import { getDocs, query, where, collectionGroup } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { HearingListRow } from "../components/HearingCard";
-import { visibleCasesQuery } from "../lib/caseAccess";
 import { useSearchParams } from "react-router";
 import FilterBanner from "../components/FilterBanner";
 import {
@@ -48,23 +47,14 @@ export default function Hearings() {
           caseId: doc.data().caseId || doc.ref.parent.parent?.id,
         }));
       } else {
-        // Fetch cases (capped at 100), then their hearings in parallel
-        let casesQuery;
-        if (userRole === "OFFICE_LAWYER") {
-          const userId = localStorage.getItem("userId");
-          casesQuery = visibleCasesQuery(lawyerId || "", limit(100));
-        } else {
-          casesQuery = query(collection(db, "cases"), where("lawyerId", "==", lawyerId), limit(100));
-        }
-        const casesSnap = await getDocs(casesQuery);
-        const arrays = await Promise.all(
-          casesSnap.docs.map(cd =>
-            getDocs(collection(db, "cases", cd.id, "hearings")).then(s =>
-              s.docs.map(d => ({ id: d.id, ...d.data(), caseId: cd.id }))
-            )
-          )
-        );
-        hearingsData = arrays.flat();
+        // كل جلسات المكتب باستعلام واحد — كان: أول 100 قضية ثم طلب لكل قضية. السيرفر يحصر
+        // المحامي المكلّف في جلسات قضاياه (public/api/_lib/store.php)
+        const snap = await getDocs(query(collectionGroup(db, "hearings"), where("lawyerId", "==", lawyerId || "")));
+        hearingsData = snap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          caseId: doc.ref.parent.parent?.id || doc.data().caseId,
+        }));
       }
 
       // الأحدث أولاً

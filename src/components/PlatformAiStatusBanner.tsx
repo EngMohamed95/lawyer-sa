@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from "react";
 import { AlertTriangle, X } from "lucide-react";
-import { doc, onSnapshot, serverTimestamp, setDoc, type Timestamp } from "firebase/firestore";
+import { doc, onSnapshot, serverTimestamp, setDoc, type Timestamp } from "@/lib/store";
 import { db } from "../lib/firebase";
 
 interface PlatformAiStatus {

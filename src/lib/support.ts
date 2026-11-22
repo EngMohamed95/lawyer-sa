@@ -18,7 +18,7 @@ import {
   type Timestamp,
   type QueryConstraint,
   type QueryDocumentSnapshot,
-} from "firebase/firestore";
+} from "@/lib/store";
 import { auth, db } from "./firebase";
 import { storage } from "./firebase";
 import { ref, uploadBytes, getBlob, deleteObject } from "firebase/storage";

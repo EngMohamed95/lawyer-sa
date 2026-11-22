@@ -5,10 +5,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
-import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, deleteField } from "firebase/firestore";
-import { db, firebaseConfig } from "../lib/firebase";
-import { initializeApp, deleteApp } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, deleteField } from "@/lib/store";
+import { db } from "../lib/firebase";
+import { createAccountWithProfile } from "../lib/authApi";
 import { apiUrl } from "../lib/apiBase";
 
 const PLANS = [
@@ -164,29 +163,27 @@ export default function Lawyers() {
     e.preventDefault();
     setActionLoading(true);
     try {
-      const secondaryApp  = initializeApp(firebaseConfig, "SecondaryApp_" + Date.now());
-      const secondaryAuth = getAuth(secondaryApp);
-      const cred          = await createUserWithEmailAndPassword(secondaryAuth, newLawyer.email, newLawyer.password);
-      const uid           = cred.user.uid;
-
       const months = newLawyer.billing === "annual" ? 12 : 1;
       const expiry = new Date();
       expiry.setMonth(expiry.getMonth() + months);
 
-      await setDoc(doc(db, "users", uid), {
-        name:                 newLawyer.name,
-        email:                newLawyer.email,
-        phone:                newLawyer.phone,
-        officeName:           newLawyer.officeName,
-        plan:                 newLawyer.plan,
-        role:                 "LAWYER",
-        status:               "ACTIVE",
-        subscriptionBilling:  newLawyer.billing,
-        subscriptionExpiry:   expiry.toISOString(),
-        createdAt:            new Date().toISOString(),
-      });
+      // بيانات الدخول في MySQL، والملف الشخصي في Firestore
+      await createAccountWithProfile(
+        { email: newLawyer.email, password: newLawyer.password, name: newLawyer.name, role: "LAWYER" },
+        (uid) => setDoc(doc(db, "users", uid), {
+          name:                 newLawyer.name,
+          email:                newLawyer.email,
+          phone:                newLawyer.phone,
+          officeName:           newLawyer.officeName,
+          plan:                 newLawyer.plan,
+          role:                 "LAWYER",
+          status:               "ACTIVE",
+          subscriptionBilling:  newLawyer.billing,
+          subscriptionExpiry:   expiry.toISOString(),
+          createdAt:            new Date().toISOString(),
+        }),
+      );
 
-      await deleteApp(secondaryApp);
       setIsAddModalOpen(false);
       setNewLawyer({ name: "", email: "", password: "", phone: "", officeName: "", plan: "BASIC", billing: "monthly" });
       fetchLawyers();

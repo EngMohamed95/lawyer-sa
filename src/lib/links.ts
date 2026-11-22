@@ -9,7 +9,7 @@
  * أي ربط خارج حدود المكتب مهما كان المُعرَّف المُمرَّر.
  */
 
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where } from "@/lib/store";
 import { db } from "./firebase";
 import { excludeDeleted } from "./softDelete";
 import { CONTRACT_STATUS_COLORS, CONTRACT_STATUS_LABELS_AR, type ContractStatus } from "./contracts";

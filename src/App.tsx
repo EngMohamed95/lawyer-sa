@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Outlet, Link, useLocation, Navigate, useNavigate } from "react-router";
 import { LayoutDashboard, Users, Briefcase, Calendar, CheckSquare, Settings, Bell, Menu, Calculator, GraduationCap, BarChart, LogOut, Shield, CreditCard, Loader2, BookOpen, Sparkles, ChevronDown, ScrollText, Trash2, FileSignature, ReceiptText, Handshake, Timer, CalendarDays, Gavel, Headset, Lightbulb, Lock, Tag, Layers, UserCog, Sun, Moon } from "lucide-react";
 import { useState, lazy, Suspense, useEffect, useRef, type ReactNode } from "react";
-import { collection, getDocs, query, where, collectionGroup, limit } from "firebase/firestore";
+import { collection, getDocs, query, where, collectionGroup } from "@/lib/store";
 import { db } from "./lib/firebase";
 import { usePermissions } from "./lib/usePermissions";
 import { generateNotifications, loadPreferences, shouldAutoScan } from "./lib/notifications";
@@ -18,7 +18,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import LandingPage from "./pages/LandingPage";
 import Login from "./pages/Login";
 import CreateAdmin from "./pages/CreateAdmin";
-import { visibleCasesQuery } from "./lib/caseAccess";
 
 // أمان: مسار إنشاء المدير العام معطّل افتراضياً.
 // كان مفتوحاً للجميع، فكان بإمكان أي زائر إنشاء حساب SUPER_ADMIN لنفسه.
@@ -55,6 +54,7 @@ const OfficeSubscriptions = lazy(() => import("./pages/OfficeSubscriptions"));
 const PlatformAdmins = lazy(() => import("./pages/PlatformAdmins"));
 const PlatformAiStatusBanner = lazy(() => import("./components/PlatformAiStatusBanner"));
 const Signup = lazy(() => import("./pages/Signup"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const TrialExpired = lazy(() => import("./pages/TrialExpired"));
 const LegalLibrary = lazy(() => import("./pages/LegalLibrary"));
@@ -506,21 +506,13 @@ function Header({ onMenuOpen }: { onMenuOpen: () => void }) {
           caseId: doc.data().caseId || doc.ref.parent.parent?.id,
         }));
       } else {
-        let casesQuery;
-        if (userRole === "OFFICE_LAWYER") {
-          casesQuery = visibleCasesQuery(lawyerId || "", limit(100));
-        } else {
-          casesQuery = query(collection(db, "cases"), where("lawyerId", "==", lawyerId), limit(100));
-        }
-        const casesSnap = await getDocs(casesQuery);
-        const arrays = await Promise.all(
-          casesSnap.docs.map(cd =>
-            getDocs(collection(db, "cases", cd.id, "hearings")).then(s =>
-              s.docs.map(d => ({ id: d.id, ...d.data() as any, caseId: cd.id }))
-            )
-          )
-        );
-        hearingsList = arrays.flat();
+        // كل جلسات المكتب باستعلام واحد (كان: أول 100 قضية ثم طلب لكل قضية)
+        const snap = await getDocs(query(collectionGroup(db, "hearings"), where("lawyerId", "==", lawyerId || "")));
+        hearingsList = snap.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data() as any,
+          caseId: doc.ref.parent.parent?.id || doc.data().caseId,
+        }));
       }
 
       // 3. Process alerts
@@ -961,6 +953,7 @@ export default function App() {
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/subscription-expired" element={<TrialExpired />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/support/tickets" element={<Navigate to="/app/support/tickets" replace />} />
           <Route
             path="/create-admin"

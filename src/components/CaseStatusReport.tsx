@@ -8,7 +8,7 @@
  */
 
 import { useState } from "react";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc } from "@/lib/store";
 import { Download, FileBarChart, Loader2, MessageCircle, Printer, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 import { db } from "../lib/firebase";
 import { callGemini, callGroq, readAiSettings } from "../lib/aiProxy";

@@ -6,7 +6,7 @@
  * الحصة: quotaOverrides.ai لمالك المكتب إن وُجدت، وإلا quotas.ai لباقته. 0 = غير محدود.
  */
 
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc } from "@/lib/store";
 import { auth, db } from "./firebase";
 import { TRIAL_AI_QUOTA } from "./subscriptionPlans";
 

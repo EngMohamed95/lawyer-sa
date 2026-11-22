@@ -29,3 +29,6 @@ public/uploads/
 # ملفات حالة أداة المساعدة (oh-my-claudecode) — ليست من كود البرنامج
 .omc/
 **/.omc/
+
+# إعداد قاعدة MySQL — يُكتب وقت النشر
+db-config.php

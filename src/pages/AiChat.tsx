@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { MessageSquare, Send, Sparkles, Bot, User, Loader2, Plus, Trash2, Paperclip, X, FileText } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { collection, getDocs, doc, updateDoc, deleteDoc, query, where, addDoc } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, deleteDoc, query, where, addDoc } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { callGemini, callGroq, readAiSettings, type GeminiContent } from "../lib/aiProxy";
 import AiUsageMeter from "../components/AiUsageMeter";

@@ -11,7 +11,7 @@
  * قاعدة ثابتة: فشل التدقيق لا يُفشل عملية المستخدم أبداً.
  */
 
-import { addDoc, collection } from "firebase/firestore";
+import { addDoc, collection } from "@/lib/store";
 import { db } from "./firebase";
 import { normalizeRole } from "./roles";
 

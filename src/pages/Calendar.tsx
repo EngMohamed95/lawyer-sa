@@ -12,7 +12,7 @@ import {
   CalendarDays, Plus, ShieldAlert, RefreshCw, AlertTriangle,
   ChevronRight, ChevronLeft, Download, Trash2, CheckCircle2, XCircle, Gavel,
 } from "lucide-react";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { Card, CardContent, CardHeader } from "../components/ui/card";
 import { Button } from "../components/ui/button";

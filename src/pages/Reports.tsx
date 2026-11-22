@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../co
 import { Button } from "../components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import { Badge } from "../components/ui/badge";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs } from "@/lib/store";
 import { db } from "../lib/firebase";
 import AgingReport from "../components/AgingReport";
 import { visibleCasesQuery } from "../lib/caseAccess";
@@ -31,7 +31,7 @@ export default function Reports() {
       let usersQ: any = collection(db, "users");
 
       if (userRole !== "SUPER_ADMIN") {
-        const { query, where } = await import("firebase/firestore");
+        const { query, where } = await import("@/lib/store");
         casesQ = visibleCasesQuery(lawyerId || "");
         paymentsQ = query(collection(db, "payments"), where("lawyerId", "==", lawyerId));
         tasksQ = query(collection(db, "tasks"), where("lawyerId", "==", lawyerId));

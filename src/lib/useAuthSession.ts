@@ -50,6 +50,8 @@ export function useAuthSession(): AuthSession {
 
   useEffect(() => {
     const claimsLoggedIn = () => localStorage.getItem("isAuthenticated") === "true";
+    let restoreTried = false;
+    let cancelled = false;
 
     const unsub = onAuthStateChanged(
       auth,
@@ -61,10 +63,22 @@ export function useAuthSession(): AuthSession {
           return;
         }
         setUser(null);
-        // Firebase يقول لا مستخدم. إن كان التخزين المحلي يدّعي العكس
-        // فالجلسة انتهت ويجب إعلام المستخدم صراحةً.
         setEmail(localStorage.getItem("userEmail"));
-        setState(claimsLoggedIn() ? "expired" : "signed-out");
+        if (!claimsLoggedIn()) {
+          setState("signed-out");
+          return;
+        }
+        // جلسة Firebase ضاعت لكن جلسة MySQL (الكوكي) ممكن تكون سارية — نجدد توكن Firebase
+        // منها مرة وحدة؛ نجاحه يشغّل هذا المستمع من جديد بالمستخدم. فشله = الجلسة انتهت فعلاً.
+        if (restoreTried) {
+          setState("expired");
+          return;
+        }
+        restoreTried = true;
+        void import("./authApi")
+          .then(({ restoreFirebaseSession }) => restoreFirebaseSession())
+          .then((restored) => { if (!restored && !cancelled) setState("expired"); })
+          .catch(() => { if (!cancelled) setState("expired"); });
       },
       (err) => {
         console.error("تعذّر التحقق من جلسة المصادقة:", err);
@@ -73,7 +87,10 @@ export function useAuthSession(): AuthSession {
       },
     );
 
-    return unsub;
+    return () => {
+      cancelled = true;
+      unsub();
+    };
   }, []);
 
   return { state, user, email };

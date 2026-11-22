@@ -12,7 +12,7 @@ import {
   Activity, BarChart3, Briefcase, Building2, Gavel, Headset, Lightbulb, PieChart, RefreshCw,
   ShieldCheck, Ticket, Trophy, Users, Wallet,
 } from "lucide-react";
-import { collection, collectionGroup, getCountFromServer, getDocs, limit, orderBy, query } from "firebase/firestore";
+import { collection, collectionGroup, getCountFromServer, getDocs, limit, orderBy, query } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { SUPPORT_PRIORITIES } from "../lib/support";
 import { SUGGESTION_STATUSES } from "../lib/suggestions";

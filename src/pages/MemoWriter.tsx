@@ -9,7 +9,7 @@
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useState } from "react";
 import { CheckCircle2, Download, FilePlus, FileSignature, Info, Loader2, Pencil, Printer, Save, Trash2 } from "lucide-react";
-import { addDoc, collection, deleteDoc, doc, getDocs, limit, query, updateDoc, where } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, getDocs, limit, query, updateDoc, where } from "@/lib/store";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";

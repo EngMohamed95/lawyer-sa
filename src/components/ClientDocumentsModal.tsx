@@ -4,7 +4,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Plus, File, Trash2, Loader2, FolderOpen, Eye } from "lucide-react";
-import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
+import { collection, getDocs, deleteDoc, doc } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { AddDocumentModal } from "./AddDocumentModal";
 import { DocumentViewerModal } from "./DocumentViewerModal";

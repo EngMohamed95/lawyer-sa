@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquare, Send, X, Bot, User, Loader2, Sparkles, MinusCircle, Maximize2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { collection, getDocs, collectionGroup, query, where } from "firebase/firestore";
+import { collection, getDocs, collectionGroup, query, where } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { callGemini, callGroq, readAiSettings, type GeminiContent } from "../lib/aiProxy";
 import { assignedDocuments, visibleCasesQuery } from "../lib/caseAccess";

@@ -36,7 +36,7 @@ import { HearingSelectModal } from "../components/HearingSelectModal";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import RichTextEditor from "../components/RichTextEditor";
 import { Input } from "../components/ui/input";
-import { doc, getDoc, collection, getDocs, addDoc, updateDoc, query, where, deleteField } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, addDoc, updateDoc, query, where, deleteField } from "@/lib/store";
 import { db } from "../lib/firebase";
 import Documents from "./Documents";
 import { usePermissions } from "../lib/usePermissions";
@@ -370,7 +370,7 @@ export default function CaseDetails() {
       const wordFileUrl = wordUploadResult.fileUrl;
 
       // 4. Update the hearing document in Firestore
-      const { doc, updateDoc } = await import("firebase/firestore");
+      const { doc, updateDoc } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
 
       const hearingRef = doc(db, "cases", id, "hearings", hearingId);

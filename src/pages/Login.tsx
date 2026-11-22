@@ -67,25 +67,14 @@ export default function Login() {
     setInfo("");
 
     try {
-      const {
-        browserLocalPersistence,
-        browserSessionPersistence,
-        setPersistence,
-        signInWithEmailAndPassword,
-      } = await import("firebase/auth");
-      const { auth } = await import("../lib/firebase");
+      const { login } = await import("../lib/authApi");
       const { startSession, NoProfileError } = await import("../lib/session");
 
-      await withLoginTimeout(
-        setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence),
-        "تعذر تجهيز جلسة تسجيل الدخول. حدّث الصفحة ثم حاول مرة أخرى.",
-      );
-
-      const userCredential = await withLoginTimeout(
-        signInWithEmailAndPassword(auth, username, password),
+      // الدخول في MySQL؛ السيرفر يرجع توكن Firebase ويدخل به عشان المجموعات اللي ما انتقلت بعد
+      const { firebaseUser } = await withLoginTimeout(
+        login(username, password, rememberMe),
         "تعذر الاتصال بخدمة تسجيل الدخول. تحقق من الإنترنت ثم حاول مرة أخرى.",
       );
-      const firebaseUser = userCredential.user;
 
       try {
         const destination = await startSession(firebaseUser, { rememberMe, typedEmail: username });
@@ -100,11 +89,8 @@ export default function Login() {
       }
     } catch (err: any) {
       console.error(err);
-      if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
-        setError("اسم المستخدم أو كلمة المرور غير صحيحة");
-      } else {
-        setError(err.message || "حدث خطأ أثناء تسجيل الدخول");
-      }
+      // رسائل السيرفر عربية وجاهزة للعرض (بيانات غلط، حساب معطّل، محاولات كثيرة…)
+      setError(err?.message || "حدث خطأ أثناء تسجيل الدخول");
     } finally {
       setIsLoading(false);
     }
@@ -119,13 +105,12 @@ export default function Login() {
       return;
     }
     try {
-      const { sendPasswordResetEmail } = await import("firebase/auth");
-      const { auth } = await import("../lib/firebase");
-      auth.languageCode = "ar";
-      await sendPasswordResetEmail(auth, email);
+      const { requestPasswordReset } = await import("../lib/authApi");
+      await requestPasswordReset(email);
       setInfo("إن كان البريد مسجلاً لدينا فستصلك رسالة لإعادة تعيين كلمة المرور خلال دقائق.");
     } catch (err: any) {
-      if (err?.code === "auth/invalid-email") setError("البريد الإلكتروني غير صالح.");
+      // خطأ تحقق أو حد محاولات يُعرض كما هو؛ غيره ما نكشف منه شيء
+      if (err?.status === 422 || err?.status === 429) setError(err.message);
       else setInfo("إن كان البريد مسجلاً لدينا فستصلك رسالة لإعادة تعيين كلمة المرور خلال دقائق.");
     }
   };

@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Shield, Bell, User, Lock, Palette, Globe, Settings as SettingsIcon, Eye, EyeOff, CheckCircle2, AlertCircle, Loader2, Sparkles, DollarSign, FileEdit, Link, Check, ScrollText, Trash2, ListChecks } from "lucide-react";
 import { auth } from "../lib/firebase";
-import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
+import { changePassword } from "../lib/authApi";
 import PermissionsTab from "../components/settings/PermissionsTab";
 import ListsTab from "../components/settings/ListsTab";
 import NotificationsTab from "../components/settings/NotificationsTab";
@@ -42,27 +42,14 @@ function ChangePasswordForm() {
 
     setLoading(true);
     try {
-      const user = auth.currentUser;
-      if (!user || !user.email) throw new Error("المستخدم غير مسجل الدخول");
-
-      // Re-authenticate first
-      const credential = EmailAuthProvider.credential(user.email, form.current);
-      await reauthenticateWithCredential(user, credential);
-
-      // Update password
-      await updatePassword(user, form.newPass);
+      // السيرفر يتحقق من كلمة المرور الحالية ويخرج باقي الأجهزة
+      await changePassword(form.current, form.newPass);
 
       setSuccess(true);
       setForm({ current: "", newPass: "", confirm: "" });
       setTimeout(() => setSuccess(false), 4000);
     } catch (err: any) {
-      if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
-        setError("كلمة المرور الحالية غير صحيحة");
-      } else if (err.code === "auth/too-many-requests") {
-        setError("محاولات كثيرة جداً، حاول بعد قليل");
-      } else {
-        setError(err.message || "حدث خطأ، حاول مرة أخرى");
-      }
+      setError(err?.message || "حدث خطأ، حاول مرة أخرى");
     } finally {
       setLoading(false);
     }
@@ -226,7 +213,7 @@ export default function SettingsPage() {
   const handleSeedFakeData = async () => {
     setSaving(true);
     try {
-      const { collection, addDoc } = await import("firebase/firestore");
+      const { collection, addDoc } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
       const lawyerId = localStorage.getItem("lawyerId") || auth.currentUser?.uid || "admin_user_001";
 
@@ -474,7 +461,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-gray-700">البريد الإلكتروني</label>
-                    <input defaultValue={auth.currentUser?.email || ""} disabled
+                    <input defaultValue={auth.currentUser?.email || localStorage.getItem("userEmail") || ""} disabled
                       className="w-full px-4 py-3 border border-gray-200 rounded-2xl bg-gray-50 text-sm text-gray-500 cursor-not-allowed" />
                     <p className="text-xs text-gray-400">لتغيير البريد الإلكتروني تواصل مع المدير</p>
                   </div>

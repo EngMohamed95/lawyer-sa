@@ -8,8 +8,8 @@ import { Badge } from "../components/ui/badge";
 import { AddClientModal } from "../components/AddClientModal";
 import { EditClientModal } from "../components/EditClientModal";
 import { ClientDocumentsModal } from "../components/ClientDocumentsModal";
-import { collection, getDocs, query, where, limit, orderBy } from "firebase/firestore";
-import type { Query, DocumentData } from "firebase/firestore";
+import { collection, getDocs, query, where, limit, orderBy } from "@/lib/store";
+import type { Query, DocumentData } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { Pagination } from "../components/ui/Pagination";
 import RelatedPanel from "../components/RelatedPanel";
@@ -41,7 +41,8 @@ export default function Clients() {
       if (userRole === "SUPER_ADMIN") {
         base = query(collection(db, "clients"), limit(200));
       } else {
-        base = query(collection(db, "clients"), where("lawyerId", "==", lawyerId), limit(200));
+        // كل عملاء المكتب — كان أول 200 فقط فيختفي الباقي من القائمة والبحث
+        base = query(collection(db, "clients"), where("lawyerId", "==", lawyerId));
       }
 
       const snap = await getDocs(base);

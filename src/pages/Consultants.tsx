@@ -5,8 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Button } from "../components/ui/button";
 import AddConsultantModal from "../components/AddConsultantModal";
 import EditConsultantModal from "../components/EditConsultantModal";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import type { Query, DocumentData } from "firebase/firestore";
+import { collection, getDocs, query, where } from "@/lib/store";
+import type { Query, DocumentData } from "@/lib/store";
 import { db } from "../lib/firebase";
 
 export default function Consultants() {

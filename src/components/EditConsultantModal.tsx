@@ -36,7 +36,7 @@ export default function EditConsultantModal({ isOpen, onClose, onSuccess, consul
     setLoading(true);
 
     try {
-      const { doc, updateDoc, deleteField } = await import("firebase/firestore");
+      const { doc, updateDoc, deleteField } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
 
       const consultantRef = doc(db, "users", consultantData.id);

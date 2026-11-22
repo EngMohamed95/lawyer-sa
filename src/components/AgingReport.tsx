@@ -9,7 +9,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { Clock, RefreshCw, AlertTriangle, FileSpreadsheet } from "lucide-react";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
 import { Button } from "./ui/button";

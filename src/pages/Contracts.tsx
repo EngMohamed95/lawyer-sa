@@ -10,7 +10,7 @@ import {
   FileSignature, Plus, Search, ShieldAlert, RefreshCw, AlertTriangle,
   Send, CheckCircle2, XCircle, Eye, Trash2, PenLine, Clock, Scale, X,
 } from "lucide-react";
-import { collection, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { collection, doc, getDocs, query, updateDoc, where } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { Card, CardContent, CardHeader } from "../components/ui/card";
 import { Button } from "../components/ui/button";

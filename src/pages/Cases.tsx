@@ -7,8 +7,8 @@ import { Input } from "../components/ui/input";
 import { AiSummarizerModal } from "../components/AiSummarizerModal";
 import { AddCaseModal } from "../components/AddCaseModal";
 import { EditCaseModal } from "../components/EditCaseModal";
-import { collection, getDocs, query, where, limit } from "firebase/firestore";
-import type { Query, DocumentData } from "firebase/firestore";
+import { collection, getDocs, query, where, limit } from "@/lib/store";
+import type { Query, DocumentData } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { Pagination } from "../components/ui/Pagination";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
@@ -297,16 +297,15 @@ export default function Cases({ section = "cases" }: { section?: "cases" | "exec
     setLoading(true);
     try {
       let casesQuery: Query<DocumentData>;
+      // المكتب: كل قضاياه وعملائه — كان أول 200 فقط، فالمكتب الكبير يفقد الباقي من القائمة
+      // والبحث والتصدير بصمت. مدير المنصة يظل محدوداً (قضايا كل المكاتب).
       if (userRole === "SUPER_ADMIN") {
         casesQuery = query(collection(db, "cases"), limit(200));
-      } else if (userRole === "OFFICE_LAWYER") {
-        const userId = localStorage.getItem("userId");
-        casesQuery = visibleCasesQuery(lawyerId || "", limit(200));
       } else {
-        casesQuery = query(collection(db, "cases"), where("lawyerId", "==", lawyerId), limit(200));
+        casesQuery = visibleCasesQuery(lawyerId || "");
       }
       const clientsQuery = userRole !== "SUPER_ADMIN"
-        ? query(collection(db, "clients"), where("lawyerId", "==", lawyerId), limit(200))
+        ? query(collection(db, "clients"), where("lawyerId", "==", lawyerId))
         : query(collection(db, "clients"), limit(200));
 
       const [casesSnap, clientsSnap] = await Promise.all([

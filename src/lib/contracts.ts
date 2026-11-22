@@ -6,7 +6,7 @@
  * مدير المكتب «كامل» · الشريك «اعتماد» · المحامي «إنشاء» · المستشار «مراجعة» · العميل «عرض»
  */
 
-import { doc, runTransaction } from "firebase/firestore";
+import { doc, runTransaction } from "@/lib/store";
 import { db } from "./firebase";
 import type { Role } from "./roles";
 import { canApprove, canCreate, canUpdate, scopeOf } from "./permissions";

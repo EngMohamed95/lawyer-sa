@@ -6,10 +6,9 @@
 
 import { useEffect, useState } from "react";
 import { Ban, CheckCircle2, Loader2, Pencil, ShieldCheck, UserCog, UserPlus } from "lucide-react";
-import { collection, doc, getDocs, query, setDoc, updateDoc, where } from "firebase/firestore";
-import { initializeApp, deleteApp } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { db, firebaseConfig } from "../lib/firebase";
+import { collection, doc, getDocs, query, setDoc, updateDoc, where } from "@/lib/store";
+import { createAccountWithProfile } from "../lib/authApi";
+import { db } from "../lib/firebase";
 import { Input } from "../components/ui/input";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { AdminHeader, AdminModal, HeaderButton, adminPanel, fmtDate, fmtDateTime } from "../components/admin/AdminUi";
@@ -63,26 +62,26 @@ export default function PlatformAdmins() {
     e.preventDefault();
     if (form.password.length < 6) { alert("كلمة المرور يجب أن تكون 6 أحرف على الأقل"); return; }
     setSaving(true);
-    // تطبيق ثانوي حتى لا يُسجَّل خروج المدير الحالي عند إنشاء الحساب الجديد
-    const secondaryApp = initializeApp(firebaseConfig, "AdminApp_" + Date.now());
     try {
-      const cred = await createUserWithEmailAndPassword(getAuth(secondaryApp), form.email.trim(), form.password);
-      await setDoc(doc(db, "users", cred.user.uid), {
-        name: form.name.trim(),
-        email: form.email.trim(),
-        phone: form.phone.trim(),
-        role: "SUPER_ADMIN",
-        adminRole: form.adminRole,
-        status: "ACTIVE",
-        createdAt: new Date().toISOString(),
-      });
+      // بيانات الدخول في MySQL (السيرفر يسمح بهذا الدور لمدير المنصة فقط)، والملف الشخصي في Firestore
+      await createAccountWithProfile(
+        { email: form.email, password: form.password, name: form.name.trim(), role: "SUPER_ADMIN" },
+        (uid) => setDoc(doc(db, "users", uid), {
+          name: form.name.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim(),
+          role: "SUPER_ADMIN",
+          adminRole: form.adminRole,
+          status: "ACTIVE",
+          createdAt: new Date().toISOString(),
+        }),
+      );
       setAdding(false);
       setForm({ name: "", email: "", password: "", phone: "", adminRole: "SUPPORT" });
       await refresh();
     } catch (err: any) {
-      alert("خطأ: " + (err?.code === "auth/email-already-in-use" ? "البريد مستخدم بالفعل" : err?.message || err));
+      alert("خطأ: " + (err?.message || err));
     } finally {
-      await deleteApp(secondaryApp).catch(() => {});
       setSaving(false);
     }
   };

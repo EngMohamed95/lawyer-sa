@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc } from "@/lib/store";
 import { Hourglass, LogOut, RefreshCw, Loader2, Database } from "lucide-react";
 import { db } from "../lib/firebase";
 import { useAuthSession } from "../lib/useAuthSession";

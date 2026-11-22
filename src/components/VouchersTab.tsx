@@ -9,7 +9,7 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { Plus, Banknote, Scale, RefreshCw, AlertTriangle, X, Trash2 } from "lucide-react";
-import { addDoc, collection, getDocs, query, where } from "firebase/firestore";
+import { addDoc, collection, getDocs, query, where } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { Button } from "./ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";

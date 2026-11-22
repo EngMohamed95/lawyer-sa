@@ -1,5 +1,5 @@
 # ملفات الأسرار والسكربتات الداخلية — لا تُقدَّم للمتصفح أبداً (ai-proxy.php يقرأ ai-config.php من القرص، وtrial-cleanup.php يعمل من Cron)
-<FilesMatch "^(ai-config\.php|mail-config\.php|serviceAccountKey\.json|\.env|_firebase\.php|_mailer\.php|trial-cleanup\.php)$">
+<FilesMatch "^(ai-config\.php|mail-config\.php|db-config\.php|serviceAccountKey\.json|\.env|_firebase\.php|_mailer\.php|trial-cleanup\.php)$">
   Require all denied
 </FilesMatch>
 
@@ -12,6 +12,8 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
   RewriteRule ^vendor(?:/|$) - [F,L]
   # الاستضافة لا تشغّل Node — وسيط الذكاء الاصطناعي بـ PHP على نفس المسار
   RewriteRule ^api/ai/generate$ ai-proxy.php [L]
+  # API قاعدة MySQL (public/api/index.php)
+  RewriteRule ^api/v1/(.*)$ api/index.php?__route=$1 [QSA,L]
   RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d

@@ -9,7 +9,7 @@
  * ولذلك نعتبر «غير محذوف» = (الحقل غائب) أو (الحقل = null). راجع isDeleted.
  */
 
-import { deleteDoc, doc, getDoc, updateDoc } from "firebase/firestore";
+import { deleteDoc, doc, getDoc, updateDoc } from "@/lib/store";
 import { db } from "./firebase";
 import { writeAudit, type AuditEntity } from "./audit";
 

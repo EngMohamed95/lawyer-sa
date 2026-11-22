@@ -7,8 +7,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Users, Plus, Search, Phone as PhoneIcon, Mail, ShieldAlert, Pencil, Trash2 } from "lucide-react";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import type { Query, DocumentData } from "firebase/firestore";
+import { collection, getDocs, query, where } from "@/lib/store";
+import type { Query, DocumentData } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { Card, CardContent, CardHeader } from "../components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";

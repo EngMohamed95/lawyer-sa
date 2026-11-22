@@ -90,7 +90,7 @@ export function AddDocumentModal({ isOpen, onClose, onSuccess, caseId, clientId,
 
     setLoading(true);
     try {
-      const { collection, addDoc, doc } = await import("firebase/firestore");
+      const { collection, addDoc, doc } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
 
       const lawyerId = localStorage.getItem("lawyerId");
@@ -175,7 +175,7 @@ export function AddDocumentModal({ isOpen, onClose, onSuccess, caseId, clientId,
       // الإصدار السابق يبقى محفوظاً ويُوسَم أنه لم يعد الأحدث — لا يُحذف أبداً
       if (newVersionOf && docPath) {
         try {
-          const { updateDoc } = await import("firebase/firestore");
+          const { updateDoc } = await import("@/lib/store");
           const p = newVersionOf.path;
           await updateDoc(doc(db, p[0], ...p.slice(1)), { isLatest: false });
         } catch (verErr) {

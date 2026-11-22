@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Trash2, RotateCcw, ShieldAlert, RefreshCw, AlertTriangle, Info } from "lucide-react";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { Card, CardContent, CardHeader } from "../components/ui/card";
 import { Button } from "../components/ui/button";

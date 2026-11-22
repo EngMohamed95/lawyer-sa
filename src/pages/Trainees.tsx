@@ -8,8 +8,8 @@ import { Badge } from "../components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import AddTraineeModal from "../components/AddTraineeModal";
 import EditTraineeModal from "../components/EditTraineeModal";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import type { Query, DocumentData } from "firebase/firestore";
+import { collection, getDocs, query, where } from "@/lib/store";
+import type { Query, DocumentData } from "@/lib/store";
 import { db } from "../lib/firebase";
 
 export default function Trainees() {

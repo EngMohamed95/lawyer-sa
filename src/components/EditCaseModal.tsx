@@ -66,7 +66,7 @@ export function EditCaseModal({
 
   const fetchClients = async () => {
     try {
-      const { collection, getDocs, query, where } = await import("firebase/firestore");
+      const { collection, getDocs, query, where } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
       const lawyerId = localStorage.getItem("lawyerId");
       const userRole = localStorage.getItem("userRole");
@@ -93,7 +93,7 @@ export function EditCaseModal({
 
   const fetchOfficeLawyers = async () => {
     try {
-      const { collection, getDocs, query, where } = await import("firebase/firestore");
+      const { collection, getDocs, query, where } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
       const lawyerId = localStorage.getItem("lawyerId");
       
@@ -116,7 +116,7 @@ export function EditCaseModal({
 
   const fetchConsultants = async () => {
     try {
-      const { collection, getDocs, query, where } = await import("firebase/firestore");
+      const { collection, getDocs, query, where } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
       const lawyerId = localStorage.getItem("lawyerId");
 
@@ -134,7 +134,7 @@ export function EditCaseModal({
 
   const fetchTrainees = async () => {
     try {
-      const { collection, getDocs, query, where } = await import("firebase/firestore");
+      const { collection, getDocs, query, where } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
       const lawyerId = localStorage.getItem("lawyerId");
 
@@ -200,7 +200,7 @@ export function EditCaseModal({
     setLoading(true);
 
     try {
-      const { doc, updateDoc } = await import("firebase/firestore");
+      const { doc, updateDoc } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
 
       const selectedClient = clients.find(c => c.id === formData.clientId);

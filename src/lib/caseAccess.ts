@@ -8,10 +8,10 @@
  */
 
 import {
-  and, collection, getDocs, or, query, where,
+  and, collection, collectionGroup, getDocs, or, query, where,
   type DocumentData, type Query, type QueryDocumentSnapshot, type QueryCompositeFilterConstraint, type QueryConstraint,
   type QueryFieldFilterConstraint, type QueryNonFilterConstraint,
-} from "firebase/firestore";
+} from "@/lib/store";
 import { db } from "./firebase";
 
 export interface Viewer {
@@ -58,17 +58,39 @@ export function canSeeCase(c: { assignedLawyerId?: unknown; assignedLawyerIds?: 
 }
 
 /**
- * مستندات القضايا المكلَّف بها المحامي، ومستندات عملاء تلك القضايا.
- * المحامي لا يستعلم مستندات المكتب كله (collectionGroup) — القواعد تمنعه منها لأن
- * فيها مستندات قضايا غير مكلَّف بها. نقرأ مجموعة documents تحت كل قضية/عميل مرئي.
+ * المستندات الفرعية (جلسات/طلبات/مستندات) تحت مجموعة سجلات رئيسية، باستعلام واحد للمكتب
+ * بدل طلب لكل قضية (مكتب بـ 1000 قضية كان يرسل 1000 طلب لفتح لوحة التحكم).
+ * السيرفر يحصر المحامي المكلّف في قضاياه (public/api/_lib/store.php). يرجع اللقطات
+ * اللي أمها ضمن $parents فقط — بالمفتاح "cases/{id}" أو "clients/{id}".
+ */
+export async function childrenOf(
+  sub: "hearings" | "requests" | "documents",
+  lawyerId: string,
+  parents: Iterable<string>,
+): Promise<QueryDocumentSnapshot<DocumentData>[]> {
+  const wanted = new Set(parents);
+  if (wanted.size === 0) return [];
+  // مدير المنصة (lawyerId = ALL أو فاضي) يشوف الكل — بدون شرط مكتب
+  const base = collectionGroup(db, sub);
+  const snap = await getDocs(lawyerId && lawyerId !== "ALL" ? query(base, where("lawyerId", "==", lawyerId)) : base);
+  return snap.docs.filter((d) => {
+    const parent = d.ref.parent.parent;
+    return parent !== null && wanted.has(parent.path);
+  });
+}
+
+/** معرّف القضية/العميل الأم لمستند فرعي */
+export const parentIdOf = (d: QueryDocumentSnapshot<DocumentData>): string => d.ref.parent.parent?.id ?? "";
+
+/**
+ * مستندات القضايا المكلَّف بها المحامي، ومستندات عملاء تلك القضايا — استعلام واحد.
  */
 export async function assignedDocuments(
   cases: { id: string; clientId?: unknown }[],
 ): Promise<QueryDocumentSnapshot<DocumentData>[]> {
   const clientIds = [...new Set(cases.map((c) => c.clientId).filter((id): id is string => typeof id === "string" && id !== ""))];
-  const snaps = await Promise.all([
-    ...cases.map((c) => getDocs(collection(db, "cases", c.id, "documents"))),
-    ...clientIds.map((id) => getDocs(collection(db, "clients", id, "documents"))),
+  return childrenOf("documents", localStorage.getItem("lawyerId") || "", [
+    ...cases.map((c) => `cases/${c.id}`),
+    ...clientIds.map((id) => `clients/${id}`),
   ]);
-  return snaps.flatMap((s) => s.docs);
 }

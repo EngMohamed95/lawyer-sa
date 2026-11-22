@@ -6,7 +6,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Clock, Hourglass, Loader2, RefreshCw, Search, Settings2, Users, XCircle } from "lucide-react";
-import { collection, deleteField, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
+import { collection, deleteField, doc, getDocs, query, updateDoc, where } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { Input } from "../components/ui/input";
 import { SearchableSelect } from "@/components/ui/searchable-select";

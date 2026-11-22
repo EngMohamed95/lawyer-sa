@@ -41,12 +41,10 @@ const MAX_BODY_BYTES = 20000;
 
 require_once __DIR__ . '/_firebase.php';
 require_once __DIR__ . '/_mailer.php';
+// اتصال MySQL (db-config.php) — فحص بيانات المكاتب السابقة في المجموعات المنقولة
+require_once __DIR__ . '/api/_lib/core.php';
 
 /* ────────────────────────── حدود الإرسال ────────────────────────── */
-
-function client_ip(): string {
-    return (string) ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
-}
 
 /** حد لكل IP في الساعة — ملف مؤقت، ولا يمنع الخدمة إن تعذّر الملف */
 function ip_rate_limit(string $bucket, int $max): void {
@@ -369,7 +367,9 @@ if (fs_get($projectId, $token, "users/$uid")) {
 // به — وإلا استعاد كل قضاياه وعملائه بتجربة مجانية جديدة. وكذلك عضو فريق سابق حذفه مكتبه:
 // حسابه باقٍ في Auth ونشاطه مسجّل بمعرّفه في بيانات ذلك المكتب (actorId) — لو صار «مالك
 // مكتب» بنفس المعرّف لاختلطت بياناته ببيانات مكتبه القديم.
+// القضايا والعملاء انتقلوا لـ MySQL — نفحص الطرفين أثناء التحويل
 if (fs_get($projectId, $token, "office_settings/$uid")
+    || q_one("SELECT 1 FROM docs WHERE collection IN ('cases', 'clients') AND parent_path = '' AND lawyer_id = ? LIMIT 1", [$uid]) !== null
     || fs_any_with_lawyer($projectId, $token, 'cases', $uid)
     || fs_any_with_lawyer($projectId, $token, 'clients', $uid)
     || fs_any_with_lawyer($projectId, $token, 'auditLogs', $uid, 'actorId')) {

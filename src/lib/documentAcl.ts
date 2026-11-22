@@ -10,7 +10,7 @@
  * بقيم افتراضية آمنة (داخلي · نشط · إصدار ١) بلا أي ترحيل للبيانات.
  */
 
-import { addDoc, collection } from "firebase/firestore";
+import { addDoc, collection } from "@/lib/store";
 import { db } from "./firebase";
 import { ROLES, type Role } from "./roles";
 import { scopeOf } from "./permissions";

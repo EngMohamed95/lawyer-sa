@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc } from "@/lib/store";
 import { auth, db } from "../lib/firebase";
 
 export default function CreateAdmin() {

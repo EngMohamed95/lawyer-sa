@@ -8,7 +8,7 @@
  * subscriptionExpiry · subscriptionBilling · quotaOverrides.
  */
 
-import { collection, doc, getDocs, setDoc, updateDoc, writeBatch } from "firebase/firestore";
+import { collection, doc, getDocs, setDoc, updateDoc, writeBatch } from "@/lib/store";
 import { db } from "./firebase";
 
 export type PlanTier = "BASIC" | "PROFESSIONAL" | "PREMIUM";

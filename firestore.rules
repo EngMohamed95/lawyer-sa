@@ -237,59 +237,24 @@ service cloud.firestore {
         || request.auth.uid in caseData.get('assignedLawyerIds', []);
     }
 
-    match /cases/{caseId} {
-      allow get, list: if canRead() && caseAssignedToMe(resource.data);
-      allow create: if canCreate();
-      allow update: if canUpdate() && caseAssignedToMe(resource.data);
-      allow delete: if canHardDelete();
-
-      // الجلسات والمستندات والمذكرات والطلبات ترث حدود القضية الأم — ومنها التكليف
-      match /{document=**} {
-        function parentCaseOk() {
-          let c = get(/databases/$(database)/documents/cases/$(caseId)).data;
-          return c.get('lawyerId', '') == myTenant() && caseAssignedToMe(c);
-        }
-        // المستند الجديد لا يحمل lawyerId مكتب آخر — وإلا ظهر في مستندات ذلك المكتب ومساعده
-        function incomingSameOffice() {
-          return request.resource.data.get('lawyerId', myTenant()) == myTenant();
-        }
-        allow read: if member() && (isSuperAdmin() || parentCaseOk());
-        allow create, update: if member() && (isSuperAdmin() || (parentCaseOk() && incomingSameOffice() && officeWritable()));
-        allow delete: if member() && (isSuperAdmin() || (parentCaseOk() && officeWritable()));
-      }
-    }
-
     /**
-     * استعلامات collectionGroup تحتاج قاعدة تبدأ بـ {path=**} — القواعد المتداخلة أعلاه لا تكفيها.
-     * الجلسات عبر كل القضايا: لمدير المنصة وحده (لوحة المنصة وصفحة الجلسات).
-     * المستندات عبر كل القضايا والعملاء: لكل مكتب مستنداته (lawyerId) — صفحة المستندات والمساعد.
+     * المرحلة 2 من التحويل لـ MySQL: القضايا (وجلساتها ومستنداتها ومذكراتها وطلباتها)
+     * والعملاء (ومستنداتهم) والمهام انتقلت لـ MySQL — الواجهة تقرأ وتكتب عبر /api/v1/data
+     * والصلاحيات في public/api/_lib/store.php. النسخة الباقية هنا قديمة: مقفلة بالكامل
+     * عشان أي نسخة قديمة من الواجهة مفتوحة في متصفح ما تكتب فيها وتضيع تعديلاتها.
+     * ⚠️ تُنشر هذه القواعد بعد نشر الواجهة الجديدة ونقل البيانات (database/migrate_store.php).
      */
+    match /cases/{caseId}/{document=**} {
+      allow read, write: if false;
+    }
+    match /clients/{clientId}/{document=**} {
+      allow read, write: if false;
+    }
     match /{path=**}/hearings/{hearingId} {
-      allow read: if isSuperAdmin();
+      allow read, write: if false;
     }
-
-    // المحامي المكلَّف (OFFICE_LAWYER) مستثنى: هذه القاعدة تنطبق أيضاً على cases/{id}/documents
-    // فكانت تتخطى شرط التكليف. يقرأ مستندات قضاياه من القاعدة المتداخلة (assignedDocuments).
     match /{path=**}/documents/{documentId} {
-      allow read: if member() && (isSuperAdmin() ||
-        (myRole() != 'OFFICE_LAWYER' && resource.data.get('lawyerId', '') == myTenant()));
-    }
-
-    match /clients/{clientId} {
-      allow get, list: if canRead();
-      allow create: if canCreate();
-      allow update: if canUpdate();
-      allow delete: if canHardDelete();
-
-      match /{document=**} {
-        function parentClientOk() {
-          return get(/databases/$(database)/documents/clients/$(clientId)).data.get('lawyerId', '') == myTenant();
-        }
-        allow read: if member() && (isSuperAdmin() || parentClientOk());
-        allow create, update: if member() && (isSuperAdmin() || (parentClientOk()
-          && request.resource.data.get('lawyerId', myTenant()) == myTenant() && officeWritable()));
-        allow delete: if member() && (isSuperAdmin() || (parentClientOk() && officeWritable()));
-      }
+      allow read, write: if false;
     }
 
     /* ────────────────────────── المجموعات المعزولة بـ lawyerId ──────────────────────────
@@ -297,11 +262,9 @@ service cloud.firestore {
      * إضافة مجموعة جديدة للتطبيق تتطلب إضافتها هنا — وهذا مقصود لا سهو.
      */
 
+    // المهام انتقلت لـ MySQL (المرحلة 2) — مقفلة هنا
     match /tasks/{id} {
-      allow get, list: if canRead();
-      allow create: if canCreate();
-      allow update: if canUpdate();
-      allow delete: if canDelete();
+      allow read, write: if false;
     }
 
     match /payments/{id} {

@@ -75,12 +75,10 @@ export default function AddTeamMemberModal({
     setLoading(true);
     setError("");
 
-    let secondaryApp: import("firebase/app").FirebaseApp | null = null;
     try {
-      const { setDoc, doc } = await import("firebase/firestore");
-      const { db, firebaseConfig } = await import("../lib/firebase");
-      const { initializeApp, deleteApp } = await import("firebase/app");
-      const { getAuth, createUserWithEmailAndPassword } = await import("firebase/auth");
+      const { setDoc, doc } = await import("@/lib/store");
+      const { db } = await import("../lib/firebase");
+      const { createAccountWithProfile } = await import("../lib/authApi");
 
       const lawyerId = localStorage.getItem("lawyerId");
       if (!lawyerId || lawyerId === "ALL") {
@@ -89,27 +87,26 @@ export default function AddTeamMemberModal({
         return;
       }
 
-      // حساب ثانوي حتى لا تنتهي جلسة المدير الحالي
-      secondaryApp = initializeApp(firebaseConfig, "TeamMemberCreation_" + Date.now());
-      const secondaryAuth = getAuth(secondaryApp);
-      const cred = await createUserWithEmailAndPassword(secondaryAuth, form.email.trim(), form.password);
-
-      await setDoc(doc(db, "users", cred.user.uid), {
-        name: form.name.trim(),
-        email: form.email.trim(),
-        phone: form.phone.trim(),
-        role,
-        lawyerId,
-        status: "ACTIVE",
-        createdAt: new Date().toISOString(),
-        createdBy: localStorage.getItem("userId") ?? null,
-        deletedAt: null,           // جاهز للحذف الناعم
-      });
+      // بيانات الدخول في MySQL (السيرفر يربط الحساب بمكتب المستدعي)، والملف الشخصي في Firestore
+      const uid = await createAccountWithProfile(
+        { email: form.email, password: form.password, name: form.name.trim(), role },
+        (id) => setDoc(doc(db, "users", id), {
+          name: form.name.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim(),
+          role,
+          lawyerId,
+          status: "ACTIVE",
+          createdAt: new Date().toISOString(),
+          createdBy: localStorage.getItem("userId") ?? null,
+          deletedAt: null,           // جاهز للحذف الناعم
+        }),
+      );
 
       await writeAudit({
         action: "CREATE",
         entity: "user",
-        entityId: cred.user.uid,
+        entityId: uid,
         entityLabel: `${form.name.trim()} — ${ROLE_LABELS_AR[role]}`,
         after: { name: form.name.trim(), email: form.email.trim(), role },
       });
@@ -117,19 +114,8 @@ export default function AddTeamMemberModal({
       setCreated({ email: form.email.trim(), password: form.password });
       onSuccess();
     } catch (err: unknown) {
-      const code = (err as { code?: string })?.code;
-      const message = (err as { message?: string })?.message;
-      setError(
-        code === "auth/email-already-in-use" ? "هذا البريد الإلكتروني مسجّل مسبقاً"
-        : code === "auth/invalid-email" ? "صيغة البريد الإلكتروني غير صحيحة"
-        : code === "auth/weak-password" ? "كلمة المرور ضعيفة جداً"
-        : message || "حدث خطأ أثناء الإنشاء"
-      );
+      setError((err as { message?: string })?.message || "حدث خطأ أثناء الإنشاء");
     } finally {
-      if (secondaryApp) {
-        const { deleteApp } = await import("firebase/app");
-        await deleteApp(secondaryApp).catch(() => { /* التنظيف ليس حرجاً */ });
-      }
       setLoading(false);
     }
   };

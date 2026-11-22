@@ -36,7 +36,7 @@ export default function EditOfficeLawyerModal({ isOpen, onClose, onSuccess, lawy
     setLoading(true);
     
     try {
-      const { doc, updateDoc, deleteField } = await import("firebase/firestore");
+      const { doc, updateDoc, deleteField } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
       
       const lawyerRef = doc(db, "users", lawyerData.id);

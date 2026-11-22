@@ -10,7 +10,7 @@
  * لم يُربط بعد (زر «أضِفه للعقود» في صفحة المستندات).
  */
 
-import { addDoc, collection, doc, getDoc, updateDoc } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, updateDoc } from "@/lib/store";
 import { db } from "./firebase";
 import { nextContractNumber } from "./contracts";
 import { writeAudit } from "./audit";

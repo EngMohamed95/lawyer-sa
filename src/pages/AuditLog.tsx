@@ -5,7 +5,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { ShieldAlert, ScrollText, RefreshCw, Search, ChevronDown, Info } from "lucide-react";
-import { collection, getDocs, limit as fsLimit, orderBy, query, where } from "firebase/firestore";
+import { collection, getDocs, limit as fsLimit, orderBy, query, where } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { Card, CardContent, CardHeader } from "../components/ui/card";
 import { Button } from "../components/ui/button";

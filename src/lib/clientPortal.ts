@@ -12,7 +12,7 @@
  *    البيضاء (portalSerializer) المُختبَرة والجاهزة للحظة التفعيل.
  */
 
-import { addDoc, collection, getDocs, query, updateDoc, doc, where } from "firebase/firestore";
+import { addDoc, collection, getDocs, query, updateDoc, doc, where } from "@/lib/store";
 import { db } from "./firebase";
 import { excludeDeleted } from "./softDelete";
 import { writeAudit } from "./audit";

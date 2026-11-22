@@ -4,7 +4,7 @@
  */
 
 import { useState } from "react";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc } from "@/lib/store";
 import { X, ShieldCheck, AlertTriangle, Save, Archive, ArchiveRestore, Users } from "lucide-react";
 import { db } from "../lib/firebase";
 import { Button } from "./ui/button";

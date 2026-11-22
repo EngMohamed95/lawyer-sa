@@ -6,7 +6,7 @@
  */
 
 import type { User } from "firebase/auth";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "@/lib/store";
 import { auth, db } from "./firebase";
 import { getThemePref, setThemePref } from "./theme";
 
@@ -229,9 +229,11 @@ export async function startSession(firebaseUser: User, opts: StartSessionOptions
   return "/app";
 }
 
-/** خروج كامل: جلسة Firebase + التخزين المحلي — المظهر تفضيل للجهاز فيبقى */
+/** خروج كامل: جلسة MySQL + جلسة Firebase + التخزين المحلي — المظهر تفضيل للجهاز فيبقى */
 export async function logout(): Promise<void> {
   const theme = getThemePref();
+  const { logout: endServerSession } = await import("./authApi");
+  await endServerSession();
   await auth.signOut().catch(() => {});
   localStorage.clear();
   setThemePref(theme);

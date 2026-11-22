@@ -86,6 +86,10 @@ jobs:
           SA_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
           SMTP_USER: ${{ secrets.SMTP_USERNAME }}
           SMTP_PASS: ${{ secrets.SMTP_PASSWORD }}
+          DB_NAME: ${{ secrets.MYSQL_DATABASE }}
+          DB_USER: ${{ secrets.MYSQL_USER }}
+          DB_PASS: ${{ secrets.MYSQL_PASSWORD }}
+          APP_URL: ${{ secrets.APP_URL }}
         run: |
           set -e
           rm -rf release
@@ -152,6 +156,31 @@ jobs:
             echo "];"
           } > release/mail-config.php
           echo "أُضيف إعداد SMTP الموثّق."
+
+          # قاعدة MySQL — تسجيل الدخول صار يعتمد عليها (public/api). بدونها الدخول يتعطل
+          # على اللايف، فنوقف النشر بدل ما ننشر نسخة مكسورة. MySQL على نفس خادم Hostinger
+          # فالاتصال 127.0.0.1. القيم تمر base64 فما في علامة اقتباس تكسر نص PHP.
+          if [ -z "$DB_NAME" ] || [ -z "$DB_USER" ] || [ -z "$DB_PASS" ] || [ -z "$APP_URL" ]; then
+            echo "❌ أضف MYSQL_DATABASE وMYSQL_USER وMYSQL_PASSWORD وAPP_URL إلى GitHub Secrets"
+            echo "   (وطبّق database/schema.sql على قاعدة Hostinger قبل أول نشر)"
+            exit 1
+          fi
+          b64() { printf '%s' "$1" | base64 -w0; }
+          {
+            echo "<?php"
+            echo "return ["
+            echo "  'host' => '127.0.0.1',"
+            echo "  'port' => 3306,"
+            echo "  'name' => base64_decode('$(b64 "$DB_NAME")'),"
+            echo "  'user' => base64_decode('$(b64 "$DB_USER")'),"
+            echo "  'pass' => base64_decode('$(b64 "$DB_PASS")'),"
+            echo "  'app_url' => base64_decode('$(b64 "$APP_URL")'),"
+            echo "  'firebase_project_id' => 'lawyer-sa',"
+            echo "  'rotate_firebase_passwords' => true,"
+            echo "  'cookie_secure' => true,"
+            echo "];"
+          } > release/db-config.php
+          echo "أُضيف إعداد قاعدة MySQL."
 
           # مجلد رفع المستخدمين يجب أن يوجد ولا يُمسّ محتواه لاحقاً
           mkdir -p release/uploads

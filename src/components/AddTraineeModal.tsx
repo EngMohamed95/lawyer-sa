@@ -24,41 +24,32 @@ export default function AddTraineeModal({ isOpen, onClose, onSuccess }: AddTrain
     setLoading(true);
     
     try {
-      const { setDoc, doc } = await import("firebase/firestore");
-      const { db, firebaseConfig } = await import("../lib/firebase");
-      const { initializeApp, deleteApp } = await import("firebase/app");
-      const { getAuth, createUserWithEmailAndPassword } = await import("firebase/auth");
-      
-      const lawyerId = localStorage.getItem("lawyerId");
-      
-      // 1. Create the user in Firebase Auth using a secondary app instance
-      // This prevents the current lawyer from being logged out when a new user is created
-      const secondaryApp = initializeApp(firebaseConfig, "TraineeCreationApp_" + Date.now());
-      const secondaryAuth = getAuth(secondaryApp);
-      
-      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, formData.email, formData.password);
-      const uid = userCredential.user.uid;
+      const { setDoc, doc } = await import("@/lib/store");
+      const { db } = await import("../lib/firebase");
+      const { createAccountWithProfile } = await import("../lib/authApi");
 
-      // 2. Save trainee profile to Firestore using the Auth UID
-      // كلمة المرور لـ Firebase Auth وحده — لا تُحفظ نصاً في مستند يقرؤه الفريق
+      const lawyerId = localStorage.getItem("lawyerId");
+
+      // بيانات الدخول في MySQL (السيرفر يربط الحساب بمكتب المستدعي)، والملف الشخصي في Firestore.
+      // كلمة المرور ما تُحفظ نصاً في مستند يقرؤه الفريق
       const profile: Record<string, unknown> = { ...formData };
       delete profile.password;
-      await setDoc(doc(db, "users", uid), {
-        ...profile,
-        role: "TRAINEE",
-        lawyerId,
-        createdAt: new Date().toISOString()
-      });
-      
-      // 3. Cleanup secondary app
-      await deleteApp(secondaryApp);
+      await createAccountWithProfile(
+        { email: formData.email, password: formData.password, name: String(formData.name ?? ""), role: "TRAINEE" },
+        (uid) => setDoc(doc(db, "users", uid), {
+          ...profile,
+          role: "TRAINEE",
+          lawyerId,
+          createdAt: new Date().toISOString()
+        }),
+      );
       
       onSuccess();
       onClose();
       alert("تم إضافة المتدرب بنجاح وإنشاء حساب تسجيل الدخول له.");
     } catch (error: any) {
       console.error(error);
-      alert("حدث خطأ أثناء الإضافة: " + (error.code === 'auth/email-already-in-use' ? "البريد الإلكتروني مسجل مسبقاً" : error.message));
+      alert("حدث خطأ أثناء الإضافة: " + error.message);
     } finally {
       setLoading(false);
     }

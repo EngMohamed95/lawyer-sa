@@ -1,6 +1,6 @@
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useState, useEffect } from "react";
-import type { Query, DocumentData } from "firebase/firestore";
+import type { Query, DocumentData } from "@/lib/store";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -23,7 +23,7 @@ export function AddPaymentModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
     if (isOpen) {
       const fetchData = async () => {
         try {
-          const { collection, getDocs, query, where } = await import("firebase/firestore");
+          const { collection, getDocs, query, where } = await import("@/lib/store");
           const { db } = await import("../lib/firebase");
           const lawyerId = localStorage.getItem("lawyerId");
           const userRole = localStorage.getItem("userRole");
@@ -54,7 +54,7 @@ export function AddPaymentModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
     e.preventDefault();
     setLoading(true);
     try {
-      const { collection, addDoc } = await import("firebase/firestore");
+      const { collection, addDoc } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
       const lawyerId = localStorage.getItem("lawyerId");
       

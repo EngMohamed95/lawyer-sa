@@ -3,7 +3,7 @@
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useMemo, useState } from "react";
 import { X, CalendarPlus, AlertTriangle, Save, Repeat, Video, MapPin } from "lucide-react";
-import { addDoc, collection } from "firebase/firestore";
+import { addDoc, collection } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { Button } from "./ui/button";
 import { usePermissions } from "../lib/usePermissions";

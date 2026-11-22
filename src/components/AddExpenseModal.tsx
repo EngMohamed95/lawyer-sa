@@ -23,7 +23,7 @@ export function AddExpenseModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
     if (isOpen) {
       const fetchCases = async () => {
         try {
-          const { collection, getDocs, query, where } = await import("firebase/firestore");
+          const { collection, getDocs, query, where } = await import("@/lib/store");
           const { db } = await import("../lib/firebase");
           const lawyerId = localStorage.getItem("lawyerId");
           const userRole = localStorage.getItem("userRole");
@@ -47,7 +47,7 @@ export function AddExpenseModal({ isOpen, onClose, onSuccess }: { isOpen: boolea
     e.preventDefault();
     setLoading(true);
     try {
-      const { collection, addDoc } = await import("firebase/firestore");
+      const { collection, addDoc } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
       const lawyerId = localStorage.getItem("lawyerId");
       

@@ -62,7 +62,7 @@ export function AddHearingModal({
 
   const fetchSelectedCaseDetails = async (targetCaseId: string) => {
     try {
-      const { doc, getDoc } = await import("firebase/firestore");
+      const { doc, getDoc } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
       const caseDoc = await getDoc(doc(db, "cases", targetCaseId));
       if (caseDoc.exists()) {
@@ -95,13 +95,14 @@ export function AddHearingModal({
       const activeCaseId = caseId || formData.selectedCaseId;
       if (isOpen && !caseId) {
         try {
-          const { collection, getDocs, query, where, limit } = await import("firebase/firestore");
+          const { collection, getDocs, query, where, limit } = await import("@/lib/store");
           const { db } = await import("../lib/firebase");
           const lawyerId = localStorage.getItem("lawyerId");
           const userRole = localStorage.getItem("userRole");
+          // المكتب: كل قضاياه (كان أول 100 فقط فتختفي الباقية من القائمة). مدير المنصة: محدود لأنها قضايا كل المكاتب
           const snap = await getDocs(
             userRole !== "SUPER_ADMIN"
-              ? visibleCasesQuery(lawyerId || "", limit(100))
+              ? visibleCasesQuery(lawyerId || "")
               : query(collection(db, "cases"), limit(100))
           );
           setCases(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -156,7 +157,7 @@ export function AddHearingModal({
     setLoading(true);
     setUploadStatus("جاري تهيئة البيانات...");
     try {
-      const { collection, addDoc, doc, getDoc } = await import("firebase/firestore");
+      const { collection, addDoc, doc, getDoc } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
       const lawyerId = localStorage.getItem("lawyerId");
 

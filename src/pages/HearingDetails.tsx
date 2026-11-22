@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router";
 import { ArrowRight, Calendar, Edit, FileText, Gavel, Landmark, Loader2, Scale, ScrollText, Sparkles, Users } from "lucide-react";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";

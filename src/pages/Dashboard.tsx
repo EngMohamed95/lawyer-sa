@@ -17,10 +17,10 @@ import {
 import { Link } from "react-router";
 import PlatformAdminDashboard from "../components/PlatformAdminDashboard";
 import { DistributionCard, GroupedBars, OTHER, SERIES, StatCard, fmt, panel, toSlices, type Slice } from "../components/DashboardCharts";
-import { collection, getCountFromServer, getDocs, query, where } from "firebase/firestore";
+import { collection, getCountFromServer, getDocs, query, where } from "@/lib/store";
 import { Badge } from "../components/ui/badge";
 import { db } from "../lib/firebase";
-import { visibleCasesQuery } from "../lib/caseAccess";
+import { childrenOf, parentIdOf, visibleCasesQuery } from "../lib/caseAccess";
 import { caseTypeLabel, isExecutionCase } from "../lib/caseTypes";
 import { excludeDeleted } from "../lib/softDelete";
 import { addDays, expandRecurrence, startOfDay, type Appointment } from "../lib/calendar";
@@ -61,16 +61,18 @@ async function loadOfficeData(lawyerId: string, role: string, userId: string, ca
     : getCountFromServer(query(collection(db, "clients"), where("lawyerId", "==", lawyerId)))
         .then((s) => s.data().count).catch(() => 0);
 
-  // الجلسات مجموعات فرعية لكل قضية
-  const hearingsP = Promise.all(cases.map((c) =>
-    getDocs(collection(db, "cases", c.id, "hearings"))
-      .then((s) => s.docs.map((d) => ({
-        id: d.id, ...d.data(), caseId: c.id,
-        caseTitle: d.data().caseTitle || c.title || c.caseNumber || "قضية",
+  // جلسات قضايا المكتب باستعلام واحد (كان طلب لكل قضية)
+  const caseById = new Map(cases.map((c) => [c.id, c]));
+  const hearingsP = childrenOf("hearings", lawyerId, cases.map((c) => `cases/${c.id}`))
+    .then((docs) => docs.map((d) => {
+      const c = caseById.get(parentIdOf(d));
+      return {
+        id: d.id, ...d.data(), caseId: parentIdOf(d),
+        caseTitle: d.data().caseTitle || c?.title || c?.caseNumber || "قضية",
         day: dayOf(d.data().hearingDate),
-      }) as HearingRow))
-      .catch(() => [] as HearingRow[]),
-  )).then((a) => a.flat().filter((h) => h.day));
+      } as HearingRow;
+    }).filter((h) => h.day))
+    .catch(() => [] as HearingRow[]);
 
   const tasksP = getDocs(query(collection(db, "tasks"), where("lawyerId", "==", lawyerId)))
     .then((s) => {

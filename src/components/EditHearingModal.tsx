@@ -69,7 +69,7 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
     setLoading(true);
     setUploadStatus("جاري تحديث البيانات...");
     try {
-      const { doc, updateDoc } = await import("firebase/firestore");
+      const { doc, updateDoc } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
 
       let finalMinutesFileUrl = minutesFileUrl;
@@ -136,7 +136,7 @@ export function EditHearingModal({ isOpen, onClose, onSuccess, caseId, hearingDa
     if (!window.confirm("هل أنت متأكد من حذف هذه الجلسة نهائياً؟")) return;
     setLoading(true);
     try {
-      const { doc, deleteDoc } = await import("firebase/firestore");
+      const { doc, deleteDoc } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
       await deleteDoc(doc(db, "cases", caseId, "hearings", hearingData.id));
       onSuccess();

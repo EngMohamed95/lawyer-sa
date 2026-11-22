@@ -5,7 +5,7 @@
 
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { addDoc, collection, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, updateDoc } from "@/lib/store";
 import { Archive, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import {
   AttachmentChips, AttachmentPicker, AttachmentSearch, matchesAttachmentSearch, uploadNewFiles, type PendingFile,

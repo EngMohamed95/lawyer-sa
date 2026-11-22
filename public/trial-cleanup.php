@@ -34,6 +34,8 @@ if (PHP_SAPI !== 'cli') {
 
 require_once __DIR__ . '/_firebase.php';
 require_once __DIR__ . '/_mailer.php';
+// اتصال MySQL (db-config.php) — للمجموعات المنقولة وبيانات الدخول
+require_once __DIR__ . '/api/_lib/core.php';
 
 const TRIAL_GRACE_DAYS = 10;           // أيام الاحتفاظ بالبيانات بعد انتهاء التجربة
 const MIN_NOTICE_DAYS = 7;             // أقل مدة بين بريد الانتهاء والحذف
@@ -199,6 +201,45 @@ function delete_where(string $collection, string $field, string $value, string $
             delete_tree($doc, $counts, $files, $execute);
         }
     } while (count($docs) === PAGE);
+}
+
+/* ────────────────────────── MySQL (المجموعات المنقولة) ────────────────────────── */
+
+/**
+ * بيانات المكتب في جدول docs — نفس منطق delete_where: كل ما يحمل lawyerId المكتب، أو
+ * userId/ownerId لعضو منه بشرط ما يحمل lawyerId مكتب ثاني. ومعه كل ما تحته (cases/{id}/**).
+ * يرجع عدد المحذوف لكل مجموعة في $counts ويجمع الملفات المرفوعة المذكورة في $files.
+ */
+function delete_mysql_office(string $officeId, array $members, array &$counts, array &$files, bool $execute): void {
+    $ph = implode(',', array_fill(0, count($members), '?'));
+    $rows = q("SELECT collection, parent_path, id, data FROM docs
+                WHERE lawyer_id = ?
+                   OR (parent_path = '' AND (lawyer_id IS NULL OR lawyer_id = ?) AND (
+                        JSON_UNQUOTE(JSON_EXTRACT(data, '$.userId')) IN ($ph)
+                     OR JSON_UNQUOTE(JSON_EXTRACT(data, '$.ownerId')) IN ($ph)))",
+        array_merge([$officeId, $officeId], $members, $members))->fetchAll();
+
+    $keys = [];
+    $add = function (array $r) use (&$keys, &$counts, &$files): void {
+        $k = "{$r['collection']}|{$r['parent_path']}|{$r['id']}";
+        if (isset($keys[$k])) return;
+        $keys[$k] = [$r['collection'], $r['parent_path'], $r['id']];
+        $counts[$r['collection']] = ($counts[$r['collection']] ?? 0) + 1;
+        collect_uploads(json_decode((string) $r['data'], true), $files);
+    };
+    foreach ($rows as $r) {
+        $add($r);
+        // المستندات الفرعية تحت السجل حتى لو ما تحمل lawyerId
+        $path = ($r['parent_path'] !== '' ? $r['parent_path'] . '/' : '') . $r['collection'] . '/' . $r['id'];
+        foreach (q("SELECT collection, parent_path, id, data FROM docs WHERE parent_path = ? OR parent_path LIKE ?",
+            [$path, str_replace(['%', '_'], ['\%', '\_'], $path) . '/%'])->fetchAll() as $child) $add($child);
+    }
+    if (!$execute || !$keys) return;
+    $pdo = db();
+    $pdo->beginTransaction();
+    $del = $pdo->prepare('DELETE FROM docs WHERE collection = ? AND parent_path = ? AND id = ?');
+    foreach ($keys as $k) $del->execute($k);
+    $pdo->commit();
 }
 
 /* ────────────────────────── Storage + Auth ────────────────────────── */
@@ -401,6 +442,8 @@ foreach ($owners as $ownerDoc) {
             delete_where($collection, 'ownerId', $m, $uid, $counts, $files, $execute);
         }
     }
+    // القضايا والعملاء والمهام (وما تحتها) انتقلت لـ MySQL
+    delete_mysql_office($uid, $members, $counts, $files, $execute);
     foreach (["office_settings/$uid", "signup_otps/$uid"] as $path) {
         // بالمعرّف — قد لا يحمل lawyerId. ما سبق حذفه في البحث العام يتخطّاه delete_tree
         [$status, $doc] = api('GET', "$base/$path");
@@ -420,7 +463,12 @@ foreach ($owners as $ownerDoc) {
     }
 
     // 3) حسابات الدخول أولاً (فلا يبقى حساب يتيم إن توقّف التشغيل)، ثم مستندات الفريق، ثم المالك
-    if ($execute) delete_auth_users($projectId, $members);
+    if ($execute) {
+        delete_auth_users($projectId, $members);
+        // بيانات الدخول في MySQL — الفريق الآن، والمالك بعد حذف مستنده بنجاح (تحت)
+        $team = array_values(array_diff($members, [$uid]));
+        if ($team) q('DELETE FROM users WHERE id IN (' . implode(',', array_fill(0, count($team), '?')) . ')', $team);
+    }
     foreach ($memberDocs as $m) {
         $counts['users'] = ($counts['users'] ?? 0) + 1;
         if ($execute) {
@@ -437,6 +485,8 @@ foreach ($owners as $ownerDoc) {
         ]]);
         if ($status !== 200) {
             out("  تنبيه: تغيّر مستند المالك أثناء الحذف ($status) — بقي حسابه. راجعه يدوياً في «المكاتب».");
+        } else {
+            q('DELETE FROM users WHERE id = ?', [$uid]);
         }
     }
 

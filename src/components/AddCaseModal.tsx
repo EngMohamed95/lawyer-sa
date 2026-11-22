@@ -65,7 +65,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
 
   const fetchClients = async () => {
     try {
-      const { collection, getDocs, query, where } = await import("firebase/firestore");
+      const { collection, getDocs, query, where } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
       const lawyerId = localStorage.getItem("lawyerId");
       const userRole = localStorage.getItem("userRole");
@@ -92,7 +92,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
 
   const fetchOfficeLawyers = async () => {
     try {
-      const { collection, getDocs, query, where } = await import("firebase/firestore");
+      const { collection, getDocs, query, where } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
       const lawyerId = localStorage.getItem("lawyerId");
       
@@ -115,7 +115,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
 
   const fetchConsultants = async () => {
     try {
-      const { collection, getDocs, query, where } = await import("firebase/firestore");
+      const { collection, getDocs, query, where } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
       const lawyerId = localStorage.getItem("lawyerId");
 
@@ -133,7 +133,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
 
   const fetchTrainees = async () => {
     try {
-      const { collection, getDocs, query, where } = await import("firebase/firestore");
+      const { collection, getDocs, query, where } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
       const lawyerId = localStorage.getItem("lawyerId");
 
@@ -164,7 +164,7 @@ export function AddCaseModal({ isOpen, onClose, onSuccess, defaultType }: { isOp
     e.preventDefault();
     setLoading(true);
     try {
-      const { collection, addDoc } = await import("firebase/firestore");
+      const { collection, addDoc } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
       const lawyerId = localStorage.getItem("lawyerId");
 

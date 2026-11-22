@@ -1,6 +1,6 @@
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { FormEvent, useState, useEffect } from "react";
-import type { Query, DocumentData } from "firebase/firestore";
+import type { Query, DocumentData } from "@/lib/store";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -69,7 +69,7 @@ export function AddTaskModal({
 
     const fetchUsers = async () => {
       try {
-        const { collection, getDocs, query, where } = await import("firebase/firestore");
+        const { collection, getDocs, query, where } = await import("@/lib/store");
         const { db } = await import("../lib/firebase");
         
         let q: Query<DocumentData>;
@@ -93,7 +93,7 @@ export function AddTaskModal({
     e.preventDefault();
     setLoading(true);
     try {
-      const { collection, addDoc } = await import("firebase/firestore");
+      const { collection, addDoc } = await import("@/lib/store");
       const { db } = await import("../lib/firebase");
 
       const assignee = users.find(u => u.id === formData.assignedTo);
