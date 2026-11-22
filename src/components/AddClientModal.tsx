@@ -15,13 +15,9 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: { isOpen: boolean
     phone: "",
     nationalId: "",
     address: "",
-    totalFees: 0,
   });
 
   const lawyerId = localStorage.getItem("lawyerId");
-
-  const currencyCode = localStorage.getItem("sys_currency") || "SAR";
-  const currencySymbol = currencyCode === "SAR" ? "ر.س" : currencyCode === "EGP" ? "ج.م" : "$";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +42,6 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: { isOpen: boolean
         phone: "",
         nationalId: "",
         address: "",
-        totalFees: 0,
       });
     } catch (error: any) {
       console.error(error);
@@ -83,7 +78,7 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: { isOpen: boolean
                 onChange={e => setFormData({...formData, clientType: e.target.value})}
               >
                 <option value="INDIVIDUAL">فرد</option>
-                <option value="COMPANY">شركة</option>
+                <option value="COMPANY">شركة / مؤسسة</option>
               </SearchableSelect>
             </div>
 
@@ -100,25 +95,11 @@ export function AddClientModal({ isOpen, onClose, onSuccess }: { isOpen: boolean
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-ink">{formData.clientType === "COMPANY" ? "الرقم الضريبي" : "رقم الهوية"}</label>
+              <label className="text-sm font-bold text-ink">{formData.clientType === "COMPANY" ? "رقم السجل التجاري" : "رقم الهوية"}</label>
               <Input 
                 value={formData.nationalId}
                 onChange={e => setFormData({...formData, nationalId: e.target.value})}
                 placeholder="" 
-                dir="ltr"
-                className="text-right"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-bold text-ink">أتعاب متوقعة ({currencySymbol})</label>
-              <Input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.totalFees}
-                onChange={e => setFormData({...formData, totalFees: Number(e.target.value)})}
-                placeholder="مثال: 10000"
                 dir="ltr"
                 className="text-right"
               />
