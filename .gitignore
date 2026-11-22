@@ -31,4 +31,4 @@ public/uploads/
 **/.omc/
 
 # إعداد قاعدة MySQL — يُكتب وقت النشر
-db-config.php
+db-config*.php

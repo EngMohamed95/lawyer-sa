@@ -222,7 +222,8 @@ async function startServer() {
    */
   if (process.env.NODE_ENV !== "production") {
     // ملفات الأسرار لا تُقدَّم أبداً — .htaccess يحميها على الاستضافة، وهذا يحميها محلياً
-    app.use(/^\/(serviceAccountKey\.json|ai-config\.php|mail-config\.php|db-config\.php)$/i, (_req, res) => {
+    // Vite يقدّم أي ملف في جذر المشروع، والسيرفر على 0.0.0.0 (الشبكة المحلية تشوفه)
+    app.use(/^\/(serviceAccountKey\.json|ai-config\.php|mail-config\.php|db-config[^/]*\.php|KEYS_FOR_GITHUB\.txt|.*\.(docx|log))$/i, (_req, res) => {
       res.sendStatus(404);
     });
     const phpDevUrl = (process.env.PHP_DEV_URL || "http://127.0.0.1:8090").replace(/\/$/, "");
