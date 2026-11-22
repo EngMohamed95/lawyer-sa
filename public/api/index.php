@@ -41,6 +41,7 @@ $routes = [
     ['POST', 'data/count', 'routes_data.php', 'route_data_count'],
     ['POST', 'data/get', 'routes_data.php', 'route_data_get'],
     ['POST', 'data/write', 'routes_data.php', 'route_data_write'],
+    ['POST', 'counters/next', 'routes_data.php', 'route_counters_next'],
 ];
 
 $pathMatched = false;

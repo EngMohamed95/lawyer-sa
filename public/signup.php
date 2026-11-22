@@ -370,6 +370,7 @@ if (fs_get($projectId, $token, "users/$uid")) {
 // القضايا والعملاء انتقلوا لـ MySQL — نفحص الطرفين أثناء التحويل
 if (fs_get($projectId, $token, "office_settings/$uid")
     || q_one("SELECT 1 FROM docs WHERE collection IN ('cases', 'clients') AND parent_path = '' AND lawyer_id = ? LIMIT 1", [$uid]) !== null
+    || q_one("SELECT 1 FROM docs WHERE collection = 'office_settings' AND parent_path = '' AND id = ? LIMIT 1", [$uid]) !== null
     || fs_any_with_lawyer($projectId, $token, 'cases', $uid)
     || fs_any_with_lawyer($projectId, $token, 'clients', $uid)
     || fs_any_with_lawyer($projectId, $token, 'auditLogs', $uid, 'actorId')) {

@@ -173,6 +173,16 @@ try {
   const realTyped = where("lawyerId", "==", "x") as any;
   check("القيد يحمل type مثل Firestore", realTyped.type === "where");
 
+  console.log("onSnapshot (جلب دوري)");
+  const calls: number[] = [];
+  const unsub = store.onSnapshot(query(collection(db, "tasks"), where("status", "==", "open"), limit(2)), (snap: any) => calls.push(snap.size));
+  await new Promise((r) => setTimeout(r, 1500));
+  unsub();
+  check("onSnapshot يرسل اللقطة الأولى (ومرة وحدة بس لو ما تغيّر شي)", calls.length === 1 && calls[0] === 2, calls);
+  let afterUnsub = calls.length;
+  await new Promise((r) => setTimeout(r, 300));
+  check("بعد الإلغاء ما يجي شي", calls.length === afterUnsub);
+
   console.log("الدفعات والصلاحيات");
   const bad = writeBatch(db);
   bad.set(doc(db, "tasks", "ok1"), { lawyerId: "ownerA" });

@@ -11,8 +11,6 @@
  *  - آلة حالات تمنع الانتقالات غير المشروعة برمجياً لا بإخفاء الأزرار (R1).
  */
 
-import { doc, runTransaction } from "@/lib/store";
-import { db } from "./firebase";
 import { scopeOf } from "./permissions";
 import type { Role } from "./roles";
 
@@ -335,15 +333,9 @@ export type NumberedScope = keyof typeof PREFIX;
 export async function nextNumber(lawyerId: string, scope: NumberedScope): Promise<string> {
   if (!lawyerId) throw new Error("تعذّر تحديد المكتب لتوليد الرقم");
   const year = new Date().getFullYear();
-  const counterRef = doc(db, "counters", `${lawyerId}_${scope}_${year}`);
-
-  const seq = await runTransaction(db, async (tx) => {
-    const snap = await tx.get(counterRef);
-    const current = snap.exists() ? Number(snap.data()?.value ?? 0) : 0;
-    const next = current + 1;
-    tx.set(counterRef, { lawyerId, scope, year, value: next }, { merge: true });
-    return next;
-  });
+  // السيرفر يزيد العدّاد بقفل صف في MySQL — نفس ضمان المعاملة (ما يتكرر رقم)
+  const { apiRequest } = await import("./authApi");
+  const { value: seq } = await apiRequest<{ value: number }>("POST", "counters/next", { scope, year, lawyerId });
 
   return `${PREFIX[scope]}-${year}-${String(seq).padStart(4, "0")}`;
 }

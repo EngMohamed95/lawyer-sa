@@ -30,7 +30,21 @@ function harness_start(string $configPath, int $port, array $extraConfig = []): 
     for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $port); $i++) usleep(100_000);
     register_shutdown_function(function () use ($server, $runConfigPath) { proc_terminate($server); @unlink($runConfigPath); });
     $base = "http://127.0.0.1:$port/api/index.php?__route=";
+    $GLOBALS['harness_server'] = ['root' => $root, 'env' => $env];
     return $pdo;
+}
+
+/**
+ * سيرفر PHP إضافي على نفس القاعدة — php -S على ويندوز يعالج طلب واحد بالمرة، فاختبار
+ * التزامن الحقيقي يحتاج عدة سيرفرات. يرجع عنوان الـ API.
+ */
+function harness_extra_server(int $port): string {
+    ['root' => $root, 'env' => $env] = $GLOBALS['harness_server'];
+    $server = proc_open([PHP_BINARY, '-S', "127.0.0.1:$port", '-t', "$root/public"],
+        [0 => ['pipe', 'r'], 1 => ['file', 'NUL', 'w'], 2 => ['file', 'NUL', 'w']], $pipes, $root, $env);
+    for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $port); $i++) usleep(100_000);
+    register_shutdown_function(function () use ($server) { proc_terminate($server); });
+    return "http://127.0.0.1:$port/api/index.php?__route=";
 }
 
 /** مستخدم بكلمة مرور secret123 وملف شخصي في data */

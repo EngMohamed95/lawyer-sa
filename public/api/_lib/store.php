@@ -14,13 +14,42 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/access.php';
 
-/** المجموعات الرئيسية اللي انتقلت، وسياسة كل وحدة (من firestore.rules) */
+/**
+ * المجموعات الرئيسية اللي انتقلت، وسياسة كل وحدة (منقولة من firestore.rules). المفاتيح:
+ *   write    'member' (canCreate/canUpdate — الافتراضي) · 'owner' (مدير المكتب وحده) ·
+ *            'append' (إضافة فقط: سجلات ما تنعدّل)
+ *   delete   'soft' (canDelete — الافتراضي) · 'hard' (canHardDelete) · 'super' · 'never'
+ *   assigned المحامي المكلّف يشوف المكلّف به فقط (القضايا)
+ *   self     حقل المستخدم: صاحب السجل يقرأه حتى لو ما يحمل lawyerId (الإشعارات)
+ *   tenantId المستند اللي معرّفه = المكتب يُقرأ حتى قبل وجوده (إعدادات المكتب)
+ */
 const STORE_ROOTS = [
-    // delete: 'hard' = canHardDelete (مالك المكتب) — 'soft' = canDelete (أي عضو)
     'cases' => ['delete' => 'hard', 'assigned' => true],
-    'clients' => ['delete' => 'hard', 'assigned' => false],
-    'tasks' => ['delete' => 'soft', 'assigned' => false],
+    'clients' => ['delete' => 'hard'],
+    'tasks' => [],
+    // المرحلة 3 — المالية وبيانات المكتب العادية
+    'payments' => [], 'expenses' => [], 'contracts' => [], 'invoices' => [], 'receipts' => [],
+    'vouchers' => [], 'fee_agreements' => [], 'time_entries' => [], 'appointments' => [],
+    'client_messages' => [], 'client_requests' => [], 'template_folders' => [],
+    'custom_templates' => [], 'general_memos' => [],
+    'notifications' => ['self' => 'userId'],
+    'notification_preferences' => ['self' => 'userId'],
+    'office_settings' => ['write' => 'owner', 'delete' => 'super', 'tenantId' => true],
+    'client_portal_accounts' => ['write' => 'owner', 'delete' => 'hard'],
+    'auditLogs' => ['write' => 'append', 'delete' => 'never'],
+    'documents_access_log' => ['write' => 'append', 'delete' => 'never'],
 ];
+
+function store_policy(string $root): array {
+    return (STORE_ROOTS[$root] ?? []) + ['write' => 'member', 'delete' => 'soft', 'assigned' => false, 'self' => null, 'tenantId' => false];
+}
+
+/** شرط SQL: صاحب السجل (حقل self) يقرأه حتى بلا lawyerId — مثل قاعدة الإشعارات */
+function store_self_sql(array $pol, array $u, array &$params): string {
+    if ($pol['self'] === null) return '';
+    $params[] = (string) $u['id'];
+    return " OR (lawyer_id IS NULL AND JSON_UNQUOTE(JSON_EXTRACT(data, '" . store_json_path($pol['self']) . "')) = ?)";
+}
 /** مجموعات فرعية لها مجموعات رئيسية تحتها مسموحة (cases/{id}/** و clients/{id}/**) */
 const STORE_PARENT_ROOTS = ['cases', 'clients'];
 /** استعلامات collectionGroup — كلها مجموعات فرعية تحت cases/clients فقط */
@@ -270,10 +299,23 @@ function store_scope(array $u, ?array $p, ?string $group, array &$params): strin
         return $base;
     }
     if (is_super_admin($u)) return $base;
+    $pol = store_policy($p['root']);
     $params[] = tenant_of($u);
-    $sql = "$base AND lawyer_id = ?";
-    if (!empty(STORE_ROOTS[$p['root']]['assigned'])) $sql .= ' AND ' . store_case_assigned_sql($u, $params);
+    $sql = "$base AND (lawyer_id = ?" . store_self_sql($pol, $u, $params) . ')';
+    if ($pol['assigned']) $sql .= ' AND ' . store_case_assigned_sql($u, $params);
     return $sql;
+}
+
+/** قراءة سجل رئيسي واحد حسب السياسة (canRead + التكليف + صاحب السجل) */
+function store_can_read_root(array $u, array $p, array $row): bool {
+    if (is_super_admin($u)) return true;
+    $pol = store_policy($p['root']);
+    if ($row['lawyer_id'] === tenant_of($u)) return !$pol['assigned'] || store_case_assigned($u, $row['data']);
+    if ($pol['self'] !== null && $row['lawyer_id'] === null) {
+        $field = $pol['self'];
+        return ($row['data']->$field ?? null) === (string) $u['id'];
+    }
+    return $pol['tenantId'] && $p['id'] === tenant_of($u);
 }
 
 function store_doc_out(array $row): array {
@@ -312,14 +354,13 @@ function store_get(array $u, string $path): array {
     if ($p['is_child']) store_require_parent($u, $p);
     $row = store_row($p['collection'], $p['parent_path'], (string) $p['id']);
     if ($row === null) {
-        // سجل رئيسي غير موجود: نفس رد «مكتب ثاني» (Firestore كان يرفض الاثنين) — ما نكشف وجود المعرّفات
-        if (!$p['is_child'] && !is_super_admin($u)) store_forbidden();
+        // سجل رئيسي غير موجود: نفس رد «مكتب ثاني» (Firestore كان يرفض الاثنين) — ما نكشف وجود المعرّفات.
+        // إلا مستند المكتب نفسه (إعدادات المكتب قبل أول حفظ)
+        $ownTenantDoc = store_policy($p['root'])['tenantId'] && $p['id'] === tenant_of($u);
+        if (!$p['is_child'] && !is_super_admin($u) && !$ownTenantDoc) store_forbidden();
         return ['exists' => false, 'id' => $p['id'], 'path' => $path];
     }
-    if (!$p['is_child'] && !is_super_admin($u)) {
-        if ($row['lawyer_id'] !== tenant_of($u)) store_forbidden();
-        if (!empty(STORE_ROOTS[$p['root']]['assigned']) && !store_case_assigned($u, $row['data'])) store_forbidden();
-    }
+    if (!$p['is_child'] && !store_can_read_root($u, $p, $row)) store_forbidden();
     return ['exists' => true, 'id' => $p['id'], 'path' => $path, 'data' => $row['data']];
 }
 
@@ -394,13 +435,19 @@ function store_apply(array $u, array $op): void {
     // ─── الحذف ───
     if ($type === 'delete') {
         if ($existing === null) return; // Firestore: حذف غير موجود = نجاح
+        $pol = store_policy($p['root']);
+        // سجلات التدقيق ما تنحذف أبداً — ولا حتى مدير المنصة (قيمتها كدليل)
+        if (!$p['is_child'] && $pol['delete'] === 'never') store_forbidden();
         if (!$super) {
             if ($p['is_child']) {
                 if (!office_writable($u)) store_forbidden();
             } else {
-                $hard = STORE_ROOTS[$p['root']]['delete'] === 'hard';
-                $ok = $hard ? can_hard_delete($u, $existing['lawyer_id']) : can_delete($u, $existing['lawyer_id']);
-                if (!$ok || (!empty(STORE_ROOTS[$p['root']]['assigned']) && !store_case_assigned($u, $existing['data']))) store_forbidden();
+                $ok = match ($pol['delete']) {
+                    'hard' => can_hard_delete($u, $existing['lawyer_id']),
+                    'super' => false,
+                    default => can_delete($u, $existing['lawyer_id']),
+                };
+                if (!$ok || ($pol['assigned'] && !store_case_assigned($u, $existing['data']))) store_forbidden();
             }
         }
         q('DELETE FROM docs WHERE collection = ? AND parent_path = ? AND id = ?', [$p['collection'], $p['parent_path'], $p['id']]);
@@ -440,10 +487,19 @@ function store_apply(array $u, array $op): void {
     $newTenant = isset($new->lawyerId) && is_string($new->lawyerId) ? $new->lawyerId : null;
 
     // ─── صلاحيات الإنشاء/التعديل ───
+    $pol = store_policy($p['root']);
+    // سجلات الإضافة فقط (التدقيق): ما تنعدّل بعد إنشائها — ولا حتى مدير المنصة
+    if (!$p['is_child'] && $pol['write'] === 'append' && $existing !== null) store_forbidden();
     if (!$super) {
         if ($p['is_child']) {
             // incomingSameOffice() + officeWritable()
             if ($newTenant !== $tenant || !office_writable($u)) store_forbidden();
+        } elseif ($pol['write'] === 'append') {
+            // ownsIncoming() فقط — السجل يُكتب حتى لو التجربة انتهت (تسجيل الدخول نفسه يكتب تدقيق)
+            if ($newTenant !== $tenant) store_forbidden();
+        } elseif ($pol['write'] === 'owner') {
+            // مدير المكتب وحده، ولمكتبه (ولو السجل موجود: لازم يكون لمكتبه أصلاً)
+            if (!is_office_owner($u) || $newTenant !== $tenant || ($existing !== null && $existing['lawyer_id'] !== $tenant)) store_forbidden();
         } elseif ($existing === null) {
             if (!can_create($u, $newTenant)) store_forbidden();
             // سجل رئيسي جديد فوق مستندات قديمة لمكتب ثاني بنفس المسار ← مرفوض (ما يتبناها)
@@ -452,7 +508,7 @@ function store_apply(array $u, array $op): void {
                 [$self, store_like_prefix($self), (string) $newTenant]) !== null) store_forbidden();
         } else {
             if (!can_update($u, $existing['lawyer_id'], $newTenant)) store_forbidden();
-            if (!empty(STORE_ROOTS[$p['root']]['assigned']) && !store_case_assigned($u, $existing['data'])) store_forbidden();
+            if ($pol['assigned'] && !store_case_assigned($u, $existing['data'])) store_forbidden();
         }
     }
 

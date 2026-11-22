@@ -19,7 +19,14 @@ import { apiRequest, ApiError } from "./authApi";
 export * from "firebase/firestore";
 
 /** لازم تطابق STORE_ROOTS في public/api/_lib/store.php */
-export const MIGRATED_ROOTS: ReadonlySet<string> = new Set(["cases", "clients", "tasks"]);
+export const MIGRATED_ROOTS: ReadonlySet<string> = new Set([
+  "cases", "clients", "tasks",
+  // المرحلة 3
+  "payments", "expenses", "contracts", "invoices", "receipts", "vouchers", "fee_agreements", "time_entries",
+  "appointments", "client_messages", "client_requests", "template_folders", "custom_templates", "general_memos",
+  "notifications", "notification_preferences", "office_settings", "client_portal_accounts",
+  "auditLogs", "documents_access_log",
+]);
 /** استعلامات collectionGroup اللي كل مستنداتها تحت مجموعات منقولة — تطابق STORE_GROUPS */
 const MIGRATED_GROUPS: ReadonlySet<string> = new Set(["hearings", "documents", "requests", "memos"]);
 
@@ -292,17 +299,47 @@ export const getCountFromServer = (async (q: any) => {
   return { data: () => ({ count }) };
 }) as unknown as typeof fs.getCountFromServer;
 
-/** المجموعات المنقولة ما تحتاج تحديث فوري — نجيب البيانات مرة ونرجع إلغاء فاضي */
+/** كل كم ثانية نعيد الجلب لمحاكاة التحديث الفوري (الإشعارات، الدعم…) */
+const POLL_MS = 20_000;
+
+/**
+ * onSnapshot للمجموعات المنقولة = جلب دوري: كل 20 ثانية، ويبلّغ المستمع بس لو تغيّرت البيانات.
+ * التبويب المخفي ما يرسل طلبات، ويجلب فوراً لما يرجع المستخدم له.
+ */
 export const onSnapshot = ((target: any, ...args: any[]) => {
   const k = mzKind(target);
   if (k !== "document" && k !== "collection" && k !== "query") return (fs.onSnapshot as any)(target, ...args);
   const rest = args[0] && typeof args[0] === "object" && !("next" in args[0]) && typeof args[1] !== "undefined" ? args.slice(1) : args;
   const observer = typeof rest[0] === "function" ? { next: rest[0], error: rest[1] } : rest[0] ?? {};
   let active = true;
-  (k === "document" ? getDoc(target) : getDocs(target))
-    .then((snap: unknown) => { if (active) observer.next?.(snap); })
-    .catch((err: unknown) => { if (active) observer.error?.(err); });
-  return () => { active = false; };
+  let last = "";
+  let inFlight = false;
+
+  const poll = () => {
+    if (!active || inFlight) return;
+    if (typeof document !== "undefined" && document.hidden && last !== "") return;
+    inFlight = true;
+    (k === "document" ? getDoc(target) : getDocs(target))
+      .then((snap: any) => {
+        if (!active) return;
+        const key = JSON.stringify(k === "document" ? snap.data() ?? null : snap.docs.map((d: any) => [d.ref.path, d.data()]));
+        if (key === last) return;
+        last = key;
+        observer.next?.(snap);
+      })
+      .catch((err: unknown) => { if (active) observer.error?.(err); })
+      .finally(() => { inFlight = false; });
+  };
+
+  poll();
+  const timer = setInterval(poll, POLL_MS);
+  const onVisible = () => { if (typeof document !== "undefined" && !document.hidden) poll(); };
+  if (typeof document !== "undefined") document.addEventListener("visibilitychange", onVisible);
+  return () => {
+    active = false;
+    clearInterval(timer);
+    if (typeof document !== "undefined") document.removeEventListener("visibilitychange", onVisible);
+  };
 }) as typeof fs.onSnapshot;
 
 /* ───────────────────────────── الكتابة ───────────────────────────── */

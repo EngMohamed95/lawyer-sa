@@ -6,8 +6,6 @@
  * مدير المكتب «كامل» · الشريك «اعتماد» · المحامي «إنشاء» · المستشار «مراجعة» · العميل «عرض»
  */
 
-import { doc, runTransaction } from "@/lib/store";
-import { db } from "./firebase";
 import type { Role } from "./roles";
 import { canApprove, canCreate, canUpdate, scopeOf } from "./permissions";
 
@@ -183,15 +181,9 @@ export function canCreateContract(role: Role): boolean {
  */
 export async function nextContractNumber(lawyerId: string): Promise<string> {
   const year = new Date().getFullYear();
-  const counterRef = doc(db, "counters", `${lawyerId}_contracts_${year}`);
-
-  const seq = await runTransaction(db, async (tx) => {
-    const snap = await tx.get(counterRef);
-    const current = snap.exists() ? Number(snap.data()?.value ?? 0) : 0;
-    const next = current + 1;
-    tx.set(counterRef, { lawyerId, scope: "contracts", year, value: next }, { merge: true });
-    return next;
-  });
+  // السيرفر يزيد العدّاد بقفل صف في MySQL — نفس ضمان المعاملة (ما يتكرر رقم)
+  const { apiRequest } = await import("./authApi");
+  const { value: seq } = await apiRequest<{ value: number }>("POST", "counters/next", { scope: "contracts", year, lawyerId });
 
   return `CT-${year}-${String(seq).padStart(4, "0")}`;
 }
