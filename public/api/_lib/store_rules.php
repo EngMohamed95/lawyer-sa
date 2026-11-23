@@ -14,8 +14,72 @@ function store_custom_rule(string $root, array $u, array $p, ?array $existing, o
         'productSuggestions' => rule_suggestion($u, $existing, $new),
         'legal_library' => rule_legal_library($u, $existing, $new),
         'ai_conversations' => rule_ai_conversation($u, $existing, $new),
+        'users' => rule_user($u, $p, $existing, $new),
         default => store_forbidden(),
     };
+}
+
+/** حذف بقاعدة خاصة (delete: 'custom') — يرجع true لو مسموح */
+function store_custom_delete(string $root, array $u, array $p, array $existing): bool {
+    return match ($root) {
+        'users' => rule_user_delete($u, $p, $existing),
+        default => false,
+    };
+}
+
+/* ───────────────────────────── ملفات المستخدمين ───────────────────────────── */
+
+/** حقول الاشتراك — يكتبها مدير المنصة (أو التسجيل الذاتي) وحده، ولا يغيّرها مالك المكتب لنفسه */
+const SUBSCRIPTION_FIELDS = ['plan', 'planId', 'status', 'subscriptionExpiry', 'subscriptionStart',
+    'subscriptionBilling', 'quotaOverrides', 'selfSignup', 'emailVerifiedAt', 'trialEndsAt'];
+
+/** مكتب ملف المستخدم: lawyerId، وإلا هو نفسه (مالك المكتب) */
+function rule_profile_tenant(object $d, string $id): string {
+    return is_string($d->lawyerId ?? null) && $d->lawyerId !== '' ? $d->lawyerId : $id;
+}
+
+/** users/{id} — نفس قاعدة firestore.rules (الترقية الذاتية ممنوعة: الثغرتان V5 و V7) */
+function rule_user(array $u, array $p, ?array $existing, object $new): object {
+    $me = (string) $u['id'];
+    $id = (string) $p['id'];
+    if (is_super_admin($u)) return $new;
+    $tenant = tenant_of($u);
+    $newTenant = rule_profile_tenant($new, $id);
+
+    if ($existing === null) {
+        // إنشاء: مالك المكتب لعضو في فريقه، بعد إنشاء حسابه (POST /accounts) بنفس الدور والمكتب
+        if (!is_office_owner($u) || ($new->lawyerId ?? null) !== $tenant || !in_array($new->role ?? null, OFFICE_MEMBER_ROLES, true)) store_forbidden();
+        $account = q_one('SELECT role, lawyer_id FROM users WHERE id = ?', [$id]);
+        if ($account === null || $account['lawyer_id'] !== $tenant || $account['role'] !== $new->role) store_forbidden();
+        return $new;
+    }
+
+    $old = $existing['data'];
+    $changed = rule_changed_keys($old, $new);
+    $oldTenant = rule_profile_tenant($old, $id);
+    if ($newTenant !== $oldTenant) store_forbidden(); // المكتب ما يتغير
+
+    if (is_office_owner($u) && $oldTenant === $tenant) {
+        // المالك لنفسه: كل شي إلا حقول الاشتراك
+        if ($id === $me && array_intersect($changed, SUBSCRIPTION_FIELDS)) store_forbidden();
+        // تغيير الدور: لعضو غيره (مو مدير منصة) وإلى دور فريق
+        if (in_array('role', $changed, true)
+            && ($id === $me || ($old->role ?? '') === 'SUPER_ADMIN' || !in_array($new->role ?? null, OFFICE_MEMBER_ROLES, true))) store_forbidden();
+        return $new;
+    }
+    // أي عضو لملفه: البيانات الشخصية فقط
+    if ($id !== $me) store_forbidden();
+    if (array_intersect($changed, array_merge(['role', 'lawyerId', 'plan', 'status', 'deletedAt'], SUBSCRIPTION_FIELDS))) store_forbidden();
+    return $new;
+}
+
+/** حذف ملف: مدير المنصة، أو مالك المكتب لعضو فريقه (مو نفسه) */
+function rule_user_delete(array $u, array $p, array $existing): bool {
+    if (is_super_admin($u)) return true;
+    $d = $existing['data'];
+    return is_office_owner($u) && $p['id'] !== (string) $u['id']
+        && ($d->lawyerId ?? null) === tenant_of($u)
+        && in_array($d->role ?? null, OFFICE_MEMBER_ROLES, true);
 }
 
 /* ───────────────────────────── أدوات تحقق ───────────────────────────── */

@@ -38,25 +38,19 @@ export default function Login() {
     if (!shouldRestore) return;
 
     let cancelled = false;
-    let unsubscribe: (() => void) | undefined;
 
-    void Promise.all([
-      import("../lib/firebase"),
-      import("firebase/auth"),
-    ]).then(([{ auth }, { onAuthStateChanged }]) => {
-      if (cancelled) return;
-      unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-        if (!cancelled && firebaseUser) {
-          navigate("/app", { replace: true });
-        }
+    // جلسة «تذكرني» سارية في السيرفر (كوكي) ← ندخل مباشرة
+    void import("../lib/authApi")
+      .then(({ me }) => me())
+      .then((account) => {
+        if (!cancelled && account) navigate("/app", { replace: true });
+      })
+      .catch((sessionError) => {
+        console.warn("تعذر استعادة جلسة الدخول المحفوظة:", sessionError);
       });
-    }).catch((sessionError) => {
-      console.warn("تعذر استعادة جلسة الدخول المحفوظة:", sessionError);
-    });
 
     return () => {
       cancelled = true;
-      unsubscribe?.();
     };
   }, [navigate]);
 
@@ -70,8 +64,8 @@ export default function Login() {
       const { login } = await import("../lib/authApi");
       const { startSession, NoProfileError } = await import("../lib/session");
 
-      // الدخول في MySQL؛ السيرفر يرجع توكن Firebase ويدخل به عشان المجموعات اللي ما انتقلت بعد
-      const { firebaseUser } = await withLoginTimeout(
+      // الدخول في MySQL — السيرفر يضبط كوكي الجلسة
+      const { sessionUser: firebaseUser } = await withLoginTimeout(
         login(username, password, rememberMe),
         "تعذر الاتصال بخدمة تسجيل الدخول. تحقق من الإنترنت ثم حاول مرة أخرى.",
       );

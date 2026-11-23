@@ -1,94 +1,107 @@
 /**
- * بديل "firebase/firestore" أثناء التحويل لـ MySQL على مراحل.
+ * طبقة البيانات — نفس واجهة دوال Firestore اللي يستخدمها التطبيق، لكن كل شي يروح لـ MySQL
+ * عبر /api/v1/data (public/api/_lib/store.php) والسيرفر يطبّق الصلاحيات.
  *
- * كل الواجهة تستورد من هنا بدل firebase/firestore. نفس الدوال ونفس الأنواع، لكن:
- *   - المجموعات اللي انتقلت (MIGRATED_ROOTS ومجموعاتها الفرعية) تروح لـ /api/v1/data
- *     والسيرفر يطبّق الصلاحيات (public/api/_lib/store.php)
- *   - الباقي يروح Firestore كما هو بدون أي تغيير
- * كل مرحلة جديدة = إضافة أسماء المجموعات هنا وفي STORE_ROOTS في store.php + نقل بياناتها.
- *
- * فروق مقصودة عن Firestore للمجموعات المنقولة:
- *   - onSnapshot يجيب البيانات مرة وحدة (ما في تحديث فوري) — ولا وحدة من المجموعات المنقولة تستخدمه
- *   - serverTimestamp() = وقت الجهاز بصيغة ISO (المجموعات المنقولة تخزن التواريخ نصوصاً أصلاً)
- *   - writeBatch فيه عمليات على الطرفين = دفعتين منفصلتين (كل طرف ذرّي لحاله)
+ * تاريخياً كانت بديلاً لـ "firebase/firestore" أثناء التحويل على مراحل؛ بعد إزالة Firebase
+ * صارت مستقلة تماماً (ما في مكتبة Firebase في الواجهة). الفروق عن Firestore:
+ *   - onSnapshot = جلب دوري كل 20 ثانية (يبلّغ بس لو تغيّرت البيانات)
+ *   - serverTimestamp() = وقت الجهاز بصيغة ISO (والسيرفر يضع الوقت بنفسه حيث يهم)
+ *   - التواريخ نصوص ISO — اقرأها بـ toDate/toMillis من ./dates
+ *   - قيود الاستعلام المدعومة: where (مع and/or) و orderBy و limit
  */
 
-import * as fs from "firebase/firestore";
 import { apiRequest, ApiError } from "./authApi";
-
-export * from "firebase/firestore";
-
-/** لازم تطابق STORE_ROOTS في public/api/_lib/store.php */
-export const MIGRATED_ROOTS: ReadonlySet<string> = new Set([
-  "cases", "clients", "tasks",
-  // المرحلة 3
-  "payments", "expenses", "contracts", "invoices", "receipts", "vouchers", "fee_agreements", "time_entries",
-  "appointments", "client_messages", "client_requests", "template_folders", "custom_templates", "general_memos",
-  "notifications", "notification_preferences", "office_settings", "client_portal_accounts",
-  "auditLogs", "documents_access_log",
-  // الدفعة 2 — المنصة وسير العمل الخاص
-  "supportTickets", "productSuggestions", "legal_library", "ai_conversations", "ai_usage",
-  "platform_status", "platform_settings", "subscriptionPlans", "subscriptionRequests",
-]);
-/** استعلامات collectionGroup اللي كل مستنداتها تحت مجموعات منقولة — تطابق STORE_GROUPS */
-const MIGRATED_GROUPS: ReadonlySet<string> = new Set(["hearings", "documents", "requests", "memos"]);
 
 const MZ = Symbol.for("mawazzen.store");
 const PAGE_SIZE = 500;
+/** كل كم ثانية نعيد الجلب لمحاكاة التحديث الفوري */
+const POLL_MS = 20_000;
 
-/* ───────────────────────────── المراجع ───────────────────────────── */
+/* ───────────────────────────── الأنواع ───────────────────────────── */
 
-interface MzCollectionRef {
-  [MZ]: "collection";
-  type: "collection";
-  id: string;
-  path: string;
-  parent: MzDocRef | null;
-  firestore: fs.Firestore;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type DocumentData = { [field: string]: any };
+
+/** مقبض قاعدة البيانات (src/lib/firebase.ts: db) — للتوافق مع توقيع collection(db, ...) */
+export interface Firestore {
+  readonly type: "firestore";
 }
 
-interface MzDocRef {
-  [MZ]: "document";
-  type: "document";
-  id: string;
-  path: string;
-  parent: MzCollectionRef;
-  firestore: fs.Firestore;
+/** مرجع مجموعة = استعلام بلا شروط (مثل Firestore: CollectionReference يمتد من Query) */
+export interface CollectionReference<T = DocumentData> extends Query<T> {
+  readonly [MZ]: "collection";
+  readonly type: "collection";
+  readonly id: string;
+  readonly path: string;
+  readonly parent: DocumentReference | null;
+}
+
+export interface DocumentReference<T = DocumentData> {
+  readonly [MZ]: "document";
+  readonly type: "document";
+  readonly id: string;
+  readonly path: string;
+  readonly parent: CollectionReference<T>;
+  readonly firestore: Firestore;
 }
 
 type WhereClause = [string, string, unknown];
 type OrderClause = [string, "asc" | "desc"];
-
-interface MzQuery {
-  [MZ]: "query";
-  type: "query";
-  firestore: fs.Firestore;
-  source: { path: string } | { group: string };
-  where: ServerPredicate[];
-  orderBy: OrderClause[];
-  limit?: number;
-}
-
-interface MzConstraint {
-  [MZ]: "constraint";
-  kind: "where" | "orderBy" | "limit" | "and" | "or";
-  /** نفس خاصية type في قيود Firestore — كود مثل visibleCasesQuery يفرز بها */
-  type: "where" | "orderBy" | "limit" | "and" | "or";
-  args: unknown[];
-  /** نفس القيد لـ Firestore — يُستخدم لو الاستعلام على مجموعة ما انتقلت */
-  real: any;
-}
-
 /** شرط بصيغة السيرفر: [field, op, value] أو {or: [...]} / {and: [...]} */
 type ServerPredicate = WhereClause | { or: ServerPredicate[] } | { and: ServerPredicate[] };
+
+export interface Query<T = DocumentData> {
+  readonly [MZ]: "query" | "collection";
+  readonly type: "query" | "collection";
+  readonly firestore: Firestore;
+  readonly source: { path: string } | { group: string };
+  readonly where: ServerPredicate[];
+  readonly orderBy: OrderClause[];
+  readonly limit?: number;
+  readonly __t?: T;
+}
+
+export interface QueryConstraint {
+  readonly [MZ]: "constraint";
+  readonly kind: "where" | "orderBy" | "limit" | "and" | "or";
+  /** مثل خاصية type في قيود Firestore — كود مثل visibleCasesQuery يفرز بها */
+  readonly type: "where" | "orderBy" | "limit" | "and" | "or";
+  readonly args: unknown[];
+}
+export type QueryFieldFilterConstraint = QueryConstraint;
+export type QueryCompositeFilterConstraint = QueryConstraint;
+export type QueryNonFilterConstraint = QueryConstraint;
+
+export interface DocumentSnapshot<T = DocumentData> {
+  readonly id: string;
+  readonly ref: DocumentReference<T>;
+  exists(): boolean;
+  data(): T | undefined;
+  get(field: string): unknown;
+}
+
+export interface QueryDocumentSnapshot<T = DocumentData> extends DocumentSnapshot<T> {
+  data(): T;
+}
+
+export interface QuerySnapshot<T = DocumentData> {
+  readonly docs: QueryDocumentSnapshot<T>[];
+  readonly size: number;
+  readonly empty: boolean;
+  forEach(cb: (d: QueryDocumentSnapshot<T>) => void, thisArg?: unknown): void;
+  docChanges(): { type: "added"; doc: QueryDocumentSnapshot<T>; oldIndex: number; newIndex: number }[];
+}
+
+export type SetOptions = { merge?: boolean };
+
+/* ───────────────────────────── المراجع ───────────────────────────── */
 
 const mzKind = (x: unknown): string | undefined =>
   x !== null && typeof x === "object" ? (x as Record<symbol, string>)[MZ] : undefined;
 
 const trimPath = (p: string) => p.replace(/^\/+|\/+$/g, "");
-const isMigratedPath = (path: string) => MIGRATED_ROOTS.has(trimPath(path).split("/")[0]);
 
-function makeCollectionRef(db: fs.Firestore, path: string): MzCollectionRef {
+function makeCollectionRef(db: Firestore, path: string): CollectionReference {
   const segs = trimPath(path).split("/");
   return {
     [MZ]: "collection",
@@ -97,10 +110,13 @@ function makeCollectionRef(db: fs.Firestore, path: string): MzCollectionRef {
     path: segs.join("/"),
     get parent() { return segs.length > 1 ? makeDocRef(db, segs.slice(0, -1).join("/")) : null; },
     firestore: db,
-  } as MzCollectionRef;
+    source: { path: segs.join("/") },
+    where: [],
+    orderBy: [],
+  };
 }
 
-function makeDocRef(db: fs.Firestore, path: string): MzDocRef {
+function makeDocRef(db: Firestore, path: string): DocumentReference {
   const segs = trimPath(path).split("/");
   return {
     [MZ]: "document",
@@ -109,7 +125,7 @@ function makeDocRef(db: fs.Firestore, path: string): MzDocRef {
     path: segs.join("/"),
     get parent() { return makeCollectionRef(db, segs.slice(0, -1).join("/")); },
     firestore: db,
-  } as MzDocRef;
+  };
 }
 
 /** معرّف بنفس شكل معرّفات Firestore التلقائية (20 حرف) */
@@ -119,89 +135,69 @@ function autoId(): string {
   return Array.from(bytes, (b) => chars[b % chars.length]).join("");
 }
 
-/** مسار كامل ومثيل Firestore من (db | مرجع, ...أجزاء) */
-function resolve(parent: any, segments: string[]): { db: fs.Firestore; full: string } {
+/** مسار كامل ومقبض القاعدة من (db | مرجع, ...أجزاء) */
+function resolve(parent: Firestore | DocumentReference | CollectionReference, segments: string[]): { db: Firestore; full: string } {
   const rel = segments.filter((s) => s !== undefined).join("/");
-  if (parent && (parent.type === "document" || parent.type === "collection")) {
+  if (parent.type === "document" || parent.type === "collection") {
     return { db: parent.firestore, full: trimPath(`${parent.path}/${rel}`) };
   }
-  return { db: parent as fs.Firestore, full: trimPath(rel) };
+  return { db: parent, full: trimPath(rel) };
 }
 
-export const collection = ((parent: any, path: string, ...rest: string[]) => {
+export function collection(parent: Firestore | DocumentReference | CollectionReference, path: string, ...rest: string[]): CollectionReference {
   const { db, full } = resolve(parent, [path, ...rest]);
-  return isMigratedPath(full) ? makeCollectionRef(db, full) : fs.collection(db, full);
-}) as typeof fs.collection;
+  return makeCollectionRef(db, full);
+}
 
-export const doc = ((parent: any, path?: string, ...rest: string[]) => {
+export function doc(parent: Firestore | DocumentReference | CollectionReference, path?: string, ...rest: string[]): DocumentReference {
   // doc(collectionRef) — معرّف تلقائي
-  if (path === undefined && parent && parent.type === "collection") {
-    return mzKind(parent) === "collection" ? makeDocRef(parent.firestore, `${parent.path}/${autoId()}`) : fs.doc(parent);
-  }
+  if (path === undefined && parent.type === "collection") return makeDocRef(parent.firestore, `${parent.path}/${autoId()}`);
   const { db, full } = resolve(parent, [path as string, ...rest]);
-  return isMigratedPath(full) ? makeDocRef(db, full) : fs.doc(db, full);
-}) as typeof fs.doc;
+  return makeDocRef(db, full);
+}
 
-export const collectionGroup = ((db: fs.Firestore, id: string) => {
-  if (!MIGRATED_GROUPS.has(id)) return fs.collectionGroup(db, id);
-  const q: MzQuery = { [MZ]: "query", type: "query", firestore: db, source: { group: id }, where: [], orderBy: [] };
-  return q;
-}) as unknown as typeof fs.collectionGroup;
+export function collectionGroup(db: Firestore, id: string): Query {
+  return { [MZ]: "query", type: "query", firestore: db, source: { group: id }, where: [], orderBy: [] };
+}
 
 /* ───────────────────────────── الاستعلامات ───────────────────────────── */
 
-const constraint = (kind: MzConstraint["kind"], args: unknown[], real: any): MzConstraint =>
-  ({ [MZ]: "constraint", kind, type: kind, args, real });
+const constraint = (kind: QueryConstraint["kind"], args: unknown[]): QueryConstraint =>
+  ({ [MZ]: "constraint", kind, type: kind, args });
 
-export const where = ((field: any, op: any, value: any) => {
-  const real = fs.where(field, op, value);
-  if (typeof field !== "string") return real; // FieldPath/documentId — Firestore فقط
-  return constraint("where", [field, op, value], real);
-}) as unknown as typeof fs.where;
-
-export const orderBy = ((field: any, dir: any = "asc") => {
-  const real = fs.orderBy(field, dir);
-  if (typeof field !== "string") return real;
-  return constraint("orderBy", [field, dir], real);
-}) as unknown as typeof fs.orderBy;
-
-export const limit = ((n: number) => constraint("limit", [n], fs.limit(n))) as unknown as typeof fs.limit;
-
-const toReal = (c: any) => (mzKind(c) === "constraint" ? (c as MzConstraint).real : c);
-
-/** and()/or() — مركّب من where أو مركّبات ثانية */
-export const and = ((...filters: any[]) => constraint("and", filters, fs.and(...filters.map(toReal)))) as unknown as typeof fs.and;
-export const or = ((...filters: any[]) => constraint("or", filters, fs.or(...filters.map(toReal)))) as unknown as typeof fs.or;
+export const where = (field: string, op: string, value: unknown) => constraint("where", [field, op, value]);
+export const orderBy = (field: string, dir: "asc" | "desc" = "asc") => constraint("orderBy", [field, dir]);
+export const limit = (n: number) => constraint("limit", [n]);
+export const and = (...filters: QueryConstraint[]) => constraint("and", filters);
+export const or = (...filters: QueryConstraint[]) => constraint("or", filters);
 
 /** قيد where/and/or ← صيغة السيرفر */
-function toPredicate(c: any): ServerPredicate {
-  if (mzKind(c) !== "constraint") throw new Error("شرط غير مدعوم على بيانات MySQL (المدعوم: where وand وor).");
-  const { kind, args } = c as MzConstraint;
-  if (kind === "where") return args as WhereClause;
-  if (kind === "and") return { and: args.map(toPredicate) };
-  if (kind === "or") return { or: args.map(toPredicate) };
+function toPredicate(c: QueryConstraint): ServerPredicate {
+  if (mzKind(c) !== "constraint") throw new Error("شرط غير مدعوم (المدعوم: where وand وor).");
+  if (c.kind === "where") return c.args as WhereClause;
+  if (c.kind === "and") return { and: (c.args as QueryConstraint[]).map(toPredicate) };
+  if (c.kind === "or") return { or: (c.args as QueryConstraint[]).map(toPredicate) };
   throw new Error("شرط غير مدعوم داخل and/or.");
 }
 
-export const query = ((base: any, ...constraints: any[]) => {
-  const kind = mzKind(base);
-  if (kind !== "collection" && kind !== "query") return fs.query(base, ...constraints.map(toReal));
+/** مرجع المجموعة يحمل نفس حقول الاستعلام — نوحّده لاستعلام */
+const asQuery = (x: CollectionReference | Query): Query =>
+  ({ [MZ]: "query", type: "query", firestore: x.firestore, source: x.source, where: x.where, orderBy: x.orderBy, limit: x.limit });
 
-  const q: MzQuery = kind === "query"
-    ? { ...(base as MzQuery), where: [...base.where], orderBy: [...base.orderBy] }
-    : { [MZ]: "query", type: "query", firestore: base.firestore, source: { path: base.path }, where: [], orderBy: [] };
+export function query<T = DocumentData>(base: CollectionReference<T> | Query<T>, ...constraints: (QueryConstraint | QueryConstraint[])[]): Query<T> {
+  const b = asQuery(base as CollectionReference | Query);
+  const where: ServerPredicate[] = [...b.where];
+  const order: OrderClause[] = [...b.orderBy];
+  let lim = b.limit;
   for (const c of constraints.flat()) {
-    if (mzKind(c) !== "constraint") {
-      throw new Error("قيد استعلام غير مدعوم على بيانات MySQL (المدعوم: where وorderBy وlimit).");
-    }
-    const { kind: k, args } = c as MzConstraint;
-    if (k === "orderBy") q.orderBy.push(args as OrderClause);
-    else if (k === "limit") q.limit = args[0] as number;
-    else if (k === "and") q.where.push(...args.map(toPredicate)); // and على المستوى الأعلى = شروط عادية
-    else q.where.push(toPredicate(c));
+    if (mzKind(c) !== "constraint") throw new Error("قيد استعلام غير مدعوم (المدعوم: where وorderBy وlimit وand/or).");
+    if (c.kind === "orderBy") order.push(c.args as OrderClause);
+    else if (c.kind === "limit") lim = c.args[0] as number;
+    else if (c.kind === "and") where.push(...(c.args as QueryConstraint[]).map(toPredicate)); // and أعلى = شروط عادية
+    else where.push(toPredicate(c));
   }
-  return q;
-}) as typeof fs.query;
+  return { ...b, where, orderBy: order, limit: lim } as Query<T>;
+}
 
 /* ───────────────────────────── الأخطاء ───────────────────────────── */
 
@@ -213,7 +209,7 @@ class StoreError extends Error {
 
 const CODE_MAP: Record<number, string> = {
   0: "unavailable", 400: "invalid-argument", 401: "unauthenticated", 403: "permission-denied",
-  404: "not-found", 409: "already-exists", 413: "resource-exhausted", 429: "resource-exhausted",
+  404: "not-found", 409: "already-exists", 413: "resource-exhausted", 422: "invalid-argument", 429: "resource-exhausted",
 };
 
 async function call<T>(path: string, body: unknown): Promise<T> {
@@ -227,44 +223,39 @@ async function call<T>(path: string, body: unknown): Promise<T> {
 
 /* ───────────────────────────── اللقطات (snapshots) ───────────────────────────── */
 
-interface RawDoc { path: string; id: string; data?: Record<string, unknown> }
+interface RawDoc { path: string; id: string; data?: DocumentData }
 
-function getField(data: any, field: string): unknown {
-  return field.split(".").reduce((v, k) => (v !== null && typeof v === "object" ? v[k] : undefined), data);
+function getField(data: unknown, field: string): unknown {
+  return field.split(".").reduce<unknown>((v, k) => (v !== null && typeof v === "object" ? (v as DocumentData)[k] : undefined), data);
 }
 
-function makeDocSnapshot(db: fs.Firestore, path: string, data: Record<string, unknown> | undefined) {
+function makeDocSnapshot(db: Firestore, path: string, data: DocumentData | undefined): QueryDocumentSnapshot {
   const ref = makeDocRef(db, path);
   return {
     id: ref.id,
     ref,
     exists: () => data !== undefined,
     // نسخة جديدة كل مرة — مثل Firestore، تعديلها ما يأثر على اللقطة
-    data: () => (data === undefined ? undefined : structuredClone(data)),
+    data: () => (data === undefined ? undefined : structuredClone(data)) as DocumentData,
     get: (field: string) => getField(data, field),
-    metadata: { hasPendingWrites: false, fromCache: false, isEqual: () => true },
   };
 }
 
-function makeQuerySnapshot(db: fs.Firestore, q: MzQuery, rows: RawDoc[]) {
+function makeQuerySnapshot(db: Firestore, rows: RawDoc[]): QuerySnapshot {
   const docs = rows.map((r) => makeDocSnapshot(db, r.path, r.data ?? {}));
   return {
     docs,
     size: docs.length,
     empty: docs.length === 0,
-    query: q,
-    forEach: (cb: (d: (typeof docs)[number]) => void, thisArg?: unknown) => docs.forEach(cb, thisArg),
+    forEach: (cb, thisArg) => docs.forEach(cb, thisArg),
     docChanges: () => docs.map((d, i) => ({ type: "added" as const, doc: d, oldIndex: -1, newIndex: i })),
-    metadata: { hasPendingWrites: false, fromCache: false, isEqual: () => true },
   };
 }
 
-function queryRequest(q: MzQuery) {
-  return { ...q.source, where: q.where, orderBy: q.orderBy };
-}
+const queryRequest = (q: Query) => ({ ...q.source, where: q.where, orderBy: q.orderBy });
 
 /** يجيب كل النتائج (أو حتى limit) صفحة صفحة — السيرفر يحد الصفحة بـ 1000 */
-async function runQuery(q: MzQuery): Promise<RawDoc[]> {
+async function runQuery(q: Query): Promise<RawDoc[]> {
   const out: RawDoc[] = [];
   const max = q.limit ?? Infinity;
   for (let offset = 0; out.length < max; offset += PAGE_SIZE) {
@@ -276,44 +267,34 @@ async function runQuery(q: MzQuery): Promise<RawDoc[]> {
   return out;
 }
 
-const asQuery = (x: any): MzQuery | null => {
-  const k = mzKind(x);
-  if (k === "query") return x as MzQuery;
-  if (k === "collection") return { [MZ]: "query", type: "query", firestore: x.firestore, source: { path: x.path }, where: [], orderBy: [] };
-  return null;
-};
+export async function getDocs<T = DocumentData>(q: CollectionReference<T> | Query<T>): Promise<QuerySnapshot<T>> {
+  const mq = asQuery(q as CollectionReference | Query);
+  return makeQuerySnapshot(mq.firestore, await runQuery(mq)) as unknown as QuerySnapshot<T>;
+}
 
-export const getDocs = (async (q: any) => {
-  const mq = asQuery(q);
-  if (!mq) return fs.getDocs(q);
-  return makeQuerySnapshot(mq.firestore, mq, await runQuery(mq));
-}) as unknown as typeof fs.getDocs;
-
-export const getDoc = (async (ref: any) => {
-  if (mzKind(ref) !== "document") return fs.getDoc(ref);
+export async function getDoc<T = DocumentData>(ref: DocumentReference<T>): Promise<DocumentSnapshot<T>> {
   const res = await call<RawDoc & { exists: boolean }>("data/get", { path: ref.path });
-  return makeDocSnapshot(ref.firestore, ref.path, res.exists ? res.data ?? {} : undefined);
-}) as unknown as typeof fs.getDoc;
+  return makeDocSnapshot(ref.firestore, ref.path, res.exists ? res.data ?? {} : undefined) as unknown as DocumentSnapshot<T>;
+}
 
-export const getCountFromServer = (async (q: any) => {
-  const mq = asQuery(q);
-  if (!mq) return fs.getCountFromServer(q);
-  const { count } = await call<{ count: number }>("data/count", queryRequest(mq));
+export async function getCountFromServer(q: CollectionReference | Query): Promise<{ data(): { count: number } }> {
+  const { count } = await call<{ count: number }>("data/count", queryRequest(asQuery(q)));
   return { data: () => ({ count }) };
-}) as unknown as typeof fs.getCountFromServer;
+}
 
-/** كل كم ثانية نعيد الجلب لمحاكاة التحديث الفوري (الإشعارات، الدعم…) */
-const POLL_MS = 20_000;
+type SnapshotObserver<S> = { next?: (snap: S) => void; error?: (err: Error) => void };
 
 /**
- * onSnapshot للمجموعات المنقولة = جلب دوري: كل 20 ثانية، ويبلّغ المستمع بس لو تغيّرت البيانات.
+ * onSnapshot = جلب دوري: كل 20 ثانية، ويبلّغ المستمع بس لو تغيّرت البيانات.
  * التبويب المخفي ما يرسل طلبات، ويجلب فوراً لما يرجع المستخدم له.
  */
-export const onSnapshot = ((target: any, ...args: any[]) => {
-  const k = mzKind(target);
-  if (k !== "document" && k !== "collection" && k !== "query") return (fs.onSnapshot as any)(target, ...args);
-  const rest = args[0] && typeof args[0] === "object" && !("next" in args[0]) && typeof args[1] !== "undefined" ? args.slice(1) : args;
-  const observer = typeof rest[0] === "function" ? { next: rest[0], error: rest[1] } : rest[0] ?? {};
+export function onSnapshot<T = DocumentData>(target: DocumentReference<T>, next: (snap: DocumentSnapshot<T>) => void, error?: (err: Error) => void): () => void;
+export function onSnapshot<T = DocumentData>(target: CollectionReference<T> | Query<T>, next: (snap: QuerySnapshot<T>) => void, error?: (err: Error) => void): () => void;
+export function onSnapshot(target: DocumentReference | CollectionReference | Query, ...args: unknown[]): () => void {
+  const isDoc = mzKind(target) === "document";
+  const observer: SnapshotObserver<unknown> = typeof args[0] === "function"
+    ? { next: args[0] as (s: unknown) => void, error: args[1] as ((e: Error) => void) | undefined }
+    : (args[0] as SnapshotObserver<unknown>) ?? {};
   let active = true;
   let last = "";
   let inFlight = false;
@@ -322,15 +303,17 @@ export const onSnapshot = ((target: any, ...args: any[]) => {
     if (!active || inFlight) return;
     if (typeof document !== "undefined" && document.hidden && last !== "") return;
     inFlight = true;
-    (k === "document" ? getDoc(target) : getDocs(target))
-      .then((snap: any) => {
+    (isDoc ? getDoc(target as DocumentReference) : getDocs(target as Query))
+      .then((snap) => {
         if (!active) return;
-        const key = JSON.stringify(k === "document" ? snap.data() ?? null : snap.docs.map((d: any) => [d.ref.path, d.data()]));
+        const key = JSON.stringify(isDoc
+          ? (snap as DocumentSnapshot).data() ?? null
+          : (snap as QuerySnapshot).docs.map((d) => [d.ref.path, d.data()]));
         if (key === last) return;
         last = key;
         observer.next?.(snap);
       })
-      .catch((err: unknown) => { if (active) observer.error?.(err); })
+      .catch((err: Error) => { if (active) observer.error?.(err); })
       .finally(() => { inFlight = false; });
   };
 
@@ -343,33 +326,26 @@ export const onSnapshot = ((target: any, ...args: any[]) => {
     clearInterval(timer);
     if (typeof document !== "undefined") document.removeEventListener("visibilitychange", onVisible);
   };
-}) as typeof fs.onSnapshot;
+}
 
 /* ───────────────────────────── الكتابة ───────────────────────────── */
 
 const DELETE_FIELD = { [MZ]: "deleteField" } as const;
 const SERVER_TIMESTAMP = { [MZ]: "serverTimestamp" } as const;
 
-export const deleteField = (() => DELETE_FIELD) as unknown as typeof fs.deleteField;
-export const serverTimestamp = (() => SERVER_TIMESTAMP) as unknown as typeof fs.serverTimestamp;
+/** علامة حذف حقل (مثل deleteField في Firestore) */
+export const deleteField = (): unknown => DELETE_FIELD;
+/** وقت الجهاز بصيغة ISO (السيرفر يضع الوقت بنفسه في المجموعات اللي يهمها) */
+export const serverTimestamp = (): unknown => SERVER_TIMESTAMP;
 
 const isPlainObject = (v: unknown): v is Record<string, unknown> =>
   v !== null && typeof v === "object" && (Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null);
 
-/** للكتابة في Firestore: علاماتنا ← علامات Firestore الحقيقية (باقي الأنواع كما هي) */
-function toFirestoreValue(v: unknown): unknown {
-  if (v === DELETE_FIELD) return fs.deleteField();
-  if (v === SERVER_TIMESTAMP) return fs.serverTimestamp();
-  if (Array.isArray(v)) return v.map(toFirestoreValue);
-  if (isPlainObject(v)) return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, toFirestoreValue(x)]));
-  return v;
-}
-
 /**
- * للكتابة في MySQL: يرجع [البيانات, الحقول المحذوفة]. deleteField يصير مسار في deletes
+ * للكتابة: يرجع [البيانات, الحقول المحذوفة]. deleteField يصير مسار في deletes
  * (بمسارات متداخلة لو $nested — set مع merge)، والتواريخ نصوص ISO.
  */
-function toStoreData(data: Record<string, unknown>, nested: boolean): [Record<string, unknown>, string[]] {
+function toStoreData(data: DocumentData, nested: boolean): [DocumentData, string[]] {
   const deletes: string[] = [];
   const walk = (v: unknown, path: string, top: boolean): unknown => {
     if (v === DELETE_FIELD) {
@@ -379,8 +355,9 @@ function toStoreData(data: Record<string, unknown>, nested: boolean): [Record<st
     }
     if (v === SERVER_TIMESTAMP) return new Date().toISOString();
     if (v instanceof Date) return v.toISOString();
-    if (v instanceof fs.Timestamp) return v.toDate().toISOString();
-    if (v instanceof fs.FieldValue) throw new Error("هذه العملية (increment/arrayUnion…) غير مدعومة على بيانات MySQL بعد.");
+    if (v && typeof v === "object" && typeof (v as { toDate?: unknown }).toDate === "function") {
+      return (v as { toDate(): Date }).toDate().toISOString(); // Timestamp قديم محفوظ في الذاكرة
+    }
     if (Array.isArray(v)) return v.map((x, i) => walk(x, `${path}.${i}`, false));
     if (isPlainObject(v)) {
       const out: Record<string, unknown> = {};
@@ -390,10 +367,10 @@ function toStoreData(data: Record<string, unknown>, nested: boolean): [Record<st
       }
       return out;
     }
-    if (v !== null && typeof v === "object") throw new Error("نوع قيمة غير مدعوم على بيانات MySQL.");
+    if (v !== null && typeof v === "object") throw new Error("نوع قيمة غير مدعوم.");
     return v;
   };
-  const out: Record<string, unknown> = {};
+  const out: DocumentData = {};
   for (const [k, v] of Object.entries(data)) {
     const r = walk(v, k, true);
     if (r !== undefined) out[k] = r;
@@ -402,26 +379,25 @@ function toStoreData(data: Record<string, unknown>, nested: boolean): [Record<st
 }
 
 type WriteOp =
-  | { op: "set"; path: string; data: Record<string, unknown>; merge?: boolean; deletes?: string[] }
-  | { op: "create"; path: string; data: Record<string, unknown> }
-  | { op: "update"; path: string; data: Record<string, unknown>; deletes: string[] }
+  | { op: "set"; path: string; data: DocumentData; merge?: boolean; deletes?: string[] }
+  | { op: "create"; path: string; data: DocumentData }
+  | { op: "update"; path: string; data: DocumentData; deletes: string[] }
   | { op: "delete"; path: string };
 
-function setOp(ref: MzDocRef, data: any, options?: fs.SetOptions): WriteOp {
-  if (options && "mergeFields" in options) throw new Error("mergeFields غير مدعوم على بيانات MySQL.");
-  const merge = !!(options && "merge" in options && options.merge);
+function setOp(ref: DocumentReference, data: DocumentData, options?: SetOptions): WriteOp {
+  const merge = !!options?.merge;
   const [d, deletes] = toStoreData(data, merge);
   return { op: "set", path: ref.path, data: d, merge, deletes };
 }
 
 /** updateDoc(ref, {a: 1}) أو updateDoc(ref, "a", 1, "b", 2) */
-function updateOp(ref: MzDocRef, args: any[]): WriteOp {
-  let data: Record<string, unknown>;
+function updateOp(ref: DocumentReference, args: unknown[]): WriteOp {
+  let data: DocumentData;
   if (typeof args[0] === "string") {
     data = {};
-    for (let i = 0; i < args.length; i += 2) data[args[i]] = args[i + 1];
+    for (let i = 0; i < args.length; i += 2) data[args[i] as string] = args[i + 1];
   } else {
-    data = args[0];
+    data = args[0] as DocumentData;
   }
   const [d, deletes] = toStoreData(data, false);
   return { op: "update", path: ref.path, data: d, deletes };
@@ -429,54 +405,39 @@ function updateOp(ref: MzDocRef, args: any[]): WriteOp {
 
 const writeOps = (ops: WriteOp[]) => call<{ ok: true }>("data/write", { ops });
 
-export const setDoc = (async (ref: any, data: any, options?: fs.SetOptions) => {
-  if (mzKind(ref) !== "document") return options ? fs.setDoc(ref, toFirestoreValue(data) as any, options) : fs.setDoc(ref, toFirestoreValue(data) as any);
+export async function setDoc(ref: DocumentReference, data: DocumentData, options?: SetOptions): Promise<void> {
   await writeOps([setOp(ref, data, options)]);
-}) as typeof fs.setDoc;
+}
 
-export const updateDoc = (async (ref: any, ...args: any[]) => {
-  if (mzKind(ref) !== "document") return (fs.updateDoc as any)(ref, ...args.map(toFirestoreValue));
+export async function updateDoc(ref: DocumentReference, ...args: unknown[]): Promise<void> {
   await writeOps([updateOp(ref, args)]);
-}) as typeof fs.updateDoc;
+}
 
-export const deleteDoc = (async (ref: any) => {
-  if (mzKind(ref) !== "document") return fs.deleteDoc(ref);
+export async function deleteDoc(ref: DocumentReference): Promise<void> {
   await writeOps([{ op: "delete", path: ref.path }]);
-}) as typeof fs.deleteDoc;
+}
 
-export const addDoc = (async (coll: any, data: any) => {
-  if (mzKind(coll) !== "collection") return fs.addDoc(coll, toFirestoreValue(data) as any);
+export async function addDoc(coll: CollectionReference, data: DocumentData): Promise<DocumentReference> {
   const ref = makeDocRef(coll.firestore, `${coll.path}/${autoId()}`);
   await writeOps([{ op: "create", path: ref.path, data: toStoreData(data, false)[0] }]);
   return ref;
-}) as unknown as typeof fs.addDoc;
+}
 
-/** writeBatch: عمليات MySQL في دفعة ذرّية، وعمليات Firestore في دفعة Firestore */
-export const writeBatch = ((db: fs.Firestore) => {
-  const ours: WriteOp[] = [];
-  let real: fs.WriteBatch | null = null;
-  const realBatch = () => (real ??= fs.writeBatch(db));
-  const batch = {
-    set(ref: any, data: any, options?: fs.SetOptions) {
-      if (mzKind(ref) === "document") ours.push(setOp(ref, data, options));
-      else if (options) realBatch().set(ref, toFirestoreValue(data) as any, options);
-      else realBatch().set(ref, toFirestoreValue(data) as any);
-      return batch;
-    },
-    update(ref: any, ...args: any[]) {
-      if (mzKind(ref) === "document") ours.push(updateOp(ref, args));
-      else (realBatch().update as any)(ref, ...args.map(toFirestoreValue));
-      return batch;
-    },
-    delete(ref: any) {
-      if (mzKind(ref) === "document") ours.push({ op: "delete", path: ref.path });
-      else realBatch().delete(ref);
-      return batch;
-    },
-    async commit() {
-      if (ours.length) await writeOps(ours);
-      if (real) await real.commit();
-    },
+export interface WriteBatch {
+  set(ref: DocumentReference, data: DocumentData, options?: SetOptions): WriteBatch;
+  update(ref: DocumentReference, ...args: unknown[]): WriteBatch;
+  delete(ref: DocumentReference): WriteBatch;
+  commit(): Promise<void>;
+}
+
+/** دفعة ذرّية: كل العمليات تنجح أو ولا وحدة */
+export function writeBatch(_db: Firestore): WriteBatch {
+  const ops: WriteOp[] = [];
+  const batch: WriteBatch = {
+    set(ref, data, options) { ops.push(setOp(ref, data, options)); return batch; },
+    update(ref, ...args) { ops.push(updateOp(ref, args)); return batch; },
+    delete(ref) { ops.push({ op: "delete", path: ref.path }); return batch; },
+    async commit() { if (ops.length) await writeOps(ops); },
   };
   return batch;
-}) as unknown as typeof fs.writeBatch;
+}

@@ -1,12 +1,12 @@
 <?php
 /**
  * أساس الـ API: الإعداد، اتصال MySQL، قراءة الطلب، والردود.
- * respond() و fail() وأدوات HTTP/JWT تأتي من _firebase.php المشترك مع signup.php.
+ * respond() و fail() وأدوات HTTP تأتي من _common.php المشترك مع trial-cleanup.php.
  */
 
 declare(strict_types=1);
 
-require_once dirname(__DIR__, 2) . '/_firebase.php';
+require_once dirname(__DIR__, 2) . '/_common.php';
 
 /**
  * db-config.php: على الاستضافة في جذر الموقع (محمي بـ .htaccess). محلياً في جذر المشروع

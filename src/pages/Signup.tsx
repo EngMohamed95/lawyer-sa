@@ -1,11 +1,8 @@
 /**
  * التسجيل الذاتي للمكاتب — فترة تجريبية مجانية.
  *
- * الخطوة 1: بيانات المكتب والمالك وحجم الفريق + كلمة المرور → يُنشأ مستخدم Firebase Auth
- *           ويُرسل رمز التأكيد للبريد (public/signup.php).
- * الخطوة 2: رمز OTP من 6 أرقام → الخادم يؤكد البريد وينشئ حساب المكتب، ثم ننتقل لإعداد المكتب.
- *
- * ?resume=1 — مستخدم أنشأ حسابه ولم يؤكد بريده (يأتي من صفحة الدخول): نعيد إرسال الرمز.
+ * الخطوة 1: بيانات المكتب والمالك وحجم الفريق + كلمة المرور ← /api/v1/signup/start يرسل رمز التأكيد.
+ * الخطوة 2: رمز OTP من 6 أرقام ← /api/v1/signup/verify ينشئ حساب المكتب ويفتح الجلسة.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -15,12 +12,6 @@ import {
   Building2, User, Mail, Phone, Lock, Eye, EyeOff, Users, Briefcase, GraduationCap,
   UserCog, ShieldCheck, Loader2, ArrowRight, MailCheck, Scale,
 } from "lucide-react";
-import {
-  createUserWithEmailAndPassword, onAuthStateChanged, signInWithEmailAndPassword, signOut,
-  type User as FirebaseUser,
-} from "firebase/auth";
-import { doc, getDoc } from "@/lib/store";
-import { auth, db } from "../lib/firebase";
 import { startSession } from "../lib/session";
 
 type Country = "SA" | "EG" | "OTHER";
@@ -60,13 +51,13 @@ class SignupApiError extends Error {
   }
 }
 
-async function callSignupApi(user: FirebaseUser, body: Record<string, unknown>) {
-  const token = await user.getIdToken();
+async function callSignupApi(action: "start" | "resend" | "verify", body: Record<string, unknown>) {
   let res: Response;
   try {
-    res = await fetch("/signup.php", {
+    res = await fetch(`/api/v1/signup/${action}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
   } catch {
@@ -152,12 +143,13 @@ const inputClass =
 export default function Signup() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const resume = searchParams.get("resume") === "1";
+  // ?resume=1 من صفحة الدخول (حساب قديم بلا مكتب): نفس النموذج — التأكيد بالبريد يثبت الملكية
+  void searchParams;
 
-  const [step, setStep] = useState<"loading" | "form" | "otp">(resume ? "loading" : "form");
+  const [step, setStep] = useState<"loading" | "form" | "otp">("form");
   const [form, setForm] = useState<SignupForm>(EMPTY_FORM);
-  /** مستخدم Auth موجود (استكمال تسجيل) — لا نطلب كلمة مرور ولا ننشئ حساباً جديداً */
-  const [existingUser, setExistingUser] = useState<FirebaseUser | null>(null);
+  /** كان لاستكمال حساب Firebase؛ الآن كل تسجيل يطلب كلمة مرور ويُنشئ الحساب بعد تأكيد البريد */
+  const existingUser = false;
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -177,69 +169,22 @@ export default function Signup() {
     if (step === "otp") codeRef.current?.focus();
   }, [step]);
 
-  // استكمال تسجيل لم يُؤكَّد: نعيد إرسال الرمز ببيانات المكتب المحفوظة على الخادم
-  useEffect(() => {
-    if (!resume) return;
-    const unsub = onAuthStateChanged(auth, async (u) => {
-      unsub();
-      if (!u) {
-        setStep("form");
-        return;
-      }
-      try {
-        const profile = await getDoc(doc(db, "users", u.uid));
-        if (profile.exists()) {
-          navigate("/login", { replace: true });
-          return;
-        }
-      } catch {
-        /* قبل التأكيد لا مستند — والقراءة قد تُرفض؛ نكمل */
-      }
-      // نعرض النموذج دائماً ليؤكد صاحب البريد بيانات مكتبه بنفسه — لا نعيد الإرسال
-      // ببيانات محفوظة قد يكون أدخلها غيره قبل أن يستعيد كلمة المرور
-      setExistingUser(u);
-      setForm((f) => ({ ...f, email: u.email || "" }));
-      setStep("form");
-    });
-    return unsub;
-  }, [resume, navigate]);
-
   const setField = <K extends keyof SignupForm>(key: K, value: SignupForm[K]) => setForm((f) => ({ ...f, [key]: value }));
+  const email = () => form.email.trim().toLowerCase();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    const problem = validate(form, !existingUser);
+    const problem = validate(form, true);
     if (problem) {
       setError(problem);
       return;
     }
     setBusy(true);
     try {
-      let user = existingUser;
-      const email = form.email.trim().toLowerCase();
-      if (!user) {
-        try {
-          user = (await createUserWithEmailAndPassword(auth, email, form.password)).user;
-        } catch (err: any) {
-          if (err?.code !== "auth/email-already-in-use") throw err;
-          // ربما بدأ التسجيل سابقاً ولم يكمله — ندخله بنفس كلمة المرور ونكمل
-          try {
-            user = (await signInWithEmailAndPassword(auth, email, form.password)).user;
-          } catch {
-            throw new Error("هذا البريد مسجّل مسبقاً. سجّل الدخول، أو استخدم «نسيت كلمة المرور؟» من صفحة الدخول.");
-          }
-          const profile = await getDoc(doc(db, "users", user.uid)).catch(() => null);
-          if (profile?.exists()) {
-            await signOut(auth);
-            throw new Error("هذا البريد لديه حساب مفعّل بالفعل. سجّل الدخول من صفحة الدخول.");
-          }
-        }
-        setExistingUser(user);
-      }
-
-      const data = await callSignupApi(user, {
-        action: "start",
+      const data = await callSignupApi("start", {
+        email: email(),
+        password: form.password,
         profile: {
           officeName: form.officeName.trim(),
           name: form.name.trim(),
@@ -253,21 +198,17 @@ export default function Signup() {
           },
         },
       });
-      setSentTo(data.email || email);
+      setSentTo(data.email || email());
       setCooldown(data.resendIn || 60);
       setCode("");
       setStep("otp");
     } catch (err: any) {
       if (err?.code === "COOLDOWN") {
         setCooldown(err.retryAfter || 60);
-        setSentTo(form.email.trim().toLowerCase());
+        setSentTo(email());
         setStep("otp");
-      } else if (err?.code === "auth/weak-password") {
-        setError("كلمة المرور ضعيفة. استخدم 8 أحرف على الأقل مع أرقام.");
-      } else if (err?.code === "auth/invalid-email") {
-        setError("البريد الإلكتروني غير صالح.");
-      } else if (err?.code === "auth/network-request-failed") {
-        setError("تعذّر الاتصال. تحقق من الإنترنت ثم أعد المحاولة.");
+      } else if (err?.code === "ALREADY_ACTIVE") {
+        setError("هذا البريد لديه حساب مفعّل بالفعل. سجّل الدخول، أو استخدم «نسيت كلمة المرور؟» من صفحة الدخول.");
       } else {
         setError(err?.message || "تعذّر إنشاء الحساب. أعد المحاولة.");
       }
@@ -276,25 +217,8 @@ export default function Signup() {
     }
   };
 
-  /**
-   * جلسة الدخول في MySQL بعد اكتمال التسجيل. لو كلمة المرور في النموذج (تسجيل جديد) ندخل
-   * بها عبر الـ API — فينتقل الحساب لـ MySQL من أول يوم. في وضع الاستكمال (resume) جاء
-   * المستخدم من صفحة الدخول وجلسته في MySQL موجودة أصلاً.
-   */
-  const enterServerSession = async (fallback: FirebaseUser): Promise<FirebaseUser> => {
-    if (!form.password) return fallback;
-    const { login } = await import("../lib/authApi");
-    return (await login(form.email.trim().toLowerCase(), form.password, true)).firebaseUser;
-  };
-
   const handleVerify = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    const user = existingUser || auth.currentUser;
-    if (!user) {
-      setError("انتهت الجلسة. ابدأ التسجيل من جديد.");
-      setStep("form");
-      return;
-    }
     if (!/^\d{6}$/.test(code)) {
       setError("أدخل الرمز المكوّن من 6 أرقام.");
       return;
@@ -302,19 +226,15 @@ export default function Signup() {
     setBusy(true);
     setError("");
     try {
-      await callSignupApi(user, { action: "verify", code });
-      // التوكن الجديد يحمل email_verified=true
-      await user.getIdToken(true);
-      await user.reload();
-      const destination = await startSession(await enterServerSession(auth.currentUser || user), { rememberMe: true });
+      // السيرفر ينشئ حساب المكتب ويفتح الجلسة (كوكي) — بعدها نجهّز الجلسة في الواجهة
+      const data = await callSignupApi("verify", { email: email(), code });
+      const { toSessionUser } = await import("../lib/authApi");
+      const destination = await startSession(toSessionUser(data.user), { rememberMe: true, typedEmail: email() });
       navigate(destination, { replace: true });
     } catch (err: any) {
       if (err?.code === "ALREADY_ACTIVE") {
-        // الحساب أُنشئ (طلب سابق نجح) — نبدأ الجلسة مباشرة
-        const destination = await enterServerSession(user)
-          .then((u) => startSession(u, { rememberMe: true }))
-          .catch(() => "/login");
-        navigate(destination, { replace: true });
+        // الحساب أُنشئ (طلب سابق نجح) — يدخل من صفحة الدخول
+        navigate("/login", { replace: true });
         return;
       }
       setError(err?.message || "تعذّر التحقق من الرمز.");
@@ -325,12 +245,11 @@ export default function Signup() {
   };
 
   const handleResend = async () => {
-    const user = existingUser || auth.currentUser;
-    if (!user || cooldown > 0) return;
+    if (cooldown > 0) return;
     setBusy(true);
     setError("");
     try {
-      const data = await callSignupApi(user, { action: "resend" });
+      const data = await callSignupApi("resend", { email: email() });
       setCooldown(data.resendIn || 60);
       setCode("");
     } catch (err: any) {
@@ -342,20 +261,12 @@ export default function Signup() {
     }
   };
 
-  /** بريد خاطئ: نحذف الحساب غير المؤكد ونعود للنموذج */
+  /** بريد خاطئ: نرجع للنموذج (الطلب غير المؤكد ينتهي لحاله) */
   const handleChangeEmail = async () => {
-    const user = existingUser || auth.currentUser;
-    setBusy(true);
-    try {
-      if (user) await user.delete().catch(() => signOut(auth));
-    } finally {
-      setExistingUser(null);
-      setCode("");
-      setError("");
-      setForm((f) => ({ ...f, password: "", confirm: "" }));
-      setStep("form");
-      setBusy(false);
-    }
+    setCode("");
+    setError("");
+    setForm((f) => ({ ...f, password: "", confirm: "" }));
+    setStep("form");
   };
 
   return (

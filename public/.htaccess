@@ -1,5 +1,5 @@
 # ملفات الأسرار والسكربتات الداخلية — لا تُقدَّم للمتصفح أبداً (ai-proxy.php يقرأ ai-config.php من القرص، وtrial-cleanup.php يعمل من Cron)
-<FilesMatch "^(ai-config\.php|mail-config\.php|db-config\.php|serviceAccountKey\.json|\.env|_firebase\.php|_mailer\.php|trial-cleanup\.php)$">
+<FilesMatch "^(ai-config\.php|mail-config\.php|db-config\.php|serviceAccountKey\.json|\.env|_common\.php|_firebase\.php|_mailer\.php|trial-cleanup\.php)$">
   Require all denied
 </FilesMatch>
 

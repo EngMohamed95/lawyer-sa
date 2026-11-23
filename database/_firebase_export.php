@@ -1,118 +1,17 @@
 <?php
 /**
- * أدوات Firebase المشتركة بين signup.php و trial-cleanup.php:
- * HTTP · التحقق من توكن المستخدم · توكن حساب الخدمة · Firestore عبر REST.
- * لا يُنفَّذ شيء عند تضمينه — دوال فقط. .htaccess يمنع طلبه من المتصفح.
+ * قراءة Firebase (حساب الخدمة + Firestore REST) لسكربتات النقل فقط: migrate_users.php و migrate_store.php.
+ * تشتغل من جهاز المطوّر مرة وحدة — ما تنرفع للسيرفر. تحتاج serviceAccountKey.json في جذر المشروع.
  */
 
-const CERTS_URL = 'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com';
-
-/* ────────────────────────── أدوات عامة ────────────────────────── */
-
-function respond(int $status, array $data): void {
-    http_response_code($status);
-    echo json_encode($data, JSON_UNESCAPED_UNICODE);
-    // من سطر الأوامر (Cron): الخطأ يُرجع رمز خروج غير صفري فيُسجَّل فشلاً
-    exit(PHP_SAPI === 'cli' && $status >= 400 ? 1 : 0);
-}
-
-/** $code يميّز الحالة للواجهة — الرسالة للعرض كما هي */
-function fail(int $status, string $message, string $code = 'ERROR', array $extra = []): void {
-    respond($status, ['error' => $message, 'code' => $code] + $extra);
-}
-
-function b64url_decode(string $s): string {
-    $decoded = base64_decode(strtr($s, '-_', '+/') . str_repeat('=', (4 - strlen($s) % 4) % 4), true);
-    return $decoded === false ? '' : $decoded;
-}
-
-function b64url_encode(string $s): string {
-    return rtrim(strtr(base64_encode($s), '+/', '-_'), '=');
-}
-
-/** طول النص بالحروف لا بالبايتات — لا نعتمد على mbstring */
-function ulen(string $s): int {
-    $n = preg_match_all('/./us', $s);
-    return $n === false ? strlen($s) : $n;
-}
-
-/** طلب HTTP يرجع [الحالة, الجسم] */
-function http_request(string $method, string $url, array $headers = [], ?string $body = null): array {
-    if (function_exists('curl_init')) {
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_CUSTOMREQUEST => $method,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_TIMEOUT => 25,
-            CURLOPT_CONNECTTIMEOUT => 10,
-        ]);
-        if ($body !== null) curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
-        $resp = curl_exec($ch);
-        $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-        curl_close($ch);
-        return [$resp === false ? 0 : $status, $resp === false ? '' : (string) $resp];
-    }
-    $ctx = stream_context_create(['http' => [
-        'method' => $method, 'header' => implode("\r\n", $headers), 'content' => $body ?? '',
-        'timeout' => 25, 'ignore_errors' => true,
-    ]]);
-    $resp = @file_get_contents($url, false, $ctx);
-    $status = 0;
-    foreach ($http_response_header ?? [] as $line) {
-        if (preg_match('#^HTTP/\S+\s+(\d{3})#', $line, $m)) $status = (int) $m[1];
-    }
-    return [$status, $resp === false ? '' : $resp];
-}
-
-/* ────────────────────────── توكن المستخدم ────────────────────────── */
-
-function google_certs(): array {
-    $cacheFile = sys_get_temp_dir() . '/lawyer_sa_firebase_certs.json';
-    if (is_file($cacheFile)) {
-        $cached = json_decode((string) @file_get_contents($cacheFile), true);
-        if (is_array($cached) && ($cached['expires'] ?? 0) > time() && is_array($cached['certs'] ?? null)) {
-            return $cached['certs'];
-        }
-    }
-    [$status, $body] = http_request('GET', CERTS_URL);
-    $certs = json_decode($body, true);
-    if ($status !== 200 || !is_array($certs) || !$certs) fail(503, 'تعذّر التحقق من الجلسة حالياً. أعد المحاولة بعد قليل.', 'UNAVAILABLE');
-    @file_put_contents($cacheFile, json_encode(['expires' => time() + 3600, 'certs' => $certs]), LOCK_EX);
-    return $certs;
-}
-
-/** يتحقق من توكن Firebase ويرجع محتواه (sub · email ...) */
-function verify_firebase_token(string $token, string $projectId): array {
-    $parts = explode('.', $token);
-    if (count($parts) !== 3) fail(401, 'انتهت الجلسة. ابدأ التسجيل من جديد.', 'UNAUTHENTICATED');
-    [$h64, $p64, $s64] = $parts;
-    $header = json_decode(b64url_decode($h64), true);
-    $payload = json_decode(b64url_decode($p64), true);
-    if (!is_array($header) || !is_array($payload) || ($header['alg'] ?? '') !== 'RS256' || empty($header['kid'])) {
-        fail(401, 'انتهت الجلسة. ابدأ التسجيل من جديد.', 'UNAUTHENTICATED');
-    }
-    $cert = google_certs()[$header['kid']] ?? null;
-    if (!$cert || openssl_verify("$h64.$p64", b64url_decode($s64), $cert, OPENSSL_ALGO_SHA256) !== 1) {
-        fail(401, 'انتهت الجلسة. ابدأ التسجيل من جديد.', 'UNAUTHENTICATED');
-    }
-    $now = time();
-    $skew = 300;
-    $valid = ($payload['aud'] ?? '') === $projectId
-        && ($payload['iss'] ?? '') === "https://securetoken.google.com/$projectId"
-        && is_string($payload['sub'] ?? null) && $payload['sub'] !== '' && strlen($payload['sub']) <= 128
-        && (int) ($payload['exp'] ?? 0) > $now - 30
-        && (int) ($payload['iat'] ?? PHP_INT_MAX) <= $now + $skew;
-    if (!$valid) fail(401, 'انتهت الجلسة. ابدأ التسجيل من جديد.', 'UNAUTHENTICATED');
-    return $payload;
-}
+require_once dirname(__DIR__) . "/public/_common.php";
 
 /* ────────────────────────── حساب الخدمة ────────────────────────── */
 
 function service_account(): array {
     // الاستضافة: بجوار الملف (محمي بـ .htaccess). التطوير: جذر المشروع خارج public/
     $file = '';
-    foreach ([__DIR__ . '/serviceAccountKey.json', dirname(__DIR__) . '/serviceAccountKey.json'] as $candidate) {
+    foreach ([dirname(__DIR__) . '/serviceAccountKey.json', dirname(__DIR__) . '/public/serviceAccountKey.json'] as $candidate) {
         if (is_file($candidate)) { $file = $candidate; break; }
     }
     $sa = $file !== '' ? json_decode((string) file_get_contents($file), true) : null;

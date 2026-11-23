@@ -19,7 +19,7 @@ $configPath = $argv[1] ?? '';
 $dryRun = in_array('--dry-run', $argv, true);
 if (!is_file($configPath)) { fwrite(STDERR, "استخدم: php database/migrate_users.php <db-config.php> [--dry-run]\n"); exit(2); }
 
-require_once dirname(__DIR__) . '/public/_firebase.php';
+require_once __DIR__ . '/_firebase_export.php';
 $config = require $configPath;
 $project = (string) ($config['firebase_project_id'] ?? 'lawyer-sa');
 

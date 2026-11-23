@@ -35,6 +35,7 @@ $seed = function (string $id, string $email, string $role, ?string $lawyerId, ar
     $profile = ['name' => $id, 'role' => $role, 'status' => $status] + ($lawyerId !== null ? ['lawyerId' => $lawyerId] : []) + $data;
     $pdo->prepare('INSERT INTO users (id, email, password_hash, name, role, lawyer_id, status, data, firebase_pw_rotated_at) VALUES (?,?,?,?,?,?,?,?,NOW())')
         ->execute([$id, $email, $pw, $id, $role, $lawyerId, $status, json_encode($profile)]);
+    $pdo->prepare("INSERT INTO docs (collection, parent_path, id, data) VALUES ('users', '', ?, ?)")->execute([$id, json_encode($profile)]);
 };
 $seed('ownerA', 'a@test.local', 'LAWYER', null);
 $seed('ownerB', 'b@test.local', 'LAWYER', null);
@@ -46,6 +47,8 @@ $seed('memberD', 'md@test.local', 'SECRETARY', 'ownerD');
 $seed('admin', 'admin@test.local', 'SUPER_ADMIN', 'ALL');
 // حساب ما انتقل بعد: صف بلا كلمة مرور، وكلمة مروره في «Firebase» الوهمي
 $pdo->prepare("INSERT INTO users (id, email, name, role, lawyer_id, data) VALUES ('legacy1', 'legacy@test.local', 'legacy', 'TRAINEE', 'ownerA', ?)")
+    ->execute([json_encode(['name' => 'legacy', 'role' => 'TRAINEE', 'lawyerId' => 'ownerA'])]);
+$pdo->prepare("INSERT INTO docs (collection, parent_path, id, data) VALUES ('users', '', 'legacy1', ?)")
     ->execute([json_encode(['name' => 'legacy', 'role' => 'TRAINEE', 'lawyerId' => 'ownerA'])]);
 // حساب Firebase بلا ملف شخصي (تسجيل ذاتي ما اكتمل)
 $pdo->prepare("INSERT INTO users (id, email) VALUES ('pending1', 'pending@test.local')")->execute();
@@ -105,15 +108,15 @@ check('كلمة مرور غلط ← 401', $s === 401 && ($r['code'] ?? '') === '
 [$s, $r] = login('nobody@test.local', 'x');
 check('بريد غير موجود ← 401 بنفس الرسالة', $s === 401 && ($r['code'] ?? '') === 'INVALID_CREDENTIALS', [$s, $r]);
 [$s, $r] = login('A@Test.Local', 'A');
-check('دخول المالك (البريد بأي حالة أحرف) ← 200 + توكن Firebase', $s === 200 && ($r['firebaseToken'] ?? '') === 'test-token:ownerA' && ($r['user']['role'] ?? '') === 'LAWYER', [$s, $r]);
+check('دخول المالك (البريد بأي حالة أحرف) ← 200 بدون أي توكن Firebase', $s === 200 && !isset($r['firebaseToken']) && ($r['user']['role'] ?? '') === 'LAWYER', [$s, $r]);
 check('الكوكي HttpOnly محفوظ', !empty($cookies['A']['mz_session']));
 check('القاعدة تخزن hash التوكن فقط', $col('SELECT COUNT(*) FROM auth_sessions WHERE token_hash = ?', [hash('sha256', $cookies['A']['mz_session'] ?? '')]) == 1);
 [$s, $r] = call('GET', 'auth/me', null, 'A');
 check('/auth/me بالجلسة ← المستخدم', $s === 200 && ($r['user']['id'] ?? '') === 'ownerA', [$s, $r]);
 [$s, $r] = call('GET', 'auth/me', null, 'nobody');
 check('/auth/me بدون جلسة ← 401', $s === 401, [$s, $r]);
-[$s, $r] = call('POST', 'auth/firebase-token', [], 'A');
-check('توكن Firebase جديد من الجلسة', $s === 200 && ($r['firebaseToken'] ?? '') === 'test-token:ownerA', [$s, $r]);
+[$s] = call('POST', 'auth/firebase-token', [], 'A');
+check('مسار توكن Firebase انشال ← 404', $s === 404, $s);
 
 [$s, $r] = login('xa@test.local', 'X');
 check('عضو معطّل ← 403', $s === 403 && ($r['code'] ?? '') === 'ACCOUNT_DISABLED', [$s, $r]);

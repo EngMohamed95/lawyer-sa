@@ -110,6 +110,23 @@ CREATE TABLE IF NOT EXISTS docs (
   KEY ix_docs_client (collection, lawyer_id, client_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- التسجيل الذاتي قبل تأكيد البريد: الرمز (HMAC فقط) وبيانات المكتب وكلمة المرور (bcrypt).
+-- يُحذف الصف عند التأكيد؛ الصفوف القديمة تنظف نفسها (أقدم من يوم) مع كل طلب.
+CREATE TABLE IF NOT EXISTS signup_pending (
+  email        VARCHAR(191) NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  profile      JSON         NOT NULL,
+  code_hash    CHAR(64)     NOT NULL,
+  expires_at   DATETIME     NOT NULL,
+  attempts     INT          NOT NULL DEFAULT 0,
+  last_sent_at DATETIME     NOT NULL,
+  sent_count   INT          NOT NULL DEFAULT 1,
+  window_start DATETIME     NOT NULL,
+  created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (email),
+  KEY ix_signup_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- تخزين مؤقت صغير (مثل توكن وصول حساب الخدمة) — بدل ملفات مؤقتة على استضافة مشتركة.
 CREATE TABLE IF NOT EXISTS app_cache (
   k          VARCHAR(128) NOT NULL,

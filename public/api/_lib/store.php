@@ -54,6 +54,8 @@ const STORE_ROOTS = [
     'platform_settings' => ['read' => 'member', 'write' => 'super', 'delete' => 'super'],
     'subscriptionPlans' => ['read' => 'public', 'write' => 'super', 'delete' => 'super'],
     'subscriptionRequests' => ['read' => 'super', 'write' => 'publicCreate', 'delete' => 'super'],
+    // الدفعة 3 — ملفات المستخدمين (القراءة: فريق مكتبي + ملفي + مالك مكتبي؛ الكتابة في store_rules.php)
+    'users' => ['read' => 'users', 'write' => 'custom', 'delete' => 'custom'],
 ];
 
 function store_policy(string $root): array {
@@ -353,6 +355,10 @@ function store_scope(array $u, ?array $p, ?string $group, array &$params): strin
             return $base;
         case 'super':
             store_forbidden();
+        case 'users':
+            // فريق مكتبي، وملفي، وملف مالك المكتب (ما يحمل lawyerId)
+            array_push($params, tenant_of($u), tenant_of($u), (string) $u['id']);
+            return "$base AND (lawyer_id = ? OR id = ? OR id = ?)";
         case 'owner':
             // صاحب السجل فقط (ولو ownerTenant: داخل مكتبه الحالي)
             $params[] = (string) $u['id'];
@@ -375,6 +381,8 @@ function store_can_read_root(array $u, array $p, array $row): bool {
     switch ($pol['read']) {
         case 'member':
             return true;
+        case 'users':
+            return $row['lawyer_id'] === tenant_of($u) || $p['id'] === tenant_of($u) || $p['id'] === (string) $u['id'];
         case 'super':
             return $pol['tenantPrefix'] && str_starts_with($p['id'], tenant_of($u) . '_');
         case 'owner':
@@ -423,6 +431,14 @@ function store_get(array $u, string $path): array {
     $p = store_parse_path($path, true);
     $pol = store_policy($p['root']);
     $public = !$p['is_child'] && $pol['read'] === 'public';
+    // أي مستخدم داخل (حتى عميل البوابة اللي مو عضو فريق) يقرأ ملفه وملف مكتبه — مثل قاعدة users/{id}
+    $ownProfile = $p['root'] === 'users' && !$p['is_child'] && !store_is_anon($u)
+        && ($p['id'] === (string) $u['id'] || $p['id'] === tenant_of($u));
+    if ($ownProfile) {
+        $row = store_row('users', '', (string) $p['id']);
+        return $row === null ? ['exists' => false, 'id' => $p['id'], 'path' => $path]
+            : ['exists' => true, 'id' => $p['id'], 'path' => $path, 'data' => $row['data']];
+    }
     if (!$public) store_require_member($u);
     if ($p['is_child']) store_require_parent($u, $p);
     $row = store_row($p['collection'], $p['parent_path'], (string) $p['id']);
@@ -526,6 +542,10 @@ function store_apply(array $u, array $op): void {
                     'hard' => can_hard_delete($u, $existing['lawyer_id']),
                     'super' => false,
                     'ownerOrSuper' => store_is_owner($u, $pol, $existing['data']),
+                    'custom' => (function () use ($u, $p, $existing) {
+                        require_once __DIR__ . '/store_rules.php';
+                        return store_custom_delete($p['root'], $u, $p, $existing);
+                    })(),
                     default => can_delete($u, $existing['lawyer_id']),
                 };
                 if (!$ok || ($pol['assigned'] && !store_case_assigned($u, $existing['data']))) store_forbidden();
@@ -535,6 +555,11 @@ function store_apply(array $u, array $op): void {
         // المستندات تحته تنحذف معه — وإلا تظل يتيمة ويقدر مكتب ثاني «يتبناها» بإنشاء سجل بنفس المعرّف
         $self = store_path_of($p);
         q('DELETE FROM docs WHERE parent_path = ? OR parent_path LIKE ?', [$self, store_like_prefix($self)]);
+        // حذف ملف مستخدم = حسابه يتعطل وجلساته تنتهي (بيانات الدخول تظل لسجل التدقيق)
+        if ($p['root'] === 'users' && !$p['is_child']) {
+            q("UPDATE users SET role = 'PENDING', status = 'DISABLED', deleted_at = COALESCE(deleted_at, ?), data = NULL WHERE id = ?", [utc_now(), $p['id']]);
+            q('DELETE FROM auth_sessions WHERE user_id = ?', [$p['id']]);
+        }
         return;
     }
 
@@ -609,6 +634,11 @@ function store_apply(array $u, array $op): void {
     }
 
     store_put($p, $existing !== null, $new);
+    // ملف المستخدم: جدول users (الدور، المكتب، الحالة — اللي تعتمد عليه الصلاحيات) يتحدث فوراً
+    if ($p['root'] === 'users' && !$p['is_child']) {
+        require_once __DIR__ . '/bridge.php';
+        bridge_sync_profile((string) $p['id'], json_decode(json_encode($new), true));
+    }
 }
 
 /** يكتب المستند (إدراج أو تحديث) بعد التحقق من الحجم */

@@ -5,9 +5,12 @@
  * تملأ مفاتيح localStorage التي يقرؤها باقي التطبيق، وترجع الصفحة التي يُوجَّه إليها.
  */
 
-import type { User } from "firebase/auth";
+import type { SessionUser } from "./authApi";
 import { doc, getDoc, updateDoc } from "@/lib/store";
-import { auth, db } from "./firebase";
+import { db } from "./firebase";
+
+/** ينهي جلسة السيرفر (حساب مرفوض بعد التحقق من كلمة المرور) */
+const endServerSession = () => import("./authApi").then(({ logout }) => logout());
 import { getThemePref, setThemePref } from "./theme";
 
 const STEP_TIMEOUT_MS = 20_000;
@@ -113,7 +116,7 @@ export interface StartSessionOptions {
 }
 
 /** يرجع مسار التوجيه: /app أو /onboarding أو /subscription-expired */
-export async function startSession(firebaseUser: User, opts: StartSessionOptions): Promise<string> {
+export async function startSession(firebaseUser: SessionUser, opts: StartSessionOptions): Promise<string> {
   const userDoc = await withTimeout(
     getDoc(doc(db, "users", firebaseUser.uid)),
     "تم التحقق من بيانات الدخول، لكن تعذر تحميل بيانات الحساب. حاول مرة أخرى.",
@@ -156,19 +159,19 @@ export async function startSession(firebaseUser: User, opts: StartSessionOptions
 
   // عضو فريق حذفه مدير المكتب، أو حساب معطَّل بعينه — لا يدخل
   if (role !== "SUPER_ADMIN" && role !== "LAWYER" && (userData?.deletedAt || userData?.status === "DISABLED" || userData?.status === "SUSPENDED")) {
-    await auth.signOut();
+    await endServerSession();
     throw new Error("هذا الحساب غير مفعّل. تواصل مع مدير المكتب.");
   }
 
   // مدير المنصة المعطَّل من «فريق مديري المنصة» لا يدخل
   if (role === "SUPER_ADMIN" && userData?.status === "DISABLED") {
-    await auth.signOut();
+    await endServerSession();
     throw new Error("هذا الحساب الإداري معطّل. تواصل مع المدير العام للمنصة.");
   }
 
   // المكتب الذي عطّله مدير المنصة (status: DISABLED) لا يدخل — لا مالكه ولا فريقه
   if (role !== "SUPER_ADMIN" && (officeData?.status === "DISABLED" || officeData?.status === "SUSPENDED")) {
-    await auth.signOut();
+    await endServerSession();
     throw new Error("هذا الحساب موقوف من إدارة المنصة. تواصل مع الدعم الفني لإعادة تفعيله.");
   }
 
@@ -234,7 +237,6 @@ export async function logout(): Promise<void> {
   const theme = getThemePref();
   const { logout: endServerSession } = await import("./authApi");
   await endServerSession();
-  await auth.signOut().catch(() => {});
   localStorage.clear();
   setThemePref(theme);
 }

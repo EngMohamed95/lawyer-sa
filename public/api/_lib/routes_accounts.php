@@ -17,7 +17,7 @@ require_once __DIR__ . '/routes_auth.php';
 /** المستدعي بحالته الحالية في Firestore — مو النسخة المخزنة من آخر دخول */
 function fresh_caller(): array {
     $u = require_user();
-    bridge_sync_profile((string) $u['id'], bridge_profile((string) $u['id']));
+    bridge_refresh_if_stale((string) $u['id']);
     $u = load_user((string) $u['id']);
     if (!is_member($u)) fail(403, 'ليس لديك صلاحية لهذا الإجراء.', 'FORBIDDEN');
     return $u;
@@ -51,8 +51,8 @@ function route_accounts_create(): void {
         fail(403, 'ليس لديك صلاحية لهذا الإجراء.', 'FORBIDDEN');
     }
 
-    // البريد لازم يكون فريد في MySQL وفي Firebase (حسابات ما انتقلت بعد)
-    if (q_one('SELECT 1 FROM users WHERE email = ?', [$email]) !== null || bridge_firebase_uid_by_email($email) !== null) {
+    // البريد فريد (كل حسابات Firebase القديمة منقولة لجدول users بـ migrate_users.php)
+    if (q_one('SELECT 1 FROM users WHERE email = ?', [$email]) !== null || q_one('SELECT 1 FROM signup_pending WHERE email = ?', [$email]) !== null) {
         fail(409, 'البريد الإلكتروني مستخدم بالفعل.', 'EMAIL_EXISTS', ['field' => 'email']);
     }
 
@@ -67,6 +67,44 @@ function route_accounts_create(): void {
         throw $e;
     }
     respond(201, ['id' => $id, 'email' => $email]);
+}
+
+/**
+ * POST accounts/{id}/credentials {password?, email?} — مدير المنصة لأي حساب، ومالك المكتب لعضو
+ * في فريقه. تغيير كلمة المرور يطلّع الحساب من كل أجهزته. (بديل مسار Node القديم /api/users/:uid/*)
+ */
+function route_accounts_credentials(string $id): void {
+    $caller = fresh_caller();
+    $target = q_one('SELECT id, role, lawyer_id FROM users WHERE id = ?', [$id]);
+    if ($target === null) fail(404, 'الحساب غير موجود.', 'NOT_FOUND');
+    $allowed = is_super_admin($caller)
+        || (is_office_owner($caller) && $id !== (string) $caller['id'] && $target['lawyer_id'] === tenant_of($caller)
+            && in_array($target['role'], OFFICE_MEMBER_ROLES, true));
+    if (!$allowed) fail(403, 'ليس لديك صلاحية لهذا الإجراء.', 'FORBIDDEN');
+
+    $b = json_body();
+    $password = isset($b['password']) && $b['password'] !== '' ? body_password() : null;
+    $email = isset($b['email']) && $b['email'] !== '' ? normalize_email(body_str('email', 191)) : null;
+    if ($password === null && $email === null) fail(422, 'لا يوجد تغيير.', 'VALIDATION');
+    if ($password !== null) assert_new_password($password);
+
+    $pdo = db();
+    $pdo->beginTransaction();
+    register_shutdown_function(function () use ($pdo): void { if ($pdo->inTransaction()) $pdo->rollBack(); });
+    if ($email !== null) {
+        $taken = q_one('SELECT id FROM users WHERE email = ? AND id <> ?', [$email, $id]);
+        if ($taken !== null) fail(409, 'البريد الإلكتروني مستخدم بالفعل.', 'EMAIL_EXISTS', ['field' => 'email']);
+        q('UPDATE users SET email = ? WHERE id = ?', [$email, $id]);
+        // البريد في الملف الشخصي كمان (يظهر في الواجهة)
+        q("UPDATE docs SET data = JSON_SET(data, '$.email', ?) WHERE collection = 'users' AND parent_path = '' AND id = ?", [$email, $id]);
+    }
+    if ($password !== null) {
+        q('UPDATE users SET password_hash = ? WHERE id = ?', [password_hash($password, PASSWORD_DEFAULT), $id]);
+        q('UPDATE password_resets SET used_at = ? WHERE user_id = ? AND used_at IS NULL', [utc_now(), $id]);
+        q('DELETE FROM auth_sessions WHERE user_id = ?', [$id]);
+    }
+    $pdo->commit();
+    respond(200, ['ok' => true]);
 }
 
 /** تراجع عن إنشاء حساب فشلت كتابة ملفه في Firestore — فقط لحساب بلا ملف شخصي */

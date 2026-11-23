@@ -205,7 +205,8 @@ check('… لكن المكتب صاحبها يقدر', $s === 200, $s);
 
 echo "تغيّر الدور/الحالة أثناء الجلسة\n";
 $stale = fn(string $id) => $pdo->exec("UPDATE users SET profile_synced_at = DATE_SUB(UTC_TIMESTAMP(), INTERVAL 5 MINUTE) WHERE id = '$id'");
-$setProfile = fn(string $id, array $patch) => $pdo->prepare("UPDATE users SET data = JSON_SET(data, " . implode(', ', array_map(fn($k) => "'$." . $k . "', ?", array_keys($patch))) . ") WHERE id = ?")->execute([...array_values($patch), $id]);
+// تعديل خارج الـ API (مثلاً يدوي في القاعدة) على الملف الشخصي — الاحتياط يلتقطه بعد دقيقة
+$setProfile = fn(string $id, array $patch) => $pdo->prepare("UPDATE docs SET data = JSON_SET(data, " . implode(', ', array_map(fn($k) => "'$." . $k . "', ?", array_keys($patch))) . ") WHERE collection = 'users' AND parent_path = '' AND id = ?")->execute([...array_values($patch), $id]);
 [$s] = $query('SA', ['path' => 'clients']);
 check('السكرتير يقرأ العملاء', $s === 200, $s);
 $setProfile('secA', ['role' => 'CLIENT']); // المالك حوّله لعميل في Firestore
@@ -235,7 +236,7 @@ check('assignedLawyerIds كنص (مو قائمة) ما يعطي وصول — ا�
 echo "حماية المدخلات\n";
 [$s] = $get('A', 'cases/a/hearings/b/x/y/z/w');
 check('مسار أطول من 6 أجزاء ← 400', $s === 400, $s);
-[$s, $r] = $query('A', ['path' => 'users']);
+[$s, $r] = $query('A', ['path' => 'signup_otps']);
 check('مجموعة ما انتقلت ← 400 NOT_MIGRATED', $s === 400 && ($r['code'] ?? '') === 'NOT_MIGRATED', [$s, $r]);
 [$s] = $query('A', ['path' => 'tasks', 'where' => [["status') OR 1=1 -- ", '==', 'x']]]);
 check('اسم حقل فيه حقن SQL ← 400', $s === 400, $s);

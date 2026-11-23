@@ -50,8 +50,10 @@ function harness_extra_server(int $port): string {
 /** مستخدم بكلمة مرور secret123 وملف شخصي في data */
 function harness_user(PDO $pdo, string $id, string $email, string $role, ?string $lawyerId, array $data = [], string $status = 'ACTIVE'): void {
     $profile = ['name' => $id, 'role' => $role, 'status' => $status] + ($lawyerId !== null ? ['lawyerId' => $lawyerId] : []) + $data;
-    $pdo->prepare('INSERT INTO users (id, email, password_hash, name, role, lawyer_id, status, data, firebase_pw_rotated_at) VALUES (?,?,?,?,?,?,?,?,NOW())')
+    $pdo->prepare('INSERT INTO users (id, email, password_hash, name, role, lawyer_id, status, data, profile_synced_at) VALUES (?,?,?,?,?,?,?,?,UTC_TIMESTAMP())')
         ->execute([$id, $email, password_hash('secret123', PASSWORD_DEFAULT), $id, $role, $lawyerId, $status, json_encode($profile)]);
+    // الملف الشخصي (مصدر الحقيقة بعد إزالة Firebase)
+    $pdo->prepare("INSERT INTO docs (collection, parent_path, id, data) VALUES ('users', '', ?, ?)")->execute([$id, json_encode($profile + ['email' => $email])]);
 }
 
 $cookies = [];

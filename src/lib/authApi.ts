@@ -1,12 +1,14 @@
 /**
- * عميل API الدخول في MySQL (public/api) — بديل firebase/auth.
+ * عميل API الدخول في MySQL (public/api).
  *
  * الجلسة كوكي HttpOnly يضبطه السيرفر؛ الواجهة ما تلمس أي توكن دخول.
- * أثناء التحويل على مراحل يرجع السيرفر توكن Firebase مخصص، ندخل به Firebase
- * عشان المجموعات اللي ما انتقلت بعد تظل شغالة مع firestore.rules.
  */
 
-import type { User } from "firebase/auth";
+/** المستخدم الداخل كما يحتاجه باقي التطبيق (بديل User من firebase/auth) */
+export interface SessionUser {
+  uid: string;
+  email: string | null;
+}
 
 const API_BASE = "/api/v1";
 const REQUEST_TIMEOUT_MS = 20_000;
@@ -61,27 +63,20 @@ export async function apiRequest<T>(method: "GET" | "POST" | "DELETE", path: str
   return data as T;
 }
 
-/** يدخل Firebase بالتوكن المخصص — الثبات (محلي/جلسة) يتبع «تذكرني» */
-async function enterFirebase(token: string, rememberMe: boolean): Promise<User> {
-  const [{ auth }, { signInWithCustomToken, setPersistence, browserLocalPersistence, browserSessionPersistence }] =
-    await Promise.all([import("./firebase"), import("firebase/auth")]);
-  await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
-  return (await signInWithCustomToken(auth, token)).user;
-}
-
 export interface LoginResult {
   user: AccountUser;
-  /** false = تسجيل ذاتي ما اكتمل (ما في مستند users في Firestore) */
+  /** false = تسجيل ذاتي ما اكتمل (حساب بلا ملف شخصي) */
   hasProfile: boolean;
-  firebaseUser: User;
+  sessionUser: SessionUser;
 }
 
+export const toSessionUser = (u: AccountUser): SessionUser => ({ uid: u.id, email: u.email });
+
 export async function login(email: string, password: string, rememberMe: boolean): Promise<LoginResult> {
-  const data = await apiRequest<{ user: AccountUser; hasProfile: boolean; firebaseToken: string }>(
+  const data = await apiRequest<{ user: AccountUser; hasProfile: boolean }>(
     "POST", "auth/login", { email: email.trim(), password, rememberMe },
   );
-  const firebaseUser = await enterFirebase(data.firebaseToken, rememberMe);
-  return { user: data.user, hasProfile: data.hasProfile, firebaseUser };
+  return { user: data.user, hasProfile: data.hasProfile, sessionUser: toSessionUser(data.user) };
 }
 
 export async function logout(): Promise<void> {
@@ -93,20 +88,6 @@ export async function me(): Promise<AccountUser | null> {
     return (await apiRequest<{ user: AccountUser }>("GET", "auth/me")).user;
   } catch (err) {
     if (err instanceof ApiError && err.status === 401) return null;
-    throw err;
-  }
-}
-
-/**
- * جلسة Firebase ضاعت (مسح بيانات الموقع، انتهاء التجديد…) والجلسة عندنا ما زالت سارية:
- * نجيب توكن جديد بدل ما نطلع المستخدم. يرجع null لو جلستنا انتهت هي كمان.
- */
-export async function restoreFirebaseSession(): Promise<User | null> {
-  try {
-    const { firebaseToken } = await apiRequest<{ firebaseToken: string }>("POST", "auth/firebase-token", {});
-    return await enterFirebase(firebaseToken, localStorage.getItem("rememberLogin") === "true");
-  } catch (err) {
-    if (err instanceof ApiError && (err.status === 401 || err.status === 403)) return null;
     throw err;
   }
 }

@@ -1,114 +1,25 @@
-import { useState } from "react";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "@/lib/store";
-import { auth, db } from "../lib/firebase";
+/**
+ * كانت صفحة إنشاء أول مدير منصة عبر Firebase Auth (بكلمة مرور افتراضية مكتوبة في الكود).
+ * بعد التحويل لـ MySQL: مدير المنصة الأول يُنشأ من سطر الأوامر على السيرفر فقط —
+ * ما في طريقة لإنشائه من المتصفح:
+ *
+ *   php database/create_admin.php <db-config.php> <email> "<الاسم>"
+ *
+ * (السكربت يطلب كلمة المرور بدون عرضها). المديرون التاليون من صفحة «فريق مديري المنصة».
+ */
+
+import { Link } from "react-router";
 
 export default function CreateAdmin() {
-  const [email, setEmail] = useState("admin@lawyeros.com");
-  const [password, setPassword] = useState("LawyerOS_SuperAdmin_2026!#");
-  const [name, setName] = useState("المدير العام");
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setMessage("");
-    setError("");
-
-    try {
-      // 1. Create user in Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      // 2. Create user document in Firestore users collection
-      await setDoc(doc(db, "users", user.uid), {
-        name,
-        email,
-        role: "SUPER_ADMIN",
-        lawyerId: "ALL",
-        createdAt: new Date().toISOString(),
-        status: "ACTIVE"
-      });
-
-      setMessage("✅ تم إنشاء حساب المدير العام بنجاح! يمكنك الآن تسجيل الدخول.");
-    } catch (err: any) {
-      console.error(err);
-      setError("❌ حدث خطأ: " + (err.message || String(err)));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // طبقة حماية ثانية: حتى لو وصل أحد لهذا المكوّن بأي طريقة، لا يعمل إلا بتفعيل صريح.
-  if (import.meta.env.VITE_ENABLE_CREATE_ADMIN !== "true") {
-    return (
-      <div dir="rtl" className="min-h-screen bg-navy text-white flex items-center justify-center p-6 font-['Tajawal']">
-        <div className="bg-surface text-gray-900 p-8 rounded-2xl max-w-md w-full shadow-2xl text-center space-y-3">
-          <h1 className="text-xl font-bold text-ink">هذه الصفحة معطّلة</h1>
-          <p className="text-sm text-gray-600 leading-relaxed">
-            إنشاء حساب المدير العام غير متاح من المتصفح لأسباب أمنية.
-            يتم إنشاؤه من الخادم عبر <span className="font-mono text-xs">create_admin.mjs</span> فقط.
-          </p>
-          <a href="/login" className="inline-block mt-2 px-6 py-2 bg-navy text-ink-2 rounded-xl font-bold text-sm">
-            العودة لتسجيل الدخول
-          </a>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div dir="rtl" className="min-h-screen bg-navy text-white flex items-center justify-center p-6 font-['Tajawal']">
-      <div className="bg-surface text-gray-900 p-8 rounded-2xl max-w-md w-full shadow-2xl">
-        <h1 className="text-2xl font-bold text-center text-ink mb-6">إنشاء حساب المدير العام (Super Admin)</h1>
-        
-        <form onSubmit={handleCreate} className="space-y-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">البريد الإلكتروني</label>
-            <input 
-              type="email" 
-              value={email} 
-              onChange={e => setEmail(e.target.value)} 
-              className="w-full p-3 border rounded-xl"
-              required 
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">كلمة المرور</label>
-            <input 
-              type="text" 
-              value={password} 
-              onChange={e => setPassword(e.target.value)} 
-              className="w-full p-3 border rounded-xl"
-              required 
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">الاسم بالكامل</label>
-            <input 
-              type="text" 
-              value={name} 
-              onChange={e => setName(e.target.value)} 
-              className="w-full p-3 border rounded-xl"
-              required 
-            />
-          </div>
-
-          {message && <p className="text-green-600 font-semibold text-sm">{message}</p>}
-          {error && <p className="text-red-600 font-semibold text-sm">{error}</p>}
-
-          <button 
-            type="submit" 
-            disabled={loading}
-            className="w-full bg-navy-2 text-white p-3 rounded-xl font-bold hover:bg-navy-2/90 transition-colors"
-          >
-            {loading ? "جاري الإنشاء..." : "إنشاء الحساب"}
-          </button>
-        </form>
+    <div className="min-h-screen flex items-center justify-center bg-navy p-4 font-['Tajawal']" dir="rtl">
+      <div className="max-w-md w-full bg-surface rounded-3xl p-8 space-y-4 text-center">
+        <h1 className="text-2xl font-bold text-ink">إنشاء مدير المنصة</h1>
+        <p className="text-gray-500 leading-relaxed">
+          مدير المنصة الأول يُنشأ من سطر الأوامر على الخادم (database/create_admin.php)،
+          والمديرون التاليون من صفحة «فريق مديري المنصة» داخل النظام.
+        </p>
+        <Link to="/login" className="inline-block font-bold text-ink-2 hover:underline">العودة لتسجيل الدخول</Link>
       </div>
     </div>
   );

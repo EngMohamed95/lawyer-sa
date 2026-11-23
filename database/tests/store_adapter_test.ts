@@ -202,8 +202,8 @@ try {
   const hearingsLeft = await getDocs(query(collectionGroup(db, "documents"), where("lawyerId", "==", "ownerA")));
   check("deleteDoc: القضية راحت (القراءة مرفوضة مثل Firestore)", eGone?.code === "permission-denied", eGone?.code);
   check("… ومستنداتها الفرعية انحذفت معها", hearingsLeft.docs.every((x) => !x.ref.path.startsWith(`cases/${ref.id}/`)));
-  const eUnsupported: any = await rejects(updateDoc(doc(db, "tasks", "x"), { n: store.increment(1) }));
-  check("increment على MySQL ← خطأ واضح بدل كتابة غلط", /غير مدعومة/.test(eUnsupported?.message ?? ""), eUnsupported?.message);
+  const eUnsupported: any = await rejects(updateDoc(doc(db, "tasks", "x"), { n: new Map([["a", 1]]) }));
+  check("قيمة غير مدعومة (Map) ← خطأ واضح بدل كتابة غلط", /غير مدعوم/.test(eUnsupported?.message ?? ""), eUnsupported?.message);
 } finally {
   server.stdin.end();
   await once(server, "exit").catch(() => {});

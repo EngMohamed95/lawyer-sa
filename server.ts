@@ -6,8 +6,6 @@ import cors from "cors";
 import multer from "multer";
 import net from "net";
 import { spawn } from "child_process";
-import apiRouter from "./src/server/api.js";
-import { checkDbHealth } from "./src/server/db.js";
 
 async function findAvailablePort(startPort: number): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -29,15 +27,6 @@ async function findAvailablePort(startPort: number): Promise<number> {
 }
 
 async function startServer() {
-  // Start health check in background so it doesn't block server startup
-  checkDbHealth().then(healthy => {
-    if (!healthy) {
-      console.warn("Database is not healthy. Some API features may not work.");
-    } else {
-      console.log("Database connection established successfully.");
-    }
-  });
-
   const desiredPort = Number(process.env.PORT || 3000);
   let PORT = desiredPort;
   const HOST = "0.0.0.0";
@@ -118,35 +107,10 @@ async function startServer() {
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-  // API Routes
+  // البيانات والدخول من public/api (PHP) — سيرفر Node للتطوير فقط (Vite + تمرير لـ PHP)
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
   });
-
-  app.get("/api/debug", async (req, res) => {
-    try {
-      const dbExists = fs.existsSync(path.join(process.cwd(), "dev.db"));
-      const fallbackExists = fs.existsSync(path.join(process.cwd(), "prisma", "dev.db"));
-      let prismaError = null;
-      try {
-        await checkDbHealth();
-      } catch (err: any) {
-        prismaError = err.message || String(err);
-      }
-      res.json({
-        cwd: process.cwd(),
-        dbExists,
-        fallbackExists,
-        envNodeEnv: process.env.NODE_ENV,
-        envDbUrl: process.env.DATABASE_URL,
-        prismaError
-      });
-    } catch(err: any) {
-      res.status(500).json({ error: err.message });
-    }
-  });
-
-  app.use("/api", apiRouter);
 
   /**
    * رفع الملفات محلياً — بديل upload.php أثناء التطوير.
@@ -224,35 +188,11 @@ async function startServer() {
   // تقديم الملفات المرفوعة محلياً (على الاستضافة يتولاها الخادم مباشرة)
   app.use("/uploads", express.static(uploadsDir, { index: false }));
 
-  /**
-   * التسجيل الذاتي (public/signup.php) يعمل بـ PHP على الاستضافة. محلياً لا مُفسّر PHP
-   * داخل Vite، فنمرّر الطلب لخادم PHP المدمج:  php -S 127.0.0.1:8090 -t public
-   * (ويحتاج serviceAccountKey.json في جذر المشروع — مستثنى من Git، ولا يوضع في public/).
-   */
   if (process.env.NODE_ENV !== "production") {
     // ملفات الأسرار لا تُقدَّم أبداً — .htaccess يحميها على الاستضافة، وهذا يحميها محلياً
     // Vite يقدّم أي ملف في جذر المشروع، والسيرفر على 0.0.0.0 (الشبكة المحلية تشوفه)
-    app.use(/^\/(serviceAccountKey\.json|ai-config\.php|mail-config\.php|db-config[^/]*\.php|KEYS_FOR_GITHUB\.txt|private_files\/.*|.*\.(docx|log))$/i, (_req, res) => {
+    app.use(/^\/(serviceAccountKey\.json|ai-config\.php|mail-config\.php|db-config[^/]*\.php|KEYS_FOR_GITHUB\.txt|private_files\/.*|prisma\/.*\.db|.*\.(docx|log|db))$/i, (_req, res) => {
       res.sendStatus(404);
-    });
-    const phpDevUrl = (process.env.PHP_DEV_URL || "http://127.0.0.1:8090").replace(/\/$/, "");
-    app.post("/signup.php", async (req, res) => {
-      try {
-        const upstream = await fetch(`${phpDevUrl}/signup.php`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(req.headers.authorization ? { Authorization: req.headers.authorization } : {}),
-          },
-          body: JSON.stringify(req.body ?? {}),
-        });
-        res.status(upstream.status).type("application/json").send(await upstream.text());
-      } catch {
-        res.status(503).json({
-          error: "خادم PHP المحلي غير مشغّل. شغّل: php -S 127.0.0.1:8090 -t public",
-          code: "NOT_CONFIGURED",
-        });
-      }
     });
   }
 

@@ -125,11 +125,16 @@ function route_auth_login(): void {
     if ($uid === null) fail(401, MSG_BAD_CREDENTIALS, 'INVALID_CREDENTIALS');
 
     $profile = bridge_profile($uid);
-    bridge_sync_profile($uid, $profile);
+    if ($profile !== null) {
+        bridge_sync_profile($uid, $profile);
+    } else {
+        // بلا ملف: تسجيل ما اكتمل (يكمله من صفحة التسجيل) — أو حساب حُذف ملفه وتعطّل (ما يدخل)
+        $acct = q_one('SELECT status, deleted_at FROM users WHERE id = ?', [$uid]);
+        if ($acct !== null && (blocked_status($acct['status']) || $acct['deleted_at'] !== null)) {
+            fail(403, 'هذا الحساب غير مفعّل. تواصل مع مدير المكتب.', 'ACCOUNT_DISABLED');
+        }
+    }
     assert_can_login($profile);
-
-    $row = q_one('SELECT firebase_pw_rotated_at FROM users WHERE id = ?', [$uid]);
-    if ($row !== null && $row['firebase_pw_rotated_at'] === null) bridge_rotate_firebase_password($uid);
 
     q('UPDATE users SET last_login_at = ? WHERE id = ?', [utc_now(), $uid]);
     session_create($uid, $remember);
@@ -137,7 +142,6 @@ function route_auth_login(): void {
     respond(200, [
         'user' => public_user(load_user($uid)),
         'hasProfile' => $profile !== null,
-        'firebaseToken' => bridge_custom_token($uid),
     ]);
 }
 
@@ -148,16 +152,6 @@ function route_auth_logout(): void {
 
 function route_auth_me(): void {
     respond(200, ['user' => public_user(require_user())]);
-}
-
-/** توكن Firebase جديد — لما تنتهي جلسة Firebase والجلسة عندنا ما زالت سارية */
-function route_auth_firebase_token(): void {
-    $u = require_user();
-    // الحالة من Firestore الآن، مو من آخر دخول — حساب عُطّل بعد دخوله ما ياخذ توكن جديد
-    $profile = bridge_profile((string) $u['id']);
-    bridge_sync_profile((string) $u['id'], $profile);
-    assert_can_login($profile);
-    respond(200, ['firebaseToken' => bridge_custom_token((string) $u['id'])]);
 }
 
 function route_auth_change_password(): void {
@@ -175,7 +169,6 @@ function route_auth_change_password(): void {
     // روابط الاستعادة المفتوحة تبطل — وإلا تقدر تغيّر كلمة المرور الجديدة خلال ساعة
     q('UPDATE password_resets SET used_at = ? WHERE user_id = ? AND used_at IS NULL', [utc_now(), $u['id']]);
     session_destroy_others((string) $u['id']);
-    bridge_rotate_firebase_password((string) $u['id'], true);
     respond(200, ['ok' => true]);
 }
 
@@ -195,14 +188,9 @@ function route_auth_reset_request(): void {
     login_rate_limit("reset:$email");
     login_record("reset:$email", false);
 
+    // كل الحسابات في MySQL (migrate_users.php نقل حسابات Firebase كلها)
     $row = q_one('SELECT id, name FROM users WHERE email = ?', [$email]);
-    if ($row === null) {
-        $uid = bridge_firebase_uid_by_email($email);
-        if ($uid === null || !bridge_import_account($uid, $email)) respond(200, $generic);
-        bridge_sync_profile($uid, bridge_profile($uid));
-        $row = q_one('SELECT id, name FROM users WHERE email = ?', [$email]);
-        if ($row === null) respond(200, $generic);
-    }
+    if ($row === null) respond(200, $generic);
 
     $recent = (int) q('SELECT COUNT(*) FROM password_resets WHERE user_id = ? AND created_at > ?', [$row['id'], utc_now(-3600)])->fetchColumn();
     if ($recent >= RESET_MAX_PER_HOUR) respond(200, $generic);
@@ -250,6 +238,5 @@ function route_auth_reset_confirm(): void {
     q('DELETE a FROM login_attempts a JOIN users u ON u.email = a.email WHERE u.id = ? AND a.success = 0', [$uid]);
     $pdo->commit();
 
-    bridge_rotate_firebase_password($uid, true);
     respond(200, ['ok' => true]);
 }

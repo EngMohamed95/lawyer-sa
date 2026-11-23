@@ -21,7 +21,7 @@ $roots = ['cases', 'clients', 'tasks'];
 foreach ($argv as $a) if (str_starts_with($a, '--collections=')) $roots = array_filter(explode(',', substr($a, 14)));
 if (!is_file($configPath)) { fwrite(STDERR, "استخدم: php database/migrate_store.php <db-config.php> [--dry-run] [--collections=a,b]\n"); exit(2); }
 
-require_once dirname(__DIR__) . '/public/_firebase.php';
+require_once __DIR__ . '/_firebase_export.php';
 $config = require $configPath;
 $project = (string) ($config['firebase_project_id'] ?? 'lawyer-sa');
 $token = admin_access_token(service_account());

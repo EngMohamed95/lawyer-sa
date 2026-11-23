@@ -1,33 +1,28 @@
 /**
- * حارس جلسة المصادقة.
+ * حارس جلسة الدخول.
  *
- * المشكلة التي يعالجها: التطبيق كان يقرّر «مسجَّل الدخول» من localStorage
- * وحده. حين تنتهي جلسة Firebase Auth أو يفشل تجديد التوكن، تبقى الواجهة
- * تعرض المستخدم داخلاً بينما كل قراءة من Firestore تُرفض بـ
- * permission-denied — فيرى المستخدم أصفاراً ورسالة خطأ بلا سبب واضح.
- *
- * هذا الخطّاف يجعل مصدر الحقيقة هو Firebase Auth نفسه، ويكشف انتهاء
- * الجلسة صراحةً بدل تركها تتسرّب كأخطاء صلاحيات.
+ * مصدر الحقيقة هو السيرفر (/api/v1/auth/me بكوكي الجلسة HttpOnly)، مو localStorage. لو
+ * التخزين المحلي يقول «داخل» والسيرفر يقول لا، الجلسة انتهت ونعلم المستخدم صراحةً بدل ما
+ * يشوف أصفار وأخطاء صلاحيات ما يفهمها.
  */
 
 import { useEffect, useState } from "react";
-import { onAuthStateChanged, type User } from "firebase/auth";
-import { auth } from "./firebase";
+import type { SessionUser } from "./authApi";
 
 export type SessionState =
-  /** ما زلنا ننتظر رد Firebase — لا نقرّر شيئاً بعد */
+  /** ما زلنا ننتظر رد السيرفر — لا نقرّر شيئاً بعد */
   | "checking"
-  /** Firebase يؤكّد المستخدم — كل شيء سليم */
+  /** السيرفر يؤكّد الجلسة — كل شيء سليم */
   | "authenticated"
-  /** localStorage يقول داخل و Firebase يقول خارج — الجلسة انتهت */
+  /** localStorage يقول داخل والسيرفر يقول خارج — الجلسة انتهت */
   | "expired"
   /** لا جلسة أصلاً */
   | "signed-out";
 
 export interface AuthSession {
   state: SessionState;
-  user: User | null;
-  /** بريد المستخدم كما يعرفه Firebase — للعرض في شاشة انتهاء الجلسة */
+  user: SessionUser | null;
+  /** بريد المستخدم — للعرض في شاشة انتهاء الجلسة */
   email: string | null;
 }
 
@@ -43,69 +38,52 @@ export function clearLocalSession(): void {
   }
 }
 
+/** نتيجة التحقق مشتركة بين كل المكوّنات في نفس الصفحة — طلب /auth/me واحد بدل طلب لكل مكوّن */
+let shared: Promise<SessionUser | null | "offline"> | null = null;
+
+function checkSession(): Promise<SessionUser | null | "offline"> {
+  shared ??= import("./authApi")
+    .then(({ me, toSessionUser }) => me().then((u) => (u ? toSessionUser(u) : null)))
+    .catch(() => "offline" as const)
+    .finally(() => { window.setTimeout(() => { shared = null; }, 5_000); });
+  return shared;
+}
+
 export function useAuthSession(): AuthSession {
   const [state, setState] = useState<SessionState>("checking");
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<SessionUser | null>(null);
   const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    const claimsLoggedIn = () => localStorage.getItem("isAuthenticated") === "true";
-    let restoreTried = false;
     let cancelled = false;
+    const claimsLoggedIn = () => localStorage.getItem("isAuthenticated") === "true";
 
-    const unsub = onAuthStateChanged(
-      auth,
-      (u) => {
-        if (u) {
-          setUser(u);
-          setEmail(u.email ?? localStorage.getItem("userEmail"));
-          // جلسة Firebase وحدها ما تكفي: البيانات صارت من MySQL وتحتاج جلسته (الكوكي).
-          // مستخدم داخل من النسخة القديمة (قبل التحويل) عنده Firebase بلا MySQL — نطلب
-          // منه دخول جديد بدل ما تفشل كل الصفحات. خطأ شبكة ← ما نطلّعه (ممكن غير متصل).
-          void import("./authApi")
-            .then(({ me }) => me())
-            .then((account) => {
-              if (cancelled) return;
-              if (account) {
-                setState("authenticated");
-                return;
-              }
-              restoreTried = true; // ما في جلسة MySQL نجدد منها
-              setState("expired");
-              void auth.signOut().catch(() => {});
-            })
-            .catch(() => { if (!cancelled) setState("authenticated"); });
-          return;
-        }
-        setUser(null);
-        setEmail(localStorage.getItem("userEmail"));
-        if (!claimsLoggedIn()) {
+    void checkSession().then((result) => {
+      if (cancelled) return;
+      if (result === "offline") {
+        // خطأ شبكة: ما نطلّع المستخدم (ممكن غير متصل مؤقتاً) — نعتمد على آخر بيانات محلية
+        const uid = localStorage.getItem("userId");
+        if (claimsLoggedIn() && uid) {
+          setUser({ uid, email: localStorage.getItem("userEmail") });
+          setEmail(localStorage.getItem("userEmail"));
+          setState("authenticated");
+        } else {
           setState("signed-out");
-          return;
         }
-        // جلسة Firebase ضاعت لكن جلسة MySQL (الكوكي) ممكن تكون سارية — نجدد توكن Firebase
-        // منها مرة وحدة؛ نجاحه يشغّل هذا المستمع من جديد بالمستخدم. فشله = الجلسة انتهت فعلاً.
-        if (restoreTried) {
-          setState("expired");
-          return;
-        }
-        restoreTried = true;
-        void import("./authApi")
-          .then(({ restoreFirebaseSession }) => restoreFirebaseSession())
-          .then((restored) => { if (!restored && !cancelled) setState("expired"); })
-          .catch(() => { if (!cancelled) setState("expired"); });
-      },
-      (err) => {
-        console.error("تعذّر التحقق من جلسة المصادقة:", err);
-        setUser(null);
-        setState(claimsLoggedIn() ? "expired" : "signed-out");
-      },
-    );
+        return;
+      }
+      if (result) {
+        setUser(result);
+        setEmail(result.email);
+        setState("authenticated");
+        return;
+      }
+      setUser(null);
+      setEmail(localStorage.getItem("userEmail"));
+      setState(claimsLoggedIn() ? "expired" : "signed-out");
+    });
 
-    return () => {
-      cancelled = true;
-      unsub();
-    };
+    return () => { cancelled = true; };
   }, []);
 
   return { state, user, email };

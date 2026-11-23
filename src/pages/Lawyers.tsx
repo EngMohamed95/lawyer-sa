@@ -8,7 +8,6 @@ import { Badge } from "../components/ui/badge";
 import { collection, getDocs, doc, setDoc, updateDoc, deleteDoc, deleteField } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { createAccountWithProfile } from "../lib/authApi";
-import { apiUrl } from "../lib/apiBase";
 
 const PLANS = [
   { id: "BASIC",        name: "الأساسية",     price: "200 ج.م",  color: "bg-gray-100 text-gray-700" },
@@ -247,27 +246,15 @@ export default function Lawyers() {
     setCredLoading(true);
     const errors: string[] = [];
     try {
-      if (credForm.password) {
-        const res = await fetch(apiUrl(`/api/users/${credLawyer.id}/password`), {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ password: credForm.password }),
+      // السيرفر يغيّر الاثنين معاً (وتغيير كلمة المرور يطلّع الحساب من كل أجهزته)
+      try {
+        const { apiRequest } = await import("../lib/authApi");
+        await apiRequest("POST", `accounts/${encodeURIComponent(credLawyer.id)}/credentials`, {
+          email: credForm.email || undefined,
+          password: credForm.password || undefined,
         });
-        if (!res.ok) {
-          const d = await res.json();
-          errors.push("كلمة المرور: " + (d.error || "فشل"));
-        }
-      }
-      if (credForm.email) {
-        const res = await fetch(apiUrl(`/api/users/${credLawyer.id}/email`), {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: credForm.email }),
-        });
-        if (!res.ok) {
-          const d = await res.json();
-          errors.push("الإيميل: " + (d.error || "فشل"));
-        }
+      } catch (err: any) {
+        errors.push(err?.message || "فشل التحديث");
       }
       if (errors.length > 0) {
         alert("حدث خطأ:\n" + errors.join("\n"));
