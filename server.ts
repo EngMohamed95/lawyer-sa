@@ -1,3 +1,5 @@
+// إعدادات .env (المنفذ PORT=3010 وغيره) — كان يحمّلها src/server/db.ts القديم
+import "dotenv/config";
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";

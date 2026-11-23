@@ -23,19 +23,6 @@ export default defineConfig(({ mode }) => {
       rollupOptions: {
         output: {
           manualChunks(id) {
-            // Firebase - split each service into its own cached chunk
-            if (id.includes('firebase/firestore') || id.includes('@firebase/firestore')) {
-              return 'firebase-firestore';
-            }
-            if (id.includes('firebase/auth') || id.includes('@firebase/auth')) {
-              return 'firebase-auth';
-            }
-            if (id.includes('firebase/storage') || id.includes('@firebase/storage')) {
-              return 'firebase-storage';
-            }
-            if (id.includes('firebase/app') || id.includes('@firebase/app')) {
-              return 'firebase-app';
-            }
             // React core
             if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
               return 'react-vendor';
@@ -61,10 +48,6 @@ export default defineConfig(({ mode }) => {
         'react',
         'react-dom',
         'react-router',
-        'firebase/app',
-        'firebase/firestore',
-        'firebase/auth',
-        'firebase/storage',
       ],
     },
   };
