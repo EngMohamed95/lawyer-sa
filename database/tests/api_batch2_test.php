@@ -206,7 +206,15 @@ check('تجربة منتهية ← 403', legacy_upload('X', '%PDF-1.4', 'a.pdf')
 $stored = (string) ($r['fileName'] ?? '');
 check('عضو يرفع PDF ← 200 ورابط uploads', $st === 200 && str_contains((string) ($r['fileUrl'] ?? ''), "/uploads/$stored") && is_file($uploadsDir . $stored), [$st, $r]);
 check('… الاسم بلا امتداد مزدوج (ما في .php.)', str_ends_with($stored, '.pdf') && !str_contains($stored, '.php') && str_contains($stored, 'عقد'), $stored);
-check('… ومجلد uploads فيه حماية .htaccess', str_contains((string) @file_get_contents($uploadsDir . '.htaccess'), 'Require all denied'));
+$guardText = (string) @file_get_contents($uploadsDir . '.htaccess');
+check('… ومجلد uploads فيه حماية .htaccess (منع السكربتات + nosniff)', str_contains($guardText, 'Require all denied') && str_contains($guardText, 'nosniff') && str_contains($guardText, 'RemoveHandler'));
+check('صفحة HTML متنكرة بامتداد مسموح (x.heic) ← 422', legacy_upload('SA', "\n<html><script>alert(1)</script>", 'x.heic')[0] === 422);
+check('… ولا SVG متنكر كـ txt', legacy_upload('SA', '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"/>', 'x.txt')[0] === 422);
+// trial-cleanup ما يحذف ملفاً يذكره مكتب ثاني: نفس استعلامه على رابط محفوظ عبر الـ API (يُخزَّن بـ \/)
+$w('B', 'create', 'clients/withfile', ['lawyerId' => 'ownerB', 'fullName' => 'ع', 'attachment' => $r['fileUrl'] ?? '']);
+$likeName = '%' . addcslashes($stored, '%_\\') . '%';
+check('trial-cleanup يلقى الملف في مستند مكتب ثاني (ما يحذفه)', $stored !== ''
+    && $col('SELECT 1 FROM docs WHERE (lawyer_id IS NULL OR lawyer_id <> ?) AND data LIKE ? LIMIT 1', ['ownerX', $likeName]) == 1);
 if ($stored !== '') @unlink($uploadsDir . $stored);
 
 echo "طلبات الاشتراك وإعدادات المكتب\n";

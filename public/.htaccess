@@ -11,7 +11,8 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
   RewriteBase /
   RewriteRule ^vendor(?:/|$) - [F,L]
   # ملفات المستخدمين: ما يتشغل فيها أي سكربت ولا صفحة (حتى لو انرفع ملف قديم قبل التحصين)
-  RewriteRule ^(?:dist/)?uploads/.*\.(?:php\d?|phtml|phar|pht|phps|shtml|cgi|pl|py|html?|svg|xml|js)$ - [F,NC,L]
+  # (الامتداد في أي مكان بالاسم — x.php.jpg كمان، لو الخادم يربط .php بـ AddHandler)
+  RewriteRule ^(?:dist/)?uploads/.*\.(?:php\d?|phtml|phar|pht|phps|shtml|cgi|pl|py|html?|svg|xml|js)(?:\.|$) - [F,NC,L]
   # نسخة dist/ موجودة لتطبيق Node فقط — سكربتات PHP منها ما تُخدم (الـ API الحقيقي في الجذر).
   # بالرابط الكامل (REQUEST_URI) لأن dist/ فيها نسخة من هذا الملف ومساراتها نسبية لها
   RewriteCond %{REQUEST_URI} ^/dist/.*\.php [NC,OR]
