@@ -10,6 +10,13 @@ SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
   RewriteEngine On
   RewriteBase /
   RewriteRule ^vendor(?:/|$) - [F,L]
+  # ملفات المستخدمين: ما يتشغل فيها أي سكربت ولا صفحة (حتى لو انرفع ملف قديم قبل التحصين)
+  RewriteRule ^(?:dist/)?uploads/.*\.(?:php\d?|phtml|phar|pht|phps|shtml|cgi|pl|py|html?|svg|xml|js)$ - [F,NC,L]
+  # نسخة dist/ موجودة لتطبيق Node فقط — سكربتات PHP منها ما تُخدم (الـ API الحقيقي في الجذر).
+  # بالرابط الكامل (REQUEST_URI) لأن dist/ فيها نسخة من هذا الملف ومساراتها نسبية لها
+  RewriteCond %{REQUEST_URI} ^/dist/.*\.php [NC,OR]
+  RewriteCond %{REQUEST_URI} ^/(?:dist/)?(?:private_files|api/_lib)(?:/|$) [NC]
+  RewriteRule ^ - [F,L]
   # الاستضافة لا تشغّل Node — وسيط الذكاء الاصطناعي بـ PHP على نفس المسار
   RewriteRule ^api/ai/generate$ ai-proxy.php [L]
   # API قاعدة MySQL (public/api/index.php)

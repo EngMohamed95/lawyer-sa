@@ -105,7 +105,7 @@ export function AddDocumentModal({ isOpen, onClose, onSuccess, caseId, clientId,
       const formDataObj = new FormData();
       formDataObj.append("file", selectedFile);
 
-      const response = await fetch("/upload.php", {
+      const response = await fetch("/upload.php", { headers: { "X-Mz-Upload": "1" },
         method: "POST",
         body: formDataObj,
       });

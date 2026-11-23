@@ -29,7 +29,7 @@ export const claimSectionOf = (v: any): ClaimSectionValue => ({
 export async function uploadFile(file: File): Promise<ClaimAttachment> {
   const fd = new FormData();
   fd.append("file", file);
-  const res = await fetch("/upload.php", { method: "POST", body: fd });
+  const res = await fetch("/upload.php", { headers: { "X-Mz-Upload": "1" }, method: "POST", body: fd });
   if (!res.ok) throw new Error(`فشل رفع ${file.name}`);
   const json = await res.json();
   if (json.error) throw new Error(json.error);

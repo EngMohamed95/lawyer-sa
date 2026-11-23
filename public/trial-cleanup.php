@@ -272,6 +272,10 @@ foreach ($owners as $ownerRow) {
         $file = basename($file);
         $path = __DIR__ . '/uploads/' . $file;
         if ($file === '' || $file[0] === '.' || !is_file($path)) continue;
+        // ملف يذكره مستند مكتب ثاني ما ينحذف — مكتب تجريبي يقدر يحط روابط ملفات غيره في مستنداته
+        $like = fn(string $s) => '%/uploads/' . addcslashes($s, '%_\\') . '%';
+        if (q_one('SELECT 1 FROM docs WHERE (lawyer_id IS NULL OR lawyer_id <> ?) AND (data LIKE ? OR data LIKE ?) LIMIT 1',
+            [$uid, $like($file), $like(rawurlencode($file))]) !== null) continue;
         $localFiles++;
         if ($execute) @unlink($path);
     }

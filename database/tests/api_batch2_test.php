@@ -16,10 +16,12 @@ harness_user($pdo, 'ownerB', 'b@t.l', 'LAWYER', null);
 harness_user($pdo, 'secA', 'sa@t.l', 'SECRETARY', 'ownerA');
 harness_user($pdo, 'admin', 'ad@t.l', 'SUPER_ADMIN', 'ALL');
 harness_user($pdo, 'ownerT', 't@t.l', 'LAWYER', null, ['subscriptionBilling' => 'trial', 'subscriptionExpiry' => '2099-01-01T00:00:00Z']);
-foreach (['a@t.l' => 'A', 'b@t.l' => 'B', 'sa@t.l' => 'SA', 'ad@t.l' => 'AD', 't@t.l' => 'T'] as $e => $jar) login($e, $jar);
+harness_user($pdo, 'ownerX', 'x@t.l', 'LAWYER', null, ['subscriptionBilling' => 'trial', 'trialEndsAt' => '2000-01-01T00:00:00.000Z']);
+foreach (['a@t.l' => 'A', 'b@t.l' => 'B', 'sa@t.l' => 'SA', 'ad@t.l' => 'AD', 't@t.l' => 'T', 'x@t.l' => 'X'] as $e => $jar) login($e, $jar);
 
 $w = fn(string $jar, string $type, string $path, array $data = []) => call('POST', 'data/write', ['ops' => [['op' => $type, 'path' => $path] + ($type === 'delete' ? [] : ['data' => $data])]], $jar);
 $s = fn(array $r) => $r[0];
+$col = fn(string $sql, array $p = []) => (function () use ($pdo, $sql, $p) { $q = $pdo->prepare($sql); $q->execute($p); return $q->fetchColumn(); })();
 $get = fn(string $jar, string $path) => call('POST', 'data/get', ['path' => $path], $jar);
 $list = fn(string $jar, string $path) => call('POST', 'data/query', ['path' => $path], $jar);
 $ids = fn(array $r) => array_column($r[1]['docs'] ?? [], 'id');
@@ -177,5 +179,43 @@ check('نموذج من موقع ثاني (text/plain) ← 415', ai('SA', 'text/p
 $pdo->prepare("INSERT INTO docs (collection, parent_path, id, data) VALUES ('ai_usage', '', ?, ?)")->execute(["ownerT_$month", json_encode(['lawyerId' => 'ownerT', 'month' => $month, 'count' => 10])]);
 [$st, $r] = ai('T');
 check('مكتب تجربة استهلك حصته (10) ← 429 OFFICE_QUOTA قبل ما يوصل للمزوّد', $st === 429 && ($r['code'] ?? '') === 'OFFICE_QUOTA', [$st, $r]);
+
+echo "رفع ملفات القضايا (upload.php)\n";
+function legacy_upload(string $jar, string $content, string $name, bool $header = true): array {
+    global $base, $cookies;
+    $tmp = tempnam(sys_get_temp_dir(), 'up');
+    file_put_contents($tmp, $content);
+    $ch = curl_init(str_replace('api/index.php?__route=', 'upload.php', $base));
+    $h = $header ? ['X-Mz-Upload: 1'] : [];
+    if (!empty($cookies[$jar])) $h[] = 'Cookie: mz_session=' . $cookies[$jar]['mz_session'];
+    curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_HTTPHEADER => $h,
+        CURLOPT_POSTFIELDS => ['file' => new CURLFile($tmp, 'application/octet-stream', $name)]]);
+    $body = (string) curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    curl_close($ch);
+    @unlink($tmp);
+    return [$status, json_decode($body, true) ?? []];
+}
+$uploadsDir = dirname(__DIR__, 2) . '/public/uploads/';
+check('بدون دخول ← 401 (كان مفتوح لأي أحد)', legacy_upload('anon', '%PDF-1.4', 'a.pdf')[0] === 401);
+check('بدون ترويسة X-Mz-Upload (CSRF) ← 403', legacy_upload('SA', '%PDF-1.4', 'a.pdf', false)[0] === 403);
+check('ملف PHP ← 422', legacy_upload('SA', '<?php echo 1;', 'shell.php')[0] === 422);
+check('ملف SVG/HTML ← 422', legacy_upload('SA', '<svg onload=alert(1)>', 'x.svg')[0] === 422 && legacy_upload('SA', '<script>', 'x.html')[0] === 422);
+check('تجربة منتهية ← 403', legacy_upload('X', '%PDF-1.4', 'a.pdf')[0] === 403);
+[$st, $r] = legacy_upload('SA', '%PDF-1.4 test', 'عقد.php.pdf');
+$stored = (string) ($r['fileName'] ?? '');
+check('عضو يرفع PDF ← 200 ورابط uploads', $st === 200 && str_contains((string) ($r['fileUrl'] ?? ''), "/uploads/$stored") && is_file($uploadsDir . $stored), [$st, $r]);
+check('… الاسم بلا امتداد مزدوج (ما في .php.)', str_ends_with($stored, '.pdf') && !str_contains($stored, '.php') && str_contains($stored, 'عقد'), $stored);
+check('… ومجلد uploads فيه حماية .htaccess', str_contains((string) @file_get_contents($uploadsDir . '.htaccess'), 'Require all denied'));
+if ($stored !== '') @unlink($uploadsDir . $stored);
+
+echo "طلبات الاشتراك وإعدادات المكتب\n";
+check('طلب اشتراك باسم مكتب ثاني وحالة «مقبول» ← ينحفظ باسمي ومعلّق',
+    $s($w('A', 'create', 'subscriptionRequests/sr1', ['userId' => 'ownerB', 'status' => 'approved', 'planId' => 'pro'])) === 200
+    && ($col("SELECT JSON_UNQUOTE(JSON_EXTRACT(data, '$.userId')) FROM docs WHERE collection = 'subscriptionRequests' AND id = 'sr1'") === 'ownerA')
+    && ($col("SELECT JSON_UNQUOTE(JSON_EXTRACT(data, '$.status')) FROM docs WHERE collection = 'subscriptionRequests' AND id = 'sr1'") === 'pending'));
+check('مكتب ما ينشئ إعدادات مكتب ثاني قبله ← 403', $s($w('A', 'set', 'office_settings/ownerB', ['lawyerId' => 'ownerA', 'officeProfile' => ['name' => 'مزوّر']])) === 403);
+check('… ولا بـ lawyerId المكتب الثاني', $s($w('A', 'set', 'office_settings/ownerB', ['lawyerId' => 'ownerB'])) === 403);
+check('المكتب ينشئ إعداداته', $s($w('B', 'set', 'office_settings/ownerB', ['lawyerId' => 'ownerB', 'officeProfile' => ['name' => 'مكتب ب']])) === 200);
 
 harness_finish();

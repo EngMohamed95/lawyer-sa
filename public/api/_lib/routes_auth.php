@@ -50,16 +50,13 @@ function verify_credentials(string $email, string $password): ?string {
         return (string) $row['id'];
     }
 
+    // مسار Firebase للحسابات المنقولة (migrate_users.php) اللي ما عندها كلمة مرور بعد — بس.
+    // بريد ما له صف عندنا ما يُنشأ من Firebase أبداً: وإلا يسجّل أحد بريد مكتب في Firebase
+    // (التسجيل فيه مفتوح بالمفتاح العام) فيصير عنده حساب وجلسة قبل ما صاحب البريد يسجل.
+    if ($row === null) return null;
     $uid = bridge_firebase_password_uid($email, $password);
-    if ($uid === null) return null;
-    // مسار Firebase للحسابات اللي ما انتقلت بس. لو المعرّف موجود عندنا ببريد ثاني أو بكلمة مرور
-    // منقولة، فـ MySQL هو المرجع — وإلا يقدر أحد يغيّر بريد/كلمة مرور الحساب في Firebase
-    // (بجلسة مسروقة) ويدخل بها للأبد متجاوزاً كلمة المرور الحقيقية.
-    $byId = q_one('SELECT email, password_hash FROM users WHERE id = ?', [$uid]);
-    if ($byId !== null && ($byId['email'] !== $email || $byId['password_hash'] !== null)) return null;
-    if (!bridge_import_account($uid, $email)) {
-        fail(409, 'يوجد تعارض في بيانات هذا الحساب. تواصل مع الدعم الفني.', 'ACCOUNT_CONFLICT');
-    }
+    // ونفس الحساب بالضبط: لو تغيّر بريد/كلمة مرور حساب ثاني في Firebase، MySQL هو المرجع
+    if ($uid === null || $uid !== (string) $row['id']) return null;
     q('UPDATE users SET password_hash = ? WHERE id = ? AND password_hash IS NULL', [password_hash($password, PASSWORD_DEFAULT), $uid]);
     return $uid;
 }

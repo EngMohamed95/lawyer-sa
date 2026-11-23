@@ -394,7 +394,8 @@ function store_can_read_root(array $u, array $p, array $row): bool {
         $field = $pol['self'];
         return ($row['data']->$field ?? null) === (string) $u['id'];
     }
-    return $pol['tenantId'] && $p['id'] === tenant_of($u);
+    // مستند مكتبي بمعرّفي بس بلا lawyerId (سجل قديم) — مو مستند مكتب ثاني يحمل معرّفي
+    return $pol['tenantId'] && $p['id'] === tenant_of($u) && $row['lawyer_id'] === null;
 }
 
 function store_doc_out(array $row): array {
@@ -527,6 +528,10 @@ function store_apply(array $u, array $op): void {
     if ($p['is_child'] && $pol['read'] === 'owner') store_forbidden();
     $parentTenant = $p['is_child'] ? store_require_parent($u, $p) : null;
 
+    // مستند معرّفه = المكتب (إعدادات المكتب): ما يكتبه إلا مكتبه — وإلا مكتب ثاني ينشئه قبله
+    // ببياناته (اسم، جوال، بيانات بنك تطلع في الفواتير) والمكتب الحقيقي ما يقدر يعدّله
+    if ($pol['tenantId'] && !$p['is_child'] && !$super && $p['id'] !== $tenant) store_forbidden();
+
     $existing = store_row($p['collection'], $p['parent_path'], (string) $p['id'], true);
 
     // ─── الحذف ───
@@ -603,6 +608,16 @@ function store_apply(array $u, array $op): void {
         case 'publicCreate':
             // أي أحد ينشئ؛ التعديل لمدير المنصة
             if ($existing !== null && !$super) store_forbidden();
+            if (!$super) {
+                // الطلب الجديد «قيد المراجعة» وصاحبه من الجلسة (ما أحد يعلّق طلباً على مكتب غيره —
+                // trial-cleanup يتجاوز المكتب اللي عنده طلب معلّق)، وعدد محدود لكل جهاز
+                $new->status = 'pending';
+                $new->userId = $anon ? null : (string) $u['id'];
+                $ip = client_ip();
+                $recent = (int) q('SELECT COUNT(*) FROM login_attempts WHERE email = ? AND ip = ? AND created_at > ?', ['public-create', $ip, utc_now(-3600)])->fetchColumn();
+                if ($recent >= 10) fail(429, 'طلبات كثيرة من هذا الجهاز. حاول بعد ساعة.', 'RATE_LIMIT', ['retryAfter' => 3600]);
+                q('INSERT INTO login_attempts (email, ip, success) VALUES (?, ?, 0)', ['public-create', $ip]);
+            }
             break;
         case 'custom':
             require_once __DIR__ . '/store_rules.php';

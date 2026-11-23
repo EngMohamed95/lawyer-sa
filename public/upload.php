@@ -1,45 +1,63 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
+/**
+ * رفع ملفات القضايا والمستندات والشعار والختم إلى uploads/ (روابط عامة تُحفظ في المستندات).
+ *
+ * محمي: لازم جلسة عضو مكتب نشط + ترويسة X-Mz-Upload (حماية CSRF — نموذج من موقع ثاني
+ * ما يقدر يضيفها). الامتداد من قائمة بيضاء والاسم يُبنى من جديد، فما ينكتب على الخادم
+ * ملف يتنفذ (php) أو يشتغل في المتصفح (html/svg). public/.htaccess يمنع تشغيل أي سكربت
+ * داخل uploads/ احتياطاً.
+ */
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    exit(0);
+declare(strict_types=1);
+
+header('Content-Type: application/json; charset=utf-8');
+header('Cache-Control: no-store');
+header('X-Content-Type-Options: nosniff');
+
+require_once __DIR__ . '/api/_lib/routes_data.php';
+
+const UPLOAD_MAX_BYTES = 52_428_800; // 50MB
+const UPLOAD_EXTENSIONS = [
+    'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'ods', 'rtf', 'txt', 'csv',
+    'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'heic', 'heif', 'tif', 'tiff',
+    'mp3', 'm4a', 'wav', 'ogg', 'mp4', 'mov', 'zip', 'rar', '7z', 'eml', 'msg',
+];
+
+if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') fail(405, 'طريقة غير مسموحة.', 'METHOD_NOT_ALLOWED');
+if (($_SERVER['HTTP_X_MZ_UPLOAD'] ?? '') !== '1') fail(403, 'طلب غير مسموح.', 'FORBIDDEN');
+
+$u = require_fresh_member();
+if (!office_writable($u)) fail(403, 'انتهت الفترة التجريبية — الرفع متوقف حتى تفعيل الاشتراك.', 'TRIAL_EXPIRED');
+
+$file = $_FILES['file'] ?? null;
+if (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !is_uploaded_file((string) $file['tmp_name'])) {
+    fail(422, 'تعذّر استلام الملف.', 'VALIDATION', ['field' => 'file']);
 }
+$size = (int) $file['size'];
+if ($size <= 0 || $size > UPLOAD_MAX_BYTES) fail(422, 'حجم الملف أكبر من المسموح (50MB).', 'VALIDATION', ['field' => 'file']);
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!isset($_FILES['file'])) {
-        echo json_encode(['error' => 'No file uploaded']);
-        exit;
-    }
+$original = basename(str_replace('\\', '/', (string) $file['name']));
+$ext = strtolower((string) pathinfo($original, PATHINFO_EXTENSION));
+if (!in_array($ext, UPLOAD_EXTENSIONS, true)) fail(422, 'نوع الملف غير مسموح برفعه.', 'VALIDATION', ['field' => 'file']);
 
-    $file = $_FILES['file'];
-    $uploadDir = 'uploads/';
-    
-    // Create directory if not exists
-    if (!file_exists($uploadDir)) {
-        mkdir($uploadDir, 0777, true);
-    }
+// الاسم الأصلي يظل مقروءاً (حروف وأرقام فقط، بدون نقاط — ما في امتداد مزدوج مثل x.php.pdf)
+$base = preg_replace('/[^\p{L}\p{N}_-]+/u', '_', (string) pathinfo($original, PATHINFO_FILENAME));
+$base = trim(usubstr((string) $base, 80), '_');
+if ($base === '') $base = 'file';
+$fileName = time() . '_' . bin2hex(random_bytes(6)) . '_' . $base . '.' . $ext;
 
-    // جزء عشوائي في الاسم — رفعان بنفس الاسم في نفس الثانية لا يتشاركان ملفاً واحداً
-    $fileName = time() . '_' . bin2hex(random_bytes(4)) . '_' . basename($file['name']);
-    $targetPath = $uploadDir . $fileName;
-
-    if (move_uploaded_file($file['tmp_name'], $targetPath)) {
-        // Get the full URL
-        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
-        $host = $_SERVER['HTTP_HOST'];
-        $fileUrl = $protocol . "://" . $host . "/uploads/" . $fileName;
-        
-        echo json_encode([
-            'success' => true,
-            'fileUrl' => $fileUrl,
-            'fileName' => $fileName
-        ]);
-    } else {
-        echo json_encode(['error' => 'Failed to move uploaded file']);
-    }
-} else {
-    echo json_encode(['error' => 'Invalid request method']);
+$uploadDir = __DIR__ . '/uploads';
+if (!is_dir($uploadDir) && !@mkdir($uploadDir, 0755, true)) fail(503, 'تخزين الملفات غير متاح حالياً.', 'UNAVAILABLE');
+// حماية إضافية داخل المجلد نفسه (لو انتقل المجلد أو تغيّر .htaccess الرئيسي)
+$guard = $uploadDir . '/.htaccess';
+if (!is_file($guard)) {
+    @file_put_contents($guard, "<FilesMatch \"\\.(?i:php\\d?|phtml|phar|pht|phps|shtml|cgi|pl|py|html?|svg|xml|js)$\">\n  Require all denied\n</FilesMatch>\n");
 }
-?>
+if (!move_uploaded_file((string) $file['tmp_name'], "$uploadDir/$fileName")) fail(503, 'تعذّر حفظ الملف.', 'UNAVAILABLE');
+
+$appUrl = rtrim((string) (app_config()['app_url'] ?? ''), '/');
+if ($appUrl === '') {
+    $https = ($_SERVER['HTTPS'] ?? '') === 'on' || ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
+    $appUrl = ($https ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+}
+respond(200, ['success' => true, 'fileUrl' => "$appUrl/uploads/$fileName", 'fileName' => $fileName]);

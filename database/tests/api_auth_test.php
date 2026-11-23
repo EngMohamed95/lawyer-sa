@@ -61,6 +61,8 @@ $runConfig = $config + ['test_firebase_accounts' => [
     'attacker@test.local' => ['ownerA', 'attackpw1'],
     // هجوم: البريد الأصلي للضحية لكن كلمة مرور Firebase غيّرها المهاجم
     'ta@test.local' => ['traineeA', 'firebase-set-by-attacker'],
+    // هجوم: حساب جديد في Firebase (التسجيل فيه مفتوح بالمفتاح العام) لبريد ما له صف عندنا
+    'ghost@test.local' => ['ghost1', 'ghostpw1'],
 ]];
 $runConfigPath = tempnam(sys_get_temp_dir(), 'mzcfg') . '.php';
 file_put_contents($runConfigPath, "<?php\nreturn " . var_export($runConfig, true) . ";\n");
@@ -137,6 +139,9 @@ check('ثغرة: بريد Firebase ثاني لمعرّف حساب منقول ←
 check('… وما انضاف صف للمهاجم', $col('SELECT COUNT(*) FROM users WHERE email = ?', ['attacker@test.local']) == 0);
 [$s, $r] = login('ta@test.local', 'ATK2', 'firebase-set-by-attacker');
 check('ثغرة: كلمة مرور Firebase مغيّرة لحساب منقول ← مرفوضة', $s === 401, [$s, $r]);
+[$s, $r] = login('ghost@test.local', 'GH', 'ghostpw1');
+check('ثغرة: حساب Firebase جديد بلا صف عندنا ← 401 وما ينشأ له حساب', $s === 401 && empty($cookies['GH']['mz_session'])
+    && $col('SELECT COUNT(*) FROM users WHERE email = ?', ['ghost@test.local']) == 0, [$s, $r]);
 [$s, $r] = login('pending@test.local', 'P', 'pendpass1');
 check('تسجيل ذاتي ما اكتمل يدخل بدون ملف (hasProfile=false)', $s === 200 && ($r['hasProfile'] ?? null) === false, [$s, $r]);
 [$s, $r] = call('POST', 'accounts', ['email' => 'p2@test.local', 'password' => 'secret123', 'role' => 'TRAINEE'], 'P');

@@ -32,7 +32,7 @@ export default function OfficeProfileCard() {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const response = await fetch("/upload.php", { method: "POST", body: fd });
+      const response = await fetch("/upload.php", { headers: { "X-Mz-Upload": "1" }, method: "POST", body: fd });
       if (!response.ok) throw new Error("فشل الرفع إلى السيرفر.");
       const result = await response.json();
       if (result.error) throw new Error(result.error);

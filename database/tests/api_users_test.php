@@ -80,9 +80,9 @@ check('الرمز ما ينحفظ نصاً', $col('SELECT code_hash FROM signup_
 [$s, $r] = call('POST', 'signup/resend', ['email' => 'ahmed@new.office'], 'S1');
 check('إعادة الإرسال فوراً ← 429 انتظر', $s === 429 && ($r['code'] ?? '') === 'COOLDOWN', [$s, $r]);
 $wrong = $otp('ahmed@new.office') === '000000' ? '111111' : '000000';
-[$s, $r] = call('POST', 'signup/verify', ['email' => 'ahmed@new.office', 'code' => $wrong], 'S1');
+[$s, $r] = call('POST', 'signup/verify', ['email' => 'ahmed@new.office', 'code' => $wrong, 'password' => 'mypass123'], 'S1');
 check('رمز غلط ← 400 ومتبقي 4 محاولات', $s === 400 && ($r['attemptsLeft'] ?? null) === 4, [$s, $r]);
-[$s, $r] = call('POST', 'signup/verify', ['email' => 'ahmed@new.office', 'code' => $otp('ahmed@new.office')], 'S1');
+[$s, $r] = call('POST', 'signup/verify', ['email' => 'ahmed@new.office', 'code' => $otp('ahmed@new.office'), 'password' => 'mypass123'], 'S1');
 check('الرمز الصحيح ينشئ المكتب ويدخل', $s === 200 && ($r['user']['role'] ?? '') === 'LAWYER' && !empty($cookies['S1']['mz_session']), [$s, $r]);
 $sid = $r['user']['id'] ?? '';
 $prof = $get('S1', "users/$sid")[1]['data'] ?? [];
@@ -97,12 +97,23 @@ check('بريد مفعّل ← 409 ALREADY_ACTIVE', $s === 409 && ($r['code'] ??
 check('حساب معطّل سابق ← 409 (ما يرجع بتجربة جديدة)', $s === 409, [$s, $r]);
 // حساب قديم بلا ملف (تسجيل Firebase ما اكتمل) يكمل بنفس المعرّف
 $pdo->exec("INSERT INTO users (id, email) VALUES ('oldpend', 'old@pend.ing')");
+// جلسة قديمة لنفس المعرّف (مثلاً أحد دخل به قبل ما صاحب البريد يسجل) — ما ترث المكتب الجديد
+$pdo->exec("INSERT INTO auth_sessions (token_hash, user_id, expires_at) VALUES ('" . str_repeat('a', 64) . "', 'oldpend', DATE_ADD(UTC_TIMESTAMP(), INTERVAL 30 DAY))");
 call('POST', 'signup/start', ['email' => 'old@pend.ing', 'password' => 'newpass123', 'profile' => $profile], 'S4');
-[$s, $r] = call('POST', 'signup/verify', ['email' => 'old@pend.ing', 'code' => $otp('old@pend.ing')], 'S4');
+[$s, $r] = call('POST', 'signup/verify', ['email' => 'old@pend.ing', 'code' => $otp('old@pend.ing'), 'password' => 'newpass123'], 'S4');
 check('تسجيل قديم ما اكتمل يكمل بنفس المعرّف', $s === 200 && ($r['user']['id'] ?? '') === 'oldpend', [$s, $r]);
+check('… والجلسة القديمة لنفس المعرّف انحذفت', (int) $col('SELECT COUNT(*) FROM auth_sessions WHERE user_id = ? AND token_hash = ?', ['oldpend', str_repeat('a', 64)]) === 0);
+// أحد يطلب رمزاً لبريد غيره بكلمة مروره أثناء ما صاحب البريد ينتظر الرمز
+call('POST', 'signup/start', ['email' => 'vic@t.im', 'password' => 'victimpw1', 'profile' => $profile], 'V');
+[$s] = call('POST', 'signup/start', ['email' => 'vic@t.im', 'password' => 'attackpw1', 'profile' => $profile], 'ATK');
+check('ثغرة: طلب ثاني لنفس البريد ما يبدّل كلمة المرور', $s === 429 && password_verify('victimpw1', (string) $col('SELECT password_hash FROM signup_pending WHERE email = ?', ['vic@t.im'])), $s);
+[$s, $r] = call('POST', 'signup/verify', ['email' => 'vic@t.im', 'code' => $otp('vic@t.im'), 'password' => 'attackpw1'], 'ATK');
+check('… والرمز بكلمة مرور غير اللي انطلب بها ← 400 PASSWORD_MISMATCH', $s === 400 && ($r['code'] ?? '') === 'PASSWORD_MISMATCH', [$s, $r]);
+[$s, $r] = call('POST', 'signup/verify', ['email' => 'vic@t.im', 'code' => $otp('vic@t.im'), 'password' => 'victimpw1'], 'V');
+check('… وصاحب البريد يكمل بكلمة مروره', $s === 200 && login('vic@t.im', 'V2', 'victimpw1')[0] === 200, [$s, $r]);
 call('POST', 'signup/start', ['email' => 'brute@x.y', 'password' => 'pass12345', 'profile' => $profile], 'S5');
-for ($i = 0; $i < 5; $i++) [$s, $r] = call('POST', 'signup/verify', ['email' => 'brute@x.y', 'code' => '000001'], 'S5');
-[$s, $r] = call('POST', 'signup/verify', ['email' => 'brute@x.y', 'code' => $otp('brute@x.y')], 'S5');
+for ($i = 0; $i < 5; $i++) [$s, $r] = call('POST', 'signup/verify', ['email' => 'brute@x.y', 'code' => '000001', 'password' => 'pass12345'], 'S5');
+[$s, $r] = call('POST', 'signup/verify', ['email' => 'brute@x.y', 'code' => $otp('brute@x.y'), 'password' => 'pass12345'], 'S5');
 check('بعد 5 محاولات غلط حتى الرمز الصحيح مرفوض', $s === 400 && ($r['code'] ?? '') === 'TOO_MANY_ATTEMPTS', [$s, $r]);
 check('بيانات ناقصة ← 400', call('POST', 'signup/start', ['email' => 'x@y.z', 'password' => 'pass12345', 'profile' => ['name' => 'a']], 'S6')[0] === 400);
 

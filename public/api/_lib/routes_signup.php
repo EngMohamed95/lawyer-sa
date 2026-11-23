@@ -165,8 +165,8 @@ function route_signup_start(): void {
     $pending = q_one('SELECT * FROM signup_pending WHERE email = ?', [$email]);
     $hash = password_hash($password, PASSWORD_DEFAULT);
     $profileJson = json_encode($profile, JSON_UNESCAPED_UNICODE);
-    // أثناء انتظار إعادة الإرسال: آخر بيانات وكلمة مرور أدخلها صاحب البريد تُحفظ (الرمز المرسل يفعّلها)
-    if ($pending !== null) q('UPDATE signup_pending SET password_hash = ?, profile = ? WHERE email = ?', [$hash, $profileJson, $email]);
+    // البيانات وكلمة المرور تتغير بس مع رمز جديد (الرمز القديم يبطل) — ما أحد يبدّلها على رمز
+    // وصل لصاحب البريد. وverify يطلب نفس كلمة المرور، فاللي ما يعرفها ما يفعّل الحساب.
     signup_send($email, $profile['name'], $pending, function (string $codeHash, string $expires, string $window, int $sent) use ($email, $hash, $profileJson) {
         q('INSERT INTO signup_pending (email, password_hash, profile, code_hash, expires_at, attempts, last_sent_at, sent_count, window_start)
            VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)
@@ -203,6 +203,11 @@ function route_signup_verify(): void {
         $left = OTP_MAX_ATTEMPTS - ((int) $pending['attempts'] + 1);
         $msg = $left > 0 ? "الرمز غير صحيح. متبقٍ $left " . ($left === 1 ? 'محاولة' : 'محاولات') . '.' : 'تجاوزت عدد المحاولات. اطلب رمزاً جديداً.';
         fail(400, $msg, $left > 0 ? 'INVALID_CODE' : 'TOO_MANY_ATTEMPTS', ['attemptsLeft' => max(0, $left)]);
+    }
+    // نفس كلمة المرور اللي انطلب بها الرمز — لو أحد ثاني طلب رمزاً جديداً لبريدك بكلمة مروره،
+    // رمزك الجديد ما يفعّل حساباً بكلمة مرور غيرك
+    if (!password_verify(body_password(), (string) $pending['password_hash'])) {
+        fail(400, 'كلمة المرور لا تطابق المُدخلة عند طلب الرمز. ارجع وأدخل بياناتك من جديد.', 'PASSWORD_MISMATCH');
     }
 
     $existingId = signup_check_email($email); // تأكد ثاني: ما أحد فعّل البريد بين الطلبين
@@ -247,6 +252,9 @@ function route_signup_verify(): void {
         q('INSERT INTO users (id, email, password_hash) VALUES (?, ?, ?)', [$id, $email, $pending['password_hash']]);
     } else {
         q('UPDATE users SET password_hash = ? WHERE id = ?', [$pending['password_hash'], $id]);
+        // حساب قديم بلا ملف: أي جلسة أو رابط استعادة سابق له ما يورث المكتب الجديد
+        q('DELETE FROM auth_sessions WHERE user_id = ?', [$id]);
+        q('UPDATE password_resets SET used_at = ? WHERE user_id = ? AND used_at IS NULL', [utc_now(), $id]);
     }
     $put = fn(string $coll, string $docId, array $data) => q('INSERT INTO docs (collection, parent_path, id, data) VALUES (?, \'\', ?, ?) ON DUPLICATE KEY UPDATE data = VALUES(data)',
         [$coll, $docId, json_encode($data, JSON_UNESCAPED_UNICODE)]);

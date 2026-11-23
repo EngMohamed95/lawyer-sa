@@ -327,7 +327,7 @@ export default function CaseDetails() {
       const fd = new FormData();
       fd.append("file", fileOfBlob);
 
-      const response = await fetch("/upload.php", {
+      const response = await fetch("/upload.php", { headers: { "X-Mz-Upload": "1" },
         method: "POST",
         body: fd,
       });
@@ -363,7 +363,7 @@ export default function CaseDetails() {
       const wordFd = new FormData();
       wordFd.append("file", wordFileOfBlob);
 
-      const wordResponse = await fetch("/upload.php", { method: "POST", body: wordFd });
+      const wordResponse = await fetch("/upload.php", { headers: { "X-Mz-Upload": "1" }, method: "POST", body: wordFd });
       if (!wordResponse.ok) throw new Error("فشل رفع ملف Word إلى الاستضافة");
       const wordUploadResult = await wordResponse.json();
       if (wordUploadResult.error) throw new Error(wordUploadResult.error);

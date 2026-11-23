@@ -23,7 +23,7 @@ async function uploadImage(file: File): Promise<string> {
   if (file.size > MAX_IMAGE_BYTES) throw new Error("حجم الصورة أكبر من 5 ميجابايت.");
   const fd = new FormData();
   fd.append("file", file);
-  const res = await fetch("/upload.php", { method: "POST", body: fd });
+  const res = await fetch("/upload.php", { headers: { "X-Mz-Upload": "1" }, method: "POST", body: fd });
   const data = await res.json().catch(() => null);
   if (!res.ok || !data?.fileUrl) throw new Error(data?.error || "تعذّر رفع الصورة. أعد المحاولة.");
   return data.fileUrl as string;

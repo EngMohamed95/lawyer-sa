@@ -57,26 +57,6 @@ function bridge_refresh_if_stale(string $uid): void {
 }
 
 /**
- * يضيف صف MySQL لحساب كلمة مروره لسه في Firebase (بدون كلمة مرور).
- * يرجع false لو البريد أو المعرّف مربوط بحساب ثاني — تعارض يحتاج تدخل يدوي.
- */
-function bridge_import_account(string $uid, string $email): bool {
-    $existing = q_one('SELECT id FROM users WHERE email = ?', [$email]);
-    if ($existing !== null) {
-        if ($existing['id'] === $uid) return true;
-        error_log("api: تعارض — البريد مربوط بـ {$existing['id']} في MySQL و $uid في Firebase");
-        return false;
-    }
-    try {
-        q('INSERT INTO users (id, email) VALUES (?, ?)', [$uid, $email]);
-    } catch (PDOException $e) {
-        if ($e->getCode() === '23000') { error_log("api: تعارض — المعرّف $uid موجود ببريد آخر"); return false; }
-        throw $e;
-    }
-    return true;
-}
-
-/**
  * يتحقق من كلمة مرور قديمة عند Firebase Auth (REST، على السيرفر فقط) — لمستخدم ما دخل النظام
  * الجديد بعد. يرجع uid عند النجاح، أو null. مطفأ = null دائماً (المستخدم يستعيد كلمة المرور).
  */

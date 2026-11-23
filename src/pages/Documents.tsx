@@ -797,7 +797,7 @@ export default function Documents({
       const formDataObj = new FormData();
       formDataObj.append("file", file);
 
-      const response = await fetch("/upload.php", {
+      const response = await fetch("/upload.php", { headers: { "X-Mz-Upload": "1" },
         method: "POST",
         body: formDataObj,
       });

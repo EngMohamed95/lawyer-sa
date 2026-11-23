@@ -171,7 +171,7 @@ export function AddHearingModal({
         setUploadStatus("جاري رفع ملف محضر الضبط...");
         const fd = new FormData();
         fd.append("file", minutesFile);
-        const res = await fetch("/upload.php", { method: "POST", body: fd });
+        const res = await fetch("/upload.php", { headers: { "X-Mz-Upload": "1" }, method: "POST", body: fd });
         if (!res.ok) throw new Error("فشل رفع ملف محضر الضبط");
         const json = await res.json();
         if (json.error) throw new Error(json.error);
@@ -185,7 +185,7 @@ export function AddHearingModal({
         setUploadStatus("جاري رفع ملف حكم الجلسة...");
         const fd = new FormData();
         fd.append("file", judgmentFile);
-        const res = await fetch("/upload.php", { method: "POST", body: fd });
+        const res = await fetch("/upload.php", { headers: { "X-Mz-Upload": "1" }, method: "POST", body: fd });
         if (!res.ok) throw new Error("فشل رفع ملف صك الحكم");
         const json = await res.json();
         if (json.error) throw new Error(json.error);

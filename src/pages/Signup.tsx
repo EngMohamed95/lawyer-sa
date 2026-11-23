@@ -227,7 +227,8 @@ export default function Signup() {
     setError("");
     try {
       // السيرفر ينشئ حساب المكتب ويفتح الجلسة (كوكي) — بعدها نجهّز الجلسة في الواجهة
-      const data = await callSignupApi("verify", { email: email(), code });
+      // كلمة المرور نفسها اللي انطلب بها الرمز — السيرفر يتأكد إنها ما تبدّلت
+      const data = await callSignupApi("verify", { email: email(), code, password: form.password });
       const { toSessionUser } = await import("../lib/authApi");
       const destination = await startSession(toSessionUser(data.user), { rememberMe: true, typedEmail: email() });
       navigate(destination, { replace: true });
@@ -239,6 +240,7 @@ export default function Signup() {
       }
       setError(err?.message || "تعذّر التحقق من الرمز.");
       if (err?.code === "TOO_MANY_ATTEMPTS" || err?.code === "CODE_EXPIRED") setCode("");
+      if (err?.code === "PASSWORD_MISMATCH") { setCode(""); setStep("form"); }
     } finally {
       setBusy(false);
     }

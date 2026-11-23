@@ -58,7 +58,8 @@ function aidb_session_user(): ?array {
 /** الحساب نشط ومكتبه نشط (account_active في access.php) */
 function aidb_active(array $u): bool {
     $blocked = fn($s) => in_array($s, ['SUSPENDED', 'DISABLED'], true);
-    if (($u['role'] ?? 'PENDING') === 'PENDING' || $blocked($u['status'] ?? null) || !empty($u['deleted_at'])) return false;
+    // عميل البوابة ما يستخدم المساعد (ولا يستهلك حصة المكتب) — للفريق بس، مثل is_member
+    if (in_array($u['role'] ?? 'PENDING', ['PENDING', 'ANON', 'CLIENT'], true) || $blocked($u['status'] ?? null) || !empty($u['deleted_at'])) return false;
     if ($u['role'] === 'SUPER_ADMIN') return true;
     $tenant = is_string($u['lawyer_id']) && $u['lawyer_id'] !== '' ? $u['lawyer_id'] : $u['id'];
     if ($tenant === $u['id']) return true;

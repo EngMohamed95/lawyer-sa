@@ -79,6 +79,7 @@ function files_detect_type(string $tmp): string {
 function route_files_upload(): void {
     if (($_SERVER['HTTP_X_MZ_UPLOAD'] ?? '') !== '1') fail(403, 'طلب غير مسموح.', 'FORBIDDEN');
     $u = require_fresh_member();
+    if (!office_writable($u)) fail(403, 'انتهت الفترة التجريبية — الرفع متوقف حتى تفعيل الاشتراك.', 'TRIAL_EXPIRED');
     $kind = (string) ($_POST['kind'] ?? '');
     if (!isset(FILE_KINDS[$kind])) fail(422, 'نوع الملف غير صحيح.', 'VALIDATION', ['field' => 'kind']);
     $f = $_FILES['file'] ?? null;

@@ -436,7 +436,7 @@ export default function CaseStatusReport({ data, profile, stampUrl, isExecutionC
       if (!blob) return;
       const fd = new FormData();
       fd.append("file", new window.File([blob], fileName, { type: "application/pdf" }));
-      const response = await fetch("/upload.php", { method: "POST", body: fd });
+      const response = await fetch("/upload.php", { headers: { "X-Mz-Upload": "1" }, method: "POST", body: fd });
       if (!response.ok) throw new Error("فشل رفع التقرير");
       const result = await response.json();
       if (result.error) throw new Error(result.error);

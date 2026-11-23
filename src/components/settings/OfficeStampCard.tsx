@@ -28,7 +28,7 @@ export default function OfficeStampCard() {
     try {
       const formDataObj = new FormData();
       formDataObj.append("file", file);
-      const response = await fetch("/upload.php", { method: "POST", body: formDataObj });
+      const response = await fetch("/upload.php", { headers: { "X-Mz-Upload": "1" }, method: "POST", body: formDataObj });
       if (!response.ok) throw new Error("فشل الرفع إلى السيرفر.");
       const result = await response.json();
       if (result.error) throw new Error(result.error);
