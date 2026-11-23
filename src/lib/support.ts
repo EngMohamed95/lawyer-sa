@@ -4,24 +4,24 @@ import {
   getDoc,
   getDocs,
   getCountFromServer,
-  increment,
   limit,
   onSnapshot,
   orderBy,
   query,
-  writeBatch,
   serverTimestamp,
-  startAfter,
   setDoc,
   updateDoc,
   where,
-  type Timestamp,
   type QueryConstraint,
   type QueryDocumentSnapshot,
 } from "@/lib/store";
 import { auth, db } from "./firebase";
-import { storage } from "./firebase";
-import { ref, uploadBytes, getBlob, deleteObject } from "firebase/storage";
+import { apiRequest } from "./authApi";
+import { deletePrivateFile, downloadPrivateFile, saveBlob, uploadPrivateFile } from "./files";
+import { toMillis, type StoredDate } from "./dates";
+
+/** تاريخ مخزّن: Timestamp قديم أو نص ISO من MySQL — اقرأه بـ toDate/toMillis من ./dates */
+type Timestamp = Exclude<StoredDate, undefined>;
 
 export const SUPPORT_STATUSES = {
   OPEN: "مفتوحة / جديدة",
@@ -108,13 +108,13 @@ async function uploadSupportFiles(
   try {
     // Sequential uploads cap memory and bandwidth usage on mobile connections.
     for (const file of files) {
-      const path = `supportAttachments/${ticketId}/${profile.uid}/${crypto.randomUUID()}`;
-      await uploadBytes(ref(storage, path), file, { contentType: file.type });
+      // السيرفر يحدد المسار (supportAttachments/{التذكرة}/{المرسل}/...) ويفحص النوع من المحتوى
+      const stored = await uploadPrivateFile("support", file, { ticketId });
       uploaded.push({
         name: file.name.slice(0, 200),
-        path,
-        size: file.size,
-        type: file.type,
+        path: stored.path,
+        size: stored.size,
+        type: stored.contentType,
       });
     }
     return uploaded;
@@ -125,17 +125,11 @@ async function uploadSupportFiles(
 }
 async function cleanSupportUploads(files: SupportAttachment[]) {
   await Promise.allSettled(
-    files.map((file) => deleteObject(ref(storage, file.path))),
+    files.map((file) => deletePrivateFile(file.path)),
   );
 }
 export async function downloadSupportAttachment(file: SupportAttachment) {
-  const blob = await getBlob(ref(storage, file.path), 5 * 1024 * 1024);
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = file.name;
-  anchor.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+  saveBlob(await downloadPrivateFile(file.path), file.name);
 }
 
 export async function loadSupportProfile(): Promise<SupportProfile> {
@@ -198,10 +192,7 @@ export function watchSupportTickets(
             (!filters.status || data.status === filters.status) &&
             (!filters.priority || data.priority === filters.priority);
         })
-        .sort((a, b) =>
-          (b.data().createdAt?.toMillis?.() || 0) -
-          (a.data().createdAt?.toMillis?.() || 0),
-        );
+        .sort((a, b) => toMillis(b.data().createdAt) - toMillis(a.data().createdAt));
       const offset = cursor
         ? Math.max(0, all.findIndex((d) => d.id === cursor.id) + 1)
         : 0;
@@ -301,11 +292,12 @@ export async function loadOlderSupportMessages(
   id: string,
   cursor: SupportCursor,
 ) {
+  // الأقدم من آخر رسالة معروضة (التواريخ نصوص ISO تترتب صح كنصوص)
   const snapshot = await getDocs(
     query(
       collection(db, "supportTickets", id, "messages"),
+      where("createdAt", "<", cursor.data().createdAt),
       orderBy("createdAt", "desc"),
-      startAfter(cursor),
       limit(30),
     ),
   );
@@ -371,29 +363,15 @@ export async function replyToSupportTicket(
   const body = text.trim();
   if ((!body && !files.length) || body.length > 10000)
     throw new Error("اكتب ردًا لا يتجاوز 10000 حرف أو أرفق ملفًا.");
-  const ticketRef = doc(db, "supportTickets", ticketId);
-  const messageRef = doc(collection(ticketRef, "messages"));
   const attachments = await uploadSupportFiles(profile, ticketId, files);
   try {
-    // A server-side increment avoids stale count conflicts when both sides reply together.
-    // Rules check the current ticket state and bind the new message to this atomic batch.
-    const transaction = writeBatch(db);
-    transaction.set(messageRef, {
+    // السيرفر يضيف الرسالة ويحدّث التذكرة (الحالة، العدد، آخر رد) بمعاملة وحدة
+    await apiRequest("POST", "support/reply", {
+      ticketId,
       body,
       attachments,
-      senderId: profile.uid,
       senderName: profile.name,
-      isAdmin: profile.isAdmin,
-      createdAt: serverTimestamp(),
     });
-    transaction.update(ticketRef, {
-      status: profile.isAdmin ? "WAITING" : "OPEN",
-      updatedAt: serverTimestamp(),
-      lastMessageId: messageRef.id,
-      lastReplyBy: profile.isAdmin ? "ADMIN" : "USER",
-      messageCount: increment(1),
-    });
-    await transaction.commit();
   } catch (error) {
     await cleanSupportUploads(attachments);
     throw error;

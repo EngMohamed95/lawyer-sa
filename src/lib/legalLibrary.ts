@@ -16,10 +16,13 @@ import {
   serverTimestamp,
   updateDoc,
   where,
-  type Timestamp,
 } from "@/lib/store";
-import { deleteObject, getBlob, ref, uploadBytesResumable } from "firebase/storage";
-import { db, storage } from "./firebase";
+import { db } from "./firebase";
+import { deletePrivateFile, downloadPrivateFile, saveBlob, uploadPrivateFile } from "./files";
+import { toMillis, type StoredDate } from "./dates";
+
+/** تاريخ مخزّن: Timestamp قديم أو نص ISO من MySQL — اقرأه بـ toDate/toMillis من ./dates */
+type Timestamp = Exclude<StoredDate, undefined>;
 
 export const LIBRARY_COLLECTION = "legal_library";
 
@@ -97,43 +100,28 @@ export function uploadLibraryFile(
   file: File,
   onProgress?: (percent: number) => void,
 ): Promise<LibraryFile> {
-  const ext = file.name.split(".").pop()?.toLowerCase() || "";
-  const contentType = ALLOWED_FILES[ext];
-  const path = `legalLibrary/${uid}/${crypto.randomUUID()}`;
-  const task = uploadBytesResumable(ref(storage, path), file, { contentType });
-  return new Promise((resolve, reject) => {
-    task.on(
-      "state_changed",
-      (snap) => onProgress?.(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
-      reject,
-      () => resolve({ path, name: file.name.slice(0, 200), size: file.size, contentType }),
-    );
-  });
+  void uid; // السيرفر يحدد المسار legalLibrary/{صاحب الجلسة}/... — ما نثق بمعرّف من الواجهة
+  return uploadPrivateFile("legal", file, { onProgress }).then((stored) => ({
+    path: stored.path,
+    name: file.name.slice(0, 200),
+    size: stored.size,
+    contentType: stored.contentType as LibraryFile["contentType"],
+  }));
 }
 
 export async function deleteLibraryFile(file: LibraryFile | null | undefined) {
   if (!file?.path) return;
-  try {
-    await deleteObject(ref(storage, file.path));
-  } catch (err: any) {
-    // الملف محذوف مسبقاً — لا مشكلة
-    if (err?.code !== "storage/object-not-found") throw err;
-  }
+  // حذف ملف غير موجود = نجاح (السيرفر ما يرجع خطأ)
+  await deletePrivateFile(file.path);
 }
 
-/** التنزيل يمر عبر قواعد Storage (لا روابط عامة) — صاحب الملف وحده يستطيع */
+/** التنزيل يمر من السيرفر بعد التحقق (لا روابط عامة) — صاحب الملف وحده يستطيع */
 export function fetchLibraryFile(file: LibraryFile): Promise<Blob> {
-  return getBlob(ref(storage, file.path), LIBRARY_MAX_FILE_BYTES + 1024);
+  return downloadPrivateFile(file.path);
 }
 
 export async function downloadLibraryFile(file: LibraryFile) {
-  const blob = await fetchLibraryFile(file);
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = file.name;
-  a.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+  saveBlob(await fetchLibraryFile(file), file.name);
 }
 
 export interface LibraryItemInput {
@@ -203,8 +191,8 @@ export function watchMyLibrary(
           .map((d) => ({ ...EMPTY_LIBRARY_ITEM, ...d.data(), id: d.id }) as LibraryItem)
           .sort(
             (a, b) =>
-              (b.updatedAt?.toMillis() || b.createdAt?.toMillis() || 0) -
-              (a.updatedAt?.toMillis() || a.createdAt?.toMillis() || 0),
+              (toMillis(b.updatedAt) || toMillis(b.createdAt)) -
+              (toMillis(a.updatedAt) || toMillis(a.createdAt)),
           ),
       ),
     error,

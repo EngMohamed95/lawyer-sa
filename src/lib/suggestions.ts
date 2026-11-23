@@ -10,9 +10,12 @@ import {
   serverTimestamp,
   updateDoc,
   where,
-  type Timestamp,
 } from "@/lib/store";
 import { db } from "./firebase";
+import { toMillis, type StoredDate } from "./dates";
+
+/** تاريخ مخزّن: Timestamp قديم أو نص ISO من MySQL */
+type Timestamp = Exclude<StoredDate, undefined>;
 import { loadSupportProfile, type SupportProfile } from "./support";
 
 export const SUGGESTION_STATUSES = {
@@ -75,7 +78,7 @@ export function watchSuggestions(
           .map((item) => ({ ...item.data(), id: item.id }) as ProductSuggestion)
           .sort(
             (a, b) =>
-              (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0),
+              toMillis(b.createdAt) - toMillis(a.createdAt),
           ),
       ),
     error,

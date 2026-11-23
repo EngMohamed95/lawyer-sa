@@ -4,21 +4,14 @@
  * أسلوب المصادقة والتعامل مع الأخطاء المستخدم في aiProxy.ts.
  */
 
-import { auth } from "./firebase";
 import { apiUrl } from "./apiBase";
 
 const NO_SERVER_MESSAGE =
   "خدمة استخراج النصوص غير مفعّلة على الخادم حالياً.";
 
 async function authHeaders(): Promise<Record<string, string>> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    if (token) headers.Authorization = `Bearer ${token}`;
-  } catch {
-    // بلا توكن سيرد الخادم 401 برسالة واضحة
-  }
-  return headers;
+  // المصادقة بكوكي جلسة MySQL (HttpOnly) — ينرسل تلقائياً مع طلبات نفس الموقع
+  return { "Content-Type": "application/json" };
 }
 
 /** يقرأ ملفاً كنص Base64 خام (بلا بادئة data:...;base64,) */

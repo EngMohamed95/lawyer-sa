@@ -83,27 +83,36 @@ async function startServer() {
       php.on("error", (err) => console.warn(`تعذّر تشغيل PHP (${err.message}) — /api/v1 لن يعمل محلياً`));
       process.on("exit", () => php.kill());
     }
-    app.use("/api/v1", express.raw({ type: () => true, limit: "2mb" }), async (req, res) => {
-      const route = req.path.replace(/^\//, "");
-      const search = new URLSearchParams(req.query as Record<string, string>);
-      search.set("__route", route);
+    // يمرّر الطلب كما هو لملف PHP على خادم PHP المحلي (مع الكوكيز وترويسات الرفع)
+    const forwardToPhp = async (req: express.Request, res: express.Response, target: string) => {
       try {
-        const upstream = await fetch(`${phpUrl}/api/index.php?${search}`, {
+        const upstream = await fetch(`${phpUrl}${target}`, {
           method: req.method,
           headers: {
             ...(req.headers["content-type"] ? { "Content-Type": req.headers["content-type"] } : {}),
             ...(req.headers.cookie ? { Cookie: req.headers.cookie } : {}),
             ...(req.headers["user-agent"] ? { "User-Agent": req.headers["user-agent"] } : {}),
+            ...(req.headers["x-mz-upload"] ? { "X-Mz-Upload": String(req.headers["x-mz-upload"]) } : {}),
           },
           body: ["GET", "HEAD"].includes(req.method) || !Buffer.isBuffer(req.body) ? undefined : req.body,
           redirect: "manual",
         });
         for (const cookie of upstream.headers.getSetCookie()) res.append("Set-Cookie", cookie);
+        const disposition = upstream.headers.get("content-disposition");
+        if (disposition) res.setHeader("Content-Disposition", disposition);
         res.status(upstream.status).type(upstream.headers.get("content-type") || "application/json").send(Buffer.from(await upstream.arrayBuffer()));
       } catch {
         res.status(503).json({ error: "خادم PHP المحلي غير مشغّل. شغّل: php -S 127.0.0.1:8090 -t public", code: "NOT_CONFIGURED" });
       }
+    };
+    const rawBody = express.raw({ type: () => true, limit: "60mb" });
+    app.use("/api/v1", rawBody, (req, res) => {
+      const search = new URLSearchParams(req.query as Record<string, string>);
+      search.set("__route", req.path.replace(/^\//, ""));
+      return forwardToPhp(req, res, `/api/index.php?${search}`);
     });
+    // المساعد الذكي: نفس ai-proxy.php اللي على الاستضافة (جلسة MySQL) بدل مسار Node القديم
+    app.post("/api/ai/generate", rawBody, (req, res) => forwardToPhp(req, res, "/ai-proxy.php"));
   }
 
   app.use(express.json({ limit: '50mb' }));
@@ -223,7 +232,7 @@ async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     // ملفات الأسرار لا تُقدَّم أبداً — .htaccess يحميها على الاستضافة، وهذا يحميها محلياً
     // Vite يقدّم أي ملف في جذر المشروع، والسيرفر على 0.0.0.0 (الشبكة المحلية تشوفه)
-    app.use(/^\/(serviceAccountKey\.json|ai-config\.php|mail-config\.php|db-config[^/]*\.php|KEYS_FOR_GITHUB\.txt|.*\.(docx|log))$/i, (_req, res) => {
+    app.use(/^\/(serviceAccountKey\.json|ai-config\.php|mail-config\.php|db-config[^/]*\.php|KEYS_FOR_GITHUB\.txt|private_files\/.*|.*\.(docx|log))$/i, (_req, res) => {
       res.sendStatus(404);
     });
     const phpDevUrl = (process.env.PHP_DEV_URL || "http://127.0.0.1:8090").replace(/\/$/, "");

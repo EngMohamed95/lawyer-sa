@@ -34,18 +34,29 @@ function data_query_req(object $b): array {
     return json_decode(json_encode($b), true);
 }
 
+/**
+ * مستخدم طلبات البيانات: العضو بحالته الحالية، أو الزائر (STORE_ANON) لو ما في دخول.
+ * store.php يسمح للزائر فقط بقراءة 'public' (الباقات) وإنشاء 'publicCreate' (طلبات الاشتراك).
+ */
+function data_user(): array {
+    $session = session_user();
+    if ($session === null) return STORE_ANON;
+    bridge_refresh_if_stale((string) $session['id']);
+    return load_user((string) $session['id']);
+}
+
 function route_data_query(): void {
-    $u = require_fresh_member();
+    $u = data_user();
     respond(200, store_query($u, data_query_req(data_body())));
 }
 
 function route_data_count(): void {
-    $u = require_fresh_member();
+    $u = data_user();
     respond(200, ['count' => store_count($u, data_query_req(data_body()))]);
 }
 
 function route_data_get(): void {
-    $u = require_fresh_member();
+    $u = data_user();
     $b = data_body();
     respond(200, store_get($u, (string) ($b->path ?? '')));
 }
@@ -99,7 +110,7 @@ function route_counters_next(): void {
 }
 
 function route_data_write(): void {
-    $u = require_fresh_member();
+    $u = data_user();
     $b = data_body();
     $ops = $b->ops ?? null;
     if (!is_array($ops)) fail(400, 'صيغة الطلب غير صحيحة.', 'BAD_REQUEST');

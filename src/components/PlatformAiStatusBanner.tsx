@@ -6,14 +6,15 @@
 
 import { useEffect, useState } from "react";
 import { AlertTriangle, X } from "lucide-react";
-import { doc, onSnapshot, serverTimestamp, setDoc, type Timestamp } from "@/lib/store";
+import { doc, onSnapshot, serverTimestamp, setDoc } from "@/lib/store";
+import { toDate, type StoredDate } from "../lib/dates";
 import { db } from "../lib/firebase";
 
 interface PlatformAiStatus {
   state: "DOWN" | "OK";
   reason: "" | "QUOTA" | "ACCOUNT" | "MANUAL";
   httpStatus: number;
-  at?: Timestamp;
+  at?: StoredDate;
 }
 
 const REASON_TEXT: Record<string, string> = {
@@ -36,7 +37,7 @@ export default function PlatformAiStatusBanner() {
     state: "OK", reason: "MANUAL", httpStatus: 0, at: serverTimestamp(),
   }).catch((err) => alert("تعذّر إخفاء التنبيه: " + (err?.message || err)));
 
-  const since = status.at?.toDate().toLocaleString("ar-EG", { dateStyle: "medium", timeStyle: "short" });
+  const since = toDate(status.at)?.toLocaleString("ar-EG", { dateStyle: "medium", timeStyle: "short" });
 
   return (
     <div className="mb-4 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" dir="rtl" role="alert">

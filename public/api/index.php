@@ -42,7 +42,13 @@ $routes = [
     ['POST', 'data/get', 'routes_data.php', 'route_data_get'],
     ['POST', 'data/write', 'routes_data.php', 'route_data_write'],
     ['POST', 'counters/next', 'routes_data.php', 'route_counters_next'],
+    ['POST', 'support/reply', 'routes_support.php', 'route_support_reply'],
+    ['POST', 'files/upload', 'routes_files.php', 'route_files_upload'],
+    ['GET', 'files/download', 'routes_files.php', 'route_files_download'],
+    ['POST', 'files/delete', 'routes_files.php', 'route_files_delete'],
 ];
+/** مسارات POST بجسم غير JSON (رفع ملفات multipart) — لها حماية CSRF خاصة بها */
+$nonJsonPost = ['files/upload'];
 
 $pathMatched = false;
 foreach ($routes as [$m, $pattern, $file, $handler]) {
@@ -51,7 +57,7 @@ foreach ($routes as [$m, $pattern, $file, $handler]) {
     $pathMatched = true;
     if ($m !== $method) continue;
     // الطلبات اللي تغيّر بيانات: JSON فقط (حماية CSRF) — DELETE بدون جسم مستثنى بالـ SameSite
-    if ($method === 'POST') json_body();
+    if ($method === 'POST' && !in_array($pattern, $nonJsonPost, true)) json_body();
     require_once __DIR__ . '/_lib/' . $file;
     $handler(...array_slice($params, 1));
     exit;

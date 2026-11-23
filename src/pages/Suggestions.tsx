@@ -1,4 +1,5 @@
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { toDate } from "../lib/dates";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { CheckCircle2, Clock3, Code2, Hourglass, Lightbulb, Loader2, Plus, Search, Sparkles, X } from "lucide-react";
 import {
@@ -24,7 +25,7 @@ const statusColors: Record<SuggestionStatus, string> = {
   IMPLEMENTED: "bg-emerald-100 text-emerald-800",
   DECLINED: "bg-gray-100 text-gray-600",
 };
-const formatDate = (value: ProductSuggestion["createdAt"]) => value?.toDate().toLocaleString("ar-SA", { calendar: "gregory", dateStyle: "medium", timeStyle: "short" }) || "جارٍ الحفظ…";
+const formatDate = (value: ProductSuggestion["createdAt"]) => toDate(value)?.toLocaleString("ar-SA", { calendar: "gregory", dateStyle: "medium", timeStyle: "short" }) || "جارٍ الحفظ…";
 
 export default function Suggestions() {
   const session = useAuthSession();

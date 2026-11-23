@@ -245,6 +245,22 @@ function delete_mysql_office(string $officeId, array $members, array &$counts, a
 /* ────────────────────────── Storage + Auth ────────────────────────── */
 
 /** ملفات المكتبة القانونية الشخصية في Firebase Storage: legalLibrary/{uid}/ */
+/** يحذف مجلد ملفات خاصة (private_files/{$sub}) بكل ما فيه — يرجع عدد الملفات */
+function delete_private_dir(string $sub, bool $execute): int {
+    if (!preg_match('#^[A-Za-z]+/[A-Za-z0-9_-]{1,64}$#', $sub)) return 0;
+    $root = (string) (app_config()['files_dir'] ?? '');
+    if ($root === '') $root = dirname(__DIR__) . '/private_files'; // نفس files_root() — بجانب جذر الموقع
+    $dir = rtrim($root, '/\\') . '/' . $sub;
+    if (!is_dir($dir)) return 0;
+    $count = 0;
+    foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST) as $f) {
+        if ($f->isFile()) $count++;
+        if ($execute) $f->isDir() ? @rmdir($f->getPathname()) : @unlink($f->getPathname());
+    }
+    if ($execute) @rmdir($dir);
+    return $count;
+}
+
 function delete_storage_prefix(string $bucket, string $prefix, bool $execute): int {
     $n = 0;
     $pageToken = '';
@@ -452,7 +468,11 @@ foreach ($owners as $ownerDoc) {
 
     // 2) الملفات: المكتبة القانونية في Storage + المرفوعات على هذا الخادم
     $storageFiles = 0;
-    foreach ($members as $m) $storageFiles += delete_storage_prefix($bucket, "legalLibrary/$m/", $execute);
+    foreach ($members as $m) {
+        $storageFiles += delete_storage_prefix($bucket, "legalLibrary/$m/", $execute);
+        // الملفات الخاصة على السيرفر (بديل Firebase Storage — api/_lib/routes_files.php)
+        $storageFiles += delete_private_dir("legalLibrary/$m", $execute);
+    }
     $localFiles = 0;
     foreach (array_keys($files) as $file) {
         $file = basename($file);

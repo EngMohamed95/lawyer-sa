@@ -6,8 +6,8 @@
  * .htaccess يوجّه /api/ai/generate إلى هذا الملف، فالواجهة لا تتغيّر.
  *
  * - المفتاح يبقى على الخادم في ai-config.php (يُنشأ وقت النشر من أسرار GitHub، ولا يُرفع للمستودع).
- * - كل طلب يجب أن يحمل توكن Firebase صالحاً لمستخدم مسجّل — يُتحقق من توقيعه
- *   بشهادات Google العامة، فلا حاجة لملف حساب الخدمة.
+ * - كل طلب يجب أن يحمل جلسة دخول سارية (كوكي HttpOnly من /api/v1/auth/login)، والحصة
+ *   والاستهلاك من MySQL (api/_lib/ai_store.php).
  * - حد 20 طلباً في الدقيقة لكل مستخدم.
  *
  * عقد الرد مطابق لخادم Node: رد Gemini/Groq يُمرَّر كما هو، والأخطاء { error: "..." }.
@@ -20,6 +20,8 @@ header('Cache-Control: no-store');
 const RATE_LIMIT_PER_MINUTE = 20;
 // المرفقات (PDF/صور) تُرسل مضمّنة بـ base64 — الواجهة تحدّها بـ 10MB خام (~14MB مرمّزة)
 const MAX_BODY_BYTES = 20 * 1024 * 1024;
+
+require_once __DIR__ . '/api/_lib/ai_store.php';
 /** نماذج احتياطية عند ضغط مؤقت على النموذج المطلوب — نفس القائمة في src/server/api.ts */
 const GEMINI_FALLBACK_MODELS = ['gemini-flash-lite-latest', 'gemini-3.5-flash'];
 /** حد «التفكير» قبل الكتابة — يكفي لصياغة قانونية منظمة ويُبقي الرد خلال ثوانٍ معدودة */
@@ -27,7 +29,6 @@ const THINKING_BUDGET = 1024;
 /** ميزانية الطلب كله (أقل من مهلة الاستضافة ~120 ث) ومهلة المحاولة الواحدة قبل الانتقال للبديل */
 const AI_TOTAL_BUDGET_SECONDS = 105;
 const AI_FIRST_ATTEMPT_SECONDS = 45;
-const CERTS_URL ='https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com';
 
 /** $code يميّز الأخطاء للواجهة: RATE_LIMIT · OFFICE_QUOTA · PLATFORM_UNAVAILABLE · PROVIDER_BUSY */
 function fail(int $status, string $message, ?string $code = null): void {
@@ -117,51 +118,7 @@ function http_request(string $method, string $url, array $headers = [], ?string 
     return [$status, $respHeaders, $resp === false ? '' : $resp];
 }
 
-/** شهادات Google العامة لتوكنات Firebase — مخزّنة مؤقتاً حسب Cache-Control */
-function google_certs(): array {
-    $cacheFile = sys_get_temp_dir() . '/lawyer_sa_firebase_certs.json';
-    if (is_file($cacheFile)) {
-        $cached = json_decode((string) @file_get_contents($cacheFile), true);
-        if (is_array($cached) && ($cached['expires'] ?? 0) > time() && is_array($cached['certs'] ?? null)) {
-            return $cached['certs'];
-        }
-    }
-    [$status, $headers, $body] = http_request('GET', CERTS_URL);
-    $certs = json_decode($body, true);
-    if ($status !== 200 || !is_array($certs) || !$certs) fail(503, 'تعذّر التحقق من الجلسة حالياً. أعد المحاولة بعد قليل.');
-    $maxAge = 3600;
-    if (preg_match('/max-age=(\d+)/', $headers['cache-control'] ?? '', $m)) $maxAge = (int) $m[1];
-    @file_put_contents($cacheFile, json_encode(['expires' => time() + $maxAge, 'certs' => $certs]), LOCK_EX);
-    return $certs;
-}
 
-/** يتحقق من توكن Firebase ويرجع معرّف المستخدم (uid) */
-function verify_firebase_token(string $token, string $projectId): string {
-    $parts = explode('.', $token);
-    if (count($parts) !== 3) fail(401, 'مطلوب تسجيل الدخول.');
-    [$h64, $p64, $s64] = $parts;
-    $header = json_decode(b64url_decode($h64), true);
-    $payload = json_decode(b64url_decode($p64), true);
-    if (!is_array($header) || !is_array($payload) || ($header['alg'] ?? '') !== 'RS256' || empty($header['kid'])) {
-        fail(401, 'مطلوب تسجيل الدخول.');
-    }
-    $certs = google_certs();
-    $cert = $certs[$header['kid']] ?? null;
-    if (!$cert) fail(401, 'انتهت الجلسة. سجّل الدخول من جديد.');
-    if (openssl_verify("$h64.$p64", b64url_decode($s64), $cert, OPENSSL_ALGO_SHA256) !== 1) {
-        fail(401, 'مطلوب تسجيل الدخول.');
-    }
-    $now = time();
-    $skew = 300;
-    $valid = ($payload['aud'] ?? '') === $projectId
-        && ($payload['iss'] ?? '') === "https://securetoken.google.com/$projectId"
-        && is_string($payload['sub'] ?? null) && $payload['sub'] !== '' && strlen($payload['sub']) <= 128
-        && (int) ($payload['exp'] ?? 0) > $now - $skew
-        && (int) ($payload['iat'] ?? PHP_INT_MAX) <= $now + $skew
-        && (int) ($payload['auth_time'] ?? PHP_INT_MAX) <= $now + $skew;
-    if (!$valid) fail(401, 'انتهت الجلسة. سجّل الدخول من جديد.');
-    return $payload['sub'];
-}
 
 /** حد الطلبات لكل مستخدم — نافذة دقيقة واحدة في ملف مؤقت */
 function rate_limit(string $uid): void {
@@ -200,106 +157,22 @@ function rate_limit(string $uid): void {
 
 const OFFICE_CTX_TTL = 300;
 
-function fs_base(string $projectId): string {
-    return "https://firestore.googleapis.com/v1/projects/$projectId/databases/(default)/documents";
+
+
+
+
+/** سياق المكتب (الحصة، القفل) من MySQL — انظر aidb_office_context */
+function ai_office_context(array $user): array {
+    return aidb_office_context($user);
 }
 
-function fs_value($v) {
-    if (!is_array($v)) return null;
-    if (array_key_exists('stringValue', $v)) return $v['stringValue'];
-    if (array_key_exists('integerValue', $v)) return (int) $v['integerValue'];
-    if (array_key_exists('doubleValue', $v)) return (float) $v['doubleValue'];
-    if (array_key_exists('booleanValue', $v)) return (bool) $v['booleanValue'];
-    if (array_key_exists('timestampValue', $v)) return $v['timestampValue'];
-    if (isset($v['mapValue'])) {
-        $out = [];
-        foreach ($v['mapValue']['fields'] ?? [] as $k => $f) $out[$k] = fs_value($f);
-        return $out;
-    }
-    if (isset($v['arrayValue'])) return array_map('fs_value', $v['arrayValue']['values'] ?? []);
-    return null;
-}
-
-/** مستند Firestore كمصفوفة — null إن لم يوجد، false عند أي خطأ آخر */
-function fs_get(string $projectId, string $token, string $path) {
-    [$status, , $body] = http_request('GET', fs_base($projectId) . '/' . $path, ["Authorization: Bearer $token"]);
-    if ($status === 404) return null;
-    $doc = json_decode($body, true);
-    if ($status !== 200 || !is_array($doc)) return false;
-    $out = [];
-    foreach ($doc['fields'] ?? [] as $k => $f) $out[$k] = fs_value($f);
-    return $out;
-}
-
-/** كتابة بحقول ثابتة + تحويلات خادم (زيادة/وقت الخادم) — عبر :commit */
-function fs_commit_write(string $projectId, string $token, string $path, array $fields, array $transforms): bool {
-    $name = "projects/$projectId/databases/(default)/documents/$path";
-    $write = [
-        'update' => ['name' => $name, 'fields' => $fields ?: new stdClass()],
-        'updateMask' => ['fieldPaths' => array_keys($fields)],
-        'updateTransforms' => $transforms,
-    ];
-    [$status] = http_request(
-        'POST',
-        fs_base($projectId) . ':commit',
-        ['Content-Type: application/json', "Authorization: Bearer $token"],
-        json_encode(['writes' => [$write]])
-    );
-    return $status === 200;
-}
-
-/**
- * مكتب المستخدم وحصته — مخزّنة مؤقتاً 5 دقائق لكل مستخدم.
- * يرجع ['exempt' => bool, 'tenant' => string, 'quota' => int] أو null إن تعذّر التحديد.
- */
-function ai_office_context(string $uid, string $token, string $projectId): ?array {
-    $cacheFile = sys_get_temp_dir() . '/lawyer_sa_ai_ctx_' . hash('sha256', $uid);
-    if (is_file($cacheFile)) {
-        $cached = json_decode((string) @file_get_contents($cacheFile), true);
-        if (is_array($cached) && ($cached['expires'] ?? 0) > time()) return $cached['ctx'];
-    }
-    $user = fs_get($projectId, $token, 'users/' . rawurlencode($uid));
-    if (!is_array($user)) return null;
-
-    if (($user['role'] ?? '') === 'SUPER_ADMIN') {
-        $ctx = ['exempt' => true, 'tenant' => '', 'quota' => 0];
-    } else {
-        $tenant = is_string($user['lawyerId'] ?? null) && $user['lawyerId'] !== '' ? $user['lawyerId'] : $uid;
-        if (!preg_match('/^[A-Za-z0-9_-]{1,128}$/', $tenant)) return null;
-        $owner = $tenant === $uid ? $user : fs_get($projectId, $token, 'users/' . rawurlencode($tenant));
-        if ($owner === false) return null;
-        $owner = is_array($owner) ? $owner : [];
-
-        $quota = 0;
-        $override = $owner['quotaOverrides']['ai'] ?? null;
-        if (is_numeric($override) && $override >= 0) {
-            $quota = (int) $override;
-        } elseif (is_string($owner['planId'] ?? null) && $owner['planId'] !== '') {
-            $plan = fs_get($projectId, $token, 'subscriptionPlans/' . rawurlencode($owner['planId']));
-            if ($plan === false) return null;
-            $q = is_array($plan) ? ($plan['quotas']['ai'] ?? 0) : 0;
-            $quota = is_numeric($q) && $q > 0 ? (int) $q : 0;
-        }
-        // التجربة تفتح كل المزايا، لكن استهلاك المساعد يظل محدوداً لحماية الرصيد.
-        if (($owner['subscriptionBilling'] ?? '') === 'trial') $quota = 10;
-        // تجربة التسجيل الذاتي انتهت بلا اشتراك — نفس قفل قواعد Firestore (officeWritable)
-        $trialEnd = ($owner['subscriptionBilling'] ?? '') === 'trial' ? strtotime((string) ($owner['subscriptionExpiry'] ?? '')) : false;
-        $locked = $trialEnd !== false && $trialEnd <= time();
-        $ctx = ['exempt' => false, 'tenant' => $tenant, 'quota' => $quota, 'locked' => $locked];
-    }
-    @file_put_contents($cacheFile, json_encode(['expires' => time() + OFFICE_CTX_TTL, 'ctx' => $ctx]), LOCK_EX);
-    return $ctx;
-}
-
-/** يمنع الطلب إن استنفد المكتب حصته الشهرية */
-function ai_enforce_quota(?array $ctx, string $token, string $projectId): void {
+/** يمنع الطلب إن استنفد المكتب حصته الشهرية، أو انتهت تجربته */
+function ai_enforce_quota(?array $ctx): void {
     if ($ctx && !empty($ctx['locked'])) {
         fail(403, 'انتهت الفترة التجريبية لمكتبك. اختر باقة لمتابعة استخدام المساعد الذكي.', 'TRIAL_EXPIRED');
     }
     if (!$ctx || $ctx['exempt'] || $ctx['quota'] <= 0) return;
-    $usage = fs_get($projectId, $token, 'ai_usage/' . $ctx['tenant'] . '_' . gmdate('Y-m'));
-    if (!is_array($usage)) return;
-    $used = (int) ($usage['count'] ?? 0);
+    $used = aidb_usage($ctx['tenant']);
     if ($used >= $ctx['quota']) {
         fail(429,
             "استنفد مكتبك حصته الشهرية من طلبات المساعد الذكي ($used من {$ctx['quota']}). "
@@ -309,36 +182,28 @@ function ai_enforce_quota(?array $ctx, string $token, string $projectId): void {
 }
 
 /** يحسب طلباً ناجحاً على المكتب — يُستدعى بعد رد ناجح فقط */
-function ai_count_usage(?array $ctx, string $token, string $projectId): void {
+function ai_count_usage(?array $ctx): void {
     if (!$ctx || $ctx['exempt']) return;
-    $month = gmdate('Y-m');
-    fs_commit_write($projectId, $token, 'ai_usage/' . $ctx['tenant'] . '_' . $month,
-        ['lawyerId' => ['stringValue' => $ctx['tenant']], 'month' => ['stringValue' => $month]],
-        [
-            ['fieldPath' => 'count', 'increment' => ['integerValue' => '1']],
-            ['fieldPath' => 'updatedAt', 'setToServerValue' => 'REQUEST_TIME'],
-        ]);
+    aidb_count_usage($ctx['tenant']);
 }
 
 /* ────────────────────────── حالة خدمة المنصة ────────────────────────── */
 
 /**
- * حين يرفض المزوّد مفتاح المنصة (نفاد الرصيد/الحد، أو مشكلة في المفتاح أو الحساب)
- * يتوقف المساعد عند كل المكاتب معاً — فنسجّل ذلك في platform_status/ai ليظهر
- * لمدير المنصة تنبيه فوري، ونعيده OK عند أول رد ناجح.
- * ملف مؤقت يمنع تكرار الكتابة مع كل طلب فاشل.
+ * حين يرفض المزوّد مفتاح المنصة يتوقف المساعد عند كل المكاتب — نسجّل ذلك في platform_status/ai
+ * ليظهر لمدير المنصة، ونعيده OK عند أول رد ناجح. ملف مؤقت يمنع تكرار الكتابة مع كل طلب فاشل.
  */
-function ai_platform_state(string $projectId, string $token, string $state, string $reason = '', int $httpStatus = 0): void {
+function ai_platform_state(string $state, string $reason = '', int $httpStatus = 0): void {
     $flag = sys_get_temp_dir() . '/lawyer_sa_ai_platform_down';
     $isDown = is_file($flag);
     if ($state === 'DOWN' && $isDown) return;
     if ($state === 'OK' && !$isDown) return;
-    $ok = fs_commit_write($projectId, $token, 'platform_status/ai', [
-        'state' => ['stringValue' => $state],
-        'reason' => ['stringValue' => $reason],
-        'httpStatus' => ['integerValue' => (string) $httpStatus],
-    ], [['fieldPath' => 'at', 'setToServerValue' => 'REQUEST_TIME']]);
-    if (!$ok) return;
+    try {
+        aidb_platform_state($state, $reason, $httpStatus);
+    } catch (Throwable $e) {
+        error_log('ai-proxy: تعذّر تسجيل حالة المنصة: ' . $e->getMessage());
+        return;
+    }
     if ($state === 'DOWN') @touch($flag); else @unlink($flag);
 }
 
@@ -352,13 +217,13 @@ function provider_failure(int $status, string $body): ?string {
 }
 
 /** يرد على فشل المزوّد برسالة واضحة، ويبلغ الإدارة إن كان الخلل على مستوى المنصة */
-function handle_provider_failure(int $status, string $body, string $token, string $projectId): void {
+function handle_provider_failure(int $status, string $body): void {
     $kind = provider_failure($status, $body);
     if ($kind === null) return;
     if ($kind === 'BUSY') {
         fail(503, 'خدمة الذكاء الاصطناعي مشغولة مؤقتاً لدى المزوّد. أعد المحاولة بعد دقيقة.', 'PROVIDER_BUSY');
     }
-    ai_platform_state($projectId, $token, 'DOWN', $kind, $status);
+    ai_platform_state('DOWN', $kind, $status);
     fail(503, $kind === 'QUOTA'
         ? 'خدمة الذكاء الاصطناعي متوقفة مؤقتاً على مستوى المنصة (نفاد رصيد أو ضغط لدى المزوّد). تم إبلاغ إدارة المنصة، أعد المحاولة لاحقاً.'
         : 'خدمة الذكاء الاصطناعي متوقفة مؤقتاً بسبب مشكلة في إعداد المنصة. تم إبلاغ إدارة المنصة.',
@@ -370,22 +235,22 @@ function handle_provider_failure(int $status, string $body, string $token, strin
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') fail(405, 'طريقة غير مسموحة.');
 
+// المصادقة بالكوكي ← حماية CSRF: JSON فقط (نموذج HTML من موقع ثاني ما يقدر يرسله بدون إذن CORS)
+$contentType = strtolower((string) ($_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? ''));
+if (!str_starts_with($contentType, 'application/json')) fail(415, 'نوع الطلب غير مدعوم.');
+
 $configFile = __DIR__ . '/ai-config.php';
 $config = is_file($configFile) ? require $configFile : [];
 if (!is_array($config)) $config = [];
-$projectId = $config['firebase_project_id'] ?? 'lawyer-sa';
 
-// المصادقة أولاً — قبل أي عمل آخر
-$auth = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
-if ($auth === '' && function_exists('getallheaders')) {
-    foreach (getallheaders() as $k => $v) if (strtolower($k) === 'authorization') $auth = $v;
-}
-if (!preg_match('/^Bearer\s+(\S+)$/', $auth, $m)) fail(401, 'مطلوب تسجيل الدخول.');
-$idToken = $m[1];
-$uid = verify_firebase_token($idToken, $projectId);
+// المصادقة أولاً — قبل أي عمل آخر: جلسة الدخول في MySQL (كوكي HttpOnly)
+$sessionUser = aidb_session_user();
+if ($sessionUser === null) fail(401, 'انتهت الجلسة. سجّل الدخول من جديد.');
+if (!aidb_active($sessionUser)) fail(403, 'هذا الحساب غير مفعّل.');
+$uid = (string) $sessionUser['id'];
 rate_limit($uid);
-$officeCtx = ai_office_context($uid, $idToken, $projectId);
-ai_enforce_quota($officeCtx, $idToken, $projectId);
+$officeCtx = ai_office_context($sessionUser);
+ai_enforce_quota($officeCtx);
 
 $raw = file_get_contents('php://input', false, null, 0, MAX_BODY_BYTES + 1);
 if ($raw === false || strlen($raw) > MAX_BODY_BYTES) fail(413, 'حجم الطلب كبير جداً.');
@@ -437,10 +302,10 @@ if ($provider === 'GEMINI') {
     if ($status === 0 || json_decode($body) === null) {
         fail(504, 'استغرقت الصياغة وقتاً أطول من المسموح. أعد المحاولة، أو قلّل المرفقات أو اطلب جزءاً من المذكرة.');
     }
-    handle_provider_failure($status, $body, $idToken, $projectId);
+    handle_provider_failure($status, $body);
     if ($status >= 200 && $status < 300) {
-        ai_count_usage($officeCtx, $idToken, $projectId);
-        ai_platform_state($projectId, $idToken, 'OK');
+        ai_count_usage($officeCtx);
+        ai_platform_state('OK');
     }
     if (empty($GLOBALS['keepalive_started'])) http_response_code($status >= 200 && $status < 300 ? 200 : $status);
     echo $body;
@@ -462,10 +327,10 @@ if ($provider === 'GROQ') {
         json_encode(['model' => $model, 'messages' => $messages, 'temperature' => $temperature], JSON_UNESCAPED_UNICODE)
     );
     if ($status === 0 || json_decode($body) === null) fail(502, 'تعذّر تنفيذ طلب الذكاء الاصطناعي.');
-    handle_provider_failure($status, $body, $idToken, $projectId);
+    handle_provider_failure($status, $body);
     if ($status >= 200 && $status < 300) {
-        ai_count_usage($officeCtx, $idToken, $projectId);
-        ai_platform_state($projectId, $idToken, 'OK');
+        ai_count_usage($officeCtx);
+        ai_platform_state('OK');
     }
     http_response_code($status >= 200 && $status < 300 ? 200 : $status);
     echo $body;

@@ -26,6 +26,9 @@ export const MIGRATED_ROOTS: ReadonlySet<string> = new Set([
   "appointments", "client_messages", "client_requests", "template_folders", "custom_templates", "general_memos",
   "notifications", "notification_preferences", "office_settings", "client_portal_accounts",
   "auditLogs", "documents_access_log",
+  // الدفعة 2 — المنصة وسير العمل الخاص
+  "supportTickets", "productSuggestions", "legal_library", "ai_conversations", "ai_usage",
+  "platform_status", "platform_settings", "subscriptionPlans", "subscriptionRequests",
 ]);
 /** استعلامات collectionGroup اللي كل مستنداتها تحت مجموعات منقولة — تطابق STORE_GROUPS */
 const MIGRATED_GROUPS: ReadonlySet<string> = new Set(["hearings", "documents", "requests", "memos"]);

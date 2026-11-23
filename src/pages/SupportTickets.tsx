@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import { useAuthSession } from "../lib/useAuthSession";
+import { toDate, toMillis } from "../lib/dates";
 import {
   SupportAttachmentList,
   SupportFilePicker,
@@ -56,9 +57,8 @@ const colors: Record<SupportStatus, string> = {
   CLOSED: "bg-gray-100 text-gray-600",
 };
 const date = (value: SupportTicket["createdAt"]) =>
-  value
-    ?.toDate()
-    .toLocaleString("ar-SA", {
+  toDate(value)
+    ?.toLocaleString("ar-SA", {
       calendar: "gregory",
       dateStyle: "medium",
       timeStyle: "short",
@@ -212,8 +212,7 @@ export default function SupportTickets() {
           [
             ...new Map([...previous, ...data].map((m) => [m.id, m])).values(),
           ].sort(
-            (a, b) =>
-              (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0),
+            (a, b) => toMillis(a.createdAt) - toMillis(b.createdAt),
           ),
         );
         if (!loadedOlder.current) {

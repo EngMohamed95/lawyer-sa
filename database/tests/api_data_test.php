@@ -235,7 +235,7 @@ check('assignedLawyerIds كنص (مو قائمة) ما يعطي وصول — ا�
 echo "حماية المدخلات\n";
 [$s] = $get('A', 'cases/a/hearings/b/x/y/z/w');
 check('مسار أطول من 6 أجزاء ← 400', $s === 400, $s);
-[$s, $r] = $query('A', ['path' => 'supportTickets']);
+[$s, $r] = $query('A', ['path' => 'users']);
 check('مجموعة ما انتقلت ← 400 NOT_MIGRATED', $s === 400 && ($r['code'] ?? '') === 'NOT_MIGRATED', [$s, $r]);
 [$s] = $query('A', ['path' => 'tasks', 'where' => [["status') OR 1=1 -- ", '==', 'x']]]);
 check('اسم حقل فيه حقن SQL ← 400', $s === 400, $s);

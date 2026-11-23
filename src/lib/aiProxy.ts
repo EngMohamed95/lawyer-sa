@@ -12,7 +12,6 @@
  * المزوّد والنموذج فقط (لا السر) يُضبطان مركزياً — راجع src/lib/platformSettings.ts.
  */
 
-import { auth } from "./firebase";
 import { apiUrl } from "./apiBase";
 import { getPlatformAiSettingsSnapshot } from "./platformSettings";
 import { AI_USAGE_EVENT } from "./aiUsage";
@@ -25,14 +24,8 @@ export type AiProvider = "GEMINI" | "GROQ";
  * استنزاف الرصيد ما لم يكن الطلب مصادَقاً عليه.
  */
 async function authHeaders(): Promise<Record<string, string>> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  try {
-    const token = await auth.currentUser?.getIdToken();
-    if (token) headers.Authorization = `Bearer ${token}`;
-  } catch {
-    // بلا توكن سيرد الخادم 401 برسالة واضحة — لا نُخفي السبب هنا
-  }
-  return headers;
+  // المصادقة بكوكي جلسة MySQL (HttpOnly) — ينرسل تلقائياً مع طلبات نفس الموقع
+  return { "Content-Type": "application/json" };
 }
 
 export interface AiSettings {

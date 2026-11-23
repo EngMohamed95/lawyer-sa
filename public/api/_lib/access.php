@@ -49,7 +49,8 @@ function office_owner_row(string $tenant): ?array {
  * مالك ما يعتبر نشط — نفس القواعد (exists(userPath) و get() على المالك).
  */
 function account_active(array $u): bool {
-    if (($u['role'] ?? 'PENDING') === 'PENDING') return false;
+    // الزائر بلا دخول (STORE_ANON) وحساب بلا ملف (PENDING) مو أعضاء — مهما كان الباقي
+    if (in_array($u['role'] ?? 'PENDING', ['PENDING', 'ANON'], true) || ($u['id'] ?? '') === '') return false;
     if (blocked_status($u['status'] ?? null) || !empty($u['deleted_at'])) return false;
     if (is_super_admin($u)) return true;
     $tenant = tenant_of($u);
