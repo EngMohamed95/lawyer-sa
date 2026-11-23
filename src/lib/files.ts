@@ -121,18 +121,21 @@ export interface LegacyMigrationResult {
  */
 export async function migrateLegacyUploads(onProgress?: (total: LegacyMigrationResult) => void) {
   const total: LegacyMigrationResult = { scanned: 0, docsUpdated: 0, filesMigrated: 0, missing: 0, unassigned: 0 };
+  /** ملفات يذكرها أكثر من مكتب — ما انتقلت لأحد (تظل في المجلد المقفل للمراجعة) */
+  const conflicts = new Map<string, string[]>();
   let cursor: unknown = null;
   for (let i = 0; i < 10_000; i++) {
-    const r = await apiRequest<LegacyMigrationResult & { done: boolean; cursor: unknown }>(
+    const r = await apiRequest<LegacyMigrationResult & { done: boolean; cursor: unknown; conflicts?: { file: string; offices: string[] }[] }>(
       "POST", "files/migrate-legacy", cursor ? { cursor } : {});
     (Object.keys(total) as (keyof LegacyMigrationResult)[]).forEach((k) => { total[k] += r[k] || 0; });
+    (r.conflicts || []).forEach((c) => conflicts.set(c.file, c.offices));
     onProgress?.({ ...total });
     cursor = r.cursor;
     if (r.done) break;
   }
   const finalize = await apiRequest<{ deleted: number; keptUnverified: number; unreferencedLocked: number }>(
     "POST", "files/migrate-legacy/finalize", {});
-  return { ...total, ...finalize };
+  return { ...total, ...finalize, conflicts: [...conflicts].map(([file, offices]) => ({ file, offices })) };
 }
 
 /** ينزّل Blob كملف باسمه */

@@ -268,6 +268,13 @@ check('مكتب ثاني ما يلغيها', call('POST', 'files/shares/revoke',
 check('المالك يلغي الرابط', call('POST', 'files/shares/revoke', ['id' => $share['id'] ?? ''], 'A')[0] === 200);
 check('… فما يفتح بعدها ← 410', raw_get('anon', 'files/shared&t=' . $tok)[0] === 410);
 check('سجل الاطلاع فيه الفتح برابط المشاركة', in_array(true, array_column(call('GET', 'files/access-log', null, 'A')[1]['entries'] ?? [], 'viaShare'), true));
+check('الملفات ما تتخزن في المتصفح (جهاز مكتب مشترك)', str_contains($view('A')[2], 'cache-control: no-store'));
+[, $sh2] = call('POST', 'files/share', ['url' => $url, 'days' => 3], 'SA');
+preg_match('#[?&]t=([A-Za-z0-9_-]{43})#', (string) ($sh2['url'] ?? ''), $tm2);
+check('رابط ثاني يفتح', raw_get('anon', 'files/shared&t=' . ($tm2[1] ?? ''))[0] === 200);
+$pdo->prepare("UPDATE users SET status = 'DISABLED' WHERE id = 'secA'")->execute();
+check('… وبعد تعطيل العضو اللي أنشأه يتوقف ← 410', raw_get('anon', 'files/shared&t=' . ($tm2[1] ?? ''))[0] === 410);
+$pdo->prepare("UPDATE users SET status = 'ACTIVE' WHERE id = 'secA'")->execute();
 
 echo "نقل ملفات uploads/ القديمة وتشفيرها\n";
 $uploadsDir = dirname(__DIR__, 2) . '/public/uploads/';
@@ -277,28 +284,39 @@ $legacyName = '1700000000_abcd1234_عقد قديم.pdf';
 $legacyBody = "%PDF-1.4 legacy " . bin2hex(random_bytes(8));
 file_put_contents($uploadsDir . $legacyName, $legacyBody);
 file_put_contents($uploadsDir . '1700000001_ffff0000_logo.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='));
-// روابط بالشكل المحفوظ فعلاً (json_encode يهرّب / )، ومستند لمكتب ثاني يذكر نفس الملف
-$legacyUrl = 'https://mawazzen.com/uploads/' . rawurlencode($legacyName);
-$pdo->prepare("INSERT INTO docs (collection, parent_path, id, data) VALUES ('clients', '', 'legacyA', ?), ('clients', '', 'legacyB', ?), ('cases', '', 'legacyMissing', ?)")
-    ->execute([json_encode(['lawyerId' => 'ownerA', 'fullName' => 'قديم', 'files' => [['url' => $legacyUrl, 'meta' => new stdClass()]]]),
-        json_encode(['lawyerId' => 'ownerB', 'fullName' => 'قديم ب', 'attachment' => $legacyUrl]),
+// ملف سري لمكتب أ، ومكتب ب (مهاجم) حط رابطه في مستنداته قبل النقل
+$sharedName = '1700000002_eeee1111_سري.pdf';
+file_put_contents($uploadsDir . $sharedName, "%PDF-1.4 secret of A");
+// روابط بالشكل المحفوظ فعلاً (json_encode يهرّب / )
+$u = fn(string $n) => 'https://mawazzen.com/uploads/' . rawurlencode($n);
+$pdo->prepare("INSERT INTO docs (collection, parent_path, id, data) VALUES ('clients', '', 'legacyA', ?), ('clients', '', 'legacyA2', ?), ('clients', '', 'legacyB', ?), ('cases', '', 'legacyMissing', ?)")
+    ->execute([json_encode(['lawyerId' => 'ownerA', 'fullName' => 'قديم', 'files' => [['url' => $u($legacyName), 'meta' => new stdClass()]]]),
+        json_encode(['lawyerId' => 'ownerA', 'fullName' => 'سري', 'attachment' => $u($sharedName)]),
+        json_encode(['lawyerId' => 'ownerB', 'fullName' => 'مهاجم', 'attachment' => $u($sharedName)]),
         json_encode(['lawyerId' => 'ownerA', 'title' => 'ملف ضايع', 'fileUrl' => 'https://mawazzen.com/uploads/gone.pdf'])]);
-$pdo->prepare("UPDATE docs SET data = JSON_SET(data, '$.logoUrl', ?) WHERE collection = 'users' AND id = 'ownerA'")->execute(['https://mawazzen.com/uploads/1700000001_ffff0000_logo.png']);
+$pdo->prepare("UPDATE docs SET data = JSON_SET(data, '$.logoUrl', ?) WHERE collection = 'users' AND id = 'ownerA'")->execute([$u('1700000001_ffff0000_logo.png')]);
 check('غير مدير المنصة ما يشغّل النقل ← 403', call('POST', 'files/migrate-legacy', [], 'A')[0] === 403);
-$total = ['filesMigrated' => 0, 'missing' => 0, 'docsUpdated' => 0];
-$cursor = null;
-for ($i = 0; $i < 20; $i++) {
-    [$st, $mr] = call('POST', 'files/migrate-legacy', $cursor ? ['cursor' => $cursor] : [], 'AD');
-    if ($st !== 200) break;
-    foreach ($total as $k => $_) $total[$k] += $mr[$k] ?? 0;
-    $cursor = $mr['cursor'] ?? null;
-    if ($mr['done'] ?? false) break;
-}
-check('النقل يخلص: 3 ملفات (العقد لمكتبين + الشعار) و3 مستندات، وملف مفقود واحد', $st === 200 && $total === ['filesMigrated' => 3, 'missing' => 1, 'docsUpdated' => 3], [$st, $total]);
+$runMigration = function () {
+    $total = ['filesMigrated' => 0, 'missing' => 0, 'docsUpdated' => 0];
+    $conf = [];
+    $cursor = null;
+    for ($i = 0; $i < 20; $i++) {
+        [$st, $mr] = call('POST', 'files/migrate-legacy', $cursor ? ['cursor' => $cursor] : [], 'AD');
+        if ($st !== 200) return [$st, $total, $conf];
+        foreach ($total as $k => $_) $total[$k] += $mr[$k] ?? 0;
+        foreach ($mr['conflicts'] ?? [] as $c) $conf[$c['file']] = $c['offices'];
+        $cursor = $mr['cursor'] ?? null;
+        if ($mr['done'] ?? false) break;
+    }
+    return [200, $total, $conf];
+};
+[$st, $total, $conf] = $runMigration();
+check('النقل يخلص: العقد والشعار لمكتب أ، ومستندين، وملف مفقود', $st === 200 && $total === ['filesMigrated' => 2, 'missing' => 1, 'docsUpdated' => 2], [$st, $total]);
+check('ثغرة: ملف يذكره مكتبين ← ما ينسخ لأي منهم (تعارض للمراجعة)', isset($conf[$sharedName]) && (int) $col('SELECT COUNT(*) FROM office_files WHERE legacy_name = ?', [$sharedName]) === 0, $conf);
 $dataOf = fn(string $c, string $id) => json_decode((string) $col('SELECT data FROM docs WHERE collection = ? AND id = ?', [$c, $id]), true);
 $aUrl = $dataOf('clients', 'legacyA')['files'][0]['url'] ?? '';
-$bUrl = $dataOf('clients', 'legacyB')['attachment'] ?? '';
-check('… الرابط في مستند المكتب صار رابط محمي لمكتبه', str_contains($aUrl, 'files/view?p=office/ownerA/') && str_contains($bUrl, 'files/view?p=office/ownerB/'), [$aUrl, $bUrl]);
+check('… الرابط في مستند المكتب صار رابط محمي لمكتبه', str_contains($aUrl, 'files/view?p=office/ownerA/'), $aUrl);
+check('… ومستند المهاجم ظل على الرابط القديم (اللي ينقفل)', str_contains((string) ($dataOf('clients', 'legacyB')['attachment'] ?? ''), '/uploads/'));
 check('… والكائنات الفاضية ظلت {}', str_contains((string) $col("SELECT data FROM docs WHERE collection = 'clients' AND id = 'legacyA'"), '"meta": {}') || str_contains((string) $col("SELECT data FROM docs WHERE collection = 'clients' AND id = 'legacyA'"), '"meta":{}'));
 check('… والملف المفقود ظل رابطه كما هو', ($dataOf('cases', 'legacyMissing')['fileUrl'] ?? '') === 'https://mawazzen.com/uploads/gone.pdf');
 preg_match('#p=(office/[^&]+)#', $aUrl, $am);
@@ -308,13 +326,19 @@ check('… ومكتب ب ما يفتح نسخة مكتب أ', raw_get('B', 'file
 $logo = $dataOf('users', 'ownerA')['logoUrl'] ?? '';
 check('… وشعار المكتب انتقل', str_contains($logo, 'p=office/ownerA/'), $logo);
 check('… والاسم المعروض بدون الوقت والجزء العشوائي', (string) $col("SELECT name FROM office_files WHERE legacy_name = ? AND tenant = 'ownerA'", [$legacyName]) === 'عقد قديم.pdf');
-check('إعادة النقل ما تكرر شي', call('POST', 'files/migrate-legacy', [], 'AD')[1]['filesMigrated'] === 0);
+// مهاجم يحط رابط ملف انتقل لمكتب أ بعد النقل ثم يعاد التشغيل
+$pdo->prepare("INSERT INTO docs (collection, parent_path, id, data) VALUES ('clients', '', 'legacyB2', ?)")->execute([json_encode(['lawyerId' => 'ownerB', 'attachment' => $u($legacyName)])]);
+[$st, $total2] = $runMigration();
+check('ثغرة: رابط ملف انتقل لمكتب ثاني ← ما ينسخ للمهاجم عند إعادة التشغيل', $st === 200 && $total2['filesMigrated'] === 0
+    && (int) $col("SELECT COUNT(*) FROM office_files WHERE tenant = 'ownerB'") === 0, $total2);
 check('ملفات uploads/ القديمة لسه موجودة قبل الإنهاء', is_file($uploadsDir . $legacyName));
 [$st, $fin] = call('POST', 'files/migrate-legacy/finalize', [], 'AD');
 clearstatcache(); // الحذف صار في عملية الخادم — نتيجة is_file السابقة محفوظة هنا
-check('الإنهاء: يتأكد من النسخ المشفرة ثم يحذف الأصل', $st === 200 && ($fin['deleted'] ?? 0) === 2 && !is_file($uploadsDir . $legacyName), [$st, $fin]);
+check('الإنهاء: يتأكد من النسخ المشفرة ثم يحذف الأصل (والملف المتعارض يظل)', $st === 200 && ($fin['deleted'] ?? 0) === 2
+    && !is_file($uploadsDir . $legacyName) && is_file($uploadsDir . $sharedName), [$st, $fin]);
 check('… ويقفل مجلد uploads بالكامل', str_contains((string) @file_get_contents($uploadsDir . '.htaccess'), 'Require all denied'));
 @unlink($uploadsDir . '.htaccess');
+@unlink($uploadsDir . $sharedName);
 
 echo "طلبات الاشتراك وإعدادات المكتب\n";
 check('طلب اشتراك باسم مكتب ثاني وحالة «مقبول» ← ينحفظ باسمي ومعلّق',

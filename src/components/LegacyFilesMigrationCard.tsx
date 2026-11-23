@@ -51,7 +51,15 @@ export default function LegacyFilesMigrationCard({ className = "" }: { className
             اكتمل: نُقل وشُفّر {result.filesMigrated} ملف، وحُدّث {result.docsUpdated} مستند، وحُذف {result.deleted} أصل بعد التأكد منه، وأُقفل مجلد uploads.
             {result.missing > 0 && <div className="text-amber-700">{result.missing} رابط لملف غير موجود على السيرفر (ظل كما هو).</div>}
             {result.keptUnverified > 0 && <div className="text-red-700">{result.keptUnverified} ملف ما تأكدنا من نسخته المشفرة فما حُذف أصله — أعد التشغيل.</div>}
-            {result.unreferencedLocked > 0 && <div className="text-gray-500">{result.unreferencedLocked} ملف قديم لا يذكره أي مستند — بقي في المجلد المقفل.</div>}
+            {result.unreferencedLocked > 0 && <div className="text-gray-500">{result.unreferencedLocked} ملف قديم لم يُنقل (لا يذكره أي مستند، أو متعارض) — بقي في المجلد المقفل ولا يفتح لأحد.</div>}
+            {result.conflicts.length > 0 && (
+              <div className="mt-2 text-amber-800">
+                {result.conflicts.length} ملف يذكره أكثر من مكتب، فما نُقل لأي منهم (حماية من نسخ ملف مكتب لمكتب آخر). تحتاج مراجعة يدوية:
+                <ul className="mt-1 list-inside list-disc text-xs text-gray-600">
+                  {result.conflicts.slice(0, 20).map((c) => <li key={c.file} className="break-all">{c.file} — المكاتب: {c.offices.join("، ")}</li>)}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       )}

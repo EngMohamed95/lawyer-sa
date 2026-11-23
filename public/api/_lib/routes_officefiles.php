@@ -117,8 +117,8 @@ function office_file_send(array $row, bool $shared): void {
     header('Referrer-Policy: no-referrer');
     // الصور ما تحتاج سكربت؛ عارض PDF في كروم يتعطل مع sandbox فنتركه
     if ($type !== 'application/pdf') header("Content-Security-Policy: default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'; sandbox");
-    // رابط المشاركة ما يتخزن في أي مكان؛ ملفات الأعضاء تتخزن في متصفحهم دقائق (الشعار مع كل صفحة)
-    header($shared ? 'Cache-Control: no-store' : 'Cache-Control: private, max-age=600');
+    // ما يتخزن في المتصفح أبداً — جهاز المكتب المشترك ما يحتفظ بنسخة بعد تسجيل الخروج
+    header('Cache-Control: no-store');
     try {
         filecrypt_decrypt_stream($path, (string) $row['id'], function (string $plain): void { echo $plain; flush(); });
     } catch (Throwable $e) {
@@ -144,6 +144,11 @@ function route_office_file_shared(): void {
         ? q_one('SELECT * FROM file_shares WHERE token_hash = ? AND revoked_at IS NULL AND expires_at > ?', [hash('sha256', $token), utc_now()])
         : null;
     $row = $share !== null ? q_one('SELECT * FROM office_files WHERE id = ? AND tenant = ?', [$share['file_id'], $share['tenant']]) : null;
+    // المكتب موقوف، أو اللي أنشأ الرابط ما عاد عضواً نشطاً فيه ← الرابط يتوقف معه
+    if ($row !== null) {
+        $creator = q_one('SELECT id, email, name, role, lawyer_id, status, deleted_at, data FROM users WHERE id = ?', [$share['created_by']]);
+        if ($creator === null || !is_member($creator) || tenant_of($creator) !== $share['tenant']) $row = null;
+    }
     if ($row === null) {
         header('Content-Type: text/html; charset=utf-8');
         http_response_code(410);
@@ -253,6 +258,25 @@ function legacy_doc_tenant(array $doc): ?string {
     return null;
 }
 
+/**
+ * كل المكاتب اللي لها صلة بملف قديم: مستنداتها تذكر اسمه (بأي صيغة) + اللي انتقل لها من قبل.
+ * [tenant => true]
+ */
+function legacy_file_tenants(string $name): array {
+    static $cache = [];
+    if (isset($cache[$name])) return $cache[$name];
+    $like = fn(string $s) => '%' . addcslashes($s, '%_\\') . '%';
+    $out = [];
+    $rows = q('SELECT collection, parent_path, id, lawyer_id FROM docs WHERE data LIKE ? OR data LIKE ? OR data LIKE ?',
+        [$like($name), $like(rawurlencode($name)), $like(trim((string) json_encode($name), '"'))])->fetchAll();
+    foreach ($rows as $doc) {
+        $t = legacy_doc_tenant($doc);
+        $out[$t ?? '?'] = true; // مستند ما نعرف مكتبه = طرف مجهول ← تعارض
+    }
+    foreach (q('SELECT tenant FROM office_files WHERE legacy_name = ?', [$name])->fetchAll() as $r) $out[(string) $r['tenant']] = true;
+    return $cache[$name] = $out;
+}
+
 /** يمر على كل النصوص في القيمة ويستبدل روابط /uploads/ بروابط الملفات المشفرة */
 function legacy_rewrite($value, callable $replace) {
     if (is_object($value)) { foreach ($value as $k => $v) $value->$k = legacy_rewrite($v, $replace); return $value; }
@@ -273,15 +297,23 @@ function route_office_files_migrate(): void {
                 WHERE data LIKE '%uploads%' AND (collection, parent_path, id) > (?, ?, ?)
                 ORDER BY collection, parent_path, id LIMIT 25", $c)->fetchAll();
     $stats = ['scanned' => count($docs), 'docsUpdated' => 0, 'filesMigrated' => 0, 'missing' => 0, 'unassigned' => 0];
+    $conflicts = [];
     foreach ($docs as $doc) {
         $tenant = legacy_doc_tenant($doc);
         $data = json_decode((string) $doc['data'], false);
         if ($tenant === null || $data === null) { $stats['unassigned']++; continue; }
         $changed = false;
-        $data = legacy_rewrite($data, function (array $m) use ($tenant, &$stats, &$changed, $u): string {
+        $data = legacy_rewrite($data, function (array $m) use ($tenant, &$stats, &$changed, &$conflicts, $u): string {
             $name = basename(rawurldecode($m[1]));
             $row = q_one('SELECT * FROM office_files WHERE tenant = ? AND legacy_name = ?', [$tenant, $name]);
             if ($row === null) {
+                // ملف يذكره أكثر من مكتب (أو انتقل لمكتب ثاني قبل) ما ينسخ لأحد: مكتب يقدر يحط رابط
+                // ملف قديم لغيره في مستنداته فياخذ نسخة دائمة. يظل في المجلد المقفل للمراجعة اليدوية.
+                $owners = legacy_file_tenants($name);
+                if (count($owners) !== 1 || !isset($owners[$tenant])) {
+                    $conflicts[$name] = array_keys($owners);
+                    return $m[0];
+                }
                 $src = legacy_upload_file($name);
                 if ($src === null) { $stats['missing']++; return $m[0]; }
                 $ext = strtolower((string) pathinfo($name, PATHINFO_EXTENSION));
@@ -301,6 +333,7 @@ function route_office_files_migrate(): void {
     }
     $last = end($docs);
     respond(200, $stats + [
+        'conflicts' => array_map(fn($n, $t) => ['file' => $n, 'offices' => $t], array_keys($conflicts), array_values($conflicts)),
         'done' => count($docs) < 25,
         'cursor' => $last ? ['c' => $last['collection'], 'p' => $last['parent_path'], 'i' => $last['id']] : $cur,
     ]);
