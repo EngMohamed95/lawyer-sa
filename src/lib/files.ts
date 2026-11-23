@@ -59,6 +59,82 @@ export async function deletePrivateFile(path: string): Promise<void> {
   await apiRequest("POST", "files/delete", { path });
 }
 
+/* ─── ملفات المكتب المشفّرة (مرفقات القضايا وغيرها — public/api/_lib/routes_officefiles.php) ─── */
+
+export interface ShareLink {
+  url: string;
+  expiresAt: string;
+  days: number;
+}
+
+/** رابط مؤقت لملف من ملفات المكتب (للعميل) — يفتح بدون دخول حتى ينتهي أو يُلغى */
+export function createShareLink(fileUrl: string, days = 7, note?: string): Promise<ShareLink> {
+  return apiRequest<ShareLink>("POST", "files/share", { url: fileUrl, days, note });
+}
+
+export interface ShareInfo {
+  id: string;
+  fileName: string;
+  note: string | null;
+  createdBy: string;
+  createdAt: string;
+  expiresAt: string;
+  uses: number;
+  lastUsedAt: string | null;
+  active: boolean;
+  revoked: boolean;
+}
+
+export async function listShareLinks(): Promise<ShareInfo[]> {
+  return (await apiRequest<{ shares: ShareInfo[] }>("GET", "files/shares")).shares;
+}
+
+export async function revokeShareLink(id: string): Promise<void> {
+  await apiRequest("POST", "files/shares/revoke", { id });
+}
+
+export interface FileAccessEntry {
+  at: string;
+  fileName: string;
+  viaShare: boolean;
+  user: string | null;
+  ip: string | null;
+  device: string | null;
+}
+
+/** سجل الاطلاع على ملفات المكتب — لمالك المكتب */
+export async function fileAccessLog(): Promise<FileAccessEntry[]> {
+  return (await apiRequest<{ entries: FileAccessEntry[] }>("GET", "files/access-log")).entries;
+}
+
+export interface LegacyMigrationResult {
+  scanned: number;
+  docsUpdated: number;
+  filesMigrated: number;
+  missing: number;
+  unassigned: number;
+}
+
+/**
+ * مدير المنصة: ينقل ملفات uploads/ القديمة إلى التخزين المشفّر على دفعات، ثم يتأكد من
+ * كل نسخة ويحذف الأصل ويقفل المجلد.
+ */
+export async function migrateLegacyUploads(onProgress?: (total: LegacyMigrationResult) => void) {
+  const total: LegacyMigrationResult = { scanned: 0, docsUpdated: 0, filesMigrated: 0, missing: 0, unassigned: 0 };
+  let cursor: unknown = null;
+  for (let i = 0; i < 10_000; i++) {
+    const r = await apiRequest<LegacyMigrationResult & { done: boolean; cursor: unknown }>(
+      "POST", "files/migrate-legacy", cursor ? { cursor } : {});
+    (Object.keys(total) as (keyof LegacyMigrationResult)[]).forEach((k) => { total[k] += r[k] || 0; });
+    onProgress?.({ ...total });
+    cursor = r.cursor;
+    if (r.done) break;
+  }
+  const finalize = await apiRequest<{ deleted: number; keptUnverified: number; unreferencedLocked: number }>(
+    "POST", "files/migrate-legacy/finalize", {});
+  return { ...total, ...finalize };
+}
+
 /** ينزّل Blob كملف باسمه */
 export function saveBlob(blob: Blob, name: string): void {
   const url = URL.createObjectURL(blob);

@@ -15,6 +15,7 @@ import {
 import { collection, collectionGroup, getCountFromServer, getDocs, limit, orderBy, query } from "@/lib/store";
 import { db } from "../lib/firebase";
 import { SUPPORT_PRIORITIES } from "../lib/support";
+import LegacyFilesMigrationCard from "./LegacyFilesMigrationCard";
 import { SUGGESTION_STATUSES } from "../lib/suggestions";
 import { caseTypeLabel } from "../lib/caseTypes";
 import { DistributionCard, OTHER, SERIES, StatCard, fmt, panel, toSlices, type Slice } from "./DashboardCharts";
@@ -276,6 +277,8 @@ export function PlatformAdminView({ data, loading, error, onReload }: {
       {error && (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">{error}</div>
       )}
+
+      <LegacyFilesMigrationCard />
 
       {data && (<>
         {/* البطاقات الرئيسية */}

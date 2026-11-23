@@ -196,26 +196,125 @@ function legacy_upload(string $jar, string $content, string $name, bool $header 
     @unlink($tmp);
     return [$status, json_decode($body, true) ?? []];
 }
-$uploadsDir = dirname(__DIR__, 2) . '/public/uploads/';
+/** GET خام (ملفات ثنائية): [الحالة, الجسم, الترويسات] */
+function raw_get(string $jar, string $route): array {
+    global $base, $cookies;
+    $ch = curl_init($base . $route);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_HEADER => true,
+        CURLOPT_HTTPHEADER => !empty($cookies[$jar]) ? ['Cookie: mz_session=' . $cookies[$jar]['mz_session']] : []]);
+    $resp = (string) curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $hs = (int) curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+    curl_close($ch);
+    return [$status, substr($resp, $hs), strtolower(substr($resp, 0, $hs))];
+}
+$filesDir = $GLOBALS['harness_files_dir'];
 check('بدون دخول ← 401 (كان مفتوح لأي أحد)', legacy_upload('anon', '%PDF-1.4', 'a.pdf')[0] === 401);
 check('بدون ترويسة X-Mz-Upload (CSRF) ← 403', legacy_upload('SA', '%PDF-1.4', 'a.pdf', false)[0] === 403);
 check('ملف PHP ← 422', legacy_upload('SA', '<?php echo 1;', 'shell.php')[0] === 422);
 check('ملف SVG/HTML ← 422', legacy_upload('SA', '<svg onload=alert(1)>', 'x.svg')[0] === 422 && legacy_upload('SA', '<script>', 'x.html')[0] === 422);
-check('تجربة منتهية ← 403', legacy_upload('X', '%PDF-1.4', 'a.pdf')[0] === 403);
-[$st, $r] = legacy_upload('SA', '%PDF-1.4 test', 'عقد.php.pdf');
-$stored = (string) ($r['fileName'] ?? '');
-check('عضو يرفع PDF ← 200 ورابط uploads', $st === 200 && str_contains((string) ($r['fileUrl'] ?? ''), "/uploads/$stored") && is_file($uploadsDir . $stored), [$st, $r]);
-check('… الاسم بلا امتداد مزدوج (ما في .php.)', str_ends_with($stored, '.pdf') && !str_contains($stored, '.php') && str_contains($stored, 'عقد'), $stored);
-$guardText = (string) @file_get_contents($uploadsDir . '.htaccess');
-check('… ومجلد uploads فيه حماية .htaccess (منع السكربتات + nosniff)', str_contains($guardText, 'Require all denied') && str_contains($guardText, 'nosniff') && str_contains($guardText, 'RemoveHandler'));
 check('صفحة HTML متنكرة بامتداد مسموح (x.heic) ← 422', legacy_upload('SA', "\n<html><script>alert(1)</script>", 'x.heic')[0] === 422);
 check('… ولا SVG متنكر كـ txt', legacy_upload('SA', '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"/>', 'x.txt')[0] === 422);
-// trial-cleanup ما يحذف ملفاً يذكره مكتب ثاني: نفس استعلامه على رابط محفوظ عبر الـ API (يُخزَّن بـ \/)
-$w('B', 'create', 'clients/withfile', ['lawyerId' => 'ownerB', 'fullName' => 'ع', 'attachment' => $r['fileUrl'] ?? '']);
-$likeName = '%' . addcslashes($stored, '%_\\') . '%';
-check('trial-cleanup يلقى الملف في مستند مكتب ثاني (ما يحذفه)', $stored !== ''
-    && $col('SELECT 1 FROM docs WHERE (lawyer_id IS NULL OR lawyer_id <> ?) AND data LIKE ? LIMIT 1', ['ownerX', $likeName]) == 1);
-if ($stored !== '') @unlink($uploadsDir . $stored);
+check('تجربة منتهية ← 403', legacy_upload('X', '%PDF-1.4', 'a.pdf')[0] === 403);
+check('مدير المنصة ما يرفع لملفات المكاتب ← 403', legacy_upload('AD', '%PDF-1.4', 'a.pdf')[0] === 403);
+
+$secret = "%PDF-1.4\nسري للغاية: مذكرة دفاع " . str_repeat('ABCDEFGH', 190000); // ~1.5MB = أكثر من جزء تشفير
+[$st, $r] = legacy_upload('SA', $secret, 'مذكرة.php.pdf');
+$url = (string) ($r['fileUrl'] ?? '');
+preg_match('#[?&]p=(office/ownerA/([a-f0-9]{32}))#', $url, $pm);
+$fp = $pm[1] ?? '';
+$fid = $pm[2] ?? '';
+check('عضو يرفع PDF ← 200 ورابط فتح محمي (مو uploads/)', $st === 200 && $fp !== '' && !str_contains($url, '/uploads/') && ($r['fileName'] ?? '') === 'مذكرة.php.pdf', [$st, $r]);
+$disk = (string) @file_get_contents("$filesDir/$fp");
+check('… الملف على القرص مشفّر (ما فيه النص الأصلي)', strlen($disk) > strlen($secret) && !str_contains($disk, 'PDF-1.4') && !str_contains($disk, 'ABCDEFGH'));
+check('… وما في نسخة في مجلد الموقع', !is_dir(dirname(__DIR__, 2) . "/public/office"));
+$view = fn(string $jar) => raw_get($jar, 'files/view&p=' . rawurlencode($fp));
+[$st, $body, $hdr] = $view('SA');
+check('عضو المكتب يفتحه ← نفس المحتوى بالضبط', $st === 200 && $body === $secret, [$st, strlen($body)]);
+check('… PDF داخل الصفحة مع nosniff', str_contains($hdr, 'content-type: application/pdf') && str_contains($hdr, 'content-disposition: inline') && str_contains($hdr, 'nosniff'));
+check('مالك المكتب يفتحه', $view('A')[0] === 200);
+check('مكتب ثاني ما يفتحه حتى لو معه الرابط ← 404', $view('B')[0] === 404);
+check('مدير المنصة ما يفتح ملفات المكاتب ← 404', $view('AD')[0] === 404);
+check('بدون دخول ← 401', $view('anon')[0] === 401);
+check('مسار ملف مكتب ثاني (تلاعب بالرابط) ← 404', raw_get('B', 'files/view&p=' . rawurlencode("office/ownerB/$fid"))[0] === 404);
+// تلاعب بالملف المشفر على القرص ← ما يطلع محتوى مزوّر
+$tampered = $disk; $tampered[40] = chr(ord($tampered[40]) ^ 1);
+file_put_contents("$filesDir/$fp", $tampered);
+check('ملف معدّل على القرص ← ما ينفك (سلامة GCM)', $view('A')[1] !== $secret && !str_contains($view('A')[1], 'سري'));
+file_put_contents("$filesDir/$fp", $disk);
+check('… ويرجع سليم بعد استعادته', $view('A')[1] === $secret);
+
+[$st, $log] = call('GET', 'files/access-log', null, 'A');
+$who = array_column($log['entries'] ?? [], 'user');
+check('سجل الاطلاع: مالك المكتب يشوف مين فتح الملف', $st === 200 && in_array('secA', $who, true) && ($log['entries'][0]['fileName'] ?? '') === 'مذكرة.php.pdf', [$st, $log]);
+check('… والعضو العادي ما يشوف السجل ← 403', call('GET', 'files/access-log', null, 'SA')[0] === 403);
+check('… وما ينسجل اطلاع مكتب ثاني (رفض)', !in_array('ownerB', $who, true));
+
+[$st, $sh] = call('POST', 'files/share', ['url' => $url, 'days' => 7, 'note' => 'للعميل'], 'SA');
+preg_match('#[?&]t=([A-Za-z0-9_-]{43})#', (string) ($sh['url'] ?? ''), $tm);
+$tok = $tm[1] ?? '';
+check('رابط مشاركة مؤقت للعميل', $st === 200 && $tok !== '' && ($sh['days'] ?? 0) === 7, [$st, $sh]);
+check('… التوكن ما ينحفظ نصاً', (int) $col('SELECT COUNT(*) FROM file_shares WHERE token_hash = ?', [$tok]) === 0 && (int) $col('SELECT COUNT(*) FROM file_shares WHERE token_hash = ?', [hash('sha256', $tok)]) === 1);
+[$st, $body, $hdr] = raw_get('anon', 'files/shared&t=' . $tok);
+check('… يفتح بدون دخول بالرابط', $st === 200 && $body === $secret && str_contains($hdr, 'no-store'), $st);
+check('… ورابط مزوّر ← 410', raw_get('anon', 'files/shared&t=' . str_repeat('a', 43))[0] === 410);
+check('مكتب ثاني ما يشارك ملفي ← 404', call('POST', 'files/share', ['url' => $url], 'B')[0] === 404);
+check('مدة أكثر من 30 يوم ← 422', call('POST', 'files/share', ['url' => $url, 'days' => 31], 'SA')[0] === 422);
+[$st, $list] = call('GET', 'files/shares', null, 'A');
+$share = $list['shares'][0] ?? [];
+check('المالك يشوف روابط مكتبه ومين أنشأها وعدد الفتح', $st === 200 && ($share['active'] ?? false) && ($share['uses'] ?? 0) === 1 && ($share['note'] ?? '') === 'للعميل', [$st, $list]);
+check('مكتب ثاني ما يشوفها', (call('GET', 'files/shares', null, 'B')[1]['shares'] ?? null) === []);
+check('مكتب ثاني ما يلغيها', call('POST', 'files/shares/revoke', ['id' => $share['id'] ?? ''], 'B')[0] === 404);
+check('المالك يلغي الرابط', call('POST', 'files/shares/revoke', ['id' => $share['id'] ?? ''], 'A')[0] === 200);
+check('… فما يفتح بعدها ← 410', raw_get('anon', 'files/shared&t=' . $tok)[0] === 410);
+check('سجل الاطلاع فيه الفتح برابط المشاركة', in_array(true, array_column(call('GET', 'files/access-log', null, 'A')[1]['entries'] ?? [], 'viaShare'), true));
+
+echo "نقل ملفات uploads/ القديمة وتشفيرها\n";
+$uploadsDir = dirname(__DIR__, 2) . '/public/uploads/';
+@mkdir($uploadsDir, 0755, true);
+@unlink($uploadsDir . '.htaccess');
+$legacyName = '1700000000_abcd1234_عقد قديم.pdf';
+$legacyBody = "%PDF-1.4 legacy " . bin2hex(random_bytes(8));
+file_put_contents($uploadsDir . $legacyName, $legacyBody);
+file_put_contents($uploadsDir . '1700000001_ffff0000_logo.png', base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='));
+// روابط بالشكل المحفوظ فعلاً (json_encode يهرّب / )، ومستند لمكتب ثاني يذكر نفس الملف
+$legacyUrl = 'https://mawazzen.com/uploads/' . rawurlencode($legacyName);
+$pdo->prepare("INSERT INTO docs (collection, parent_path, id, data) VALUES ('clients', '', 'legacyA', ?), ('clients', '', 'legacyB', ?), ('cases', '', 'legacyMissing', ?)")
+    ->execute([json_encode(['lawyerId' => 'ownerA', 'fullName' => 'قديم', 'files' => [['url' => $legacyUrl, 'meta' => new stdClass()]]]),
+        json_encode(['lawyerId' => 'ownerB', 'fullName' => 'قديم ب', 'attachment' => $legacyUrl]),
+        json_encode(['lawyerId' => 'ownerA', 'title' => 'ملف ضايع', 'fileUrl' => 'https://mawazzen.com/uploads/gone.pdf'])]);
+$pdo->prepare("UPDATE docs SET data = JSON_SET(data, '$.logoUrl', ?) WHERE collection = 'users' AND id = 'ownerA'")->execute(['https://mawazzen.com/uploads/1700000001_ffff0000_logo.png']);
+check('غير مدير المنصة ما يشغّل النقل ← 403', call('POST', 'files/migrate-legacy', [], 'A')[0] === 403);
+$total = ['filesMigrated' => 0, 'missing' => 0, 'docsUpdated' => 0];
+$cursor = null;
+for ($i = 0; $i < 20; $i++) {
+    [$st, $mr] = call('POST', 'files/migrate-legacy', $cursor ? ['cursor' => $cursor] : [], 'AD');
+    if ($st !== 200) break;
+    foreach ($total as $k => $_) $total[$k] += $mr[$k] ?? 0;
+    $cursor = $mr['cursor'] ?? null;
+    if ($mr['done'] ?? false) break;
+}
+check('النقل يخلص: 3 ملفات (العقد لمكتبين + الشعار) و3 مستندات، وملف مفقود واحد', $st === 200 && $total === ['filesMigrated' => 3, 'missing' => 1, 'docsUpdated' => 3], [$st, $total]);
+$dataOf = fn(string $c, string $id) => json_decode((string) $col('SELECT data FROM docs WHERE collection = ? AND id = ?', [$c, $id]), true);
+$aUrl = $dataOf('clients', 'legacyA')['files'][0]['url'] ?? '';
+$bUrl = $dataOf('clients', 'legacyB')['attachment'] ?? '';
+check('… الرابط في مستند المكتب صار رابط محمي لمكتبه', str_contains($aUrl, 'files/view?p=office/ownerA/') && str_contains($bUrl, 'files/view?p=office/ownerB/'), [$aUrl, $bUrl]);
+check('… والكائنات الفاضية ظلت {}', str_contains((string) $col("SELECT data FROM docs WHERE collection = 'clients' AND id = 'legacyA'"), '"meta": {}') || str_contains((string) $col("SELECT data FROM docs WHERE collection = 'clients' AND id = 'legacyA'"), '"meta":{}'));
+check('… والملف المفقود ظل رابطه كما هو', ($dataOf('cases', 'legacyMissing')['fileUrl'] ?? '') === 'https://mawazzen.com/uploads/gone.pdf');
+preg_match('#p=(office/[^&]+)#', $aUrl, $am);
+[$st, $body] = raw_get('A', 'files/view&p=' . rawurlencode($am[1] ?? ''));
+check('… والمكتب يفتح ملفه القديم (نفس المحتوى)', $st === 200 && $body === $legacyBody, $st);
+check('… ومكتب ب ما يفتح نسخة مكتب أ', raw_get('B', 'files/view&p=' . rawurlencode($am[1] ?? ''))[0] === 404);
+$logo = $dataOf('users', 'ownerA')['logoUrl'] ?? '';
+check('… وشعار المكتب انتقل', str_contains($logo, 'p=office/ownerA/'), $logo);
+check('… والاسم المعروض بدون الوقت والجزء العشوائي', (string) $col("SELECT name FROM office_files WHERE legacy_name = ? AND tenant = 'ownerA'", [$legacyName]) === 'عقد قديم.pdf');
+check('إعادة النقل ما تكرر شي', call('POST', 'files/migrate-legacy', [], 'AD')[1]['filesMigrated'] === 0);
+check('ملفات uploads/ القديمة لسه موجودة قبل الإنهاء', is_file($uploadsDir . $legacyName));
+[$st, $fin] = call('POST', 'files/migrate-legacy/finalize', [], 'AD');
+clearstatcache(); // الحذف صار في عملية الخادم — نتيجة is_file السابقة محفوظة هنا
+check('الإنهاء: يتأكد من النسخ المشفرة ثم يحذف الأصل', $st === 200 && ($fin['deleted'] ?? 0) === 2 && !is_file($uploadsDir . $legacyName), [$st, $fin]);
+check('… ويقفل مجلد uploads بالكامل', str_contains((string) @file_get_contents($uploadsDir . '.htaccess'), 'Require all denied'));
+@unlink($uploadsDir . '.htaccess');
 
 echo "طلبات الاشتراك وإعدادات المكتب\n";
 check('طلب اشتراك باسم مكتب ثاني وحالة «مقبول» ← ينحفظ باسمي ومعلّق',

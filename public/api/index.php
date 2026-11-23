@@ -49,6 +49,15 @@ $routes = [
     ['POST', 'files/upload', 'routes_files.php', 'route_files_upload'],
     ['GET', 'files/download', 'routes_files.php', 'route_files_download'],
     ['POST', 'files/delete', 'routes_files.php', 'route_files_delete'],
+    // ملفات المكاتب المشفّرة (مرفقات القضايا وغيرها — يرفعها upload.php)
+    ['GET', 'files/view', 'routes_officefiles.php', 'route_office_file_view'],
+    ['GET', 'files/shared', 'routes_officefiles.php', 'route_office_file_shared'],
+    ['POST', 'files/share', 'routes_officefiles.php', 'route_office_file_share'],
+    ['GET', 'files/shares', 'routes_officefiles.php', 'route_office_file_shares'],
+    ['POST', 'files/shares/revoke', 'routes_officefiles.php', 'route_office_file_share_revoke'],
+    ['GET', 'files/access-log', 'routes_officefiles.php', 'route_office_file_access_log'],
+    ['POST', 'files/migrate-legacy', 'routes_officefiles.php', 'route_office_files_migrate'],
+    ['POST', 'files/migrate-legacy/finalize', 'routes_officefiles.php', 'route_office_files_migrate_finalize'],
 ];
 /** مسارات POST بجسم غير JSON (رفع ملفات multipart) — لها حماية CSRF خاصة بها */
 $nonJsonPost = ['files/upload'];

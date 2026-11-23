@@ -22,7 +22,10 @@ function harness_start(string $configPath, int $port, array $extraConfig = []): 
     $pdo->exec((string) file_get_contents("$root/database/schema.sql"));
 
     $runConfigPath = tempnam(sys_get_temp_dir(), 'mzcfg') . '.php';
-    file_put_contents($runConfigPath, "<?php\nreturn " . var_export($config + $extraConfig, true) . ";\n");
+    // مفتاح تشفير ومجلد ملفات خاصين بالاختبار (ما يلمس private_files الحقيقي)
+    $testDefaults = ['files_key' => base64_encode(str_repeat('t', 32)), 'files_dir' => sys_get_temp_dir() . '/mz-test-files-' . getmypid()];
+    file_put_contents($runConfigPath, "<?php\nreturn " . var_export($config + $extraConfig + $testDefaults, true) . ";\n");
+    $GLOBALS['harness_files_dir'] = ($config + $extraConfig + $testDefaults)['files_dir'];
     $env = getenv();
     $env['MZ_DB_CONFIG'] = $runConfigPath;
     $server = proc_open([PHP_BINARY, '-S', "127.0.0.1:$port", '-t', "$root/public"],

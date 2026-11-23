@@ -154,10 +154,10 @@ function office_rows(string $officeId, array $members, array &$counts, array &$f
 }
 
 /** ملفات المكتبة القانونية الخاصة (private_files/legalLibrary/{uid}) — يرجع عددها */
-function private_files_of(string $uid, bool $execute): int {
+function private_files_of(string $uid, bool $execute, string $area = 'legalLibrary'): int {
     $root = (string) (app_config()['files_dir'] ?? '');
     if ($root === '') $root = dirname(__DIR__) . '/private_files';
-    $dir = rtrim($root, '/\\') . '/legalLibrary/' . $uid;
+    $dir = rtrim($root, '/\\') . "/$area/" . $uid;
     if (!preg_match('/^[A-Za-z0-9_-]{1,64}$/', $uid) || !is_dir($dir)) return 0;
     $count = 0;
     foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST) as $f) {
@@ -245,6 +245,8 @@ foreach ($owners as $ownerRow) {
     $keys = office_rows($uid, $members, $counts, $files);
     $libraryFiles = 0;
     foreach ($members as $m) $libraryFiles += private_files_of($m, false);
+    // ملفات المكتب المشفّرة (مرفقات القضايا وغيرها)
+    $officeFiles = (int) q('SELECT COUNT(*) FROM office_files WHERE tenant = ?', [$uid])->fetchColumn();
     $counts['users'] = count($members);
 
     if ($execute) {
@@ -259,12 +261,14 @@ foreach ($owners as $ownerRow) {
         }
         $del = $pdo->prepare('DELETE FROM docs WHERE collection = ? AND parent_path = ? AND id = ?');
         foreach ($keys as $k) $del->execute($k);
+        foreach (['file_access_log', 'file_shares', 'office_files'] as $table) q("DELETE FROM $table WHERE tenant = ?", [$uid]);
         $ph = implode(',', array_fill(0, count($members), '?'));
         q("DELETE FROM docs WHERE collection = 'users' AND parent_path = '' AND id IN ($ph)", $members);
         // حسابات الدخول (والجلسات وروابط الاستعادة تنحذف معها بالمفاتيح الأجنبية)
         q("DELETE FROM users WHERE id IN ($ph)", $members);
         $pdo->commit();
         foreach ($members as $m) private_files_of($m, true);
+        private_files_of($uid, true, 'office');
     }
 
     $localFiles = 0;
@@ -285,7 +289,7 @@ foreach ($owners as $ownerRow) {
     ksort($counts);
     $parts = [];
     foreach ($counts as $c => $n) $parts[] = "$c=$n";
-    out('  ' . implode(' · ', $parts) . " · ملفات الخادم=$localFiles · ملفات المكتبة=$libraryFiles");
+    out('  ' . implode(' · ', $parts) . " · ملفات الخادم=$localFiles · ملفات المكتبة=$libraryFiles · ملفات المكتب المشفّرة=$officeFiles");
     $summary['deleted']++;
 }
 

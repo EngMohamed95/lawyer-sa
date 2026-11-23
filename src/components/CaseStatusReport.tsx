@@ -440,7 +440,10 @@ export default function CaseStatusReport({ data, profile, stampUrl, isExecutionC
       if (!response.ok) throw new Error("فشل رفع التقرير");
       const result = await response.json();
       if (result.error) throw new Error(result.error);
-      const message = `مرحباً ${data.client?.fullName || ""}،\nمرفق تقرير حالة القضية «${data.title || data.caseNumber}»:\n${result.fileUrl}`;
+      // ملفات المكتب ما تفتح إلا لأعضائه — العميل ياخذ رابطاً مؤقتاً (7 أيام) يقدر المكتب يلغيه من الإعدادات
+      const { createShareLink } = await import("../lib/files");
+      const share = await createShareLink(result.fileUrl, 7, `تقرير حالة القضية «${data.title || data.caseNumber}» — ${data.client?.fullName || "العميل"}`);
+      const message = `مرحباً ${data.client?.fullName || ""}،\nمرفق تقرير حالة القضية «${data.title || data.caseNumber}»:\n${share.url}\n(الرابط صالح لمدة 7 أيام)`;
       window.open(`https://wa.me/${clientPhone}?text=${encodeURIComponent(message)}`, "_blank");
     } catch (err) {
       alert("تعذّر تجهيز التقرير لإرساله عبر واتساب: " + (err instanceof Error ? err.message : String(err)));

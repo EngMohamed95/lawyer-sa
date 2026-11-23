@@ -127,6 +127,56 @@ CREATE TABLE IF NOT EXISTS signup_pending (
   KEY ix_signup_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ملفات المكاتب (مرفقات القضايا، المحاضر، الأحكام، المذكرات، الشعار، الختم):
+-- المحتوى مشفّر AES-256-GCM في private_files/office/{tenant}/{id} خارج مجلد الموقع،
+-- وهنا بياناته فقط. legacy_name = اسم الملف القديم في uploads/ لو انتقل منه.
+CREATE TABLE IF NOT EXISTS office_files (
+  id           CHAR(32)     NOT NULL,
+  tenant       VARCHAR(64)  NOT NULL,
+  name         VARCHAR(255) NOT NULL,
+  content_type VARCHAR(127) NOT NULL,
+  size         BIGINT       NOT NULL,
+  sha256       CHAR(64)     NOT NULL,
+  created_by   VARCHAR(64)  NULL,
+  legacy_name  VARCHAR(255) NULL,
+  created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY ix_files_tenant (tenant, created_at),
+  UNIQUE KEY ux_files_legacy (tenant, legacy_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- روابط مشاركة مؤقتة (للعميل عبر واتساب مثلاً): التوكن يُرسل، والجدول يخزن الـ hash فقط
+CREATE TABLE IF NOT EXISTS file_shares (
+  token_hash   CHAR(64)     NOT NULL,
+  file_id      CHAR(32)     NOT NULL,
+  tenant       VARCHAR(64)  NOT NULL,
+  created_by   VARCHAR(64)  NOT NULL,
+  note         VARCHAR(255) NULL,
+  expires_at   DATETIME     NOT NULL,
+  revoked_at   DATETIME     NULL,
+  uses         INT          NOT NULL DEFAULT 0,
+  last_used_at DATETIME     NULL,
+  created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (token_hash),
+  KEY ix_shares_tenant (tenant, created_at),
+  KEY ix_shares_file (file_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- سجل الاطلاع على ملفات المكتب: مين فتح أي ملف ومتى ومن أي جهاز (أو برابط مشاركة)
+CREATE TABLE IF NOT EXISTS file_access_log (
+  id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  file_id    CHAR(32)     NOT NULL,
+  tenant     VARCHAR(64)  NOT NULL,
+  user_id    VARCHAR(64)  NULL,
+  via_share  TINYINT(1)   NOT NULL DEFAULT 0,
+  ip         VARCHAR(45)  NULL,
+  user_agent VARCHAR(255) NULL,
+  created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY ix_access_tenant (tenant, created_at),
+  KEY ix_access_file (file_id, user_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- تخزين مؤقت صغير (مثل توكن وصول حساب الخدمة) — بدل ملفات مؤقتة على استضافة مشتركة.
 CREATE TABLE IF NOT EXISTS app_cache (
   k          VARCHAR(128) NOT NULL,

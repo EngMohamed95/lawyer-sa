@@ -9,6 +9,7 @@ import ListsTab from "../components/settings/ListsTab";
 import NotificationsTab from "../components/settings/NotificationsTab";
 import OfficeStampCard from "../components/settings/OfficeStampCard";
 import OfficeProfileCard from "../components/settings/OfficeProfileCard";
+import FileSecurityCard from "../components/settings/FileSecurityCard";
 import AppearanceTab from "../components/settings/AppearanceTab";
 import PlatformAiSettingsTab from "../components/settings/PlatformAiSettingsTab";
 import AuditLog from "./AuditLog";
@@ -493,6 +494,12 @@ export default function SettingsPage() {
                   <div className="pt-4 border-t border-gray-100">
                     <OfficeStampCard />
                   </div>
+                  {/* أمان الملفات: روابط المشاركة وسجل الاطلاع (ما يخص مدير المنصة — ما يفتح ملفات المكاتب) */}
+                  {perms.role !== "SUPER_ADMIN" && (
+                    <div className="pt-4 border-t border-gray-100">
+                      <FileSecurityCard />
+                    </div>
+                  )}
                 </div>
               )}
 
